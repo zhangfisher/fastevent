@@ -70,6 +70,32 @@ describe("FastEvent",()=>{
         expect(events).toEqual(["a.b.c","a.b.c","a.b.c","a.b.c","a.b.c","a.b.c"])
     })
 
+    test("使用通配符发布订阅层级事件2",()=>{
+        const emitter = new FastEvent() 
+        const events:string[]=[]
+        const subscribers:FastEventSubscriber[]=[]
+        subscribers.push(emitter.on("*.*.*",(event)=>{
+            expect(event.type).toBe("a.b.c")
+            expect(event.payload).toBe(1)
+            events.push(event.type)
+        }))
+        subscribers.push(emitter.on("*.*.c",(event)=>{
+            expect(event.type).toBe("a.b.c")
+            expect(event.payload).toBe(1)
+            events.push(event.type)
+        }))
+        subscribers.push(emitter.on("*.a.b",(event)=>{
+            expect(event.type).toBe("a.b.c")
+            expect(event.payload).toBe(1)
+            events.push(event.type)
+        }))
+        emitter.emit("a.b.c",1)
+        expect(events).toEqual(["a.b.c","a.b.c","a.b.c"])
+        emitter.emit("a.b.c",1)
+        expect(events).toEqual(["a.b.c","a.b.c","a.b.c","a.b.c","a.b.c","a.b.c"])
+        subscribers.forEach(subscriber=>subscriber.off())
+        expect(events).toEqual(["a.b.c","a.b.c","a.b.c","a.b.c","a.b.c","a.b.c"])
+    })
 
     test("简单发布订阅retain事件",()=>{
         const emitter = new FastEvent() 
@@ -79,14 +105,14 @@ describe("FastEvent",()=>{
             expect(event.payload).toBe(1)            
         })
         emitter.emit("a.b.c1",1,true)        
-        emitter.emit("a.b.c2",1,true)    
+        emitter.emit("a.b.c2",2,true)    
         emitter.on("a.b.c1",(event)=>{
             expect(event.type).toBe("a.b.c1")
             expect(event.payload).toBe(1)            
         })
         emitter.on("a.b.c2",(event)=>{
-            expect(event.type).toBe("a.b.c1")
-            expect(event.payload).toBe(1)            
+            expect(event.type).toBe("a.b.c2")
+            expect(event.payload).toBe(2)            
         })
     })
 

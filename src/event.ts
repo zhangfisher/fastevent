@@ -22,8 +22,7 @@ export class FastEvent<Events extends FastEvents> {
     get options(){
         return this._options
     }
-
-    private _addListener(parts:string[],listener:FastEventListener<any,any>,once?:boolean):FastSubscriberNode | undefined{
+    private _forEachNodes(parts:string[],callback:(node:FastSubscriberNode)=>void,once?:boolean):FastSubscriberNode | undefined{
         if(parts.length === 0) return 
         let current =once ? this._onceSubscribers : this._subscribers
         let curPath:string[] = []
@@ -38,7 +37,7 @@ export class FastEvent<Events extends FastEvents> {
             }
             if(i===parts.length-1){ 
                 const node = current[part]
-                node.__listeners__.push(listener)
+                callback(node)
                 return node
             }else{                
                 current = current[part]
@@ -46,6 +45,19 @@ export class FastEvent<Events extends FastEvents> {
         }
         return undefined
     }    
+
+    private _addListener(parts:string[],listener:FastEventListener<any,any>,once?:boolean):FastSubscriberNode | undefined{
+        return this._forEachNodes(parts,(node)=>{
+            node.__listeners__.push(listener)
+        },once) 
+    }    
+    private _addLastEvent(parts:string[],event:Event){
+        const updateLastEvent = (node:FastSubscriberNode)=>{
+            node.__last__ = event            
+        }
+        this._forEachNodes(parts,updateLastEvent)
+        this._forEachNodes(parts,updateLastEvent,true)
+    }
 
     private _removeListener(node:FastSubscriberNode,listener:FastEventListener<any,any>):void{
         while(true){
@@ -101,9 +113,8 @@ export class FastEvent<Events extends FastEvents> {
     }
 
     private _emitForRatian(node: FastSubscriberNode){   
-        if(node && node.__last__){
-            this._executeListeners(node,node.__last__)
-        }
+        
+        this._executeListeners(node,node.__last__)
     }
  
     private _forEachSubscribers(node: FastSubscriberNode, parts: string[], callback: (node: FastSubscriberNode) => void): void {
@@ -137,18 +148,14 @@ export class FastEvent<Events extends FastEvents> {
         const args = arguments
         const event:Event = {
             type:typeof(args[0])==='string' ? args[0] : args[0].type,
-            payload:typeof(args[0]) ? args[1] : args[0].payload
+            payload:typeof(args[0])==='string' ? args[1] : args[0].payload
         }
         const retain = typeof(args[args.length-1])==='boolean' ? args[args.length-1] : false
         const parts = event.type.split(this._options.delimiter); 
         
-        this._forEachSubscribers(this._subscribers,parts,(node)=>{  
-            if(retain) node.__last__ = event
-            this._executeListeners(node,event)
-        }) 
+        if(retain) this._addLastEvent(parts,event)
 
         this._forEachSubscribers(this._onceSubscribers,parts,(node)=>{  
-            if(retain) node.__last__ = event
             this._executeListeners(node,event)
             node.__listeners__=[]
         }) 
