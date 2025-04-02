@@ -72,7 +72,7 @@ export class FastEvent<Events extends FastEvents> {
         const node = this._addListener(parts,listener)
         
         // Retain不支持通配符
-        // if(node && !event.includes('*')) this._emitForLastEvent(parts)
+        if(node && !event.includes('*')) this._emitForLastEvent(parts)
     
         return {
             off: ()=>node && this._removeListener(node,listener)

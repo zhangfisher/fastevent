@@ -1,11 +1,9 @@
 import { Bench } from 'tinybench';
-import { FastEvent } from '../../dist/index.mjs'
+import { FastEvent } from '../event';
 import { EventEmitter2 } from 'eventemitter2';
 import { FlexEvent } from "flex-tools/events/flexEvent"
 import mitt from 'mitt'
 
-
-const delay = (ms:number) => new Promise<void>((resolve) => setTimeout(resolve, ms)); 
 
 const bench = new Bench({ 
   time: 2000, 

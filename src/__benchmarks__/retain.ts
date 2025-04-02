@@ -3,9 +3,6 @@ import { FastEvent } from '../../src/'
 import { EventEmitter2 } from 'eventemitter2';
 import { FlexEvent } from "flex-tools/events/flexEvent"
 
-
-const delay = (ms:number) => new Promise<void>((resolve) => setTimeout(resolve, ms)); 
-
 const bench = new Bench({ 
   time: 1000, 
   iterations: 200,  
