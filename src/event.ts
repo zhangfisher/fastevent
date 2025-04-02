@@ -3,7 +3,6 @@ import { FastEventListener, Event, FastEventOptions, FastEvents, FastEventSubscr
 
 export class FastEvent<Events extends FastEvents> {
     private _subscribers    : FastEventSubscribers = { __listeners__: [] } as unknown as FastEventSubscribers
-    private _onceSubscribers: FastEventSubscribers = { __listeners__:[] } as unknown as FastEventSubscribers
     private _options        : Required<FastEventOptions>
     private _delimiter      : string = '.'
     private _context        : any
@@ -19,9 +18,9 @@ export class FastEvent<Events extends FastEvents> {
     get options(){
         return this._options
     }
-    private _forEachNodes(parts:string[],callback:(node:FastSubscriberNode,parent:FastSubscriberNode)=>void,once?:boolean):FastSubscriberNode | undefined{
+    private _forEachNodes(parts:string[],callback:(node:FastSubscriberNode,parent:FastSubscriberNode)=>void):FastSubscriberNode | undefined{
         if(parts.length === 0) return 
-        let current =once ? this._onceSubscribers : this._subscribers
+        let current = this._subscribers
         for(let i=0;i<parts.length;i++){
             const part = parts[i]
             if(!(part in current)){
@@ -40,22 +39,23 @@ export class FastEvent<Events extends FastEvents> {
         return undefined
     }    
 
-    private _addListener(parts:string[],listener:FastEventListener<any,any>,once?:boolean):FastSubscriberNode | undefined{
+    private _addListener(parts:string[],listener:FastEventListener<any,any>,count:number = 0):FastSubscriberNode | undefined{
         return this._forEachNodes(parts,(node)=>{
-            node.__listeners__.push(listener)
-        },once) 
+            node.__listeners__.push(count >0 ? [listener,count]: listener)
+        }) 
     }    
     private _addLastEvent(parts:string[],event:Event){
         const updateLastEvent = (node:FastSubscriberNode)=>{
             node.__last__ = event
         }
         this._forEachNodes(parts,updateLastEvent)
-        this._forEachNodes(parts,updateLastEvent,true)
     }
 
     private _removeListener(node:FastSubscriberNode,listener:FastEventListener<any,any>):void{
         while(true){
-            const index = node.__listeners__.indexOf(listener)
+            const index = node.__listeners__.findIndex((item)=>{
+                return (Array.isArray(item) ? item[0] : item) ===listener
+            })
             if(index === -1) break
             node.__listeners__.splice(index,1)
         }
@@ -72,7 +72,7 @@ export class FastEvent<Events extends FastEvents> {
         const node = this._addListener(parts,listener)
         
         // Retain不支持通配符
-        if(node && !event.includes('*')) this._emitForLastEvent(parts)
+        // if(node && !event.includes('*')) this._emitForLastEvent(parts)
     
         return {
             off: ()=>node && this._removeListener(node,listener)
@@ -81,7 +81,7 @@ export class FastEvent<Events extends FastEvents> {
 
     public once<K extends keyof Events & string>(event: K,listener: FastEventListener<K, Events[K]>): FastEventSubscriber{
         const parts = event.split(this._options.delimiter);
-        const node = this._addListener(parts,listener,true)
+        const node = this._addListener(parts,listener,1)
         if(node && !event.includes('*')) this._emitForLastEvent(parts)
         return {
             off:()=>node && this._removeListener(node,listener)
@@ -116,49 +116,48 @@ export class FastEvent<Events extends FastEvents> {
 
     }
 
-    private _emitForLastEvent(parts:string[],once:boolean = false){   
-        if(once){
-            this._forEachSubscribers(this._onceSubscribers,parts,(node)=>{  
-                if(node.__last__) this._executeListeners(node,node.__last__)
-            })
-        }else{
-            this._forEachSubscribers(this._subscribers,parts,(node)=>{  
-                if(node.__last__) this._executeListeners(node,node.__last__)
-            })
-        }
+    private _emitForLastEvent(parts:string[]){   
+        this._traverseSubscribers(this._subscribers,parts,(node)=>{  
+            if(node.__last__) this._executeListeners(node,node.__last__)
+        })
     }
  
-    private _forEachSubscribers(node: FastSubscriberNode, parts: string[], callback: (node: FastSubscriberNode) => void, index: number = 0): void {        
+    private _traverseSubscribers(node: FastSubscriberNode, parts: string[], callback: (node: FastSubscriberNode) => void, index: number = 0): void {        
         // If no more parts to traverse, process current node's listeners
         if (index >= parts.length) {
             callback(node)
             return
         }    
-        const currentPart = parts[index]
+        const currentPart = parts[index]        
         
-        if (currentPart === '*') {
-            Object.keys(node)
-                    .filter(key => !key.startsWith('__'))
-                    .forEach(key => {
-                        this._forEachSubscribers(node[key], parts, callback, index + 1)
-                    })
-            if ('*' in node) {
-                this._forEachSubscribers(node['*'], parts, callback, index + 1)
-            }
-        } else if (currentPart in node) {
-            this._forEachSubscribers(node[currentPart], parts, callback, index + 1)
+        if (currentPart in node) {
+            this._traverseSubscribers(node[currentPart], parts, callback, index + 1)
         }
 
         if (currentPart !== '*' && '*' in node) {
-            this._forEachSubscribers(node['*'], parts, callback, index + 1)
+            this._traverseSubscribers(node['*'], parts, callback, index + 1)
         }
 
     } 
 
     private _executeListeners(node: FastSubscriberNode,event:Event): void {
-        node && node.__listeners__.forEach(listener => {                
-            listener.call(this._context,event)
-        });
+        if(!node || !node.__listeners__) return   
+        let i = 0
+        const listeners = node.__listeners__
+        while(i<listeners.length){
+            const listener = listeners[i]
+            if(Array.isArray(listener)){
+                listener[0].call(this._context,event)
+                listener[1]-- 
+                if(listener[1]===0) {
+                    listeners.splice(i,1)
+                    i-- // 抵消后面的i++
+                }
+            }else{
+                listener.call(this._context,event)
+            }  
+            i++            
+        }
     }
 
     public emit(type:string,payload?:any,retain?:boolean):void
@@ -173,13 +172,11 @@ export class FastEvent<Events extends FastEvents> {
         const parts = event.type.split(this._options.delimiter); 
         
         if(retain) this._addLastEvent(parts,event)        
-        this._forEachSubscribers(this._onceSubscribers,parts,(node)=>{  
-            this._executeListeners(node,event)
-            node.__listeners__=[]
-        }) 
-        this._forEachSubscribers(this._subscribers,parts,(node)=>{  
+
+        this._traverseSubscribers(this._subscribers,parts,(node)=>{  
             this._executeListeners(node,event)
         }) 
+        // onAny侦听器保存在根节点中，所以需要执行
         this._executeListeners(this._subscribers,event)
     }
 } 
