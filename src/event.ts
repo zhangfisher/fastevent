@@ -6,6 +6,7 @@ export class FastEvent<Events extends FastEvents> {
     private _options        : Required<FastEventOptions>
     private _delimiter      : string = '.'
     private _context        : any
+    private _retainedEvents : Map<string,any> = new Map<string,any>()
 
     constructor(options?:FastEventOptions) { 
         this._options = Object.assign({
@@ -61,18 +62,18 @@ export class FastEvent<Events extends FastEvents> {
         }
     }
 
-    public on<K extends keyof Events & string>(event: K,listener: FastEventListener<K, Events[K]>): FastEventSubscriber{
-        if(event.length===0) throw new Error('event name cannot be empty')
+    public on<K extends keyof Events & string>(type: K,listener: FastEventListener<K, Events[K]>): FastEventSubscriber{
+        if(type.length===0) throw new Error('event name cannot be empty')
 
-        if(event==='**'){
+        if(type==='**'){
             return this.onAny(listener)
         }
 
-        const parts = event.split(this._options.delimiter);
+        const parts = type.split(this._options.delimiter);
         const node = this._addListener(parts,listener)
         
         // Retain不支持通配符
-        if(node && !event.includes('*')) this._emitForLastEvent(parts)
+        if(node && !type.includes('*')) this._emitForLastEvent(type)
     
         return {
             off: ()=>node && this._removeListener(node,listener)
@@ -116,10 +117,16 @@ export class FastEvent<Events extends FastEvents> {
 
     }
 
-    private _emitForLastEvent(parts:string[]){   
+    private _emitForLastEvent(type:string){   
+        if(this._retainedEvents.has(type)){
+            const payload = this._retainedEvents.get(type)
+            
         this._traverseSubscribers(this._subscribers,parts,(node)=>{  
-            if(node.__last__) this._executeListeners(node,node.__last__)
-        })
+            this._executeListeners(node,event)
+        }) 
+        // onAny侦听器保存在根节点中，所以需要执行
+        this._executeListeners(this._subscribers,event)
+        }
     }
  
     private _traverseSubscribers(node: FastSubscriberNode, parts: string[], callback: (node: FastSubscriberNode) => void, index: number = 0): void {        
@@ -171,7 +178,9 @@ export class FastEvent<Events extends FastEvents> {
         const retain = typeof(args[args.length-1])==='boolean' ? args[args.length-1] : false
         const parts = event.type.split(this._options.delimiter); 
         
-        if(retain) this._addLastEvent(parts,event)        
+        if(retain) {
+            this._retainedEvents.set(event.type,event.payload)
+        }   
 
         this._traverseSubscribers(this._subscribers,parts,(node)=>{  
             this._executeListeners(node,event)

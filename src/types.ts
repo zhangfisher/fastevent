@@ -10,7 +10,6 @@ export type FastEventListener<E=string, P=any> = (event: Event<E,P>) => any | Pr
 
 export type FastSubscriberNode  = {
     __listeners__: (FastEventListener<any,any> | [FastEventListener<any,any>,number])[];  
-    __last__ : any  
 } & {
     [key:string]: FastSubscriberNode
 }
