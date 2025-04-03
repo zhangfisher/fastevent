@@ -1,17 +1,10 @@
 
+export type FastEventListener<P=any,T=string> = ( payload:P, type: T ) => any | Promise<any>
 
-export interface Event<E=string,P=any>{
-    type    : E
-    payload?: P
-}
-
-export type FastEventListener<E=string, P=any> = (event: Event<E,P>) => any | Promise<any>
-
-
-export type FastSubscriberNode  = {
-    __listeners__: (FastEventListener<any,any> | [FastEventListener<any,any>,number])[];  
+export type FastListenerNode  = {
+    __listeners: (FastEventListener<any,any> | [FastEventListener<any,any>,number])[];  
 } & {
-    [key:string]: FastSubscriberNode
+    [key:string]: FastListenerNode
 }
 
 export type FastEventSubscriber = {
@@ -20,12 +13,21 @@ export type FastEventSubscriber = {
 
 
 
-export type FastEventSubscribers = FastSubscriberNode
+export type FastListeners = FastListenerNode
 
 export type FastEventOptions = {
+    // 事件分隔符
     delimiter?: string
-    context?  : any
+    // 侦听器函数执行上下文
+    context?  : any    
+    // 当执行侦听器函数出错时是否忽略,默认true
+    ignoreListenerError?: boolean       
+    // 当侦听器函数执行出错时的回调，用于诊断时使用,可以打印错误信息
+    onListenerError?: ((type:string,error:Error)=>void) 
+    // 事件前缀,当创建scope时使用
+    scopePreifx?: string
 }
  
 
 export type FastEvents = Record<string,any>
+ 
