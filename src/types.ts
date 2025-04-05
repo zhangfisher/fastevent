@@ -12,6 +12,10 @@ export type FastEventSubscriber = {
 }
 
 
+export interface FastEventListenerMeta{
+    emitter?:string
+}
+
 
 export type FastListeners = FastListenerNode
 
@@ -26,6 +30,8 @@ export type FastEventOptions = {
     onListenerError?: ((type:string,error:Error)=>void) 
     // 事件前缀,当创建scope时使用
     scopePreifx?: string
+    // 额外的元数据，当触发事件时传递给侦听器
+    meta?:Record<string,any>
 }
  
 
