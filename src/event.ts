@@ -13,6 +13,8 @@ import {
     FastListenerNode, 
     FastEventSubscriber 
 } from './types'; 
+import { isPathMatched } from './utils/isPathMatched';
+import { removeItem } from './utils/removeItem';
  
 export class FastEvent<Events extends FastEvents = never, Types extends keyof Events =  keyof Events>{
     public listeners      : FastListeners = { __listeners: [] } as unknown as FastListeners
@@ -26,10 +28,11 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
         this._options = Object.assign({
             delimiter          : '/',
             context            : null,
-            ignoreListenerError: true
+            ignoreErrors       : true
         }, options)
         this._delimiter = this._options.delimiter!
-        this._scopePrefix = this._options.scopePreifx || ''
+        this._scopePrefix = this._options.scopePreifx || ''        
+        if(this._scopePrefix.length>0 && !this._scopePrefix.endsWith(this._delimiter)) this._scopePrefix+=this._delimiter
         this._context = this._options.context || this
     }
     get options(){ return this._options  }
@@ -78,18 +81,14 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
      */
     private _removeListener(node: FastListenerNode, listener: FastEventListener): void {
         if(!listener) return 
-        while (true) {
-            const index = node.__listeners.findIndex((item)=>{
-                item =  Array.isArray(item) ? item[0] : item 
+        removeItem(node.__listeners,(item:any)=>{
+            item =  Array.isArray(item) ? item[0] : item 
                 // @ts-ignore
-                return item === listener || item.__rawListener === listener
-            })
-            if(index === -1) break
-            node.__listeners.splice(index,1)
-        }
+            return item === listener || item.__rawListener === listener
+        }) 
     }
     private _getScopeType(type:string){
-        return this._scopePrefix + type
+        return type===undefined ? '' : this._scopePrefix + type
     }
     private _getScopeListener(listener:FastEventListener):FastEventListener{
         const scopePrefix = this._scopePrefix
@@ -162,7 +161,7 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
     }
     /**
      * 移除所有事件监听器
-     * @param prefix - 可选的事件前缀,如果提供则只移除指定前缀下的的监听器
+     * @param entry - 可选的事件前缀,如果提供则只移除指定前缀下的的监听器
      * @description 
      * - 如果提供了prefix参数,则只清除该前缀下的所有监听器
      * - 如果没有提供prefix,则清除所有监听器
@@ -176,11 +175,11 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
      * emitter.offAll('a/b'); // 清除a/b下的所有监听器
      * 
      */
-    offAll(prefix?: string) {        
-        if(prefix){
-            const entryNode = this._getListenerNode(prefix.split(this._delimiter))
+    offAll(entry?: string) {        
+        if(entry){
+            const entryNode = this._getListenerNode(entry.split(this._delimiter))
             if(entryNode) entryNode.__listeners = []
-            this._removeRetainedEvents(prefix)
+            this._removeRetainedEvents(entry)
         }else{
            this.clear()
         }
@@ -190,10 +189,11 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
     off(type: string):void
     off(){
         const args = arguments
-        const type = this._getScopeType(typeof(args[0])==='function' ? undefined : args[0])
+        const type = typeof(args[0])==='function' ? undefined : this._getScopeType(args[0])
         const listener = typeof(args[0])==='function' ? args[0] : args[1]
         const parts = type ? type.split(this._delimiter) : []
-        if(type){
+        const hasWildcard= type ? type.includes('*') : false
+        if(type && !hasWildcard){
             this._traverseToPath(this.listeners,parts,(node)=>{
                 if(listener){ // 只删除指定的监听器
                     this._removeListener(node,listener)
@@ -201,9 +201,16 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
                     node.__listeners=[]
                 }
             })
-        }else{ // 仅删除指定的侦听器           
-            this._traverseListeners(this.listeners,parts,(path,node)=>{
-                this._removeListener(node,listener)
+        }else{ // 仅删除指定的侦听器
+            const entryParts:string[] = hasWildcard ? [] : parts
+            this._traverseListeners(this.listeners,entryParts,(path,node)=>{       
+                if(listener!==undefined || (hasWildcard && isPathMatched(path,parts))){
+                    if(listener){
+                        this._removeListener(node,listener)
+                    }else{
+                        node.__listeners=[]
+                    }        
+                }
             })
         }
     }
@@ -234,15 +241,24 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
             }
         }
     }
-    clear(){
-        this._retainedEvents.clear()
-        Object.keys(this.listeners).forEach(key=>{
-            delete this.listeners[key]
+    private _clearListenerNode(node:FastListenerNode){
+        Object.keys(node).forEach(key=>{
+            delete node[key]
         })
-        this.listeners.__listeners = []
+        node.__listeners = []
+    }
+    clear(){
+        if(this._scopePrefix.length>0){
+            const entryPath = this._scopePrefix.split(this._delimiter)
+            const entryNode = this._getListenerNode(entryPath)       
+            this._removeRetainedEvents(this._scopePrefix)
+            if(entryNode) this._clearListenerNode(entryNode)
+        }else{
+            this._retainedEvents.clear()
+            this._clearListenerNode(this.listeners)
+        }
         // 为什么不直接使用this.listeners = { __listeners: [] }更快速？
         // 因为listeners在创建scope时会共享,所以不能直接赋值，否则会影响到创建的scope
-
     }
     private _emitForLastEvent(type:string){   
         if(this._retainedEvents.has(type)){
@@ -304,17 +320,17 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
                 entryNode= node
             });
         }
-        const traverseAllNodes = (node: FastListenerNode, callback: (path:string[],node: FastListenerNode) => void,parentPath:string[])=>{
+        const traverseNodes = (node: FastListenerNode, callback: (path:string[],node: FastListenerNode) => void,parentPath:string[])=>{
             callback(parentPath, node);        
             for(let [key,childNode] of Object.entries(node)){
                 if(key.startsWith("__")) continue
                 if(childNode){
-                    traverseAllNodes(childNode as FastListenerNode, callback,[...parentPath,key]);
+                    traverseNodes(childNode as FastListenerNode, callback,[...parentPath,key]);
                 }
             }
         }
         // 如果没有指定entry或entry为空数组，则递归遍历所有节点
-        traverseAllNodes(entryNode, callback,[]);
+        traverseNodes(entryNode, callback,[]);
     }        
 
     private _executeListener(listener:any,payload:any,type:string):any{
@@ -326,7 +342,7 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
                 this._options.onListenerError.call(this,type,e)
             }
             // 如果忽略错误，则返回错误对象
-            if(this._options.ignoreListenerError){
+            if(this._options.ignoreErrors){
                 return e
             }else{
                 throw e
@@ -370,7 +386,7 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
     }
 
     public emit<P=any>(type:string,payload?:any,retain?:boolean):P[]{
-        const parts = type.split(this._delimiter);         
+        const parts = this._getScopeType(type).split(this._delimiter);         
         if(retain) {
             this._retainedEvents.set(type,payload)
         }   
@@ -434,7 +450,7 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
      * 
      * scope.on("x",()=>{})   == emitter.on("a/b/x",()=>{})
      * scope.emit("x",1)      == emitter.emit("a/b/x",1) 
-     * scope.offAll()          == emitter.offAll("a/b")
+     * scope.offAll()         == emitter.offAll("a/b")
      * 
      */
     scope(prefix:string){

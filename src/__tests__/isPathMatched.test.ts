@@ -25,6 +25,17 @@ describe("isPathMatched", ()=>{
         // Assert
         expect(result).toBe(true);
     });
+    test('should match wildcards', () => {
+        // Arrange
+        const path = ["*"];
+        const pattern = ["*"];
+
+        // Act
+        const result = isPathMatched(path, pattern);
+
+        // Assert
+        expect(result).toBe(true);
+    });
 
     test('should match single wildcard pattern correctly', () => {
         // Arrange

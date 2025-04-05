@@ -25,13 +25,15 @@ export type FastEventOptions = {
     // 侦听器函数执行上下文
     context?  : any    
     // 当执行侦听器函数出错时是否忽略,默认true
-    ignoreListenerError?: boolean       
+    ignoreErrors?: boolean       
     // 当侦听器函数执行出错时的回调，用于诊断时使用,可以打印错误信息
     onListenerError?: ((type:string,error:Error)=>void) 
     // 事件前缀,当创建scope时使用
     scopePreifx?: string
     // 额外的元数据，当触发事件时传递给侦听器
     meta?:Record<string,any>
+    // 当创建新侦听器时回调
+    onNewListener?:(path:string,listener:FastEventListener)=>void
 }
  
 

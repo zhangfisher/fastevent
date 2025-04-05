@@ -64,7 +64,7 @@ describe("简单发布与订阅",async ()=>{
         }
     })
     test("侦听器执行出错时emit出错",async ()=>{
-        const emitter = new FastEvent({ignoreListenerError:false}) 
+        const emitter = new FastEvent({ignoreErrors:false}) 
         const err = new Error("custom")
         for(let i=1;i<=10;i++){
             emitter.on("x",()=>{
