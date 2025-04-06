@@ -23,18 +23,37 @@ export class FastEventScope<Events extends FastEvents = never, Types extends key
         return scopeListener
     }
     private _getScopeType(type:string){
-        return type===undefined ? '' : this.prefix + type
+        return type===undefined ? undefined : this.prefix + type
     }   
     public on<P=any>(type: string, listener: FastEventListener<P >, count?:number ): FastEventSubscriber
     public on(type: Types, listener: FastEventListener<Events[Types],Types>, count?:number ): FastEventSubscriber
     public on(type: '**', listener: FastEventListener<any>): FastEventSubscriber
     public on(): FastEventSubscriber{
-        const args:any[] = [...arguments]
-        args[0]=this._getScopeListener(args[0])
-        args[1]=this._getScopeListener(args[1])
+        const args = [...arguments] as [any,any,any]
+        args[0]    = this._getScopeType(args[0])
+        args[1]    = this._getScopeListener(args[1])
         return this.emitter.on(...args)
     }
-
-    
-
+    public once<P=any>(type: string, listener: FastEventListener<P,string>): FastEventSubscriber
+    public once(type: Types, listener: FastEventListener<Events[Types],Types> ): FastEventSubscriber
+    public once(): FastEventSubscriber{
+        return this.on(arguments[0],arguments[1],1)
+    }
+    onAny<P=any>(listener: FastEventListener<P, string>): FastEventSubscriber {
+        const type = this.prefix + '**'
+        return this.on(type,listener)
+    }   
+    offAll(){
+        this.emitter.offAll(this.prefix)
+    } 
+    off(listener: FastEventListener<any, any>):void    
+    off(type: string, listener: FastEventListener<any, any>):void
+    off(type: string):void
+    off(){
+        const args = arguments as unknown as [any,any]
+        if(typeof(args[0])==='string'){
+            args[0] = this._getScopeType(args[0])
+        }
+        this.emitter.off(...args)
+    }
 }

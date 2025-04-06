@@ -21,8 +21,7 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
     private _options        : FastEventOptions
     private _delimiter      : string = '/'
     private _context        : any
-    private _retainedEvents : Map<string,any> = new Map<string,any>()
-    private _scopePrefix    : string = ''
+    private _retainedEvents : Map<string,any> = new Map<string,any>() 
 
     constructor(options?:FastEventOptions) { 
         this._options = Object.assign({
@@ -31,8 +30,6 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
             ignoreErrors       : true
         }, options)
         this._delimiter = this._options.delimiter!
-        this._scopePrefix = this._options.scopePreifx || ''        
-        if(this._scopePrefix.length>0 && !this._scopePrefix.endsWith(this._delimiter)) this._scopePrefix+=this._delimiter
         this._context = this._options.context || this
     }
     get options(){ return this._options  }
@@ -87,28 +84,12 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
             return item === listener || item.__rawListener === listener
         }) 
     }
-    private _getScopeType(type:string){
-        return type===undefined ? '' : this._scopePrefix + type
-    }
-    private _getScopeListener(listener:FastEventListener):FastEventListener{
-        const scopePrefix = this._scopePrefix
-        if(scopePrefix.length>0) return listener
-        const scopeListener = function(payload:any,type:string){
-            if(type.endsWith(scopePrefix)){                
-                type = type.substring(scopePrefix.length-1)
-            }
-            return listener(payload,type)
-        } 
-        // 当启用scope时对监听器进行包装
-        scopeListener.__rawListener = listener
-        return scopeListener
-    }
     public on<P=any>(type: string, listener: FastEventListener<P >, count?:number ): FastEventSubscriber
     public on(type: Types, listener: FastEventListener<Events[Types],Types>, count?:number ): FastEventSubscriber
     public on(type: '**', listener: FastEventListener<any>): FastEventSubscriber
     public on(): FastEventSubscriber{
-        const type = this._getScopeType(arguments[0]) as string
-        const listener = this._getScopeListener(arguments[1]) as FastEventListener
+        const type = arguments[0] as string
+        const listener = arguments[1] as FastEventListener
         const count = arguments[2] as number
         if(type.length===0) throw new Error('event type cannot be empty')
 
@@ -148,40 +129,10 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
      * ```
      */
     onAny<P=any>(listener: FastEventListener<P, string>): FastEventSubscriber {
-        if(this._scopePrefix.length === 0){
-            const listeners = this.listeners.__listeners
-            listeners.push(listener)
-            return {
-                off:()=>this._removeListener(this.listeners,listener)
-            }
-        }else{
-            const type = this._scopePrefix + '**'
-            return this.on(type,listener)
-        }
-    }
-    /**
-     * 移除所有事件监听器
-     * @param entry - 可选的事件前缀,如果提供则只移除指定前缀下的的监听器
-     * @description 
-     * - 如果提供了prefix参数,则只清除该前缀下的所有监听器
-     * - 如果没有提供prefix,则清除所有监听器
-     * - 同时会清空保留的事件(_retainedEvents)
-     * - 重置监听器对象为空
-
-    * @example
-     * 
-     * ```ts
-     * emitter.offAll();    // 清除所有监听器
-     * emitter.offAll('a/b'); // 清除a/b下的所有监听器
-     * 
-     */
-    offAll(entry?: string) {        
-        if(entry){
-            const entryNode = this._getListenerNode(entry.split(this._delimiter))
-            if(entryNode) entryNode.__listeners = []
-            this._removeRetainedEvents(entry)
-        }else{
-           this.clear()
+        const listeners = this.listeners.__listeners
+        listeners.push(listener)
+        return {
+            off:()=>this._removeListener(this.listeners,listener)
         }
     }
     off(listener: FastEventListener<any, any>):void    
@@ -189,7 +140,7 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
     off(type: string):void
     off(){
         const args = arguments
-        const type = typeof(args[0])==='function' ? undefined : this._getScopeType(args[0])
+        const type = typeof(args[0])==='function' ? undefined : args[0]
         const listener = typeof(args[0])==='function' ? args[0] : args[1]
         const parts = type ? type.split(this._delimiter) : []
         const hasWildcard= type ? type.includes('*') : false
@@ -215,6 +166,33 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
         }
     }
  
+    /**
+     * 移除所有事件监听器
+     * @param entry - 可选的事件前缀,如果提供则只移除指定前缀下的的监听器
+     * @description 
+     * - 如果提供了prefix参数,则只清除该前缀下的所有监听器
+     * - 如果没有提供prefix,则清除所有监听器
+     * - 同时会清空保留的事件(_retainedEvents)
+     * - 重置监听器对象为空
+
+    * @example
+     * 
+     * ```ts
+     * emitter.offAll();    // 清除所有监听器
+     * emitter.offAll('a/b'); // 清除a/b下的所有监听器
+     * 
+     */
+    offAll(entry?: string) {        
+        if(entry){
+            const entryNode = this._getListenerNode(entry.split(this._delimiter))
+            if(entryNode) entryNode.__listeners = []
+            this._removeRetainedEvents(entry)
+        }else{           
+            this._retainedEvents.clear() 
+            this.listeners = { __listeners: [] } as unknown as FastListeners
+        }
+    }
+
     private _getListenerNode(parts:string[]):FastListenerNode | undefined{
         let entryNode: FastListenerNode | undefined
         this._forEachNodes(parts,(node)=>{
@@ -240,25 +218,9 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
                 this._retainedEvents.delete(key)
             }
         }
-    }
-    private _clearListenerNode(node:FastListenerNode){
-        Object.keys(node).forEach(key=>{
-            delete node[key]
-        })
-        node.__listeners = []
-    }
+    } 
     clear(){
-        if(this._scopePrefix.length>0){
-            const entryPath = this._scopePrefix.split(this._delimiter)
-            const entryNode = this._getListenerNode(entryPath)       
-            this._removeRetainedEvents(this._scopePrefix)
-            if(entryNode) this._clearListenerNode(entryNode)
-        }else{
-            this._retainedEvents.clear()
-            this._clearListenerNode(this.listeners)
-        }
-        // 为什么不直接使用this.listeners = { __listeners: [] }更快速？
-        // 因为listeners在创建scope时会共享,所以不能直接赋值，否则会影响到创建的scope
+        this.offAll()
     }
     private _emitForLastEvent(type:string){   
         if(this._retainedEvents.has(type)){
@@ -386,7 +348,7 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
     }
 
     public emit<P=any>(type:string,payload?:any,retain?:boolean):P[]{
-        const parts = this._getScopeType(type).split(this._delimiter);         
+        const parts = type.split(this._delimiter);         
         if(retain) {
             this._retainedEvents.set(type,payload)
         }   
