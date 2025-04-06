@@ -5,6 +5,7 @@
  */
 
 
+import { FastEventScope } from './scope';
 import { 
     FastEventListener,  
     FastEventOptions, 
@@ -415,16 +416,8 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
      * scope.offAll()         == emitter.offAll("a/b")
      * 
      */
-    scope(prefix:string){
-        if(!prefix || prefix.length===0) return this
-        if(!prefix.endsWith(this._delimiter)) prefix+=this._delimiter
-        const scope = new FastEvent({
-            ...this._options,
-            scopePreifx: prefix
-        })
-        // 共享侦听器表
-        scope.listeners = this.listeners
-        return scope 
+    scope(prefix:string){         
+        return new FastEventScope(this,prefix)
     }
 
 } 

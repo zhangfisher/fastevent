@@ -9,17 +9,15 @@ describe("scope", ()=>{
 
         const events:string[] =[]
         const listener = (payload:any,type:any)=>{
-            expect(type).toBe("x")
-            expect(payload).toBe(1)            
             events.push(type)
         }
         scope.on("x",listener)
         emitter.on("a/b/c/x",listener)
         scope.emit("x",1)        
-        expect(events).toEqual(["x","x"])
+        expect(events).toEqual(["x","a/b/c/x"])
     })
 
-    
+
 })
 
  

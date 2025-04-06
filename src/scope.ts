@@ -1,20 +1,18 @@
 import { FastEvent } from "./event";
 import { FastEventListener, FastEvents, FastEventSubscriber } from "./types";
 
-
-
 export class FastEventScope<Events extends FastEvents = never, Types extends keyof Events =  keyof Events>{
     constructor(public emitter:FastEvent,public prefix:string){
         if(prefix.length>0 && !prefix.endsWith(emitter.options.delimiter!)){
-            this.prefix = emitter.options.delimiter + prefix
+            this.prefix = prefix + emitter.options.delimiter
         }        
     }
     private _getScopeListener(listener:FastEventListener):FastEventListener{
         const scopePrefix = this.prefix
-        if(scopePrefix.length>0) return listener
+        if(scopePrefix.length===0) return listener
         const scopeListener = function(payload:any,type:string){
-            if(type.endsWith(scopePrefix)){                
-                type = type.substring(scopePrefix.length-1)
+            if(type.startsWith(scopePrefix)){                
+                type = type.substring(scopePrefix.length)
             }
             return listener(payload,type)
         } 
@@ -55,5 +53,19 @@ export class FastEventScope<Events extends FastEvents = never, Types extends key
             args[0] = this._getScopeType(args[0])
         }
         this.emitter.off(...args)
+    }    
+    clear(){
+        this.offAll()
     }
+    public emit<P=any>(type:string,payload?:any,retain?:boolean):P[]{
+        return this.emitter.emit(this._getScopeType(type)!,payload,retain)
+    }
+
+    public waitFor<P=any>(type:string,timeout?:number):Promise<P>{
+        return this.emitter.waitFor(this._getScopeType(type)!,timeout)
+    }
+    public scope(prefix:string){
+        return this.emitter.scope(this._getScopeType(prefix)!)
+    }
+
 }
