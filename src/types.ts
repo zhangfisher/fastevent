@@ -38,4 +38,9 @@ export type FastEventOptions = {
  
 
 export type FastEvents = Record<string,any>
+
+
+export interface IFastEvent{
+    
+}
  
