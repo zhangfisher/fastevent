@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach  } from "vitest"
+import { describe, test, expect  } from "vitest"
 import { FastEvent } from "../event"  
 
 
@@ -78,12 +78,12 @@ describe("waitfor",()=>{
         }, 100);
 
         setTimeout(() => {
-            emitter.emit('event3', 'payload3');
+            emitter.emit('event3', 'payload2');
         }, 300);
 
         // Event2 will timeout before emission
         setTimeout(() => {
-            emitter.emit('event2', 'payload2');
+            emitter.emit('event2', 'payload3');
         }, 300);
 
         // Assert
@@ -101,7 +101,7 @@ describe("waitfor",()=>{
         expect(results[1].reason).toBeInstanceOf(Error);
         
         expect(results[2].status).toBe('fulfilled');
-        expect(results[2]).toHaveProperty('value', 'payload3');
+        expect(results[2]).toHaveProperty('value', 'payload2');
     });
  
 

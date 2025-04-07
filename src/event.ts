@@ -1,10 +1,3 @@
-/**
- * 
- *  const emitter = new FastEvent<Events>()
- *  
- */
-
-
 import { FastEventScope } from './scope';
 import { 
     FastEventListener,  
@@ -12,19 +5,24 @@ import {
     FastEvents, 
     FastListeners, 
     FastListenerNode, 
-    FastEventSubscriber 
+    FastEventSubscriber, 
+    ScopeEvents,
+    FastEventMeta
 } from './types'; 
 import { isPathMatched } from './utils/isPathMatched';
 import { removeItem } from './utils/removeItem';
  
-export class FastEvent<Events extends FastEvents = never, Types extends keyof Events =  keyof Events>{
-    public listeners      : FastListeners = { __listeners: [] } as unknown as FastListeners
+export class FastEvent<
+    Events extends FastEvents  = FastEvents, 
+    Types extends keyof Events = keyof Events,
+    Meta                       = unknown
+>{
+    public listeners        : FastListeners = { __listeners: [] } as unknown as FastListeners
     private _options        : FastEventOptions
     private _delimiter      : string = '/'
     private _context        : any
     private _retainedEvents : Map<string,any> = new Map<string,any>() 
-
-    constructor(options?:FastEventOptions) { 
+    constructor(options?:FastEventOptions<Meta>) { 
         this._options = Object.assign({
             delimiter          : '/',
             context            : null,
@@ -34,10 +32,12 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
         this._context = this._options.context || this
     }
     get options(){ return this._options  }
-
     private _addListener(parts:string[],listener:FastEventListener<any,any>,count?:number):FastListenerNode | undefined{
         return this._forEachNodes(parts,(node)=>{
             node.__listeners.push(count && count >0 ? [listener,count]: listener)
+            if(typeof(this._options.onAddListener)==='function'){
+                this._options.onAddListener(parts,listener)
+            }
         }) 
     }
     /**
@@ -77,20 +77,23 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
      * @param listener - 需要移除的事件监听器
      * @description 遍历节点的监听器列表,移除所有匹配的监听器。支持移除普通函数和数组形式的监听器
      */
-    private _removeListener(node: FastListenerNode, listener: FastEventListener): void {
+    private _removeListener(node: FastListenerNode, path:string[],listener: FastEventListener<any,any,any>): void {
         if(!listener) return 
         removeItem(node.__listeners,(item:any)=>{
             item =  Array.isArray(item) ? item[0] : item 
-                // @ts-ignore
-            return item === listener || item.__rawListener === listener
+            const isRemove = item === listener 
+            if(isRemove && typeof(this._options.onRemoveListener)==='function'){
+                this._options.onRemoveListener(path,listener)
+            }
+            return isRemove
         }) 
     }
-    public on<P=any>(type: string, listener: FastEventListener<P >, count?:number ): FastEventSubscriber
-    public on(type: Types, listener: FastEventListener<Events[Types],Types>, count?:number ): FastEventSubscriber
-    public on(type: '**', listener: FastEventListener<any>): FastEventSubscriber
+    public on<T extends string>(type: T, listener: FastEventListener<T,Events[T],Meta>, count?:number ): FastEventSubscriber
+    public on<T extends Types=Types>(type: T, listener: FastEventListener<Types,Events[T],Meta>, count?:number ): FastEventSubscriber
+    public on<P=any>(type: '**', listener: FastEventListener<Types,P,Meta>): FastEventSubscriber
     public on(): FastEventSubscriber{
         const type = arguments[0] as string
-        const listener = arguments[1] as FastEventListener
+        const listener = arguments[1] as FastEventListener 
         const count = arguments[2] as number
         if(type.length===0) throw new Error('event type cannot be empty')
 
@@ -105,12 +108,12 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
         if(node && !type.includes('*')) this._emitForLastEvent(type) 
 
         return {
-            off: ()=>node && this._removeListener(node,listener)
+            off: ()=>node && this._removeListener(node,parts,listener)
         }
     } 
 
-    public once<P=any>(type: string, listener: FastEventListener<P,string>): FastEventSubscriber
-    public once(type: Types, listener: FastEventListener<Events[Types],Types> ): FastEventSubscriber
+    public once<T extends string>(type: T, listener: FastEventListener<T,Events[T],Meta> ): FastEventSubscriber
+    public once<T extends Types=Types>(type: T, listener: FastEventListener<Types,Events[T],Meta> ): FastEventSubscriber
     public once(): FastEventSubscriber{
         return this.on(arguments[0],arguments[1],1)
     }
@@ -129,16 +132,19 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
      * subscriber.off();
      * ```
      */
-    onAny<P=any>(listener: FastEventListener<P, string>): FastEventSubscriber {
+    onAny<P=any>(listener: FastEventListener<string,P,Meta>): FastEventSubscriber {
         const listeners = this.listeners.__listeners
         listeners.push(listener)
         return {
-            off:()=>this._removeListener(this.listeners,listener)
+            off:()=>this._removeListener(this.listeners,[],listener)
         }
     }
-    off(listener: FastEventListener<any, any>):void    
-    off(type: string, listener: FastEventListener<any, any>):void
+
+    off(listener: FastEventListener<any, any, any>):void    
+    off(type: string, listener: FastEventListener<any, any, any>):void
+    off(type: Types, listener: FastEventListener<any, any, any>):void
     off(type: string):void
+    off(type: Types):void
     off(){
         const args = arguments
         const type = typeof(args[0])==='function' ? undefined : args[0]
@@ -148,7 +154,7 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
         if(type && !hasWildcard){
             this._traverseToPath(this.listeners,parts,(node)=>{
                 if(listener){ // 只删除指定的监听器
-                    this._removeListener(node,listener)
+                    this._removeListener(node,parts,listener)
                 }else if(type){
                     node.__listeners=[]
                 }
@@ -158,7 +164,7 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
             this._traverseListeners(this.listeners,entryParts,(path,node)=>{       
                 if(listener!==undefined || (hasWildcard && isPathMatched(path,parts))){
                     if(listener){
-                        this._removeListener(node,listener)
+                        this._removeListener(node,parts,listener)
                     }else{
                         node.__listeners=[]
                     }        
@@ -223,15 +229,19 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
     clear(){
         this.offAll()
     }
+    private _getMeta(extra:Record<string,any>){
+        if(!this._options.meta) return extra
+        return Object.assign({},this._options.meta,extra) as FastEventMeta<any,any>       
+    }
     private _emitForLastEvent(type:string){   
         if(this._retainedEvents.has(type)){
             const payload = this._retainedEvents.get(type)
             const parts = type.split(this._delimiter);            
             this._traverseToPath(this.listeners,parts,(node)=>{  
-                this._executeListeners(node,payload,type)
+                this._executeListeners(node,payload,this._getMeta({type}))
             }) 
             // onAny侦听器保存在根节点中，所以需要执行
-            this._executeListeners(this.listeners,payload,type)
+            this._executeListeners(this.listeners,payload,this._getMeta({type}))
         }        
     }
 
@@ -296,13 +306,17 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
         traverseNodes(entryNode, callback,[]);
     }        
 
-    private _executeListener(listener:any,payload:any,type:string):any{
+    private _executeListener(listener:any, payload: any,meta: FastEventMeta<any,any> ):any{
         try{
-            return listener.call(this._context,payload,type)
+            if(typeof(listener.__wrappedListener)==='function'){
+                return listener.__wrappedListener.call(this._context,payload,meta)
+            }else{
+                return listener.call(this._context,payload,meta)
+            }
         }catch(e:any){
-            e._listener = type
+            e._trigger = meta.type
             if(typeof(this._options.onListenerError)==='function'){
-                this._options.onListenerError.call(this,type,e)
+                this._options.onListenerError.call(this,meta.type,e)
             }
             // 如果忽略错误，则返回错误对象
             if(this._options.ignoreErrors){
@@ -326,7 +340,7 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
      * - 对于普通监听器，直接执行并收集结果
      * - 对于带次数限制的监听器(数组形式)，执行后递减次数，当次数为0时移除该监听器
      */
-    private _executeListeners(node: FastListenerNode, payload: any, type: string): any[] {
+    private _executeListeners(node: FastListenerNode, payload: any, meta: Meta): any[] {
         if (!node || !node.__listeners) return []
         let i = 0
         const listeners = node.__listeners
@@ -334,36 +348,50 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
         while(i<listeners.length){
             const listener = listeners[i]
             if(Array.isArray(listener)){
-                result.push(this._executeListener(listener[0],payload,type))                
+                result.push(this._executeListener(listener[0],payload,meta))                
                 listener[1]-- 
                 if(listener[1]===0) {
                     listeners.splice(i,1)
                     i-- // 抵消后面的i++
                 }
             }else{
-                result.push(this._executeListener(listener,payload,type))                
+                result.push(this._executeListener(listener,payload,meta))                
             }  
             i++            
         }
         return result
     }
 
-    public emit<P=any>(type:string,payload?:any,retain?:boolean):P[]{
+    public emit<R=any>(type:string,payload?:any,retain?:boolean,meta?:Meta):R[]
+    public emit<R=any>(type:Types,payload?:Events[Types],retain?:boolean,meta?:Meta):R[]
+    public emit<R=any>():R[]{
+        const type = arguments[0] as string
+        const payload = arguments[1] as any
+        const retain = arguments[2] as boolean
+        const meta = (arguments[3] || {}) as Meta
+
         const parts = type.split(this._delimiter);         
         if(retain) {
             this._retainedEvents.set(type,payload)
         }   
         const results:any[] = []
         this._traverseToPath(this.listeners,parts,(node)=>{  
-            results.push(...this._executeListeners(node,payload,type))
+            results.push(...this._executeListeners(node,payload,this._getMeta({...meta,type})))
         })        
         // onAny侦听器保存在根节点中，所以需要执行 
-        results.push(...this._executeListeners(this.listeners,payload,type))
+        results.push(...this._executeListeners(this.listeners,payload,this._getMeta({...meta,type})))
         return results
     }
 
-    public async emitAsync<P=any>(type:string,payload?:any,retain?:boolean):Promise<[P|Error][]>{
-        const results = await Promise.allSettled(this.emit<P>(type,payload,retain))
+    public async emitAsync<R=any>(type:string,payload?:any,retain?:boolean,meta?:Meta):Promise<[R|Error][]>
+    public async emitAsync<R=any>(type:Types,payload?:Events[Types],retain?:boolean,meta?:Meta):Promise<[R|Error][]>
+    public async emitAsync<P=any>():Promise<[P|Error][]>{
+        const type = arguments[0] as string
+        const payload = arguments[1] as any
+        const retain = arguments[2] as boolean
+        const meta = (arguments[3] || {}) as Meta
+
+        const results = await Promise.allSettled(this.emit<P>(type,payload,retain,this._getMeta({...meta,type})))
         return results.map((result)=>{
             if(result.status==='fulfilled'){
                 return result.value
@@ -379,8 +407,12 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
      * @param type 
      * @param timeout  超时时间，单位毫秒，默认为 0，表示无限等待
      */
-    public waitFor<P=any>(type:string,timeout?:number):Promise<P>{
-        return new Promise<P>((resolve,reject)=>{
+    public waitFor<R=any>(type:string,timeout?:number):Promise<R>
+    public waitFor<R=any>(type:Types,timeout?:number):Promise<R>
+    public waitFor<R=any>():Promise<R>{
+        const type = arguments[0] as string
+        const timeout = arguments[1] as number
+        return new Promise<R>((resolve,reject)=>{
             let tid:any
             let subscriber:FastEventSubscriber
             const listener = (payload:any)=>{
@@ -416,8 +448,8 @@ export class FastEvent<Events extends FastEvents = never, Types extends keyof Ev
      * scope.offAll()         == emitter.offAll("a/b")
      * 
      */
-    scope(prefix:string){         
-        return new FastEventScope(this,prefix)
+    scope<T extends string>(prefix:T){         
+        return new FastEventScope<ScopeEvents<Events,T>>(this as unknown as FastEvent<ScopeEvents<Events,T>>,prefix)
     }
 
 } 

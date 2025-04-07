@@ -1,44 +1,38 @@
 import { Bench } from 'tinybench';
 import { FastEvent } from '../event';
-import { EventEmitter2 } from 'eventemitter2';
-import { FlexEvent } from 'flex-tools/events/flexEvent';
+import { EventEmitter2 } from 'eventemitter2'; 
  
 
 const bench = new Bench({ 
-  time: 2000, 
-  iterations: 200,  
+  time: 1000, 
+  iterations: 100,  
 });
+const fastEmitter = new FastEvent()
+const emitter2 = new EventEmitter2({
+  wildcard: true,
+  delimiter: '.'
+})
 
 bench
   .add('[FastEvent] 多级路径事件的发布与订阅', () => { 
     return new Promise<void>((resolve) => {
-      const emitter = new FastEvent()
-      emitter.on('a.b.c.d.e.f', () => {
+      const subscriber = fastEmitter.on('a/b/c/d/e/f', () => {
         resolve()
       })  
-      emitter.emit('a.b.c.d.e.f', 1)
+      fastEmitter.emit('a/b/c/d/e/f', 1)
+      subscriber.off()
     })
   })
   .add('[EventEmitter2] 多级路径事件的发布与订阅', () => { 
-    return new Promise<void>((resolve) => {
-      const emitter = new EventEmitter2({
-        wildcard: true
-      })
-      emitter.on('a.b.c.d.e.f', () => {
+    return new Promise<void>((resolve) => { 
+      const subscriber = emitter2.on('a.b.c.d.e.f', () => {
         resolve()
-      })  
-      emitter.emit('a.b.c.d.e.f', 1)
+      },{objectify:true})  
+      emitter2.emit('a.b.c.d.e.f', 1)      
+      // @ts-ignore
+      subscriber.off()
     })
-  })
-  .add('[FlexEvent] 多级路径事件的发布与订阅', () => { 
-    return new Promise<void>((resolve) => {
-      const emitter = new FlexEvent()
-      emitter.on('a.b.c.d.e.f', () => {
-        resolve()
-      })  
-      emitter.emit('a.b.c.d.e.f', 1)
-    })
-  });
+  }) ;
 // 
 (async () => {
   await bench.run();     

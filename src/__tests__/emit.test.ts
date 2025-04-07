@@ -4,7 +4,7 @@ import { FastEvent } from "../event"
 describe("简单发布与订阅",async ()=>{
     test("简单发布订阅事件",()=>{
         const emitter = new FastEvent() 
-        emitter.on("x",(payload,type)=>{
+        emitter.on("x",(payload,{type})=>{
             expect(type).toBe("x")
             expect(payload).toBe(1)            
         })
@@ -13,7 +13,7 @@ describe("简单发布与订阅",async ()=>{
     test("简单发布订阅事件后取消",()=>{
         const emitter = new FastEvent()         
         const events:string[]=[]
-        const subscriber = emitter.on("x",(payload,type)=>{
+        const subscriber = emitter.on("x",(payload,{type})=>{
             expect(type).toBe("x")
             expect(payload).toBe(1)                    
             events.push(type)    
@@ -29,7 +29,7 @@ describe("简单发布与订阅",async ()=>{
     test("发布订阅层级事件",()=>{
         const emitter = new FastEvent() 
         const events:string[]=[]
-        emitter.on("a.b.c",(payload,type)=>{
+        emitter.on("a.b.c",(payload,{type})=>{
             expect(type).toBe("a.b.c")
             expect(payload).toBe(1)                                 
             events.push(type)       
@@ -74,7 +74,7 @@ describe("简单发布与订阅",async ()=>{
         }
         expect(()=>emitter.emit("x",1)).toThrow(err);
         // @ts-ignore,  当执行侦听器出错时会在错误对象上挂载一个_listener属性代表当前执行的侦听器路径
-        expect(err._listener).toBe("x")
+        expect(err._trigger).toBe("x")
         
     })
 }) 

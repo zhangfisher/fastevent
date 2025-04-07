@@ -5,7 +5,7 @@ describe("异步发布与订阅",async ()=>{
     test("异步发布订阅事件",async ()=>{
         const emitter = new FastEvent() 
         const events: any[] = []
-        emitter.on("x",async (payload,type)=>{
+        emitter.on("x",async (payload,{type})=>{
             events.push({type, payload})           
         })
         await emitter.emitAsync("x",1)
@@ -15,7 +15,7 @@ describe("异步发布与订阅",async ()=>{
     test("异步发布订阅事件后取消",async ()=>{
         const emitter = new FastEvent()         
         const events:string[]=[]
-        const subscriber = emitter.on("x",async (payload,type)=>{
+        const subscriber = emitter.on("x",async (payload,{type})=>{
             events.push(type)    
         })
         await emitter.emitAsync("x",1)
@@ -29,7 +29,7 @@ describe("异步发布与订阅",async ()=>{
     test("发布订阅层级事件",async ()=>{
         const emitter = new FastEvent() 
         const events:string[]=[]
-        emitter.on("a.b.c",async (payload,type)=>{
+        emitter.on("a.b.c",async (payload,{type})=>{
             events.push(type)       
         })
         await emitter.emitAsync("a",1)

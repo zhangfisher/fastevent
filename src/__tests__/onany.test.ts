@@ -9,26 +9,26 @@ describe("订阅所有事件", ()=>{
         const allValues:number[]=[]
         const events:string[] =[]
         const values:number[]=[]
-        emitter.onAny((payload,type)=>{                
+        emitter.onAny((payload,{type})=>{                
             allEvents.push(type)
             allValues.push(payload)
         })
-        emitter.on("a",(payload,type)=>{
+        emitter.on("a",(payload,{type})=>{
             expect(type).toBe("a")
             values.push(payload)
             events.push(type)
         })
-        emitter.on("b",(payload,type)=>{
+        emitter.on("b",(payload,{type})=>{
             expect(type).toBe("b")
             values.push(payload)
             events.push(type)
         })
-        emitter.on("c",(payload,type)=>{
+        emitter.on("c",(payload,{type})=>{
             expect(type).toBe("c")
             values.push(payload)
             events.push(type)
         })
-        emitter.on("d",(payload,type)=>{
+        emitter.on("d",(payload,{type})=>{
             expect(type).toBe("d")
             values.push(payload)
             events.push(type)
@@ -50,26 +50,26 @@ describe("订阅所有事件", ()=>{
         const allValues:number[]=[]
         const events:string[] =[]
         const values:number[]=[]
-        emitter.on("**",(payload,type)=>{                
+        emitter.on("**",(payload,{type})=>{                
             allEvents.push(type)
             allValues.push(payload)
         })
-        emitter.on("a",(payload,type)=>{
+        emitter.on("a",(payload,{type})=>{
             expect(type).toBe("a")
             values.push(payload)
             events.push(type)
         })
-        emitter.on("b",(payload,type)=>{
+        emitter.on("b",(payload,{type})=>{
             expect(type).toBe("b")
             values.push(payload)
             events.push(type)
         })
-        emitter.on("c",(payload,type)=>{
+        emitter.on("c",(payload,{type})=>{
             expect(type).toBe("c")
             values.push(payload)
             events.push(type)
         })
-        emitter.on("d",(payload,type)=>{
+        emitter.on("d",(payload,{type})=>{
             expect(type).toBe("d")
             values.push(payload)
             events.push(type)
@@ -91,26 +91,26 @@ describe("订阅所有事件", ()=>{
         const allValues:number[]=[]
         const events:string[] =[]
         const values:number[]=[]
-        emitter.onAny((payload,type)=>{                
+        emitter.onAny((payload,{type})=>{                
             allEvents.push(type)
             allValues.push(payload)
         })
-        emitter.on("a.x.y",(payload,type)=>{
+        emitter.on("a.x.y",(payload,{type})=>{
             expect(type).toBe("a.x.y")
             values.push(payload)
             events.push(type)
         })
-        emitter.on("b.m.n",(payload,type)=>{
+        emitter.on("b.m.n",(payload,{type})=>{
             expect(type).toBe("b.m.n")
             values.push(payload)
             events.push(type)
         })
-        emitter.on("c.o.p",(payload,type)=>{
+        emitter.on("c.o.p",(payload,{type})=>{
             expect(type).toBe("c.o.p")
             values.push(payload)
             events.push(type)
         })
-        emitter.on("d.q.r",(payload,type)=>{
+        emitter.on("d.q.r",(payload,{type})=>{
             expect(type).toBe("d.q.r")
             values.push(payload)
             events.push(type)
@@ -132,26 +132,26 @@ describe("订阅所有事件", ()=>{
         const allValues:number[]=[]
         const events:string[] =[]
         const values:number[]=[]
-        const subscriber = emitter.onAny((payload,type)=>{                
+        const subscriber = emitter.onAny((payload,{type})=>{                
             allEvents.push(type)
             allValues.push(payload)
         })
-        emitter.on("a",(payload,type)=>{
+        emitter.on("a",(payload,{type})=>{
             expect(type).toBe("a")
             values.push(payload)
             events.push(type)
         })
-        emitter.on("b",(payload,type)=>{
+        emitter.on("b",(payload,{type})=>{
             expect(type).toBe("b")
             values.push(payload)
             events.push(type)
         })
-        emitter.on("c",(payload,type)=>{
+        emitter.on("c",(payload,{type})=>{
             expect(type).toBe("c")
             values.push(payload)
             events.push(type)
         })
-        emitter.on("d",(payload,type)=>{
+        emitter.on("d",(payload,{type})=>{
             expect(type).toBe("d")
             values.push(payload)
             events.push(type)

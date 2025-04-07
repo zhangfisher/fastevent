@@ -5,7 +5,7 @@ describe("只订阅一次的事件的发布与订阅",async ()=>{
     test("简单发布只订阅一次事件",()=>{
         const emitter = new FastEvent() 
         const events:string[] =[]
-        emitter.once("x",(payload,type)=>{
+        emitter.once("x",(payload,{type})=>{
             expect(type).toBe("x")
             expect(payload).toBe(1)            
             events.push(type)
@@ -19,7 +19,7 @@ describe("只订阅一次的事件的发布与订阅",async ()=>{
     test("简单发布只订阅一次事件后取消",()=>{
         const emitter = new FastEvent()         
         const events:string[]=[]
-        const subscriber = emitter.once("x",(payload,type)=>{
+        const subscriber = emitter.once("x",(payload,{type})=>{
             expect(type).toBe("x")
             expect(payload).toBe(1)                    
             events.push(type)    
@@ -33,7 +33,7 @@ describe("只订阅一次的事件的发布与订阅",async ()=>{
     test("简单发布只订阅一次的多级事件",()=>{
         const emitter = new FastEvent() 
         const events:string[] =[]
-        emitter.once("a.b.c.d",(payload,type)=>{
+        emitter.once("a.b.c.d",(payload,{type})=>{
             expect(type).toBe("a.b.c.d")
             expect(payload).toBe(1)            
             events.push(type)
@@ -48,12 +48,12 @@ describe("只订阅一次的事件的发布与订阅",async ()=>{
         const emitter = new FastEvent() 
         const events:string[] =[]
         const values:number[]=[]
-        emitter.once("a.b.c.d",(payload,type)=>{
+        emitter.once("a.b.c.d",(payload,{type})=>{
             expect(type).toBe("a.b.c.d")
             values.push(payload)
             events.push(type)
         })
-        emitter.on("a.b.c.d",(payload,type)=>{
+        emitter.on("a.b.c.d",(payload,{type})=>{
             expect(type).toBe("a.b.c.d")
             values.push(payload)
             events.push(type)

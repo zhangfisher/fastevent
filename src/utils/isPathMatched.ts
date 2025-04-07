@@ -26,7 +26,6 @@ export function isPathMatched(path:string[],pattern:string[]):boolean{
             length: path.length-pattern.length+1
         }).fill('*'))
     }
-
     for(let i=0;i<path.length;i++){
         if(fPattern[i]==='*'){
             continue
@@ -34,7 +33,6 @@ export function isPathMatched(path:string[],pattern:string[]):boolean{
         if(fPattern[i]!==path[i]){
             return false
         }
-        
     }
     return true
 }

@@ -1,8 +1,12 @@
 import { FastEvent } from "./event";
 import { FastEventListener, FastEvents, FastEventSubscriber } from "./types";
 
-export class FastEventScope<Events extends FastEvents = never, Types extends keyof Events =  keyof Events>{
-    constructor(public emitter:FastEvent,public prefix:string){
+export class FastEventScope<
+    Events extends FastEvents  = FastEvents, 
+    Types extends keyof Events = keyof Events,
+    Meta                       = unknown
+>{
+    constructor(public emitter:FastEvent<Events,Types,Meta>,public prefix:string){
         if(prefix.length>0 && !prefix.endsWith(emitter.options.delimiter!)){
             this.prefix = prefix + emitter.options.delimiter
         }        
@@ -10,43 +14,49 @@ export class FastEventScope<Events extends FastEvents = never, Types extends key
     private _getScopeListener(listener:FastEventListener):FastEventListener{
         const scopePrefix = this.prefix
         if(scopePrefix.length===0) return listener
-        const scopeListener = function(payload:any,type:string){
+        const scopeListener = function(payload:any,{type}:{type:string}){
             if(type.startsWith(scopePrefix)){                
                 type = type.substring(scopePrefix.length)
             }
-            return listener(payload,type)
+            return listener(payload,{type})
         } 
         // 当启用scope时对监听器进行包装
-        scopeListener.__rawListener = listener
-        return scopeListener
+        //@ts-ignore
+        listener.__wrappedListener = scopeListener
+        return listener
     }
     private _getScopeType(type:string){
         return type===undefined ? undefined : this.prefix + type
-    }   
-    public on<P=any>(type: string, listener: FastEventListener<P >, count?:number ): FastEventSubscriber
-    public on(type: Types, listener: FastEventListener<Events[Types],Types>, count?:number ): FastEventSubscriber
-    public on(type: '**', listener: FastEventListener<any>): FastEventSubscriber
+    }    
+    
+    public on<T extends string>(type: T, listener: FastEventListener<T,Events[T],Meta>, count?:number ): FastEventSubscriber    
+    public on<T extends Types=Types>(type: T, listener: FastEventListener<T,Events[T],Meta>, count?:number ): FastEventSubscriber    
+    public on(type: '**', listener: FastEventListener<any,any,Meta>): FastEventSubscriber
     public on(): FastEventSubscriber{
         const args = [...arguments] as [any,any,any]
         args[0]    = this._getScopeType(args[0])
         args[1]    = this._getScopeListener(args[1])
         return this.emitter.on(...args)
     }
-    public once<P=any>(type: string, listener: FastEventListener<P,string>): FastEventSubscriber
-    public once(type: Types, listener: FastEventListener<Events[Types],Types> ): FastEventSubscriber
+
+    public once<T extends string>(type: T, listener: FastEventListener<T,Events[T],Meta> ): FastEventSubscriber
+    public once<T extends Types = Types>(type: T, listener: FastEventListener<Types,Events[T],Meta> ): FastEventSubscriber    
     public once(): FastEventSubscriber{
         return this.on(arguments[0],arguments[1],1)
     }
-    onAny<P=any>(listener: FastEventListener<P, string>): FastEventSubscriber {
+
+    onAny<P=any>(listener: FastEventListener<Types,P,Meta>): FastEventSubscriber {
         const type = this.prefix + '**'
-        return this.on(type,listener)
+        return this.on(type as any,listener)
     }   
     offAll(){
         this.emitter.offAll(this.prefix)
     } 
-    off(listener: FastEventListener<any, any>):void    
-    off(type: string, listener: FastEventListener<any, any>):void
+    off(listener: FastEventListener<any, any,any>):void    
+    off(type: string, listener: FastEventListener<any, any, any>):void
+    off(type: Types, listener: FastEventListener<any, any, any>):void
     off(type: string):void
+    off(type: Types):void
     off(){
         const args = arguments as unknown as [any,any]
         if(typeof(args[0])==='string'){
@@ -57,15 +67,22 @@ export class FastEventScope<Events extends FastEvents = never, Types extends key
     clear(){
         this.offAll()
     }
-    public emit<P=any>(type:string,payload?:any,retain?:boolean):P[]{
+    public emit<R=any>(type:string,payload?:any,retain?:boolean):R[]
+    public emit<R=any>(type:Types,payload?:Events[Types],retain?:boolean):R[]
+    public emit<R=any>():R[]{
+        const type = arguments[0] as string
+        const payload = arguments[1] 
+        const retain = arguments[2] as boolean
         return this.emitter.emit(this._getScopeType(type)!,payload,retain)
     }
-
-    public waitFor<P=any>(type:string,timeout?:number):Promise<P>{
+    public waitFor<R=any>(type:string,timeout?:number):Promise<R>
+    public waitFor<R=any>(type:Types,timeout?:number):Promise<R>
+    public waitFor<R=any>():Promise<R>{
+        const type = arguments[0] as string
+        const timeout = arguments[1] as number
         return this.emitter.waitFor(this._getScopeType(type)!,timeout)
     }
     public scope(prefix:string){
         return this.emitter.scope(this._getScopeType(prefix)!)
     }
-
 }

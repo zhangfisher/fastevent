@@ -6,7 +6,7 @@ describe("退订事件", ()=>{
     test("基本退订事件",()=>{
         const emitter = new FastEvent() 
         const events:string[] =[]
-        const subscriber  = emitter.on("x",(payload,type)=>{
+        const subscriber  = emitter.on("x",(payload,{type})=>{
             expect(type).toBe("x")
             expect(payload).toBe(1)            
             events.push(type)
@@ -19,7 +19,7 @@ describe("退订事件", ()=>{
     test("根据事件类型和侦听器进行退订",()=>{
         const emitter = new FastEvent() 
         const events:string[] =[]
-        const listener =(payload:any,type:string)=>{
+        const listener =(payload:any,{type}:{type:string})=>{
             expect(type).toBe("x")
             expect(payload).toBe(1)            
             events.push(type)
@@ -33,7 +33,7 @@ describe("退订事件", ()=>{
     test("多级事件根据事件类型和侦听器进行退订",()=>{
         const emitter = new FastEvent() 
         const events:string[] =[]
-        const listener =(payload:any,type:string)=>{
+        const listener =(payload:any,{type}:{type:string})=>{
             expect(type).toBe("a/b/c/d")
             expect(payload).toBe(1)            
             events.push(type)
@@ -50,7 +50,7 @@ describe("退订事件", ()=>{
     test("通配符事件退订",()=>{
         const emitter = new FastEvent() 
         const events:string[] =[]
-        const listener =(payload:any,type:string)=>{
+        const listener =(payload:any,{type}:{type:string})=>{
             expect(type).toBe("a/b/c/d")
             expect(payload).toBe(1)            
             events.push(type)
@@ -67,7 +67,7 @@ describe("退订事件", ()=>{
     test("退订指定的侦听器",()=>{
         const emitter = new FastEvent() 
         const events:string[] =[]
-        const listener =( payload:any, type:string )=>{
+        const listener =( payload:any,{type}:{type:string} )=>{
             expect(type).toBe("a/b/c/d")
             expect(payload).toBe(1)            
             events.push(type)
@@ -87,7 +87,7 @@ describe("退订事件", ()=>{
     test("退订指定的事件时不指定侦听器",()=>{
         const emitter = new FastEvent() 
         const events:string[] =[]
-        const listener =( payload:any, type:string )=>{
+        const listener =( payload:any,{type}:{type:string} )=>{
             events.push(type)
         }
         emitter.on("a",listener)
@@ -108,7 +108,7 @@ describe("退订事件", ()=>{
     test("退订所有侦听器",()=>{
         const emitter = new FastEvent() 
         const events:string[] =[]
-        const listener =( payload:any, type:string )=>{
+        const listener =( payload:any,{type}:{type:string} )=>{
             events.push(type)
         }
         emitter.on("a",listener)
@@ -133,7 +133,7 @@ describe("退订事件", ()=>{
     test("退订含通配符的事件",()=>{
         const emitter = new FastEvent() 
         const events:string[] =[]
-        const listener =( payload:any, type:string )=>{
+        const listener =( payload:any,{type}:{type:string} )=>{
             events.push(type)
         }
         emitter.on("a",listener)
@@ -158,7 +158,7 @@ describe("退订事件", ()=>{
     test("退订含通配符的事件",()=>{
         const emitter = new FastEvent() 
         const events:string[] =[]
-        const listener =( payload:any, type:string )=>{
+        const listener =( payload:any,{type}:{type:string} )=>{
             events.push(type)
         }
         emitter.on("a/*",listener)
@@ -180,7 +180,7 @@ describe("退订事件", ()=>{
     test("退订多层含通配符的事件",()=>{
         const emitter = new FastEvent() 
         const events:string[] =[]
-        const listener =( payload:any, type:string )=>{
+        const listener =( payload:any,{type}:{type:string} )=>{
             events.push(type)
         }
         emitter.on("a/*",listener)

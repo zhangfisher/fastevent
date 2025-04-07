@@ -9,17 +9,17 @@ describe("基于通配符的发布与订阅",async ()=>{
         const emitter = new FastEvent() 
         const events:string[]=[]
         const subscribers:FastEventSubscriber[]=[]
-        subscribers.push(emitter.on("*/*/*",(payload,type)=>{
+        subscribers.push(emitter.on("*/*/*",(payload,{type})=>{
             expect(type).toBe("a/b/c")
             expect(payload).toBe(1)
             events.push(type)
         }))
-        subscribers.push(emitter.on("a/*/*",(payload,type)=>{
+        subscribers.push(emitter.on("a/*/*",(payload,{type})=>{
             expect(type).toBe("a/b/c")
             expect(payload).toBe(1)
             events.push(type)
         }))
-        subscribers.push(emitter.on("a/b/*",(payload,type)=>{
+        subscribers.push(emitter.on("a/b/*",(payload,{type})=>{
             expect(type).toBe("a/b/c")
             expect(payload).toBe(1)
             events.push(type)
@@ -36,7 +36,7 @@ describe("基于通配符的发布与订阅",async ()=>{
         const emitter = new FastEvent() 
         const events:string[]=[]
         const subscribers:FastEventSubscriber[]=[]
-        subscribers.push(emitter.on("*/*/*",(payload,type)=>{
+        subscribers.push(emitter.on("*/*/*",(payload,{type})=>{
             expect(type).toBe("a/b/c")
             expect(payload).toBe(1)
             events.push(type)
@@ -50,7 +50,7 @@ describe("基于通配符的发布与订阅",async ()=>{
         const emitter = new FastEvent() 
         const events:string[]=[]
         const subscribers:FastEventSubscriber[]=[]
-        subscribers.push(emitter.on("a/*/*",(payload,type)=>{
+        subscribers.push(emitter.on("a/*/*",(payload,{type})=>{
             expect(type).toBe("a/b/c")
             expect(payload).toBe(1)
             events.push(type)
@@ -62,7 +62,7 @@ describe("基于通配符的发布与订阅",async ()=>{
         const emitter = new FastEvent() 
         const events:string[]=[]
         const subscribers:FastEventSubscriber[]=[]
-        subscribers.push(emitter.on("a/b/*",(payload,type)=>{
+        subscribers.push(emitter.on("a/b/*",(payload,{type})=>{
             expect(type).toBe("a/b/c")
             expect(payload).toBe(1)
             events.push(type)
@@ -75,17 +75,17 @@ describe("基于通配符的发布与订阅",async ()=>{
         const emitter = new FastEvent() 
         const events:string[]=[]
         const subscribers:FastEventSubscriber[]=[]
-        subscribers.push(emitter.on("*/*/*",(payload,type)=>{
+        subscribers.push(emitter.on("*/*/*",(payload,{type})=>{
             expect(type).toBe("a/b/c")
             expect(payload).toBe(1)
             events.push(type)
         }))
-        subscribers.push(emitter.on("*/*/c",(payload,type)=>{
+        subscribers.push(emitter.on("*/*/c",(payload,{type})=>{
             expect(type).toBe("a/b/c")
             expect(payload).toBe(1)
             events.push(type)
         }))
-        subscribers.push(emitter.on("*/b/c",(payload,type)=>{
+        subscribers.push(emitter.on("*/b/c",(payload,{type})=>{
             expect(type).toBe("a/b/c")
             expect(payload).toBe(1)
             events.push(type)
@@ -101,7 +101,7 @@ describe("基于通配符的发布与订阅",async ()=>{
         const emitter = new FastEvent() 
         const events:string[]=[]
         const subscribers:FastEventSubscriber[]=[]
-        subscribers.push(emitter.on("*/b/c",(payload,type)=>{
+        subscribers.push(emitter.on("*/b/c",(payload,{type})=>{
             expect(type).toBe("a/b/c")
             expect(payload).toBe(1)
             events.push(type)
@@ -113,7 +113,7 @@ describe("基于通配符的发布与订阅",async ()=>{
         const emitter = new FastEvent() 
         const events:string[]=[]
         const subscribers:FastEventSubscriber[]=[]
-        subscribers.push(emitter.on("*/b/*/d/*/f",(payload,type)=>{
+        subscribers.push(emitter.on("*/b/*/d/*/f",(payload,{type})=>{
             events.push(type)
         }))
         emitter.emit("1/b/1/d/1/f",1)
@@ -137,7 +137,7 @@ describe("基于通配符的发布与订阅",async ()=>{
         const emitter = new FastEvent() 
         const payloads:number[]=[]
         const events:string[]=[]
-        emitter.on("a/**",(payload,type)=>{
+        emitter.on("a/**",(payload,{type})=>{
             events.push(type)
             payloads.push(payload)            
         })         
@@ -149,7 +149,7 @@ describe("基于通配符的发布与订阅",async ()=>{
         const emitter = new FastEvent() 
         const payloads:number[]=[]
         const events:string[]=[]
-        emitter.on("a/**",(payload,type)=>{
+        emitter.on("a/**",(payload,{type})=>{
             events.push(type)
             payloads.push(payload)            
         })
@@ -166,11 +166,11 @@ describe("基于通配符的发布与订阅",async ()=>{
         const emitter = new FastEvent() 
         const payloads:number[]=[]
         const events:string[]=[]
-        emitter.on("a/**",(payload,type)=>{
+        emitter.on("a/**",(payload,{type})=>{
             events.push(type)
             payloads.push(payload)            
         })
-        emitter.on("a/b/*",(payload,type)=>{
+        emitter.on("a/b/*",(payload,{type})=>{
             events.push(type)
             payloads.push(payload)            
         })       

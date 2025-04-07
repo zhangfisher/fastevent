@@ -2,26 +2,34 @@
   "name": "fastevent",
   "version": "0.0.1",
   "description": "fast event emitter",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
   "private": false,
   "access": "public",
+  "homepage": "https://github.com/zhangfisher/fastevent.git",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zhangfisher/fastevent.git"
+  },
   "scripts": {
     "test": "vitest",
     "test:coverage": "vitest --coverage",
     "build": "tsup",
-    "bench": "tsx src/__benchmarks__/index.ts"
+    "bench": "tsx src/__benchmarks__/index.ts",
+    "changeset": "changeset",
+    "release": "pnpm build && changeset version && changeset publish"
   },
   "keywords": [
     "eventemitter"
   ],
-  "author": "",
-  "license": "ISC",
+  "author": "zhangfisher",
+  "license": "MIT",
   "devDependencies": {
+    "@changesets/cli": "^2.28.1",
+    "@swc/core": "^1.11.16",
+    "@type-challenges/utils": "^0.1.1",
     "@vitest/coverage-v8": "3.1.1",
-    "benchmark": "^2.1.4",
     "eventemitter2": "^6.4.9",
-    "flex-tools": "^1.4.41",
-    "mitt": "^3.0.1",
     "tinybench": "^4.0.1",
     "tsup": "^8.4.0",
     "tsx": "^4.19.3",
