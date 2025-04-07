@@ -1,5 +1,0 @@
----
-"fastevent": major
----
-
-first release
