@@ -389,12 +389,12 @@ export class FastEvent<
         if(retain) {
             this._retainedEvents.set(type,payload)
         }   
-        const results:any[] = []
+        const results:any[] = []        
+        // onAny侦听器保存在根节点中，所以需要执行 
+        results.push(...this._executeListeners(this.listeners,payload,this._getMeta({...meta,type})))
         this._traverseToPath(this.listeners,parts,(node)=>{  
             results.push(...this._executeListeners(node,payload,this._getMeta({...meta,type})))
         })        
-        // onAny侦听器保存在根节点中，所以需要执行 
-        results.push(...this._executeListeners(this.listeners,payload,this._getMeta({...meta,type})))
         return results
     }
 
