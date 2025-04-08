@@ -1,5 +1,11 @@
 # fastevent
 
+## 1.0.3
+
+### Patch Changes
+
+- 0c54b10: 调整 onAny 侦听器的执行优先级
+
 ## 1.0.2
 
 ### Patch Changes

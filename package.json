@@ -1,6 +1,6 @@
 {
   "name": "fastevent",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "fast event emitter",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
@@ -18,7 +18,7 @@
     "bench": "tsx src/__benchmarks__/index.ts",
     "changeset": "changeset",
     "release": "pnpm build && changeset version && changeset publish",
-    "sync":"cnpm sync fastevent"
+    "sync": "cnpm sync fastevent"
   },
   "keywords": [
     "eventemitter"
