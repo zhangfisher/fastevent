@@ -17,7 +17,8 @@
     "build": "tsup",
     "bench": "tsx src/__benchmarks__/index.ts",
     "changeset": "changeset",
-    "release": "pnpm build && changeset version && changeset publish"
+    "release": "pnpm build && changeset version && changeset publish",
+    "sync":"cnpm sync fastevent"
   },
   "keywords": [
     "eventemitter"
