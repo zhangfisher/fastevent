@@ -287,16 +287,16 @@ export class FastEvent<
             return
         }
 
-        if (part in node) {
-            this._traverseToPath(node[part], parts, callback, index + 1)
-        }
-
         if ('*' in node) {
             this._traverseToPath(node['*'], parts, callback, index + 1)
-        }
+        } 
         // 
         if ('**' in node) {
             this._traverseToPath(node['**'], parts, callback, index + 1,true)
+        }
+
+        if (part in node) {
+            this._traverseToPath(node[part], parts, callback, index + 1)
         }
     }
 

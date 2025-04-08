@@ -42,7 +42,7 @@ export class FastEventScope<
     public once<T extends string>(type: T, listener: FastEventListener<T,Events[T],Meta>, options?:FastEventListenOptions ): FastEventSubscriber
     public once<T extends Types = Types>(type: T, listener: FastEventListener<Types,Events[T],Meta>, options?:FastEventListenOptions ): FastEventSubscriber    
     public once(): FastEventSubscriber{
-        return this.on(arguments[0],arguments[1],Object.assign(arguments[2],{},{count:1}))
+        return this.on(arguments[0],arguments[1],Object.assign({},arguments[2],{count:1}))
     }
 
     onAny<P=any>(listener: FastEventListener<Types,P,Meta>, options?:FastEventListenOptions): FastEventSubscriber {
