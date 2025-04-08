@@ -1,109 +1,109 @@
 # FastEvent
 
-FastEvent 是一个功能强大的`TypeScript`事件管理库，提供了灵活的事件订阅和发布机制，支持事件通配符、作用域、异步事件等特性。
+FastEvent is a powerful TypeScript event management library that provides flexible event subscription and publishing mechanisms, supporting features such as event wildcards, scoping, and asynchronous events.
 
-对比`EventEmitter2`，`FastEvent`具有以下优势：
+Compared to `EventEmitter2`, `FastEvent` has the following advantages:
 
-- 在含通配符发布与订阅时，`FastEvent`的性能比`EventEmitter2`高 `1+`倍左右。
-- `FastEvent`包大小为 `6.3xkb`，而`EventEmitter2`为 `43.4kb`。
-- `FastEvent`拥有更丰富的功能。
+- `FastEvent` performs about `1+` times better than `EventEmitter2` when publishing and subscribing with wildcards.
+- `FastEvent` has a package size of `6.3kb`, while `EventEmitter2` is `43.4kb`.
+- `FastEvent` offers more comprehensive features.
 
-# 安装
+# Installation
 
-使用 npm 安装:
+Install using npm:
 
 ```bash
 npm install fastevent
 ```
 
-或使用 yarn:
+Or using yarn:
 
 ```bash
 yarn add fastevent
 ```
 
-# 快速入门
+# Quick Start
 
-## 基本使用
+## Basic Usage
 
 ```typescript
 import { FastEvent } from 'fastevent';
 
-// 创建事件实例
+// Create event instance
 const events = new FastEvent();
 
-// 订阅事件
+// Subscribe to event
 events.on('user/login', (user) => {
-  console.log('用户登录:', user);
+  console.log('User login:', user);
 });
 
-// 发布事件
+// Publish event
 events.emit('user/login', { id: 1, name: 'Alice' });
 ```
 
-# 指南
+# Guide
 
-## 事件通配符
+## Event Wildcards
 
-FastEvent 支持两种通配符：
-- `*`: 匹配单层路径
-- `**`: 匹配多层路径
+FastEvent supports two types of wildcards:
+- `*`: Matches a single path level
+- `**`: Matches multiple path levels
 
 ```typescript
 const events = new FastEvent();
 
-// 匹配 user/*/login
+// Matches user/*/login
 events.on('user/*/login', (data) => {
-  console.log('任何用户类型的登录:', data);
+  console.log('Any user type login:', data);
 });
 
-// 匹配 user 下的所有事件
+// Matches all events under user
 events.on('user/**', (data) => {
-  console.log('所有用户相关事件:', data);
+  console.log('All user-related events:', data);
 });
 
-// 触发事件
-events.emit('user/admin/login', { id: 1 });  // 两个处理器都会被调用
-events.emit('user/admin/profile/update', { name: 'New' });  // 只有 ** 处理器会被调用
+// Trigger events
+events.emit('user/admin/login', { id: 1 });  // Both handlers will be called
+events.emit('user/admin/profile/update', { name: 'New' });  // Only ** handler will be called
 ```
 
-## 事件作用域
+## Event Scoping
 
-作用域允许你在特定的命名空间下处理事件：
+Scopes allow you to handle events within specific namespaces:
 
 ```typescript
 const events = new FastEvent();
 
-// 创建用户相关的作用域
+// Create user-related scope
 const userScope = events.scope('user');
 
-// 在作用域中订阅事件
+// Subscribe to events within the scope
 userScope.on('login', (data) => {
-  console.log('用户登录:', data);
+  console.log('User login:', data);
 });
 
-// 等同于 events.emit('user/login', data)
+// Equivalent to events.emit('user/login', data)
 userScope.emit('login', { id: 1 });
 ```
 
-## 一次性事件
+## One-time Events
 
-使用 `once` 订阅只触发一次的事件：
+Use `once` to subscribe to events that trigger only once:
 
 ```typescript
 const events = new FastEvent();
 
 events.once('startup', () => {
-  console.log('应用启动');
+  console.log('Application started');
 });
 
-events.emit('startup');  // 输出: 应用启动
-events.emit('startup');  // 无输出，监听器已被移除
+events.emit('startup');  // Output: Application started
+events.emit('startup');  // No output, listener has been removed
 ```
 
-## 异步事件
+## Asynchronous Events
 
-支持异步事件处理：
+Support for asynchronous event handling:
 
 ```typescript
 const events = new FastEvent();
@@ -113,54 +113,54 @@ events.on('data/fetch', async () => {
   return await response.json();
 });
 
-// 异步发布事件
+// Async event publishing
 const results = await events.emitAsync('data/fetch');
-console.log('所有处理器的结果:', results);
+console.log('Results from all handlers:', results);
 ```
 
-## 事件等待
+## Event Waiting
 
-使用 `waitFor` 等待特定事件发生：
+Use `waitFor` to wait for specific events:
 
 ```typescript
 const events = new FastEvent();
 
 async function waitForLogin() {
   try {
-    // 等待登录事件，超时时间 5 秒
+    // Wait for login event with 5 seconds timeout
     const userData = await events.waitFor('user/login', 5000);
-    console.log('用户已登录:', userData);
+    console.log('User logged in:', userData);
   } catch (error) {
-    console.log('登录等待超时');
+    console.log('Login wait timeout');
   }
 }
 
 waitForLogin();
-// 稍后触发登录事件
+// Later trigger login event
 events.emit('user/login', { id: 1, name: 'Alice' });
 ```
 
-## 保留事件数据
+## Retain Event Data
 
-保留最后一次事件数据，新的订阅者会立即收到该数据：
+Retain the last event data, new subscribers will receive it immediately:
 
 ```typescript
 const events = new FastEvent();
 
-// 发布事件并保留
+// Publish event and retain
 events.emit('config/update', { theme: 'dark' }, true);
 
-// 之后的订阅者会立即收到保留的数据
+// Later subscribers will immediately receive the retained data
 events.on('config/update', (config) => {
-  console.log('配置:', config);  // 立即输出: 配置: { theme: 'dark' }
+  console.log('Config:', config);  // Immediately outputs: Config: { theme: 'dark' }
 });
 ```
 
-## 多级事件
+## Multi-level Events
 
-支持发布和订阅多级事件。
+Support for publishing and subscribing to multi-level events.
 
-默认使用 `/` 作为事件路径分隔符，你也可以使用自定义的分隔符：
+By default, '/' is used as the event path delimiter, but you can use custom delimiters:
 
 ```typescript
 const events = new FastEvent({
@@ -168,28 +168,28 @@ const events = new FastEvent({
 });
 ```
 
-## 全局事件监听
+## Global Event Listening
 
-使用 `onAny` 监听所有事件：
+Use `onAny` to listen to all events:
 
 ```typescript
 const events = new FastEvent();
 
 events.onAny((data, meta) => {
-  console.log(`事件 ${meta.type} 被触发:`, data);
+  console.log(`Event ${meta.type} triggered:`, data);
 });
 
-events.emit('user/login', { id: 1 });  // 输出: 事件 user/login 被触发: { id: 1 }
-events.emit('system/error', 'Connection failed');  // 输出: 事件 system/error 被触发: Connection failed
+events.emit('user/login', { id: 1 });  // Output: Event user/login triggered: { id: 1 }
+events.emit('system/error', 'Connection failed');  // Output: Event system/error triggered: Connection failed
 ```
 
-## 元数据(Meta)
+## Metadata (Meta)
 
-元数据是一种为事件提供额外上下文信息的机制。你可以在全局范围内设置元数据，也可以为单个事件添加特定的元数据。
+Metadata is a mechanism for providing additional context information for events. You can set metadata globally or add specific metadata for individual events.
 
-### 全局元数据
+### Global Metadata
 
-在创建 FastEvent 实例时设置全局元数据：
+Set global metadata when creating a FastEvent instance:
 
 ```typescript
 const events = new FastEvent({
@@ -200,83 +200,83 @@ const events = new FastEvent({
 });
 
 events.on('user/login', (data, meta) => {
-  console.log('事件数据:', data);
-  console.log('元数据:', meta);  // 包含 type、version 和 environment
+  console.log('Event data:', data);
+  console.log('Metadata:', meta);  // Contains type, version, and environment
 });
 ```
 
-### 事件特定元数据
+### Event-specific Metadata
 
-在发布事件时可以传递额外的元数据，它会与全局元数据合并：
+Additional metadata can be passed when publishing events, which will be merged with global metadata:
 
 ```typescript
 const events = new FastEvent({
   meta: { app: 'MyApp' }
 });
 
-// 在发布事件时添加特定的元数据
+// Add specific metadata when publishing event
 events.emit('order/create', 
-  { orderId: '123' },  // 事件数据
-  false,  // 不保留
-  { timestamp: Date.now() }  // 事件特定的元数据
+  { orderId: '123' },  // Event data
+  false,  // Don't retain
+  { timestamp: Date.now() }  // Event-specific metadata
 );
 
-// 监听器接收合并后的元数据
+// Listener receives merged metadata
 events.on('order/create', (data, meta) => {
-  console.log('订单:', data);  // { orderId: '123' }
-  console.log('元数据:', meta);  // { type: 'order/create', app: 'MyApp', timestamp: ... }
+  console.log('Order:', data);  // { orderId: '123' }
+  console.log('Metadata:', meta);  // { type: 'order/create', app: 'MyApp', timestamp: ... }
 });
 ```
 
-## 错误处理
+## Error Handling
 
-FastEvent 提供了错误处理机制：
+FastEvent provides error handling mechanisms:
 
 ```typescript
 const events = new FastEvent({
-  ignoreErrors: true,  // 默认为 true，不会抛出错误
+  ignoreErrors: true,  // Default is true, won't throw errors
   onListenerError: (type, error) => {
-    console.error(`处理事件 ${type} 时发生错误:`, error);
+    console.error(`Error handling event ${type}:`, error);
   }
 });
 
 events.on('process', () => {
-  throw new Error('处理失败');
+  throw new Error('Processing failed');
 });
 
-// 不会抛出错误，而是触发 onListenerError
+// Won't throw error, will trigger onListenerError instead
 events.emit('process');
 ```
 
-## 自定义选项
+## Custom Options
 
-FastEvent 构造函数支持多个选项：
+The FastEvent constructor supports multiple options:
 
 ```typescript
 const events = new FastEvent({
-  // 事件路径分隔符，默认为 '/'
+  // Event path delimiter, default is '/'
   delimiter: '.',  
-  // 事件处理器的上下文
+  // Context for event handlers
   context: null,  
-  // 元数据，会传递给所有事件处理器
-  meta: { version: '1.0' },
+  // Metadata, passed to all event handlers
+  meta: { ... },
   
-  // 错误处理
+  // Error handling
   ignoreErrors: true,
   onListenerError: (type, error) => {
-    console.error(`事件错误:`, type, error);
+    console.error(`Event error:`, type, error);
   },
   
-  // 监听器添加/移除的回调
+  // Callbacks for listener addition/removal
   onAddListener: (path, listener) => {
-    console.log('添加监听器:', path);
+    console.log('Listener added:', path);
   },
   onRemoveListener: (path, listener) => {
-    console.log('移除监听器:', path);
+    console.log('Listener removed:', path);
   }
 });
 ```
 
-# 性能
+# Performance
 
 ![](./bench.png)
