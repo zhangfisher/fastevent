@@ -77,5 +77,18 @@ describe("简单发布与订阅",async ()=>{
         expect(err._trigger).toBe("x")
         
     })
+    test("添加侦听器时指定顺序",async ()=>{
+        const emitter = new FastEvent() 
+        const types:number[]=[]
+        emitter.on("x",()=>{
+            types.push(1)
+        })
+        
+        emitter.on("x",()=>{
+            types.push(2)
+        },{prepend:true})
+        emitter.emit("x")
+        expect(types).toEqual([2,1])
+    })      
 }) 
  

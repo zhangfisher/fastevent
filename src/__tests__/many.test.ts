@@ -9,7 +9,7 @@ describe("指定次数事件的发布与订阅",async ()=>{
             expect(type).toBe("x")
             expect(payload).toBe(1)            
             events.push(type)
-        },2)
+        },{count:2})
         emitter.emit("x",1)
         emitter.emit("x",1)
         emitter.emit("x",1)

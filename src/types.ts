@@ -48,3 +48,10 @@ export type ScopeEvents<T extends Record<string, any>, Prefix extends string> = 
   };
 
  
+
+export type FastEventListenOptions={
+    // 侦听执行次数，当为1时为单次侦听，为0时为永久侦听，其他值为执行次数,每执行一次减一，减到0时移除侦听器
+    count?:number                   
+    // 将侦听器添加到侦听器列表的头部
+    prepend?:boolean
+}

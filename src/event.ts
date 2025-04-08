@@ -7,7 +7,8 @@ import {
     FastListenerNode, 
     FastEventSubscriber, 
     ScopeEvents,
-    FastEventMeta
+    FastEventMeta,
+    FastEventListenOptions
 } from './types'; 
 import { isPathMatched } from './utils/isPathMatched';
 import { removeItem } from './utils/removeItem';
@@ -32,9 +33,15 @@ export class FastEvent<
         this._context = this._options.context || this
     }
     get options(){ return this._options  }
-    private _addListener(parts:string[],listener:FastEventListener<any,any>,count?:number):FastListenerNode | undefined{
+    private _addListener(parts:string[],listener:FastEventListener<any,any>,options:Required<FastEventListenOptions>):FastListenerNode | undefined{
+        const { count, prepend } = options
         return this._forEachNodes(parts,(node)=>{
-            node.__listeners.push(count && count >0 ? [listener,count]: listener)
+            const newListener =  count >0 ? [listener,count]: listener as any
+            if(prepend){
+                node.__listeners.splice(0,0,newListener)
+            }else{
+                node.__listeners.push(newListener)
+            }            
             if(typeof(this._options.onAddListener)==='function'){
                 this._options.onAddListener(parts,listener)
             }
@@ -88,13 +95,17 @@ export class FastEvent<
             return isRemove
         }) 
     }
-    public on<T extends string>(type: T, listener: FastEventListener<T,Events[T],Meta>, count?:number ): FastEventSubscriber
-    public on<T extends Types=Types>(type: T, listener: FastEventListener<Types,Events[T],Meta>, count?:number ): FastEventSubscriber
+    public on<T extends string>(type: T, listener: FastEventListener<T,Events[T],Meta>, options?:FastEventListenOptions ): FastEventSubscriber
+    public on<T extends Types=Types>(type: T, listener: FastEventListener<Types,Events[T],Meta>, options?:FastEventListenOptions): FastEventSubscriber
     public on<P=any>(type: '**', listener: FastEventListener<Types,P,Meta>): FastEventSubscriber
     public on(): FastEventSubscriber{
         const type = arguments[0] as string
         const listener = arguments[1] as FastEventListener 
-        const count = arguments[2] as number
+        const options = Object.assign({
+            count  : 0,
+            prepend: false
+        },arguments[2]) as Required<FastEventListenOptions>
+
         if(type.length===0) throw new Error('event type cannot be empty')
 
         if(type==='**'){
@@ -102,7 +113,7 @@ export class FastEvent<
         }
 
         const parts = type.split(this._delimiter);
-        const node = this._addListener(parts,listener,count)
+        const node = this._addListener(parts,listener,options)
         
         // Retain不支持通配符
         if(node && !type.includes('*')) this._emitForLastEvent(type) 
@@ -115,7 +126,7 @@ export class FastEvent<
     public once<T extends string>(type: T, listener: FastEventListener<T,Events[T],Meta> ): FastEventSubscriber
     public once<T extends Types=Types>(type: T, listener: FastEventListener<Types,Events[T],Meta> ): FastEventSubscriber
     public once(): FastEventSubscriber{
-        return this.on(arguments[0],arguments[1],1)
+        return this.on(arguments[0],arguments[1],{count:1})
     }
 
     /**
@@ -132,9 +143,13 @@ export class FastEvent<
      * subscriber.off();
      * ```
      */
-    onAny<P=any>(listener: FastEventListener<string,P,Meta>): FastEventSubscriber {
+    onAny<P=any>(listener: FastEventListener<string,P,Meta>, options?:Pick<FastEventListenOptions,'prepend'>): FastEventSubscriber {
         const listeners = this.listeners.__listeners
-        listeners.push(listener)
+        if(options && options.prepend){
+            listeners.splice(0,0,listener)
+        }else{
+            listeners.push(listener)
+        }        
         return {
             off:()=>this._removeListener(this.listeners,[],listener)
         }

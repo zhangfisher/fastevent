@@ -1,5 +1,5 @@
 import { FastEvent } from "./event";
-import { FastEventListener, FastEvents, FastEventSubscriber } from "./types";
+import { FastEventListener, FastEventListenOptions, FastEvents, FastEventSubscriber } from "./types";
 
 export class FastEventScope<
     Events extends FastEvents  = FastEvents, 
@@ -29,8 +29,8 @@ export class FastEventScope<
         return type===undefined ? undefined : this.prefix + type
     }    
     
-    public on<T extends string>(type: T, listener: FastEventListener<T,Events[T],Meta>, count?:number ): FastEventSubscriber    
-    public on<T extends Types=Types>(type: T, listener: FastEventListener<T,Events[T],Meta>, count?:number ): FastEventSubscriber    
+    public on<T extends string>(type: T, listener: FastEventListener<T,Events[T],Meta>, options?:FastEventListenOptions ): FastEventSubscriber    
+    public on<T extends Types=Types>(type: T, listener: FastEventListener<T,Events[T],Meta>, options?:FastEventListenOptions): FastEventSubscriber    
     public on(type: '**', listener: FastEventListener<any,any,Meta>): FastEventSubscriber
     public on(): FastEventSubscriber{
         const args = [...arguments] as [any,any,any]
@@ -39,15 +39,15 @@ export class FastEventScope<
         return this.emitter.on(...args)
     }
 
-    public once<T extends string>(type: T, listener: FastEventListener<T,Events[T],Meta> ): FastEventSubscriber
-    public once<T extends Types = Types>(type: T, listener: FastEventListener<Types,Events[T],Meta> ): FastEventSubscriber    
+    public once<T extends string>(type: T, listener: FastEventListener<T,Events[T],Meta>, options?:FastEventListenOptions ): FastEventSubscriber
+    public once<T extends Types = Types>(type: T, listener: FastEventListener<Types,Events[T],Meta>, options?:FastEventListenOptions ): FastEventSubscriber    
     public once(): FastEventSubscriber{
-        return this.on(arguments[0],arguments[1],1)
+        return this.on(arguments[0],arguments[1],Object.assign(arguments[2],{},{count:1}))
     }
 
-    onAny<P=any>(listener: FastEventListener<Types,P,Meta>): FastEventSubscriber {
+    onAny<P=any>(listener: FastEventListener<Types,P,Meta>, options?:FastEventListenOptions): FastEventSubscriber {
         const type = this.prefix + '**'
-        return this.on(type as any,listener)
+        return this.on(type as any,listener,options)
     }   
     offAll(){
         this.emitter.offAll(this.prefix)
