@@ -1,5 +1,11 @@
 # fastevent
 
+## 1.0.2
+
+### Patch Changes
+
+- 02c6d3e: fix scope.on error
+
 ## 1.0.1
 
 ### Patch Changes
