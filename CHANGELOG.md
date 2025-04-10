@@ -1,5 +1,11 @@
 # fastevent
 
+## 1.0.4
+
+### Patch Changes
+
+- 3cf1e87: 更新 meta 泛型参数的位置
+
 ## 1.0.3
 
 ### Patch Changes
