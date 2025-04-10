@@ -26,4 +26,3 @@ describe("传递Meta数据",async ()=>{
         emitter.emit("x",1,false,{a:10,b:20})
     })  
 }) 
- 

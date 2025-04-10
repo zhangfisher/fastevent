@@ -89,6 +89,19 @@ describe("简单发布与订阅",async ()=>{
         },{prepend:true})
         emitter.emit("x")
         expect(types).toEqual([2,1])
-    })      
+    })     
+    test("简单发布订阅message事件",()=>{
+        const emitter = new FastEvent() 
+        emitter.on("x",(payload,meta)=>{
+            expect(meta.type).toBe("x")
+            expect(meta.a).toBe(1)
+            expect(payload).toBe(1)
+        })
+        emitter.emit({
+            type:"x",
+            payload:1,
+            meta:{a:1}
+        })
+    }) 
 }) 
  

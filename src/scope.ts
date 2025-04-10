@@ -3,10 +3,10 @@ import { FastEventListener, FastEventListenOptions, FastEvents, FastEventSubscri
 
 export class FastEventScope<
     Events extends FastEvents  = FastEvents, 
-    Types extends keyof Events = keyof Events,
-    Meta                       = unknown
+    Meta  extends Record<string,any>=Record<string,any>,
+    Types extends keyof Events = keyof Events    
 >{
-    constructor(public emitter:FastEvent<Events,Types,Meta>,public prefix:string){
+    constructor(public emitter:FastEvent<Events,Meta,Types>,public prefix:string){
         if(prefix.length>0 && !prefix.endsWith(emitter.options.delimiter!)){
             this.prefix = prefix + emitter.options.delimiter
         }        

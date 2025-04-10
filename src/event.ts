@@ -8,15 +8,16 @@ import {
     FastEventSubscriber, 
     ScopeEvents,
     FastEventMeta,
-    FastEventListenOptions
+    FastEventListenOptions,
+    FastEventMessage
 } from './types'; 
 import { isPathMatched } from './utils/isPathMatched';
 import { removeItem } from './utils/removeItem';
  
 export class FastEvent<
     Events extends FastEvents  = FastEvents, 
-    Types extends keyof Events = keyof Events,
-    Meta                       = unknown
+    Meta extends Record<string,any>=Record<string,any>,
+    Types extends keyof Events = keyof Events    
 >{
     public listeners        : FastListeners = { __listeners: [] } as unknown as FastListeners
     private _options        : FastEventOptions
@@ -379,12 +380,21 @@ export class FastEvent<
 
     public emit<R=any>(type:string,payload?:any,retain?:boolean,meta?:Meta):R[]
     public emit<R=any>(type:Types,payload?:Events[Types],retain?:boolean,meta?:Meta):R[]
+    public emit<R=any>(message:FastEventMessage<Types,Events[Types],Meta>,retain?:boolean):R[]
+    public emit<R=any>(message:FastEventMessage<string,any,Meta>,retain?:boolean):R[]
     public emit<R=any>():R[]{
-        const type = arguments[0] as string
-        const payload = arguments[1] as any
-        const retain = arguments[2] as boolean
-        const meta = (arguments[3] || {}) as Meta
-
+        let type:string,payload:any,retain:boolean,meta:Meta
+        if(typeof(arguments[0])==='object'){
+            type = arguments[0].type as string
+            payload = arguments[0].payload as any
+            meta = (arguments[0]).meta as Meta                
+            retain = arguments[1] as boolean            
+        }else{
+            type = arguments[0] as string
+            payload = arguments[1] as any
+            retain = arguments[2] as boolean
+            meta = (arguments[3] || {}) as Meta    
+        }        
         const parts = type.split(this._delimiter);         
         if(retain) {
             this._retainedEvents.set(type,payload)

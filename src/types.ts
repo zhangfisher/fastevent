@@ -55,3 +55,10 @@ export type FastEventListenOptions={
     // 将侦听器添加到侦听器列表的头部
     prepend?:boolean
 }
+
+
+export type FastEventMessage<T=string,P=any,M extends Record<string,any>=Record<string,any>> = {
+    type   : T
+    payload: P
+    meta?  : M
+}

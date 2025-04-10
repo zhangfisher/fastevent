@@ -39,6 +39,10 @@ events.on('user/login', (user) => {
 
 // 发布事件
 events.emit('user/login', { id: 1, name: 'Alice' });
+events.emit({
+    type:'user/login', 
+    payload:{ id: 1, name: 'Alice' }
+  });
 ```
 
 # 指南
