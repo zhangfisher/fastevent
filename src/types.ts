@@ -1,64 +1,61 @@
 
-export type FastEventMeta<T=string,M=unknown> = M & {type:T} 
+export type FastEventMeta<T = string, M = unknown> = M & { type: T }
 
 
 export type FastEventListener<
-    T = string,    
-    P = any,     
+    T = string,
+    P = any,
     M = unknown
-> = ( payload:P, meta:FastEventMeta<T,M> ) => any | Promise<any>
+> = (payload: P, meta: FastEventMeta<T, M>) => any | Promise<any>
 
-export type FastListenerNode  = {
-    __listeners: (FastEventListener<any,any,any> | [FastEventListener<any,any>,number])[];  
+export type FastListenerNode = {
+    __listeners: (FastEventListener<any, any, any> | [FastEventListener<any, any>, number])[];
 } & {
-    [key:string]: FastListenerNode
+    [key: string]: FastListenerNode
 }
 
 export type FastEventSubscriber = {
-    off:()=>void
-} 
+    off: () => void
+}
 
-export interface FastEventListenerMeta{
+export interface FastEventListenerMeta {
     emitter?: string
-} 
+}
 
 export type FastListeners = FastListenerNode
 
-export type FastEventOptions<M=unknown> = {
+export type FastEventOptions<M = unknown> = {
     // 事件分隔符
     delimiter?: string
     // 侦听器函数执行上下文
-    context?  : any    
+    context?: any
     // 当执行侦听器函数出错时是否忽略,默认true
-    ignoreErrors?: boolean       
+    ignoreErrors?: boolean
     // 当侦听器函数执行出错时的回调，用于诊断时使用,可以打印错误信息
-    onListenerError?: ((type:string,error:Error)=>void)  
+    onListenerError?: ((type: string, error: Error) => void)
     // 额外的元数据，当触发事件时传递给侦听器
-    meta?:M
+    meta?: M
     // 当创建新侦听器时回调
-    onAddListener?:(type:string[],listener:FastEventListener)=>void
+    onAddListener?: (type: string[], listener: FastEventListener) => void
     // 当移除侦听器时回调
-    onRemoveListener?:(type:string[],listener:FastEventListener)=>void
-} 
+    onRemoveListener?: (type: string[], listener: FastEventListener) => void
+}
 
-export type FastEvents = Record<string,any>  
+export type FastEvents = Record<string, any>
 
 export type ScopeEvents<T extends Record<string, any>, Prefix extends string> = {
     [K in keyof T as K extends `${Prefix}/${infer Rest}` ? Rest : never]: T[K];
-  };
+};
 
- 
-
-export type FastEventListenOptions={
+export type FastEventListenOptions = {
     // 侦听执行次数，当为1时为单次侦听，为0时为永久侦听，其他值为执行次数,每执行一次减一，减到0时移除侦听器
-    count?:number                   
+    count?: number
     // 将侦听器添加到侦听器列表的头部
-    prepend?:boolean
+    prepend?: boolean
 }
 
-
-export type FastEventMessage<T=string,P=any,M extends Record<string,any>=Record<string,any>> = {
-    type   : T
+export type FastEventMessage<T = string, P = any, M extends Record<string, any> = Record<string, any>> = {
+    type: T
     payload: P
-    meta?  : M
+    meta?: M
 }

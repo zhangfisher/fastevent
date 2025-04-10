@@ -88,7 +88,7 @@ describe("Types",()=>{
             type cases = [
                 Expect<Equal<typeof type,"a">>,
                 Expect<Equal<typeof payload,1>>
-            ]  
+            ]              
         }) 
 
         scope.on("b",(payload,{type})=>{
