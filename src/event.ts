@@ -7,7 +7,6 @@ import {
     FastListenerNode,
     FastEventSubscriber,
     ScopeEvents,
-    FastEventMeta,
     FastEventListenOptions,
     FastEventMessage
 } from './types';
@@ -245,19 +244,22 @@ export class FastEvent<
     clear() {
         this.offAll()
     }
-    private _getMeta(extra: Record<string, any>) {
+
+    private _createMeta(extra: Record<string, any> | undefined) {
         if (!this._options.meta) return extra
-        return Object.assign({}, this._options.meta, extra) as FastEventMeta<any, any>
+        return Object.assign({}, this._options.meta, extra)
     }
+
+
     private _emitForLastEvent(type: string) {
         if (this._retainedEvents.has(type)) {
-            const payload = this._retainedEvents.get(type)
+            const message = this._retainedEvents.get(type)
             const parts = type.split(this._delimiter);
             this._traverseToPath(this.listeners, parts, (node) => {
-                this._executeListeners(node, payload, this._getMeta({ type }))
+                this._executeListeners(node, message)
             })
             // onAny侦听器保存在根节点中，所以需要执行
-            this._executeListeners(this.listeners, payload, this._getMeta({ type }))
+            this._executeListeners(this.listeners, message)
         }
     }
 
@@ -322,17 +324,17 @@ export class FastEvent<
         traverseNodes(entryNode, callback, []);
     }
 
-    private _executeListener(listener: any, payload: any, meta: FastEventMeta<any, any>): any {
+    private _executeListener(listener: any, message: FastEventMessage): any {
         try {
             if (typeof (listener.__wrappedListener) === 'function') {
-                return listener.__wrappedListener.call(this._context, payload, meta)
+                return listener.__wrappedListener.call(this._context, message)
             } else {
-                return listener.call(this._context, payload, meta)
+                return listener.call(this._context, message)
             }
         } catch (e: any) {
-            e._trigger = meta.type
+            e._emitter = message.type
             if (typeof (this._options.onListenerError) === 'function') {
-                this._options.onListenerError.call(this, meta.type, e)
+                this._options.onListenerError.call(this, message.type, e)
             }
             // 如果忽略错误，则返回错误对象
             if (this._options.ignoreErrors) {
@@ -356,7 +358,7 @@ export class FastEvent<
      * - 对于普通监听器，直接执行并收集结果
      * - 对于带次数限制的监听器(数组形式)，执行后递减次数，当次数为0时移除该监听器
      */
-    private _executeListeners(node: FastListenerNode, payload: any, meta: Meta): any[] {
+    private _executeListeners(node: FastListenerNode, message: FastEventMessage): any[] {
         if (!node || !node.__listeners) return []
         let i = 0
         const listeners = node.__listeners
@@ -364,46 +366,67 @@ export class FastEvent<
         while (i < listeners.length) {
             const listener = listeners[i]
             if (Array.isArray(listener)) {
-                result.push(this._executeListener(listener[0], payload, meta))
+                result.push(this._executeListener(listener[0], message))
                 listener[1]--
                 if (listener[1] === 0) {
                     listeners.splice(i, 1)
                     i-- // 抵消后面的i++
                 }
             } else {
-                result.push(this._executeListener(listener, payload, meta))
+                result.push(this._executeListener(listener, message))
             }
             i++
         }
         return result
     }
-
+    /**
+     * 触发事件并执行对应的监听器
+     * 
+     * @param type - 事件类型字符串或包含事件信息的对象
+     * @param payload - 事件携带的数据负载
+     * @param retain - 是否保留该事件(用于新订阅者)
+     * @param meta - 事件元数据
+     * @returns 所有监听器的执行结果数组
+     * 
+     * @example
+     * // 方式1: 参数形式
+     * emit('user.login', { id: 1 }, true)
+     * 
+     * // 方式2: 对象形式
+     * emit({ type: 'user.login', payload: { id: 1 } ,meta:{...}}}, true)
+     */
     public emit<R = any>(type: string, payload?: any, retain?: boolean, meta?: Meta): R[]
     public emit<R = any>(type: Types, payload?: Events[Types], retain?: boolean, meta?: Meta): R[]
     public emit<R = any>(message: FastEventMessage<Types, Events[Types], Meta>, retain?: boolean): R[]
     public emit<R = any>(message: FastEventMessage<string, any, Meta>, retain?: boolean): R[]
+
     public emit<R = any>(): R[] {
-        let type: string, payload: any, retain: boolean, meta: Meta
+        let type: string, payload: any, retain: boolean, meta: any
         if (typeof (arguments[0]) === 'object') {
             type = arguments[0].type as string
             payload = arguments[0].payload as any
-            meta = (arguments[0]).meta as Meta
+            meta = this._createMeta(arguments[0].meta) as Meta
             retain = arguments[1] as boolean
         } else {
             type = arguments[0] as string
             payload = arguments[1] as any
             retain = arguments[2] as boolean
-            meta = (arguments[3] || {}) as Meta
+            meta = this._createMeta(arguments[3])
+        }
+        const message: FastEventMessage = {
+            type,
+            payload,
+            meta
         }
         const parts = type.split(this._delimiter);
         if (retain) {
-            this._retainedEvents.set(type, payload)
+            this._retainedEvents.set(type, message)
         }
         const results: any[] = []
         // onAny侦听器保存在根节点中，所以需要执行 
-        results.push(...this._executeListeners(this.listeners, payload, this._getMeta({ ...meta, type })))
+        results.push(...this._executeListeners(this.listeners, message))
         this._traverseToPath(this.listeners, parts, (node) => {
-            results.push(...this._executeListeners(node, payload, this._getMeta({ ...meta, type })))
+            results.push(...this._executeListeners(node, message))
         })
         return results
     }
@@ -414,9 +437,13 @@ export class FastEvent<
         const type = arguments[0] as string
         const payload = arguments[1] as any
         const retain = arguments[2] as boolean
-        const meta = (arguments[3] || {}) as Meta
-
-        const results = await Promise.allSettled(this.emit<P>(type, payload, retain, this._getMeta({ ...meta, type })))
+        const meta = this._createMeta((arguments[3])) as Meta
+        const message = {
+            type,
+            payload,
+            meta
+        }
+        const results = await Promise.allSettled(this.emit<P>(message, retain))
         return results.map((result) => {
             if (result.status === 'fulfilled') {
                 return result.value
@@ -440,10 +467,10 @@ export class FastEvent<
         return new Promise<R>((resolve, reject) => {
             let tid: any
             let subscriber: FastEventSubscriber
-            const listener = (payload: any) => {
+            const listener = (message: any) => {
                 clearTimeout(tid)
                 subscriber.off()
-                resolve(payload)
+                resolve(message)
             }
             if (timeout && timeout > 0) {
                 tid = setTimeout(() => {

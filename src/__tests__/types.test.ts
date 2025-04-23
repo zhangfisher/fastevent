@@ -2,127 +2,133 @@
 import { describe, test, expect } from "vitest"
 import type { Equal, Expect, NotAny } from '@type-challenges/utils'
 import { FastEvent } from "../event"
-import { ScopeEvents } from "../types" 
+import { ScopeEvents } from "../types"
 
 
-describe("Types",()=>{
-    test("Types tests",()=>{
-        interface CustomEvents{
-            a        : boolean
-            b        : number
-            c        : string,
+describe("Types", () => {
+    test("Types tests", () => {
+        interface CustomEvents {
+            a: boolean
+            b: number
+            c: string,
             "x/y/z/a": 1
             "x/y/z/b": 2
-            "x/y/z/c":3
+            "x/y/z/c": 3
         }
 
-        type  ScopeCustomEvents = ScopeEvents<CustomEvents,'x/y/z'>
+        type ScopeCustomEvents = ScopeEvents<CustomEvents, 'x/y/z'>
 
         type cases = [
-            Expect<Equal<ScopeCustomEvents,{
-                a:1
-                b:2
-                c:3
+            Expect<Equal<ScopeCustomEvents, {
+                a: 1
+                b: 2
+                c: 3
             }>>
-        ]  
+        ]
 
-        interface CustomMeta{
-            a        : number
-            b        : string
-            c        : boolean
+        interface CustomMeta {
+            a: number
+            b: string
+            c: boolean
         }
 
-        const emitter = new FastEvent<CustomEvents,CustomMeta>() 
+        const emitter = new FastEvent<CustomEvents, CustomMeta>()
 
-        emitter.on("a",(payload,meta)=>{
+        emitter.on("a", (message) => {
+            message.meta
             type cases = [
-                Expect<Equal<typeof meta,CustomMeta & {
-                    type:'a'
-                }>>,
-            ]    
-            meta.a
-            meta.b
+                Expect<Equal<typeof message.meta, CustomMeta>>
+            ]
         })
 
-        emitter.on("a",(payload,{type})=>{
+        emitter.on("a", (message) => {
             type cases = [
-                Expect<Equal<typeof type,"a">>,
-                Expect<Equal<typeof payload,boolean>>
-            ]    
+                Expect<Equal<typeof message.type, "a">>,
+                Expect<Equal<typeof message.payload, boolean>>
+            ]
         })
 
-        emitter.onAny((payload,{type})=>{
+        emitter.onAny((message) => {
             type cases = [
-                Expect<Equal<typeof type,string>>,
-                Expect<Equal<typeof payload,any>>
-            ]    
+                Expect<Equal<typeof message.type, string>>,
+                Expect<Equal<typeof message.payload, any>>
+            ]
         })
 
-        emitter.on("b",(payload,{type})=>{
+        emitter.onAny<number>((message) => {
             type cases = [
-                Expect<Equal<typeof type,"b">>,
-                Expect<Equal<typeof payload,number>>
-            ]   
+                Expect<Equal<typeof message.type, string>>,
+                Expect<Equal<typeof message.payload, number>>
+            ]
         })
 
-        emitter.once("a",(payload,{type})=>{
+
+        emitter.on("b", (message) => {
             type cases = [
-                Expect<Equal<typeof type,"a">>,
-                Expect<Equal<typeof payload,boolean>>
-            ]    
+                Expect<Equal<typeof message.type, "b">>,
+                Expect<Equal<typeof message.payload, number>>
+            ]
         })
 
-        emitter.once("b",(payload,{type})=>{
+        emitter.once("a", (message) => {
             type cases = [
-                Expect<Equal<typeof type,"b">>,
-                Expect<Equal<typeof payload,number>>
-            ]   
+                Expect<Equal<typeof message.type, "a">>,
+                Expect<Equal<typeof message.payload, boolean>>
+            ]
         })
-        emitter.emit("x/y/z",1)        
+
+        emitter.once("b", (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, "b">>,
+                Expect<Equal<typeof message.payload, number>>
+            ]
+        })
+        emitter.emit("x/y/z", 1)
 
         // ----- scope -----
 
         const scope = emitter.scope("x/y/z")
 
-        scope.on("a",(payload,{type})=>{
+        scope.on("a", (message) => {
             type cases = [
-                Expect<Equal<typeof type,"a">>,
-                Expect<Equal<typeof payload,1>>
-            ]              
-        }) 
-
-        scope.on("b",(payload,{type})=>{
-            type cases = [
-                Expect<Equal<typeof type,"b">>,
-                Expect<Equal<typeof payload,2>>
-            ]  
-        }) 
-
-        scope.once("a",(payload,{type})=>{
-            type cases = [
-                Expect<Equal<typeof type,"a">>,
-                Expect<Equal<typeof payload,1>>
-            ]  
-        }) 
-
-        scope.once("c",(payload,{type})=>{
-            type cases = [
-                Expect<Equal<typeof type,"c">>,
-                Expect<Equal<typeof payload,3>>
-            ]  
-        }) 
-        emitter.on("x/y/z",(payload,{type})=>{
-            type cases = [
-                Expect<Equal<typeof type,"x/y/z">>,
-                Expect<Equal<typeof payload,unknown>>
-            ]   
+                Expect<Equal<typeof message.type, "a">>,
+                Expect<Equal<typeof message.payload, 1>>
+            ]
         })
-        emitter.on("x/y/z/a",(payload,{type})=>{
+
+        scope.on("b", (message) => {
             type cases = [
-                Expect<Equal<typeof type,"x/y/z/a">>,
-                Expect<Equal<typeof payload,1>>
-            ]   
-        }) 
-        
-    })   
+                Expect<Equal<typeof message.type, "b">>,
+                Expect<Equal<typeof message.payload, 2>>
+            ]
+        })
+
+        scope.once("a", (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, "a">>,
+                Expect<Equal<typeof message.payload, 1>>
+            ]
+        })
+
+        scope.once("c", (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, "c">>,
+                Expect<Equal<typeof message.payload, 3>>
+            ]
+        })
+        emitter.on("x/y/z", (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, "x/y/z">>,
+                Expect<Equal<typeof message.payload, unknown>>
+            ]
+        })
+
+        emitter.on("x/y/z/a", (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, "x/y/z/a">>,
+                Expect<Equal<typeof message.payload, 1>>
+            ]
+        })
+
+    })
 })

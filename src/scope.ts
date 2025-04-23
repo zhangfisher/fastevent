@@ -1,5 +1,5 @@
 import { FastEvent } from "./event";
-import { FastEventListener, FastEventListenOptions, FastEvents, FastEventSubscriber } from "./types";
+import { FastEventListener, FastEventListenOptions, FastEventMessage, FastEvents, FastEventSubscriber } from "./types";
 
 export class FastEventScope<
     Events extends FastEvents = FastEvents,
@@ -14,11 +14,12 @@ export class FastEventScope<
     private _getScopeListener(listener: FastEventListener): FastEventListener {
         const scopePrefix = this.prefix
         if (scopePrefix.length === 0) return listener
-        const scopeListener = function (payload: any, { type }: { type: string }) {
-            if (type.startsWith(scopePrefix)) {
-                type = type.substring(scopePrefix.length)
+        const scopeListener = function (message: FastEventMessage) {
+            if (message.type.startsWith(scopePrefix)) {
+                return listener(Object.assign({}, message, {
+                    type: message.type.substring(scopePrefix.length)
+                }))
             }
-            return listener(payload, { type })
         }
         // 当启用scope时对监听器进行包装
         //@ts-ignore
