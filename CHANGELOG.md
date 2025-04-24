@@ -1,5 +1,11 @@
 # fastevent
 
+## 1.1.2
+
+### Patch Changes
+
+-   f650dd3: feat: 增加 Context 泛型参数，用来为侦听器指定 this
+
 ## 1.1.1
 
 ### Patch Changes
