@@ -465,8 +465,8 @@ const events = new FastEvent({
   },
   onRemoveListener: (path, listener) => {
     console.log('Listener removed:', path);
-  }
-  onClearListeners: () => {
+  },
+  onClearListeners:() => {
     console.log('清空监听器:', path);
   },
   onExecuteListener: (message: FastEventMessage, returns: any[], listeners: (FastEventListener<any, any, any> | [FastEventListener<any, any>, number])[]) => {
@@ -477,7 +477,7 @@ const events = new FastEvent({
 
 ### debug
 
-Use `debug` option to enable debug mode and import `fastevent/devtools`, so that you can see the events in `Redux Dev Tools`.
+Use `debug` option to enable debug mode and import `fastevent/devtools`, so that you can see the events in [Redux Dev Tools](https://chromewebstore.google.com/detail/redux-devtools/lmhkpmbekcpmknklioeibfkpmmfibljd?utm_source=ext_app_menu).
 
 ```ts
 import 'fastevent/devtools';

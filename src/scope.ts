@@ -3,11 +3,12 @@ import { FastEventListener, FastEventListenOptions, FastEventMessage, FastEvents
 
 export class FastEventScope<
     Events extends FastEvents = FastEvents,
-    Meta extends Record<string, any> = Record<string, any>,
+    Message extends FastEventMessage<Events, unknown> = FastEventMessage<Events, unknown>,
     Context = any,
-    Types extends keyof Events = keyof Events
+    Types extends keyof Events = keyof Events,
+    Meta = Message['meta']
 > {
-    constructor(public emitter: FastEvent<Events, Meta, Types>, public prefix: string) {
+    constructor(public emitter: FastEvent<Events>, public prefix: string) {
         if (prefix.length > 0 && !prefix.endsWith(emitter.options.delimiter!)) {
             this.prefix = prefix + emitter.options.delimiter
         }
@@ -34,9 +35,9 @@ export class FastEventScope<
         return type.startsWith(this.prefix) ? type.substring(this.prefix.length) : type
     }
 
-    public on<T extends Types = Types>(type: T, listener: FastEventListener<T, Events[T], Meta, Context>, options?: FastEventListenOptions): FastEventSubscriber
-    public on<T extends string>(type: T, listener: FastEventListener<T, Events[T], Meta, Context>, options?: FastEventListenOptions): FastEventSubscriber
-    public on(type: '**', listener: FastEventListener<any, any, Meta, Context>): FastEventSubscriber
+    public on<T extends Types = Types>(type: T, listener: FastEventListener<Events, Meta, Context>, options?: FastEventListenOptions): FastEventSubscriber
+    public on<T extends string>(type: T, listener: FastEventListener<Events, Meta, Context>, options?: FastEventListenOptions): FastEventSubscriber
+    public on(type: '**', listener: FastEventListener<Events, Meta, Context>): FastEventSubscriber
     public on(): FastEventSubscriber {
         const args = [...arguments] as [any, any, any]
         args[0] = this._getScopeType(args[0])
@@ -44,13 +45,13 @@ export class FastEventScope<
         return this.emitter.on(...args)
     }
 
-    public once<T extends string>(type: T, listener: FastEventListener<T, Events[T], Meta, Context>, options?: FastEventListenOptions): FastEventSubscriber
-    public once<T extends Types = Types>(type: T, listener: FastEventListener<Types, Events[T], Meta, Context>, options?: FastEventListenOptions): FastEventSubscriber
+    public once<T extends string>(type: T, listener: FastEventListener<Events, Meta, Context>, options?: FastEventListenOptions): FastEventSubscriber
+    public once<T extends Types = Types>(type: T, listener: FastEventListener<Events, Meta, Context>, options?: FastEventListenOptions): FastEventSubscriber
     public once(): FastEventSubscriber {
         return this.on(arguments[0], arguments[1], Object.assign({}, arguments[2], { count: 1 }))
     }
 
-    onAny<P = any>(listener: FastEventListener<Types, P, Meta, Context>, options?: FastEventListenOptions): FastEventSubscriber {
+    onAny<P = any>(listener: FastEventListener<Events, Meta, Context>, options?: FastEventListenOptions): FastEventSubscriber {
         const type = this.prefix + '**'
         return this.on(type as any, listener, options)
     }
@@ -81,16 +82,16 @@ export class FastEventScope<
         const retain = arguments[2] as boolean
         return this.emitter.emit(this._getScopeType(type)!, payload, retain)
     }
-    public async waitFor<T extends Types, P = Events[T], M = Meta>(type: T, timeout?: number): Promise<FastEventMessage<T, P, M>>
-    public async waitFor<T extends string, P = Events[T], M = Meta>(type: string, timeout?: number): Promise<FastEventMessage<T, P, M>>
-    public async waitFor<T extends string, P = Events[T], M = Meta>(): Promise<FastEventMessage<T, P, M>> {
+    public async waitFor<T extends Types, P = Events[T], M = Meta>(type: T, timeout?: number): Promise<FastEventMessage<Events, M>>
+    public async waitFor<T extends string, P = Events[T], M = Meta>(type: string, timeout?: number): Promise<FastEventMessage<Events, M>>
+    public async waitFor<T extends string, P = Events[T], M = Meta>(): Promise<FastEventMessage<Events, M>> {
         const type = arguments[0] as string
         const timeout = arguments[1] as number
         const message = await this.emitter.waitFor(this._getScopeType(type)!, timeout)
         const scopeMessage = Object.assign({}, message, {
             type: this._fixScopeType(message.type)
         })
-        return scopeMessage as unknown as FastEventMessage<T, P, M>
+        return scopeMessage as unknown as FastEventMessage<Events, M>
     }
     /**
      * 创建一个新的作用域实例

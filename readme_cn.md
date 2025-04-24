@@ -477,7 +477,7 @@ const events = new FastEvent({
 
 ### 调试
 
-启用`debug=true`并导入`fastevent/devtools`,可以在`Redux Dev Tools`中查看事件.
+启用`debug=true`并导入`fastevent/devtools`,可以在[Redux Dev Tools](https://chromewebstore.google.com/detail/redux-devtools/lmhkpmbekcpmknklioeibfkpmmfibljd?utm_source=ext_app_menu)中查看事件.
 
 ```ts
 import 'fastevent/devtools';

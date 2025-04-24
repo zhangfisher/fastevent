@@ -1,19 +1,39 @@
 
 
 
-export interface FastEventMessage<T = string, P = any, M = unknown> {
-    type: T
-    payload: P
-    meta: M
+export interface FaseEventMessageExtend {
+
 }
 
+export type FastEventMessage<
+    Events extends Record<string, any> = Record<string, any>,
+    M = unknown
+> = (
+    {
+        [K in keyof Events]: {
+            type: K
+            payload: Events[K]
+            meta?: M
+        }
+    }[keyof Events]
+) & FaseEventMessageExtend
 
+// 只针对指定类型
 export type FastEventListener<
-    T = string,
+    T extends string = string,
     P = any,
     M = unknown,
     C = any
-> = (this: C, message: FastEventMessage<T, P, M>) => any | Promise<any>
+> = (this: C, message: FastEventMessage<{
+    [K in T]: P
+}, M>) => any | Promise<any>
+
+// 任意事件类型
+export type FastEventAnyListener<
+    Events extends Record<string, any> = Record<string, any>,
+    M = unknown,
+    C = any
+> = (this: C, message: FastEventMessage<Events, M>) => any | Promise<any>
 
 export type FastListenerNode = {
     __listeners: (FastEventListener<any, any, any> | [FastEventListener<any, any>, number])[];

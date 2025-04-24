@@ -8,7 +8,8 @@ import {
     FastEventSubscriber,
     ScopeEvents,
     FastEventListenOptions,
-    FastEventMessage
+    FastEventMessage,
+    FastEventAnyListener
 } from './types';
 import { isPathMatched } from './utils/isPathMatched';
 import { removeItem } from './utils/removeItem';
@@ -22,7 +23,7 @@ import { removeItem } from './utils/removeItem';
  */
 export class FastEvent<
     Events extends FastEvents = FastEvents,
-    Meta extends Record<string, any> = Record<string, any>,
+    Meta = unknown,
     Context = any,
     Types extends keyof Events = keyof Events
 > {
@@ -60,7 +61,8 @@ export class FastEvent<
             id: Math.random().toString(36).substring(2),
             delimiter: '/',
             context: null,
-            ignoreErrors: true
+            ignoreErrors: true,
+            meta: undefined
         }, options)
         this._delimiter = this._options.delimiter!
         this._context = this._options.context || this
@@ -166,9 +168,9 @@ export class FastEvent<
      * emitter.on('event', handler, { count: 3 });
      * ```
      */
-    public on<T extends string>(type: T, listener: FastEventListener<T, Events[T], Meta, Context>, options?: FastEventListenOptions): FastEventSubscriber
-    public on<T extends Types = Types>(type: T, listener: FastEventListener<Types, Events[T], Meta, Context>, options?: FastEventListenOptions): FastEventSubscriber
-    public on<P = any>(type: '**', listener: FastEventListener<Types, P, Meta, Context>): FastEventSubscriber
+    public on<T extends Types = Types>(type: T, listener: FastEventListener<Exclude<T, number | symbol>, Events[T], Meta, Context>, options?: FastEventListenOptions): FastEventSubscriber
+    public on<T extends string>(type: T, listener: FastEventAnyListener<Events, Meta, Context>, options?: FastEventListenOptions): FastEventSubscriber
+    public on(type: '**', listener: FastEventAnyListener<Events, Meta, Context>): FastEventSubscriber
     public on(): FastEventSubscriber {
         const type = arguments[0] as string
         const listener = arguments[1] as FastEventListener
@@ -216,8 +218,8 @@ export class FastEvent<
      * });
      * ```
      */
-    public once<T extends Types = Types>(type: T, listener: FastEventListener<T, Events[T], Meta, Context>): FastEventSubscriber
-    public once<T extends string>(type: T, listener: FastEventListener<T, Events[T], Meta, Context>): FastEventSubscriber
+    public once<T extends Types = Types>(type: T, listener: FastEventListener<Exclude<T, number | symbol>, Events[T], Meta, Context>, options?: FastEventListenOptions): FastEventSubscriber
+    public once<T extends string>(type: T, listener: FastEventAnyListener<Events, Meta, Context>, options?: FastEventListenOptions): FastEventSubscriber
     public once(): FastEventSubscriber {
         return this.on(arguments[0], arguments[1], { count: 1 })
     }
@@ -236,7 +238,7 @@ export class FastEvent<
      * subscriber.off();
      * ```
      */
-    onAny<P = any>(listener: FastEventListener<string, P, Meta, Context>, options?: Pick<FastEventListenOptions, 'prepend'>): FastEventSubscriber {
+    onAny<P = any>(listener: FastEventAnyListener<{ [K: string]: P }, Meta, Context>, options?: Pick<FastEventListenOptions, 'prepend'>): FastEventSubscriber {
         const listeners = this.listeners.__listeners
         if (options && options.prepend) {
             listeners.splice(0, 0, listener)
@@ -546,8 +548,8 @@ export class FastEvent<
      */
     public emit<R = any>(type: string, payload?: any, retain?: boolean, meta?: Meta): R[]
     public emit<R = any>(type: Types, payload?: Events[Types], retain?: boolean, meta?: Meta): R[]
-    public emit<R = any>(message: FastEventMessage<Types, Events[Types], Meta>, retain?: boolean): R[]
-    public emit<R = any>(message: FastEventMessage<string, any, Meta>, retain?: boolean): R[]
+    public emit<R = any>(message: FastEventMessage<Events, Meta>, retain?: boolean): R[]
+    public emit<R = any>(message: FastEventMessage<Events, Meta>, retain?: boolean): R[]
     public emit<R = any>(): R[] {
         let type: string, payload: any, retain: boolean, meta: any
         if (typeof (arguments[0]) === 'object') {
@@ -672,15 +674,15 @@ export class FastEvent<
      * console.log('服务器就绪');
      * ```
      */
-    public waitFor<T extends Types, P = Events[T], M = Meta>(type: T, timeout?: number): Promise<FastEventMessage<T, P, M>>
-    public waitFor<T extends string, P = Events[T], M = Meta>(type: string, timeout?: number): Promise<FastEventMessage<T, P, M>>
-    public waitFor<T extends string, P = Events[T], M = Meta>(): Promise<FastEventMessage<T, P, M>> {
+    public waitFor<T extends Types, P = Events[T], M = Meta>(type: T, timeout?: number): Promise<FastEventMessage<Events, M>>
+    public waitFor<T extends string, P = Events[T], M = Meta>(type: string, timeout?: number): Promise<FastEventMessage<Events, M>>
+    public waitFor<T extends string, P = Events[T], M = Meta>(): Promise<FastEventMessage<Events, M>> {
         const type = arguments[0] as any
         const timeout = arguments[1] as number
-        return new Promise<FastEventMessage<T, P, M>>((resolve, reject) => {
+        return new Promise<FastEventMessage<Events, M>>((resolve, reject) => {
             let tid: any
             let subscriber: FastEventSubscriber
-            const listener = (message: FastEventMessage<T, P, M>) => {
+            const listener = (message: FastEventMessage<Events, M>) => {
                 clearTimeout(tid)
                 subscriber.off()
                 resolve(message)
