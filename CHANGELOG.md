@@ -1,5 +1,11 @@
 # fastevent
 
+## 1.1.3
+
+### Patch Changes
+
+-   028475b: feat: 更改使用 interface FastEventMessage 以方便扩展
+
 ## 1.1.2
 
 ### Patch Changes
