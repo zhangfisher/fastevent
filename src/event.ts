@@ -23,6 +23,7 @@ import { removeItem } from './utils/removeItem';
 export class FastEvent<
     Events extends FastEvents = FastEvents,
     Meta extends Record<string, any> = Record<string, any>,
+    Context = any,
     Types extends keyof Events = keyof Events
 > {
     /** 事件监听器树结构，存储所有注册的事件监听器 */
@@ -35,7 +36,7 @@ export class FastEvent<
     private _delimiter: string = '/'
 
     /** 事件监听器执行时的上下文对象 */
-    private _context: any
+    private _context: Context
 
     /** 保留的事件消息映射，用于新订阅者 */
     retainedMessages: Map<string, any> = new Map<string, any>()
@@ -165,9 +166,9 @@ export class FastEvent<
      * emitter.on('event', handler, { count: 3 });
      * ```
      */
-    public on<T extends string>(type: T, listener: FastEventListener<T, Events[T], Meta>, options?: FastEventListenOptions): FastEventSubscriber
-    public on<T extends Types = Types>(type: T, listener: FastEventListener<Types, Events[T], Meta>, options?: FastEventListenOptions): FastEventSubscriber
-    public on<P = any>(type: '**', listener: FastEventListener<Types, P, Meta>): FastEventSubscriber
+    public on<T extends string>(type: T, listener: FastEventListener<T, Events[T], Meta, Context>, options?: FastEventListenOptions): FastEventSubscriber
+    public on<T extends Types = Types>(type: T, listener: FastEventListener<Types, Events[T], Meta, Context>, options?: FastEventListenOptions): FastEventSubscriber
+    public on<P = any>(type: '**', listener: FastEventListener<Types, P, Meta, Context>): FastEventSubscriber
     public on(): FastEventSubscriber {
         const type = arguments[0] as string
         const listener = arguments[1] as FastEventListener
@@ -215,8 +216,8 @@ export class FastEvent<
      * });
      * ```
      */
-    public once<T extends Types = Types>(type: T, listener: FastEventListener<T, Events[T], Meta>): FastEventSubscriber
-    public once<T extends string>(type: T, listener: FastEventListener<T, Events[T], Meta>): FastEventSubscriber
+    public once<T extends Types = Types>(type: T, listener: FastEventListener<T, Events[T], Meta, Context>): FastEventSubscriber
+    public once<T extends string>(type: T, listener: FastEventListener<T, Events[T], Meta, Context>): FastEventSubscriber
     public once(): FastEventSubscriber {
         return this.on(arguments[0], arguments[1], { count: 1 })
     }
@@ -235,7 +236,7 @@ export class FastEvent<
      * subscriber.off();
      * ```
      */
-    onAny<P = any>(listener: FastEventListener<string, P, Meta>, options?: Pick<FastEventListenOptions, 'prepend'>): FastEventSubscriber {
+    onAny<P = any>(listener: FastEventListener<string, P, Meta, Context>, options?: Pick<FastEventListenOptions, 'prepend'>): FastEventSubscriber {
         const listeners = this.listeners.__listeners
         if (options && options.prepend) {
             listeners.splice(0, 0, listener)

@@ -11,8 +11,9 @@ export type FastEventMessage<T = string, P = any, M = unknown> = {
 export type FastEventListener<
     T = string,
     P = any,
-    M = unknown
-> = (message: FastEventMessage<T, P, M>) => any | Promise<any>
+    M = unknown,
+    C = any
+> = (this: C, message: FastEventMessage<T, P, M>) => any | Promise<any>
 
 export type FastListenerNode = {
     __listeners: (FastEventListener<any, any, any> | [FastEventListener<any, any>, number])[];
@@ -30,7 +31,7 @@ export interface FastEventListenerMeta {
 
 export type FastListeners = FastListenerNode
 
-export type FastEventOptions<M = unknown> = {
+export type FastEventOptions<M = Record<string, any>> = {
     id?: string
     debug?: boolean
     // 事件分隔符

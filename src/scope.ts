@@ -4,6 +4,7 @@ import { FastEventListener, FastEventListenOptions, FastEventMessage, FastEvents
 export class FastEventScope<
     Events extends FastEvents = FastEvents,
     Meta extends Record<string, any> = Record<string, any>,
+    Context = any,
     Types extends keyof Events = keyof Events
 > {
     constructor(public emitter: FastEvent<Events, Meta, Types>, public prefix: string) {
@@ -33,9 +34,9 @@ export class FastEventScope<
         return type.startsWith(this.prefix) ? type.substring(this.prefix.length) : type
     }
 
-    public on<T extends Types = Types>(type: T, listener: FastEventListener<T, Events[T], Meta>, options?: FastEventListenOptions): FastEventSubscriber
-    public on<T extends string>(type: T, listener: FastEventListener<T, Events[T], Meta>, options?: FastEventListenOptions): FastEventSubscriber
-    public on(type: '**', listener: FastEventListener<any, any, Meta>): FastEventSubscriber
+    public on<T extends Types = Types>(type: T, listener: FastEventListener<T, Events[T], Meta, Context>, options?: FastEventListenOptions): FastEventSubscriber
+    public on<T extends string>(type: T, listener: FastEventListener<T, Events[T], Meta, Context>, options?: FastEventListenOptions): FastEventSubscriber
+    public on(type: '**', listener: FastEventListener<any, any, Meta, Context>): FastEventSubscriber
     public on(): FastEventSubscriber {
         const args = [...arguments] as [any, any, any]
         args[0] = this._getScopeType(args[0])
@@ -43,13 +44,13 @@ export class FastEventScope<
         return this.emitter.on(...args)
     }
 
-    public once<T extends string>(type: T, listener: FastEventListener<T, Events[T], Meta>, options?: FastEventListenOptions): FastEventSubscriber
-    public once<T extends Types = Types>(type: T, listener: FastEventListener<Types, Events[T], Meta>, options?: FastEventListenOptions): FastEventSubscriber
+    public once<T extends string>(type: T, listener: FastEventListener<T, Events[T], Meta, Context>, options?: FastEventListenOptions): FastEventSubscriber
+    public once<T extends Types = Types>(type: T, listener: FastEventListener<Types, Events[T], Meta, Context>, options?: FastEventListenOptions): FastEventSubscriber
     public once(): FastEventSubscriber {
         return this.on(arguments[0], arguments[1], Object.assign({}, arguments[2], { count: 1 }))
     }
 
-    onAny<P = any>(listener: FastEventListener<Types, P, Meta>, options?: FastEventListenOptions): FastEventSubscriber {
+    onAny<P = any>(listener: FastEventListener<Types, P, Meta, Context>, options?: FastEventListenOptions): FastEventSubscriber {
         const type = this.prefix + '**'
         return this.on(type as any, listener, options)
     }
