@@ -1,7 +1,7 @@
 
 
 
-export type FastEventMessage<T = string, P = any, M = unknown> = {
+export interface FastEventMessage<T = string, P = any, M = unknown> {
     type: T
     payload: P
     meta: M
@@ -25,9 +25,6 @@ export type FastEventSubscriber = {
     off: () => void
 }
 
-export interface FastEventListenerMeta {
-    emitter?: string
-}
 
 export type FastListeners = FastListenerNode
 
