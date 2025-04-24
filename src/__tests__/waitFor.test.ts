@@ -53,6 +53,7 @@ describe("waitfor", () => {
                 emitter.emit('event3', 'payload3');
             }, 300);
 
+
             // Assert
             Promise.all([
                 event1Promise,

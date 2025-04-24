@@ -95,14 +95,14 @@ describe("scope", () => {
         ]);
 
         expect(results[0].status).toBe('fulfilled');
-        expect((results[0] as any).value).toEqual({ type: 'a/b/c/x', payload: 'payload1', meta: undefined });
+        expect((results[0] as any).value).toEqual({ type: 'x', payload: 'payload1', meta: undefined });
 
         expect(results[1].status).toBe('rejected');
         //@ts-ignore
         expect(results[1].reason).toBeInstanceOf(Error);
 
         expect(results[2].status).toBe('fulfilled');
-        expect((results[2] as any).value).toEqual({ type: 'a/b/c/z', payload: 'payload3', meta: undefined });
+        expect((results[2] as any).value).toEqual({ type: 'z', payload: 'payload3', meta: undefined });
     });
 
 

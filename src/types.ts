@@ -31,6 +31,8 @@ export interface FastEventListenerMeta {
 export type FastListeners = FastListenerNode
 
 export type FastEventOptions<M = unknown> = {
+    id?: string
+    debug?: boolean
     // 事件分隔符
     delimiter?: string
     // 侦听器函数执行上下文
@@ -45,10 +47,14 @@ export type FastEventOptions<M = unknown> = {
     onAddListener?: (type: string[], listener: FastEventListener) => void
     // 当移除侦听器时回调
     onRemoveListener?: (type: string[], listener: FastEventListener) => void
+    // 当清空侦听器时回调
+    onClearListeners?: () => void
+    // 当执行侦听器后时回调
+    onExecuteListener?: (message: FastEventMessage, returns: any[], listeners: (FastEventListener<any, any, any> | [FastEventListener<any, any>, number])[]) => void
 }
 
-export type FastEvents = Record<string, any>
 
+export type FastEvents = Record<string, any>
 
 export type ScopeEvents<T extends Record<string, any>, Prefix extends string> = {
     [K in keyof T as K extends `${Prefix}/${infer Rest}` ? Rest : never]: T[K];

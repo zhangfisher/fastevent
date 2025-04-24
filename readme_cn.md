@@ -346,9 +346,23 @@ events.on('process', () => {
 events.emit('process');
 ```
 
-## TypeScript 类型支持
+## 泛型参数
 
-FastEvent 使用 TypeScript 编写，提供完整的类型支持：
+FastEvent 支持三个泛型类型参数来实现精确的类型控制：
+
+```typescript
+class FastEvent<
+    Events extends Record<string, any> = Record<string, any>,
+    Meta extends Record<string, any> = Record<string, any>,
+    Types extends keyof Events = keyof Events
+>
+```
+
+1. `Events`：定义事件类型和对应的载荷（payload）类型的映射
+2. `Meta`：定义可以附加到事件的元数据类型
+3. `Types`：所有事件类型的联合类型（通常从 Events 中推导）
+
+### 基本类型安全
 
 ```typescript
 // 定义事件类型
@@ -371,6 +385,59 @@ events.emit('wrong/event', {});
 
 // 错误：错误的数据类型
 events.emit('user/login', { wrong: 'type' });
+```
+
+### 自定义元数据类型
+
+```typescript
+// 定义元数据结构
+interface MyMeta {
+    timestamp: number;
+    source: string;
+}
+
+// 创建带自定义元数据的事件发射器
+const events = new FastEvent<MyEvents, MyMeta>();
+
+events.on('user/login', (message) => {
+    // message.meta 的类型为 MyMeta
+    const { timestamp, source } = message.meta;
+    console.log(`来自 ${source} 的登录，时间：${timestamp}`);
+});
+
+// 发送带类型化元数据的事件
+events.emit('user/login', { id: 1, name: 'Alice' }, false, { timestamp: Date.now(), source: 'web' });
+```
+
+### 高级类型用法
+
+```typescript
+// 定义具有不同载荷类型的事件
+interface ComplexEvents {
+    'data/number': number;
+    'data/string': string;
+    'data/object': { value: any };
+}
+
+const events = new FastEvent<ComplexEvents>();
+
+// TypeScript 确保每个事件的类型安全
+events.on('data/number', (message) => {
+    const sum = message.payload + 1; // payload 的类型为 number
+});
+
+events.on('data/string', (message) => {
+    const upper = message.payload.toUpperCase(); // payload 的类型为 string
+});
+
+events.on('data/object', (message) => {
+    const value = message.payload.value; // payload 的类型为 { value: any }
+});
+
+// 所有的事件发送都会进行类型检查
+events.emit('data/number', 42);
+events.emit('data/string', 'hello');
+events.emit('data/object', { value: true });
 ```
 
 ## 自定义选项
@@ -398,7 +465,24 @@ const events = new FastEvent({
   },
   onRemoveListener: (path, listener) => {
     console.log('移除监听器:', path);
+  },
+  onClearListeners: () => {
+    console.log('清空监听器:', path);
+  },
+  onExecuteListener: (message: FastEventMessage, returns: any[], listeners: (FastEventListener<any, any, any> | [FastEventListener<any, any>, number])[]) => {
+    console.log('监听器执行后的回调:');
   }
+});
+```
+
+### 调试
+
+启用`debug=true`并导入`fastevent/devtools`,可以在`Redux Dev Tools`中查看事件.
+
+```ts
+import 'fastevent/devtools';
+const emitter = new FastEvent<MyEvents>({
+    debug: true,
 });
 ```
 

@@ -346,9 +346,23 @@ events.on('process', () => {
 events.emit('process');
 ```
 
-## TypeScript Support
+## Generic Parameters
 
-FastEvent is written in TypeScript and provides full type support:
+FastEvent supports three generic type parameters for precise type control:
+
+```typescript
+class FastEvent<
+    Events extends Record<string, any> = Record<string, any>,
+    Meta extends Record<string, any> = Record<string, any>,
+    Types extends keyof Events = keyof Events
+>
+```
+
+1. `Events`: Defines the mapping between event types and their payload types
+2. `Meta`: Defines the type of metadata that can be attached to events
+3. `Types`: The union type of all event types (usually inferred from Events)
+
+### Basic Type Safety
 
 ```typescript
 // Define event types
@@ -371,6 +385,59 @@ events.emit('wrong/event', {});
 
 // Error: wrong payload type
 events.emit('user/login', { wrong: 'type' });
+```
+
+### Custom Metadata Types
+
+```typescript
+// Define metadata structure
+interface MyMeta {
+    timestamp: number;
+    source: string;
+}
+
+// Define events with custom metadata
+const events = new FastEvent<MyEvents, MyMeta>();
+
+events.on('user/login', (message) => {
+    // message.meta is typed as MyMeta
+    const { timestamp, source } = message.meta;
+    console.log(`Login from ${source} at ${timestamp}`);
+});
+
+// Emit with typed metadata
+events.emit('user/login', { id: 1, name: 'Alice' }, false, { timestamp: Date.now(), source: 'web' });
+```
+
+### Advanced Type Usage
+
+```typescript
+// Define events with different payload types
+interface ComplexEvents {
+    'data/number': number;
+    'data/string': string;
+    'data/object': { value: any };
+}
+
+const events = new FastEvent<ComplexEvents>();
+
+// TypeScript ensures type safety for each event
+events.on('data/number', (message) => {
+    const sum = message.payload + 1; // payload is typed as number
+});
+
+events.on('data/string', (message) => {
+    const upper = message.payload.toUpperCase(); // payload is typed as string
+});
+
+events.on('data/object', (message) => {
+    const value = message.payload.value; // payload is typed as { value: any }
+});
+
+// All emissions are type checked
+events.emit('data/number', 42);
+events.emit('data/string', 'hello');
+events.emit('data/object', { value: true });
 ```
 
 ## Custom Options
@@ -399,6 +466,23 @@ const events = new FastEvent({
   onRemoveListener: (path, listener) => {
     console.log('Listener removed:', path);
   }
+  onClearListeners: () => {
+    console.log('清空监听器:', path);
+  },
+  onExecuteListener: (message: FastEventMessage, returns: any[], listeners: (FastEventListener<any, any, any> | [FastEventListener<any, any>, number])[]) => {
+    console.log('监听器执行后的回调:');
+  }
+});
+```
+
+### debug
+
+Use `debug` option to enable debug mode and import `fastevent/devtools`, so that you can see the events in `Redux Dev Tools`.
+
+```ts
+import 'fastevent/devtools';
+const emitter = new FastEvent({
+    debug: true,
 });
 ```
 

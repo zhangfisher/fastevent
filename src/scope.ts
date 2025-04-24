@@ -29,9 +29,12 @@ export class FastEventScope<
     private _getScopeType(type: string) {
         return type === undefined ? undefined : this.prefix + type
     }
+    private _fixScopeType(type: string) {
+        return type.startsWith(this.prefix) ? type.substring(this.prefix.length) : type
+    }
 
-    public on<T extends string>(type: T, listener: FastEventListener<T, Events[T], Meta>, options?: FastEventListenOptions): FastEventSubscriber
     public on<T extends Types = Types>(type: T, listener: FastEventListener<T, Events[T], Meta>, options?: FastEventListenOptions): FastEventSubscriber
+    public on<T extends string>(type: T, listener: FastEventListener<T, Events[T], Meta>, options?: FastEventListenOptions): FastEventSubscriber
     public on(type: '**', listener: FastEventListener<any, any, Meta>): FastEventSubscriber
     public on(): FastEventSubscriber {
         const args = [...arguments] as [any, any, any]
@@ -68,20 +71,25 @@ export class FastEventScope<
     clear() {
         this.offAll()
     }
-    public emit<R = any>(type: string, payload?: any, retain?: boolean): R[]
+
     public emit<R = any>(type: Types, payload?: Events[Types], retain?: boolean): R[]
+    public emit<R = any>(type: string, payload?: any, retain?: boolean): R[]
     public emit<R = any>(): R[] {
         const type = arguments[0] as string
         const payload = arguments[1]
         const retain = arguments[2] as boolean
         return this.emitter.emit(this._getScopeType(type)!, payload, retain)
     }
-    public waitFor<R = any>(type: string, timeout?: number): Promise<R>
-    public waitFor<R = any>(type: Types, timeout?: number): Promise<R>
-    public waitFor<R = any>(): Promise<R> {
+    public async waitFor<T extends Types, P = Events[T], M = Meta>(type: T, timeout?: number): Promise<FastEventMessage<T, P, M>>
+    public async waitFor<T extends string, P = Events[T], M = Meta>(type: string, timeout?: number): Promise<FastEventMessage<T, P, M>>
+    public async waitFor<T extends string, P = Events[T], M = Meta>(): Promise<FastEventMessage<T, P, M>> {
         const type = arguments[0] as string
         const timeout = arguments[1] as number
-        return this.emitter.waitFor(this._getScopeType(type)!, timeout)
+        const message = await this.emitter.waitFor(this._getScopeType(type)!, timeout)
+        const scopeMessage = Object.assign({}, message, {
+            type: this._fixScopeType(message.type)
+        })
+        return scopeMessage as unknown as FastEventMessage<T, P, M>
     }
     public scope(prefix: string) {
         return this.emitter.scope(this._getScopeType(prefix)!)

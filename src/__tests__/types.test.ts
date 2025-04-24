@@ -85,6 +85,28 @@ describe("Types", () => {
         })
         emitter.emit("x/y/z", 1)
 
+        emitter.on("x/y/z", (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, "x/y/z">>,
+                Expect<Equal<typeof message.payload, unknown>>
+            ]
+        })
+
+        emitter.on("x/y/z/a", (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, "x/y/z/a">>,
+                Expect<Equal<typeof message.payload, 1>>
+            ]
+        })
+        emitter.waitFor("x/y/z/a").then((message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, "x/y/z/a">>,
+                Expect<Equal<typeof message.payload, 1>>
+            ]
+        })
+
+
+
         // ----- scope -----
 
         const scope = emitter.scope("x/y/z")
@@ -116,19 +138,8 @@ describe("Types", () => {
                 Expect<Equal<typeof message.payload, 3>>
             ]
         })
-        emitter.on("x/y/z", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, "x/y/z">>,
-                Expect<Equal<typeof message.payload, unknown>>
-            ]
-        })
 
-        emitter.on("x/y/z/a", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, "x/y/z/a">>,
-                Expect<Equal<typeof message.payload, 1>>
-            ]
-        })
+
 
     })
 })
