@@ -13,17 +13,46 @@ import {
 import { isPathMatched } from './utils/isPathMatched';
 import { removeItem } from './utils/removeItem';
 
+/**
+ * FastEvent 事件发射器类
+ * 
+ * @template Events - 事件类型定义，继承自FastEvents接口
+ * @template Meta - 事件元数据类型，默认为任意键值对对象
+ * @template Types - 事件类型的键名类型，默认为Events的键名类型
+ */
 export class FastEvent<
     Events extends FastEvents = FastEvents,
     Meta extends Record<string, any> = Record<string, any>,
     Types extends keyof Events = keyof Events
 > {
+    /** 事件监听器树结构，存储所有注册的事件监听器 */
     public listeners: FastListeners = { __listeners: [] } as unknown as FastListeners
+
+    /** 事件发射器的配置选项 */
     private _options: FastEventOptions
+
+    /** 事件名称的分隔符，默认为'/' */
     private _delimiter: string = '/'
+
+    /** 事件监听器执行时的上下文对象 */
     private _context: any
+
+    /** 保留的事件消息映射，用于新订阅者 */
     retainedMessages: Map<string, any> = new Map<string, any>()
+
+    /** 当前注册的监听器总数 */
     listenerCount: number = 0
+    /**
+     * 创建FastEvent实例
+     * @param options - 事件发射器的配置选项
+     * 
+     * 默认配置：
+     * - debug: false - 是否启用调试模式
+     * - id: 随机字符串 - 实例唯一标识符
+     * - delimiter: '/' - 事件名称分隔符
+     * - context: null - 监听器执行上下文
+     * - ignoreErrors: true - 是否忽略监听器执行错误
+     */
     constructor(options?: FastEventOptions<Meta>) {
         this._options = Object.assign({
             debug: false,
@@ -36,7 +65,11 @@ export class FastEvent<
         this._context = this._options.context || this
         this._enableDevTools()
     }
+
+    /** 获取事件发射器的配置选项 */
     get options() { return this._options }
+
+    /** 获取事件发射器的唯一标识符 */
     get id() { return this._options.id! }
     private _addListener(parts: string[], listener: FastEventListener<any, any>, options: Required<FastEventListenOptions>): FastListenerNode | undefined {
         const { count, prepend } = options
@@ -108,6 +141,30 @@ export class FastEvent<
             return isRemove
         })
     }
+    /**
+     * 注册事件监听器
+     * @param type - 事件类型，支持以下格式：
+     *   - 普通字符串：'user/login'
+     *   - 通配符：'user/*'（匹配单层）或'user/**'（匹配多层）
+     *   - 全局监听：'**'（监听所有事件）
+     * @param listener - 事件监听器函数
+     * @param options - 监听器配置选项：
+     *   - count: 触发次数限制，0表示无限制
+     *   - prepend: 是否将监听器添加到监听器队列开头
+     * @returns 返回订阅者对象，包含off方法用于取消监听
+     * 
+     * @example
+     * ```ts
+     * // 监听特定事件
+     * emitter.on('user/login', (data) => console.log(data));
+     * 
+     * // 使用通配符
+     * emitter.on('user/*', (data) => console.log(data));
+     * 
+     * // 限制触发次数
+     * emitter.on('event', handler, { count: 3 });
+     * ```
+     */
     public on<T extends string>(type: T, listener: FastEventListener<T, Events[T], Meta>, options?: FastEventListenOptions): FastEventSubscriber
     public on<T extends Types = Types>(type: T, listener: FastEventListener<Types, Events[T], Meta>, options?: FastEventListenOptions): FastEventSubscriber
     public on<P = any>(type: '**', listener: FastEventListener<Types, P, Meta>): FastEventSubscriber
@@ -137,6 +194,27 @@ export class FastEvent<
     }
 
 
+    /**
+     * 注册一次性事件监听器
+     * @param type - 事件类型，支持与on方法相同的格式：
+     *   - 普通字符串：'user/login'
+     *   - 通配符：'user/*'（匹配单层）或'user/**'（匹配多层）
+     * @param listener - 事件监听器函数
+     * @returns 返回订阅者对象，包含off方法用于取消监听
+     * 
+     * @description
+     * 监听器只会在事件首次触发时被调用一次，之后会自动解除注册。
+     * 这是on方法的特例，相当于设置options.count = 1。
+     * 如果事件有保留消息，新注册的监听器会立即收到最近一次的保留消息并解除注册。
+     * 
+     * @example
+     * ```ts
+     * // 只监听一次登录事件
+     * emitter.once('user/login', (data) => {
+     *   console.log('用户登录:', data);
+     * });
+     * ```
+     */
     public once<T extends Types = Types>(type: T, listener: FastEventListener<T, Events[T], Meta>): FastEventSubscriber
     public once<T extends string>(type: T, listener: FastEventListener<T, Events[T], Meta>): FastEventSubscriber
     public once(): FastEventSubscriber {
@@ -339,6 +417,23 @@ export class FastEvent<
         traverseNodes(entryNode, callback, []);
     }
 
+    /**
+     * 执行单个监听器函数
+     * @param listener - 要执行的监听器函数或包装过的监听器对象
+     * @param message - 事件消息对象，包含type、payload和meta
+     * @returns 监听器的执行结果或错误对象（如果配置了ignoreErrors）
+     * @private
+     * 
+     * @description
+     * 执行单个监听器函数，处理以下情况：
+     * - 如果监听器是包装过的（有__wrappedListener属性），调用包装的函数
+     * - 否则直接调用监听器函数
+     * - 使用配置的上下文（_context）作为this
+     * - 捕获并处理执行过程中的错误：
+     *   - 如果有onListenerError回调，调用它
+     *   - 如果配置了ignoreErrors，返回错误对象
+     *   - 否则抛出错误
+     */
     private _executeListener(listener: any, message: FastEventMessage): any {
         try {
             if (typeof (listener.__wrappedListener) === 'function') {
@@ -410,6 +505,44 @@ export class FastEvent<
      * // 方式2: 对象形式
      * emit({ type: 'user.login', payload: { id: 1 } ,meta:{...}}}, true)
      */
+    /**
+     * 同步触发事件
+     * @param type - 事件类型，可以是字符串或预定义的事件类型
+     * @param payload - 事件数据负载
+     * @param retain - 是否保留该事件，用于后续新的订阅者
+     * @param meta - 事件元数据
+     * @returns 所有监听器的执行结果数组
+     * 
+     * @description
+     * 同步触发指定类型的事件，支持两种调用方式：
+     * 1. 参数形式：emit(type, payload, retain, meta)
+     * 2. 对象形式：emit({ type, payload, meta }, retain)
+     * 
+     * 特性：
+     * - 支持通配符匹配，一个事件可能触发多个监听器
+     * - 如果设置了retain为true，会保存最后一次的事件数据
+     * - 按照注册顺序同步调用所有匹配的监听器
+     * - 如果配置了ignoreErrors，监听器抛出的错误会被捕获并返回
+     * 
+     * @example
+     * ```ts
+     * // 简单事件触发
+     * emitter.emit('user/login', { userId: 123 });
+     * 
+     * // 带保留的事件触发
+     * emitter.emit('status/change', { online: true }, true);
+     * 
+     * // 带元数据的事件触发
+     * emitter.emit('data/update', newData, false, { timestamp: Date.now() });
+     * 
+     * // 使用对象形式触发
+     * emitter.emit({
+     *   type: 'user/login',
+     *   payload: { userId: 123 },
+     *   meta: { time: Date.now() }
+     * }, true);
+     * ```
+     */
     public emit<R = any>(type: string, payload?: any, retain?: boolean, meta?: Meta): R[]
     public emit<R = any>(type: Types, payload?: Events[Types], retain?: boolean, meta?: Meta): R[]
     public emit<R = any>(message: FastEventMessage<Types, Events[Types], Meta>, retain?: boolean): R[]
@@ -453,6 +586,42 @@ export class FastEvent<
         return results
     }
 
+    /**
+     * 异步触发事件
+     * @param type - 事件类型，可以是字符串或预定义的事件类型
+     * @param payload - 事件数据负载
+     * @param retain - 是否保留该事件，用于后续新的订阅者
+     * @param meta - 事件元数据
+     * @returns Promise，解析为所有监听器的执行结果数组
+     * 
+     * @description
+     * 异步触发指定类型的事件，与emit方法类似，但有以下区别：
+     * - 返回Promise，等待所有异步监听器执行完成
+     * - 使用Promise.allSettled处理监听器的执行结果
+     * - 即使某些监听器失败，也会等待所有监听器执行完成
+     * - 返回结果包含成功值或错误信息
+     * 
+     * @example
+     * ```ts
+     * // 异步事件处理
+     * const results = await emitter.emitAsync('data/process', rawData);
+     * 
+     * // 处理结果包含成功和失败的情况
+     * results.forEach(result => {
+     *   if (result instanceof Error) {
+     *     console.error('处理失败:', result);
+     *   } else {
+     *     console.log('处理成功:', result);
+     *   }
+     * });
+     * 
+     * // 带元数据的异步事件
+     * await emitter.emitAsync('batch/process', items, false, {
+     *   batchId: 'batch-001',
+     *   timestamp: Date.now()
+     * });
+     * ```
+     */
     public async emitAsync<R = any>(type: string, payload?: any, retain?: boolean, meta?: Meta): Promise<[R | Error][]>
     public async emitAsync<R = any>(type: Types, payload?: Events[Types], retain?: boolean, meta?: Meta): Promise<[R | Error][]>
     public async emitAsync<P = any>(): Promise<[P | Error][]> {
@@ -476,12 +645,31 @@ export class FastEvent<
     }
 
     /**
-     * 等待指定事件发生 
+     * 等待指定事件发生，返回一个Promise
+     * @param type - 要等待的事件类型
+     * @param timeout - 超时时间（毫秒），默认为0表示永不超时
+     * @returns Promise，解析为事件消息对象，包含type、payload和meta
      * 
-     * waitFor("x")
+     * @description
+     * 创建一个Promise，在指定事件发生时解析。
+     * - 当事件触发时，Promise会解析为事件消息对象
+     * - 如果设置了timeout且超时，Promise会被拒绝
+     * - 一旦事件发生或超时，会自动取消事件监听
      * 
-     * @param type 
-     * @param timeout  超时时间，单位毫秒，默认为 0，表示无限等待
+     * @example
+     * ```ts
+     * try {
+     *   // 等待登录事件，最多等待5秒
+     *   const event = await emitter.waitFor('user/login', 5000);
+     *   console.log('用户登录成功:', event.payload);
+     * } catch (error) {
+     *   console.error('等待登录超时');
+     * }
+     * 
+     * // 无限等待事件
+     * const event = await emitter.waitFor('server/ready');
+     * console.log('服务器就绪');
+     * ```
      */
     public waitFor<T extends Types, P = Events[T], M = Meta>(type: T, timeout?: number): Promise<FastEventMessage<T, P, M>>
     public waitFor<T extends string, P = Events[T], M = Meta>(type: string, timeout?: number): Promise<FastEventMessage<T, P, M>>
@@ -507,22 +695,44 @@ export class FastEvent<
     }
 
     /**
-     * 创建事件域
+     * 创建一个新的事件作用域
+     * @param prefix - 作用域前缀，将自动添加到该作用域下所有事件名称前
+     * @returns 新的FastEventScope实例
      * 
-     * 注意：
+     * @description
+     * 创建一个新的事件作用域，用于在特定命名空间下管理事件。
      * 
-     *  事件域与当前事件对象共享相同的侦听器表
-     *  也就是说，如果在事件域中触发事件，当前事件对象也会触发该事件
-     *  两者工不是完全隔离的,仅是事件侦听和触发时的事件类型不同而已
+     * 重要特性：
+     * - 作用域与父事件发射器共享同一个监听器表
+     * - 作用域中的事件会自动添加前缀
+     * - 作用域的所有操作都会映射到父事件发射器上
+     * - 作用域不是完全隔离的，只是提供了事件名称的命名空间
      * 
-     * const emitter = new FastEvent()
+     * @example
+     * ```ts
+     * const emitter = new FastEvent();
      * 
-     * const scope= emitter.scope("a/b")
+     * // 创建用户相关事件的作用域
+     * const userEvents = emitter.scope('user');
      * 
-     * scope.on("x",()=>{})   == emitter.on("a/b/x",()=>{})
-     * scope.emit("x",1)      == emitter.emit("a/b/x",1) 
-     * scope.offAll()         == emitter.offAll("a/b")
+     * // 在作用域中监听事件
+     * userEvents.on('login', (data) => {
+     *   // 实际监听的是 'user/login'
+     *   console.log('用户登录:', data);
+     * });
      * 
+     * // 在作用域中触发事件
+     * userEvents.emit('login', { userId: 123 });
+     * // 等同于 emitter.emit('user/login', { userId: 123 })
+     * 
+     * // 创建嵌套作用域
+     * const profileEvents = userEvents.scope('profile');
+     * profileEvents.emit('update', { name: 'John' });
+     * // 等同于 emitter.emit('user/profile/update', { name: 'John' })
+     * 
+     * // 清理作用域
+     * userEvents.offAll();  // 清理 'user' 前缀下的所有事件
+     * ```
      */
     scope<T extends string>(prefix: T) {
         return new FastEventScope<ScopeEvents<Events, T>>(this as unknown as FastEvent<ScopeEvents<Events, T>>, prefix)

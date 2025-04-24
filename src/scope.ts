@@ -91,6 +91,38 @@ export class FastEventScope<
         })
         return scopeMessage as unknown as FastEventMessage<T, P, M>
     }
+    /**
+     * 创建一个新的作用域实例
+     * @param prefix - 作用域前缀
+     * @returns 新的FastEventScope实例
+     * 
+     * @description
+     * 基于当前作用域创建一个新的子作用域。新作用域会继承当前作用域的所有特性，
+     * 并在事件类型前添加额外的前缀。这允许创建层级化的事件命名空间。
+     * 
+     * 作用域的特性：
+     * - 自动为所有事件类型添加前缀
+     * - 在触发事件时自动添加前缀
+     * - 在接收事件时自动移除前缀
+     * - 支持多层级的作用域嵌套
+     * 
+     * @example
+     * ```ts
+     * const emitter = new FastEvent();
+     * const userScope = emitter.scope('user');
+     * const profileScope = userScope.scope('profile');
+     * 
+     * // 在profileScope中监听'update'事件
+     * // 实际监听的是'user/profile/update'
+     * profileScope.on('update', (data) => {
+     *   console.log('Profile updated:', data);
+     * });
+     * 
+     * // 在profileScope中触发'update'事件
+     * // 实际触发的是'user/profile/update'
+     * profileScope.emit('update', { name: 'John' });
+     * ```
+     */
     public scope(prefix: string) {
         return this.emitter.scope(this._getScopeType(prefix)!)
     }
