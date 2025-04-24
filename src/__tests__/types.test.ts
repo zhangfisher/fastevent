@@ -6,7 +6,7 @@ import { FastEventMessage, ScopeEvents } from "../types"
 
 
 describe("Types", () => {
-    test("Types tests", () => {
+    test("event types tests", () => {
         interface CustomEvents {
             a: boolean
             b: number
@@ -125,6 +125,10 @@ describe("Types", () => {
             ]
         })
         // ------------------ emit ------------------
+        type emitCases = [
+
+        ]
+
         emitter.emit("a", true)
         emitter.emit("b", 100)
         emitter.emit("c", "hello")
@@ -139,6 +143,96 @@ describe("Types", () => {
 
 
 
+
+    })
+    test("event types tests without event types", () => {
+
+        const emitter = new FastEvent()
+        // ------------------ on ------------------
+        emitter.on("a", (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, 'a'>>,
+                Expect<Equal<typeof message.payload, boolean>>,
+                Expect<Equal<typeof message.meta, unknown>>
+            ]
+        })
+        emitter.on("b", (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, "b">>,
+                Expect<Equal<typeof message.payload, number>>,
+                Expect<Equal<typeof message.meta, unknown>>
+            ]
+        })
+        // --------------------- once ------------------
+        emitter.once("a", (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, 'a'>>,
+                Expect<Equal<typeof message.payload, boolean>>,
+                Expect<Equal<typeof message.meta, unknown>>
+            ]
+        })
+        emitter.once("b", (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, "b">>,
+                Expect<Equal<typeof message.payload, number>>,
+                Expect<Equal<typeof message.meta, unknown>>
+            ]
+        })
+        // ------------------ onAny ------------------
+        emitter.onAny((message) => {
+            message.type = "xxx"
+            type cases = [
+                Expect<Equal<typeof message.type, string>>,
+                Expect<Equal<typeof message.payload, any>>
+            ]
+        })
+        emitter.onAny<number>((message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, string>>,
+                Expect<Equal<typeof message.payload, number>>
+            ]
+        })
+        // ------------------ emit ------------------
+        emitter.emit("a", true)
+        emitter.emit("b", 100)
+        emitter.emit("c", "hello")
+        emitter.emit("x/y/z/a", 1)
+        emitter.emit("x/y/z/b", 2)
+        emitter.emit("x/y/z/c", 3)
+        emitter.emit("xxx", 100)
+        emitter.emit("xxx", "hello")
+        emitter.emit("xxx", true)
+        emitter.emit("xxx", false)
+    })
+    test("scope event types tests", () => {
+
+        interface CustomEvents {
+            a: boolean
+            b: number
+            c: string,
+            "x/y/z/a": 1
+            "x/y/z/b": 2
+            "x/y/z/c": 3
+        }
+
+        type ScopeCustomEvents = ScopeEvents<CustomEvents, 'x/y/z'>
+
+        type cases = [
+            Expect<Equal<ScopeCustomEvents, {
+                a: 1
+                b: 2
+                c: 3
+            }>>
+        ]
+
+        interface CustomMeta {
+            a: number
+            b: string
+            c: boolean
+        }
+
+
+        const emitter = new FastEvent<CustomEvents, CustomMeta>()
         // ----- scope -----
 
         const scope = emitter.scope("x/y/z")
@@ -170,7 +264,6 @@ describe("Types", () => {
                 Expect<Equal<typeof message.payload, 3>>
             ]
         })
-
 
 
     })
