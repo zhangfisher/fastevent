@@ -1,0 +1,36 @@
+{
+    "$schema": "./node_modules/oxlint/configuration_schema.json",
+    "plugins": [
+        "import",
+        "typescript",
+        "unicorn"
+    ],
+    "env": {
+        "browser": true
+    },
+    "globals": {
+        "foo": "readonly"
+    },
+    "settings": {},
+    "rules": {
+        "eqeqeq": "warn",
+        "import/no-cycle": "error",
+        "react/self-closing-comp": [
+            "error",
+            {
+                "html": false
+            }
+        ]
+    },
+    "overrides": [
+        {
+            "files": [
+                "*.test.ts",
+                "*.spec.ts"
+            ],
+            "rules": {
+                "@typescript-eslint/no-explicit-any": "off"
+            }
+        }
+    ]
+}

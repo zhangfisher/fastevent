@@ -1,5 +1,6 @@
 import { describe, test, expect } from "vitest"
 import { FastEvent } from "../event"
+import { FastEventListener } from '../types';
 
 
 describe("scope", () => {
@@ -104,7 +105,200 @@ describe("scope", () => {
         expect(results[2].status).toBe('fulfilled');
         expect((results[2] as any).value).toEqual({ type: 'z', payload: 'payload3', meta: undefined });
     });
+    test('nested scope', async () => {
+        type CustomEvents = {
+            a: boolean
+            b: number
+            c: string
+        }
+        const emitter = new FastEvent();
+        const listener = (({ type }) => {
+            anyEvents.push(type)
+        }) as FastEventListener
+
+        emitter.onAny(listener)
+
+        const scope = emitter.scope("a/b/c")
+        scope.onAny(listener)
+
+        const dScope = scope.scope("d") // a/b/c/d
+        dScope.onAny(listener)
+
+        const eScope = scope.scope("e")// a/b/c/e
+        eScope.onAny(listener)
+
+        const fScope = scope.scope("f")// a/b/c/f
+        fScope.onAny(listener)
+
+        const anyEvents: string[] = []
+        emitter.emit("root", 1)
+        scope.emit("c", 1)
+        dScope.emit("d", 1)
+        eScope.emit("e", 1)
+        fScope.emit("f", 1)
+
+        expect(anyEvents).toEqual([
+            "root",
+            "a/b/c/c",
+            "c",
+            "a/b/c/d/d",
+            "d/d",
+            "d",
+            "a/b/c/e/e",
+            "e/e",
+            "e",
+            "a/b/c/f/f",
+            "f/f",
+            "f",
+        ])
 
 
+    })
+    test('nested scope2', async () => {
+        type CustomEvents = {
+            a: boolean
+            b: number
+            c: string
+        }
+        const emitter = new FastEvent();
+        const listener = (({ type }) => {
+            anyEvents.push(type)
+        }) as FastEventListener
+
+        emitter.onAny(listener)
+
+        const scope = emitter.scope("a/b/c")
+        scope.onAny(listener)
+
+        const dScope = scope.scope("d") // a/b/c/d
+        dScope.onAny(listener)
+
+        const eScope = dScope.scope("e")// a/b/c/d/e
+        eScope.onAny(listener)
+
+        const fScope = eScope.scope("f")// a/b/c/d/e/f
+        fScope.onAny(listener)
+
+        const anyEvents: string[] = []
+        emitter.emit("root", 1)
+        scope.emit("c", 1)
+        dScope.emit("d", 1)
+        eScope.emit("e", 1)
+        fScope.emit("f", 1)
+
+        expect(anyEvents).toEqual([
+            "root",
+            "a/b/c/c",
+            "c",
+            "a/b/c/d/d",
+            "d/d",
+            "d",
+            "a/b/c/d/e/e",
+            "d/e/e",
+            "e/e",
+            "e",
+            "a/b/c/d/e/f/f",
+            "d/e/f/f",
+            "e/f/f",
+            "f/f",
+            "f",
+        ])
+
+
+    })
+    test('nested scope meta merged', async () => {
+        type CustomEvents = {
+            a: boolean
+            b: number
+            c: string
+        }
+        const emitter = new FastEvent({
+            meta: { root: 1 }
+        });
+
+
+        let receiveMeta: any
+        const listener = (({ type, meta }) => {
+            receiveMeta = meta
+        }) as FastEventListener
+
+        emitter.onAny(listener)
+
+        const scope = emitter.scope("a/b/c", {
+            meta: { c: 1 }
+        })
+        scope.onAny(listener)
+
+        const dScope = scope.scope("d", {
+            meta: { d: 1 }
+        })
+        dScope.onAny(listener)
+
+        const eScope = dScope.scope("e", {
+            meta: { e: 1 }
+        })// a/b/c/d/e
+        eScope.onAny(listener)
+
+        const fScope = eScope.scope("f", {
+            meta: { f: 1 }
+        })// a/b/c/d/e/f
+        fScope.onAny(listener)
+
+        emitter.emit("root", 1)
+        expect(receiveMeta).toEqual({ root: 1 })
+        scope.emit("c", 1)
+        expect(receiveMeta).toEqual({ root: 1, c: 1 })
+        dScope.emit("d", 1)
+        expect(receiveMeta).toEqual({ root: 1, c: 1, d: 1 })
+        eScope.emit("e", 1)
+        expect(receiveMeta).toEqual({ root: 1, c: 1, d: 1, e: 1 })
+        fScope.emit("f", 1)
+        expect(receiveMeta).toEqual({ root: 1, c: 1, d: 1, e: 1, f: 1 })
+
+    })
+    test('nested scope with meta', async () => {
+        const listener = (({ type, meta }) => {
+            receiveMeta = meta
+        }) as FastEventListener
+
+        const emitter = new FastEvent({
+            meta: { 'root': 1 }
+        }); let receiveMeta: any
+
+
+        emitter.onAny(listener)
+
+        const scope = emitter.scope("a/b/c", {
+            meta: { 'c': 1 }
+        })
+        scope.onAny(listener)
+
+        const dScope = scope.scope("d", {
+            meta: { 'd': 1 }
+        }) // a/b/c/d
+        dScope.onAny(listener)
+
+        const eScope = scope.scope("e", {
+            meta: { 'e': 1 }
+        })// a/b/c/e
+        eScope.onAny(listener)
+
+        const fScope = scope.scope("f", {
+            meta: { 'f': 1 }
+        })// a/b/c/f
+        fScope.onAny(listener)
+
+        emitter.emit("root", 1)
+        expect(receiveMeta).toEqual({ root: 1 })
+        scope.emit("c", 1)
+        expect(receiveMeta).toEqual({ root: 1, c: 1 })
+        dScope.emit("d", 1)
+        expect(receiveMeta).toEqual({ root: 1, c: 1, d: 1 })
+        eScope.emit("e", 1)
+        expect(receiveMeta).toEqual({ root: 1, c: 1, e: 1 })
+        fScope.emit("f", 1)
+        expect(receiveMeta).toEqual({ root: 1, c: 1, f: 1 })
+
+    })
 })
 

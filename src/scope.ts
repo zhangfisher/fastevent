@@ -1,32 +1,53 @@
 import { FastEvent } from "./event";
-import { FastEventListener, FastEventListenOptions, FastEventMessage, FastEvents, FastEventSubscriber } from "./types";
+import { FastEventAnyListener, FastEventListener, FastEventListenOptions, FastEventMessage, FastEvents, FastEventSubscriber, ScopeEvents } from "./types";
+import { handleEmitArgs } from "./utils/handleEmitArgs";
+
+export type FastEventScopeOptions<Meta, Context> = {
+    meta?: Meta
+    context?: Context
+}
+
+export type FastEventScopeMeta = {
+    scope: string
+    context: any
+}
 
 export class FastEventScope<
     Events extends FastEvents = FastEvents,
-    Message extends FastEventMessage<Events, unknown> = FastEventMessage<Events, unknown>,
+    Meta extends Record<string, any> = Record<string, any>,
     Context = any,
     Types extends keyof Events = keyof Events,
-    Meta = Message['meta']
+    FinalMeta extends Record<string, any> = Meta & FastEventScopeMeta,
 > {
-    constructor(public emitter: FastEvent<Events>, public prefix: string) {
+    options: Required<FastEventScopeOptions<FinalMeta, Context>>
+    constructor(public emitter: FastEvent<Events>, public prefix: string, options?: FastEventScopeOptions<Meta, Context>) {
+        this.options = Object.assign({}, {
+            scope: prefix
+        }, options) as unknown as Required<FastEventScopeOptions<FinalMeta, Context>>
         if (prefix.length > 0 && !prefix.endsWith(emitter.options.delimiter!)) {
             this.prefix = prefix + emitter.options.delimiter
         }
     }
+    get context() { return this.options.context }
+    /**
+     * 获取作用域监听器
+     * 当启用作用域时,对原始监听器进行包装,添加作用域前缀处理逻辑
+     * @param listener 原始事件监听器
+     * @returns 包装后的作用域监听器
+     * @private
+     */
     private _getScopeListener(listener: FastEventListener): FastEventListener {
         const scopePrefix = this.prefix
         if (scopePrefix.length === 0) return listener
+        const scopeThis = this
         const scopeListener = function (message: FastEventMessage) {
             if (message.type.startsWith(scopePrefix)) {
-                return listener(Object.assign({}, message, {
+                return listener.call(scopeThis.context || scopeThis.emitter.context, Object.assign({}, message, {
                     type: message.type.substring(scopePrefix.length)
                 }))
             }
         }
-        // 当启用scope时对监听器进行包装
-        //@ts-ignore
-        listener.__wrappedListener = scopeListener
-        return listener
+        return scopeListener
     }
     private _getScopeType(type: string) {
         return type === undefined ? undefined : this.prefix + type
@@ -35,9 +56,9 @@ export class FastEventScope<
         return type.startsWith(this.prefix) ? type.substring(this.prefix.length) : type
     }
 
-    public on<T extends Types = Types>(type: T, listener: FastEventListener<Events, Meta, Context>, options?: FastEventListenOptions): FastEventSubscriber
-    public on<T extends string>(type: T, listener: FastEventListener<Events, Meta, Context>, options?: FastEventListenOptions): FastEventSubscriber
-    public on(type: '**', listener: FastEventListener<Events, Meta, Context>): FastEventSubscriber
+    public on<T extends Types = Types>(type: T, listener: FastEventListener<Exclude<T, number | symbol>, Events[T], FinalMeta, Context>, options?: FastEventListenOptions): FastEventSubscriber
+    public on<T extends string>(type: T, listener: FastEventListener<string, any, FinalMeta, Context>, options?: FastEventListenOptions): FastEventSubscriber
+    public on(type: '**', listener: FastEventAnyListener<Events, FinalMeta, Context>): FastEventSubscriber
     public on(): FastEventSubscriber {
         const args = [...arguments] as [any, any, any]
         args[0] = this._getScopeType(args[0])
@@ -45,18 +66,17 @@ export class FastEventScope<
         return this.emitter.on(...args)
     }
 
-    public once<T extends string>(type: T, listener: FastEventListener<Events, Meta, Context>, options?: FastEventListenOptions): FastEventSubscriber
-    public once<T extends Types = Types>(type: T, listener: FastEventListener<Events, Meta, Context>, options?: FastEventListenOptions): FastEventSubscriber
+    public once<T extends Types = Types>(type: T, listener: FastEventListener<Exclude<T, number | symbol>, Events[T], FinalMeta, Context>, options?: FastEventListenOptions): FastEventSubscriber
+    public once<T extends string>(type: T, listener: FastEventListener<string, any, FinalMeta, Context>, options?: FastEventListenOptions): FastEventSubscriber
     public once(): FastEventSubscriber {
         return this.on(arguments[0], arguments[1], Object.assign({}, arguments[2], { count: 1 }))
     }
 
-    onAny<P = any>(listener: FastEventListener<Events, Meta, Context>, options?: FastEventListenOptions): FastEventSubscriber {
-        const type = this.prefix + '**'
-        return this.on(type as any, listener, options)
+    onAny<P = any>(listener: FastEventAnyListener<{ [K: string]: P }, FinalMeta, Context>, options?: Pick<FastEventListenOptions, 'prepend'>): FastEventSubscriber {
+        return this.on('**' as any, listener, options)
     }
     offAll() {
-        this.emitter.offAll(this.prefix)
+        this.emitter.offAll(this.prefix.substring(0, this.prefix.length - 1))
     }
     off(listener: FastEventListener<any, any, any>): void
     off(type: string, listener: FastEventListener<any, any, any>): void
@@ -74,24 +94,45 @@ export class FastEventScope<
         this.offAll()
     }
 
-    public emit<R = any>(type: Types, payload?: Events[Types], retain?: boolean): R[]
-    public emit<R = any>(type: string, payload?: any, retain?: boolean): R[]
+    public emit<R = any>(type: string, payload?: any, retain?: boolean, meta?: FinalMeta): R[]
+    public emit<R = any>(type: Types, payload?: Events[Types], retain?: boolean, meta?: FinalMeta): R[]
+    public emit<R = any>(message: FastEventMessage<Events, FinalMeta>, retain?: boolean): R[]
+    public emit<R = any>(message: FastEventMessage<Events, FinalMeta>, retain?: boolean): R[]
     public emit<R = any>(): R[] {
-        const type = arguments[0] as string
-        const payload = arguments[1]
-        const retain = arguments[2] as boolean
-        return this.emitter.emit(this._getScopeType(type)!, payload, retain)
+        const [message, retain] = handleEmitArgs(arguments, this.emitter.options.meta)
+        message.type = this._getScopeType(message.type)!
+        if (typeof (this.options.meta) === 'object' || message.meta) message.meta = Object.assign({
+
+        }, this.options.meta, message.meta)
+        return this.emitter.emit(message as FastEventMessage<Events, FinalMeta>, retain)
     }
-    public async waitFor<T extends Types, P = Events[T], M = Meta>(type: T, timeout?: number): Promise<FastEventMessage<Events, M>>
-    public async waitFor<T extends string, P = Events[T], M = Meta>(type: string, timeout?: number): Promise<FastEventMessage<Events, M>>
-    public async waitFor<T extends string, P = Events[T], M = Meta>(): Promise<FastEventMessage<Events, M>> {
+
+    public async emitAsync<R = any>(type: string, payload?: any, retain?: boolean, meta?: FinalMeta): Promise<[R | Error][]>
+    public async emitAsync<R = any>(type: Types, payload?: Events[Types], retain?: boolean, meta?: FinalMeta): Promise<[R | Error][]>
+    public async emitAsync<R = any>(message: FastEventMessage<Events, FinalMeta>, retain?: boolean): Promise<R | Error>
+    public async emitAsync<R = any>(message: FastEventMessage<Events, FinalMeta>, retain?: boolean): Promise<R | Error>
+    public async emitAsync<R = any>(): Promise<[R | Error][]> {
+        const results = await Promise.allSettled(this.emit.apply(this, arguments as any))
+        return results.map((result) => {
+            if (result.status === 'fulfilled') {
+                return result.value
+            } else {
+                return result.reason
+            }
+        })
+    }
+
+    public async waitFor<T extends Types>(type: T, timeout?: number): Promise<FastEventMessage<{ [key in T]: Events[T] }, FinalMeta>>
+    public async waitFor(type: string, timeout?: number): Promise<FastEventMessage<{ [key: string]: any }, FinalMeta>>
+    public async waitFor<P = any>(type: string, timeout?: number): Promise<FastEventMessage<{ [key: string]: P }, FinalMeta>>
+    public async waitFor(): Promise<FastEventMessage<Events, FinalMeta>> {
         const type = arguments[0] as string
         const timeout = arguments[1] as number
         const message = await this.emitter.waitFor(this._getScopeType(type)!, timeout)
         const scopeMessage = Object.assign({}, message, {
             type: this._fixScopeType(message.type)
         })
-        return scopeMessage as unknown as FastEventMessage<Events, M>
+        return scopeMessage as unknown as FastEventMessage<Events, FinalMeta>
     }
     /**
      * 创建一个新的作用域实例
@@ -125,7 +166,18 @@ export class FastEventScope<
      * profileScope.emit('update', { name: 'John' });
      * ```
      */
-    public scope(prefix: string) {
-        return this.emitter.scope(this._getScopeType(prefix)!)
+    public scope<T extends string = string>(prefix: T, options?: FastEventScopeOptions<Record<string, any>, Context>) {
+        const meta = Object.assign({}, this.options.meta, options?.meta)
+        // 如果options中提供了新的context，使用新的context；否则继承父scope的context
+        const context = options?.context !== undefined ? options.context : this.context
+        const opts = Object.assign({}, this.options, options, {
+            meta: Object.keys(meta).length === 0 ? undefined : meta,
+            context
+        }) as FastEventScopeOptions<FinalMeta, Context>
+        return new FastEventScope<ScopeEvents<Events, T>, FinalMeta, Context>(
+            this.emitter as any,
+            this.prefix + prefix,
+            opts
+        )
     }
 }

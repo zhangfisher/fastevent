@@ -25,7 +25,7 @@
     },
     "scripts": {
         "test": "vitest",
-        "test:coverage": "vitest --coverage",
+        "test:coverage": "vitest --coverage --exclude \"src/__benchmarks__/**\"",
         "build": "tsup",
         "bench": "tsx src/__benchmarks__/index.ts",
         "changeset": "changeset",

@@ -1,12 +1,34 @@
-// eslint-disable no-unused-vars
 import { describe, test, expect } from "vitest"
 import type { Equal, Expect, NotAny } from '@type-challenges/utils'
 import { FastEvent } from "../event"
 import { FastEventMessage, ScopeEvents } from "../types"
+import { FastEventScopeMeta } from "../scope"
 
+describe("类型系统测试", () => {
+    describe("作用域事件类型定义", () => {
+        test("应正确提取指定前缀的事件类型", () => {
+            interface CustomEvents {
+                a: boolean
+                b: number
+                c: string,
+                "x/y/z/a": 1
+                "x/y/z/b": 2
+                "x/y/z/c": 3
+            }
 
-describe("Types", () => {
-    test("event types tests", () => {
+            type ScopeCustomEvents = ScopeEvents<CustomEvents, 'x/y/z'>
+
+            type cases = [
+                Expect<Equal<ScopeCustomEvents, {
+                    a: 1
+                    b: 2
+                    c: 3
+                }>>
+            ]
+        })
+    })
+
+    describe("FastEvent基础类型检查", () => {
         interface CustomEvents {
             a: boolean
             b: number
@@ -15,16 +37,6 @@ describe("Types", () => {
             "x/y/z/b": 2
             "x/y/z/c": 3
         }
-
-        type ScopeCustomEvents = ScopeEvents<CustomEvents, 'x/y/z'>
-
-        type cases = [
-            Expect<Equal<ScopeCustomEvents, {
-                a: 1
-                b: 2
-                c: 3
-            }>>
-        ]
 
         interface CustomMeta {
             a: number
@@ -33,179 +45,204 @@ describe("Types", () => {
         }
 
         type CustomMessage = FastEventMessage<CustomEvents, CustomMeta>
-
-
         const emitter = new FastEvent<CustomEvents, CustomMeta>()
-        // ------------------ on ------------------
-        emitter.on("a", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, 'a'>>,
-                Expect<Equal<typeof message.payload, boolean>>,
-                Expect<Equal<typeof message.meta, CustomMeta | undefined>>
-            ]
-        })
-        emitter.on("b", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, "b">>,
-                Expect<Equal<typeof message.payload, number>>,
-                Expect<Equal<typeof message.meta, CustomMeta | undefined>>
-            ]
-        })
-        emitter.on("c", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, "c">>,
-                Expect<Equal<typeof message.payload, string>>,
-                Expect<Equal<typeof message.meta, CustomMeta | undefined>>
-            ]
-        })
-        emitter.on("x/y/z/a", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, "x/y/z/a">>,
-                Expect<Equal<typeof message.payload, 1>>,
-                Expect<Equal<typeof message.meta, CustomMeta | undefined>>
-            ]
-        })
-        emitter.on("x/y/z/b", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, "x/y/z/b">>,
-                Expect<Equal<typeof message.payload, 2>>,
-                Expect<Equal<typeof message.meta, CustomMeta | undefined>>
-            ]
-        })
-        emitter.on("x/y/z/c", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, "x/y/z/c">>,
-                Expect<Equal<typeof message.payload, 3>>,
-                Expect<Equal<typeof message.meta, CustomMeta | undefined>>
-            ]
-        })
-        // 字符串类型不在CustomEvents中声明,message.type为string类型
-        emitter.on("xxx", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, keyof CustomEvents>>,
-                Expect<Equal<typeof message.payload, CustomEvents[keyof CustomEvents]>>,
-                Expect<Equal<typeof message.meta, CustomMeta | undefined>>
-            ]
-        })
-        // --------------------- once ------------------
-        emitter.once("a", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, 'a'>>,
-                Expect<Equal<typeof message.payload, boolean>>,
-                Expect<Equal<typeof message.meta, CustomMeta | undefined>>
-            ]
-        })
-        emitter.once("b", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, "b">>,
-                Expect<Equal<typeof message.payload, number>>,
-                Expect<Equal<typeof message.meta, CustomMeta | undefined>>
-            ]
-        })
-        // 字符串类型不在CustomEvents中声明,message.type为string类型
-        emitter.once("xxx", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, keyof CustomEvents>>,
-                Expect<Equal<typeof message.payload, CustomEvents[keyof CustomEvents]>>,
-                Expect<Equal<typeof message.meta, CustomMeta | undefined>>
-            ]
-        })
-        // ------------------ onAny ------------------
-        emitter.onAny((message) => {
-            message.type = "xxx"
-            type cases = [
-                Expect<Equal<typeof message.type, string>>,
-                Expect<Equal<typeof message.payload, any>>
-            ]
-        })
-        emitter.onAny<number>((message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, string>>,
-                Expect<Equal<typeof message.payload, number>>
-            ]
-        })
-        // ------------------ emit ------------------
-        type emitCases = [
 
-        ]
+        test("on方法应正确推导事件类型和元数据", () => {
+            emitter.on("a", (message) => {
+                type cases = [
+                    Expect<Equal<typeof message.type, 'a'>>,
+                    Expect<Equal<typeof message.payload, boolean>>,
+                    Expect<Equal<typeof message.meta, CustomMeta>>
+                ]
+            })
 
-        emitter.emit("a", true)
-        emitter.emit("b", 100)
-        emitter.emit("c", "hello")
-        emitter.emit("x/y/z/a", 1)
-        emitter.emit("x/y/z/b", 2)
-        emitter.emit("x/y/z/c", 3)
-        emitter.emit("xxx", 100)
-        emitter.emit("xxx", "hello")
-        emitter.emit("xxx", true)
-        emitter.emit("xxx", false)
+            emitter.on("b", (message) => {
+                type cases = [
+                    Expect<Equal<typeof message.type, "b">>,
+                    Expect<Equal<typeof message.payload, number>>,
+                    Expect<Equal<typeof message.meta, CustomMeta>>
+                ]
+            })
 
+            emitter.on("c", (message) => {
+                type cases = [
+                    Expect<Equal<typeof message.type, "c">>,
+                    Expect<Equal<typeof message.payload, string>>,
+                    Expect<Equal<typeof message.meta, CustomMeta>>
+                ]
+            })
 
+            emitter.on("xxx", (message) => {
+                type cases = [
+                    Expect<Equal<typeof message.type, keyof CustomEvents>>,
+                    Expect<Equal<typeof message.payload, CustomEvents[keyof CustomEvents]>>,
+                    Expect<Equal<typeof message.meta, CustomMeta>>
+                ]
+            })
+        })
 
+        test("once方法应正确推导事件类型和元数据", () => {
+            emitter.once("a", (message) => {
+                type cases = [
+                    Expect<Equal<typeof message.type, 'a'>>,
+                    Expect<Equal<typeof message.payload, boolean>>,
+                    Expect<Equal<typeof message.meta, CustomMeta>>
+                ]
+            })
 
+            emitter.once("b", (message) => {
+                type cases = [
+                    Expect<Equal<typeof message.type, "b">>,
+                    Expect<Equal<typeof message.payload, number>>,
+                    Expect<Equal<typeof message.meta, CustomMeta>>
+                ]
+            })
 
+            emitter.once("xxx", (message) => {
+                type cases = [
+                    Expect<Equal<typeof message.type, keyof CustomEvents>>,
+                    Expect<Equal<typeof message.payload, CustomEvents[keyof CustomEvents]>>,
+                    Expect<Equal<typeof message.meta, CustomMeta>>
+                ]
+            })
+        })
+
+        test("onAny方法应正确处理通配符事件类型", () => {
+            emitter.onAny((message) => {
+                message.type = "xxx"
+                type cases = [
+                    Expect<Equal<typeof message.type, string>>,
+                    Expect<Equal<typeof message.payload, any>>
+                ]
+            })
+
+            emitter.onAny<number>((message) => {
+                type cases = [
+                    Expect<Equal<typeof message.type, string>>,
+                    Expect<Equal<typeof message.payload, number>>
+                ]
+            })
+        })
+
+        test("emit方法应正确验证事件类型和载荷", () => {
+            emitter.emit("a", true)
+            emitter.emit("b", 100)
+            emitter.emit("c", "hello")
+            emitter.emit("x/y/z/a", 1)
+            emitter.emit("x/y/z/b", 2)
+            emitter.emit("x/y/z/c", 3)
+            emitter.emit("xxx", 100)
+            emitter.emit("xxx", "hello")
+            emitter.emit("xxx", true)
+            emitter.emit("xxx", false)
+        })
+
+        test("waitFor方法应正确推导异步事件类型", () => {
+            emitter.waitFor("a").then((message) => {
+                type cases = [
+                    Expect<Equal<typeof message.type, 'a'>>,
+                    Expect<Equal<typeof message.payload, boolean>>,
+                    Expect<Equal<typeof message.meta, CustomMeta>>
+                ]
+            })
+
+            emitter.waitFor("b").then((message) => {
+                type cases = [
+                    Expect<Equal<typeof message.type, 'b'>>,
+                    Expect<Equal<typeof message.payload, number>>,
+                    Expect<Equal<typeof message.meta, CustomMeta>>
+                ]
+            })
+
+            emitter.waitFor("xxxx").then((message) => {
+                type cases = [
+                    Expect<Equal<typeof message.type, keyof CustomEvents>>,
+                    Expect<Equal<typeof message.payload, CustomEvents[keyof CustomEvents]>>,
+                    Expect<Equal<typeof message.meta, CustomMeta>>
+                ]
+            })
+
+            emitter.waitFor<boolean>("xxxx").then((message) => {
+                type cases = [
+                    Expect<Equal<typeof message.type, string>>,
+                    Expect<Equal<typeof message.payload, boolean>>,
+                    Expect<Equal<typeof message.meta, CustomMeta>>
+                ]
+            })
+        })
     })
-    test("event types tests without event types", () => {
 
+    describe("FastEvent默认类型行为", () => {
         const emitter = new FastEvent()
-        // ------------------ on ------------------
-        emitter.on("a", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, 'a'>>,
-                Expect<Equal<typeof message.payload, boolean>>,
-                Expect<Equal<typeof message.meta, unknown>>
-            ]
-        })
-        emitter.on("b", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, "b">>,
-                Expect<Equal<typeof message.payload, number>>,
-                Expect<Equal<typeof message.meta, unknown>>
-            ]
-        })
-        // --------------------- once ------------------
-        emitter.once("a", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, 'a'>>,
-                Expect<Equal<typeof message.payload, boolean>>,
-                Expect<Equal<typeof message.meta, unknown>>
-            ]
-        })
-        emitter.once("b", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, "b">>,
-                Expect<Equal<typeof message.payload, number>>,
-                Expect<Equal<typeof message.meta, unknown>>
-            ]
-        })
-        // ------------------ onAny ------------------
-        emitter.onAny((message) => {
-            message.type = "xxx"
-            type cases = [
-                Expect<Equal<typeof message.type, string>>,
-                Expect<Equal<typeof message.payload, any>>
-            ]
-        })
-        emitter.onAny<number>((message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, string>>,
-                Expect<Equal<typeof message.payload, number>>
-            ]
-        })
-        // ------------------ emit ------------------
-        emitter.emit("a", true)
-        emitter.emit("b", 100)
-        emitter.emit("c", "hello")
-        emitter.emit("x/y/z/a", 1)
-        emitter.emit("x/y/z/b", 2)
-        emitter.emit("x/y/z/c", 3)
-        emitter.emit("xxx", 100)
-        emitter.emit("xxx", "hello")
-        emitter.emit("xxx", true)
-        emitter.emit("xxx", false)
-    })
-    test("scope event types tests", () => {
 
+        test("on方法在未指定类型时应使用默认类型", () => {
+            emitter.on("a", (message) => {
+                type cases = [
+                    Expect<Equal<typeof message.type, 'a'>>,
+                    Expect<Equal<typeof message.payload, any>>,
+                    Expect<Equal<typeof message.meta, Record<string, any>>>
+                ]
+            })
+
+            emitter.on("b", (message) => {
+                type cases = [
+                    Expect<Equal<typeof message.type, "b">>,
+                    Expect<Equal<typeof message.payload, any>>,
+                    Expect<Equal<typeof message.meta, Record<string, any>>>
+                ]
+            })
+        })
+
+        test("once方法在未指定类型时应使用默认类型", () => {
+            emitter.once("a", (message) => {
+                type cases = [
+                    Expect<Equal<typeof message.type, 'a'>>,
+                    Expect<Equal<typeof message.payload, any>>,
+                    Expect<Equal<typeof message.meta, Record<string, any>>>
+                ]
+            })
+
+            emitter.once("b", (message) => {
+                type cases = [
+                    Expect<Equal<typeof message.type, "b">>,
+                    Expect<Equal<typeof message.payload, any>>,
+                    Expect<Equal<typeof message.meta, Record<string, any>>>
+                ]
+            })
+        })
+
+        test("onAny方法在未指定类型时应使用默认类型", () => {
+            emitter.onAny((message) => {
+                message.type = "xxx"
+                type cases = [
+                    Expect<Equal<typeof message.type, string>>,
+                    Expect<Equal<typeof message.payload, any>>
+                ]
+            })
+
+            emitter.onAny<number>((message) => {
+                type cases = [
+                    Expect<Equal<typeof message.type, string>>,
+                    Expect<Equal<typeof message.payload, number>>
+                ]
+            })
+        })
+
+        test("emit方法在未指定类型时应接受任意类型载荷", () => {
+            emitter.emit("a", true)
+            emitter.emit("b", 100)
+            emitter.emit("c", "hello")
+            emitter.emit("x/y/z/a", 1)
+            emitter.emit("x/y/z/b", 2)
+            emitter.emit("x/y/z/c", 3)
+            emitter.emit("xxx", 100)
+            emitter.emit("xxx", "hello")
+            emitter.emit("xxx", true)
+            emitter.emit("xxx", false)
+        })
+    })
+
+    describe("作用域类型系统", () => {
         interface CustomEvents {
             a: boolean
             b: number
@@ -215,56 +252,178 @@ describe("Types", () => {
             "x/y/z/c": 3
         }
 
-        type ScopeCustomEvents = ScopeEvents<CustomEvents, 'x/y/z'>
-
-        type cases = [
-            Expect<Equal<ScopeCustomEvents, {
-                a: 1
-                b: 2
-                c: 3
-            }>>
-        ]
-
         interface CustomMeta {
             a: number
             b: string
             c: boolean
         }
 
-
         const emitter = new FastEvent<CustomEvents, CustomMeta>()
-        // ----- scope -----
-
         const scope = emitter.scope("x/y/z")
 
-        scope.on("a", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, keyof CustomEvents>>,
-                Expect<Equal<typeof message.payload, 1>>
+        test("作用域应正确继承和扩展元数据类型", () => {
+            type metaCases = [
+                Expect<Equal<typeof scope.options.meta, Record<string, any> & FastEventScopeMeta>>,
             ]
         })
 
-        scope.on("b", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, "b">>,
-                Expect<Equal<typeof message.payload, 2>>
-            ]
+        test("作用域的on方法应正确推导事件类型", () => {
+            scope.on("a", (message) => {
+                type cases = [
+                    Expect<Equal<typeof message.type, 'a'>>,
+                    Expect<Equal<typeof message.payload, 1>>,
+                    Expect<Equal<typeof message.meta, Record<string, any> & FastEventScopeMeta>>
+                ]
+            })
+
+            scope.on("b", (message) => {
+                type cases = [
+                    Expect<Equal<typeof message.type, "b">>,
+                    Expect<Equal<typeof message.payload, 2>>
+                ]
+            })
         })
 
-        scope.once("a", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, keyof CustomEvents>>,
-                Expect<Equal<typeof message.payload, 1>>
-            ]
+        test("作用域的once方法应正确推导事件类型", () => {
+            scope.once("a", (message) => {
+                type cases = [
+                    Expect<Equal<typeof message.type, 'a'>>,
+                    Expect<Equal<typeof message.payload, 1>>
+                ]
+            })
+
+            scope.once("c", (message) => {
+                type cases = [
+                    Expect<Equal<typeof message.type, 'c'>>,
+                    Expect<Equal<typeof message.payload, 3>>
+                ]
+            })
         })
 
-        scope.once("c", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, keyof CustomEvents>>,
-                Expect<Equal<typeof message.payload, 3>>
-            ]
+        test("作用域的waitFor方法应正确推导异步事件类型", () => {
+            scope.waitFor("a").then((message) => {
+                type cases = [
+                    Expect<Equal<typeof message.type, 'a'>>,
+                    Expect<Equal<typeof message.payload, 1>>,
+                    Expect<Equal<typeof message.meta, Record<string, any> & FastEventScopeMeta>>
+                ]
+            })
+
+            scope.waitFor("b").then((message) => {
+                type cases = [
+                    Expect<Equal<typeof message.type, 'b'>>,
+                    Expect<Equal<typeof message.payload, 2>>,
+                    Expect<Equal<typeof message.meta, Record<string, any> & FastEventScopeMeta>>
+                ]
+            })
+
+            scope.waitFor("xxxx").then((message) => {
+                type cases = [
+                    Expect<Equal<typeof message.type, string>>,
+                    Expect<Equal<typeof message.payload, any>>,
+                    Expect<Equal<typeof message.meta, Record<string, any> & FastEventScopeMeta>>
+                ]
+            })
+
+            scope.waitFor<boolean>("xxxx").then((message) => {
+                type cases = [
+                    Expect<Equal<typeof message.type, string>>,
+                    Expect<Equal<typeof message.payload, boolean>>,
+                    Expect<Equal<typeof message.meta, Record<string, any> & FastEventScopeMeta>>
+                ]
+            })
+        })
+    })
+
+    describe("作用域上下文类型系统", () => {
+        test("未指定上下文时应使用默认上下文类型", () => {
+            const withoutCtxEmitter = new FastEvent()
+            type Ctx1 = Expect<Equal<typeof withoutCtxEmitter.options.context, never>>
+
+            withoutCtxEmitter.on("xxx", function (this, message) {
+                type cases = [
+                    Expect<Equal<typeof this, FastEvent>>
+                ]
+            })
+
+            withoutCtxEmitter.once("xxx", function (this, message) {
+                type cases = [
+                    Expect<Equal<typeof this, FastEvent>>
+                ]
+            })
         })
 
+        test("指定上下文时的类型推导", () => {
+            const emitter = new FastEvent({
+                context: {
+                    root: true
+                }
+            })
+            type Ctx = Expect<Equal<typeof emitter.options.context, { root: boolean }>>
 
+            emitter.on("xxx", function (this, message) {
+                type cases = [
+                    Expect<Equal<typeof this, { root: boolean }>>
+                ]
+            })
+
+            emitter.once("xxx", function (this, message) {
+                type cases = [
+                    Expect<Equal<typeof this, { root: boolean }>>
+                ]
+            })
+        })
+
+        test("作用域继承上下文时的类型推导", () => {
+            const emitter = new FastEvent({
+                context: {
+                    root: true
+                }
+            })
+            const withoutCtxScope = emitter.scope("x/y/z")
+            type withoutScopeCtx = Expect<Equal<typeof withoutCtxScope.options.context, { root: boolean }>>
+
+            withoutCtxScope.on("xxx", function (this, message) {
+                type cases = [
+                    Expect<Equal<typeof this, { root: boolean }>>
+                ]
+            })
+
+            withoutCtxScope.once("xxx", function (this, message) {
+                type cases = [
+                    Expect<Equal<typeof this, { root: boolean }>>
+                ]
+            })
+        })
+
+        test("作用域自定义上下文时的类型推导", () => {
+            const emitter = new FastEvent({
+                context: {
+                    root: true
+                }
+            })
+            const scope = emitter.scope("x/y/z", {
+                context: 1
+            })
+            type scopeCtx = Expect<Equal<typeof scope.options.context, number>>
+
+            scope.on("a", function (this, message) {
+                type cases = [
+                    Expect<Equal<typeof this, number>>,
+                    Expect<Equal<typeof message.type, string>>,
+                    Expect<Equal<typeof message.payload, any>>,
+                    Expect<Equal<typeof message.meta, Record<string, any> & FastEventScopeMeta>>
+                ]
+            })
+
+            scope.once("a", function (this, message) {
+                type cases = [
+                    Expect<Equal<typeof this, number>>,
+                    Expect<Equal<typeof message.type, string>>,
+                    Expect<Equal<typeof message.payload, any>>,
+                    Expect<Equal<typeof message.meta, Record<string, any> & FastEventScopeMeta>>
+                ]
+            })
+        })
     })
 })
