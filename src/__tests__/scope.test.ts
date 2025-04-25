@@ -18,6 +18,97 @@ describe("scope", () => {
         expect(events).toEqual(["x", "a/b/c/x"])
     })
 
+    describe("scope emitAsync", () => {
+        test("基本的异步事件触发", async () => {
+            const emitter = new FastEvent()
+            const scope = emitter.scope("a/b/c")
+            const events: string[] = []
+            scope.on("x", async ({ type }) => {
+                events.push(type)
+                return "result1"
+            })
+            emitter.on("a/b/c/x", async ({ type }) => {
+                events.push(type)
+                return "result2"
+            })
+            const results = await scope.emitAsync("x", 1)
+            expect(events).toEqual(["x", "a/b/c/x"])
+            expect(results).toEqual(["result1", "result2"])
+        })
+
+        test("异步事件错误处理", async () => {
+            const emitter = new FastEvent()
+            const scope = emitter.scope("a/b/c")
+
+            scope.on("x", async () => {
+                throw new Error("error1")
+            })
+            emitter.on("a/b/c/x", async () => {
+                throw new Error("error2")
+            })
+
+            const results = await scope.emitAsync("x", 1) as unknown as Error[]
+            expect(results[0]).toBeInstanceOf(Error)
+            expect(results[1]).toBeInstanceOf(Error)
+            expect(results[0].message).toBe("error1")
+            expect(results[1].message).toBe("error2")
+        })
+
+        test("作用域meta数据合并", async () => {
+            const emitter = new FastEvent({
+                meta: { root: 1 }
+            })
+            const scope = emitter.scope("a/b/c", {
+                meta: { scope: 1 }
+            })
+
+            let receivedMeta: any
+            scope.on("x", async ({ meta }) => {
+                receivedMeta = meta
+                return "ok"
+            })
+
+            await scope.emitAsync("x", 1, false, { event: 1 })
+            expect(receivedMeta).toEqual({
+                root: 1,
+                scope: 1,
+                event: 1
+            })
+        })
+
+        test("多层作用域异步事件传播", async () => {
+            const emitter = new FastEvent()
+            const scope1 = emitter.scope("a")
+            const scope2 = scope1.scope("b")
+            const scope3 = scope2.scope("c")
+
+            const events: string[] = []
+            const addEvent = (prefix: string) => async ({ type }: any) => {
+                events.push(`${prefix}:${type}`)
+                return prefix
+            }
+
+            emitter.on("a/b/c/x", addEvent("root"))
+            scope1.on("b/c/x", addEvent("scope1"))
+            scope2.on("c/x", addEvent("scope2"))
+            scope3.on("x", addEvent("scope3"))
+
+            const results = await scope3.emitAsync("x", 1);
+
+            expect(events).toEqual([
+                "root:a/b/c/x",
+                "scope1:b/c/x",
+                "scope2:c/x",
+                "scope3:x",
+            ])
+            expect(results).toEqual([
+                "root",
+                "scope1",
+                "scope2",
+                "scope3",
+            ])
+        })
+    })
     test("scope通过off简单的退订事件", () => {
         const emitter = new FastEvent()
         const scope = emitter.scope("a/b/c")
@@ -301,4 +392,3 @@ describe("scope", () => {
 
     })
 })
-

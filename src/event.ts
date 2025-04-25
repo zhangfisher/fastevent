@@ -1,4 +1,4 @@
-import { FastEventScope, FastEventScopeOptions } from './scope';
+import { FastEventScope, type FastEventScopeOptions } from './scope';
 import {
     FastEventListener,
     FastEventOptions,
@@ -95,7 +95,7 @@ export class FastEvent<
     private _enableDevTools() {
         if (this.options.debug) {
             // @ts-ignore
-            globalThis.__FLEXEVENT_DEVTOOLS__.add(this)
+            globalThis.__FLEXEVENT_DEVTOOLS__ && globalThis.__FLEXEVENT_DEVTOOLS__.add(this)
         }
     }
     /**
@@ -346,15 +346,10 @@ export class FastEvent<
             }
         }
     }
-    clear() {
-        this.offAll()
+    clear(prefix?: string) {
+        this.offAll(prefix)
+        this._removeRetainedEvents(prefix)
     }
-
-    private _createMeta(extra: Record<string, any> | undefined) {
-        if (!this._options.meta) return extra
-        return Object.assign({}, this._options.meta, extra)
-    }
-
 
     private _emitForLastEvent(type: string) {
         if (this.retainedMessages.has(type)) {
@@ -551,8 +546,8 @@ export class FastEvent<
      * }, true);
      * ```
      */
-    public emit<R = any>(type: string, payload?: any, retain?: boolean, meta?: Meta): R[]
-    public emit<R = any>(type: Types, payload?: Events[Types], retain?: boolean, meta?: Meta): R[]
+    public emit<R = any>(type: string, payload?: any, retain?: boolean, meta?: Record<string, any> & Partial<Meta>): R[]
+    public emit<R = any>(type: Types, payload?: Events[Types], retain?: boolean, meta?: Record<string, any> & Partial<Meta>): R[]
     public emit<R = any>(message: FastEventMessage<Events, Meta>, retain?: boolean): R[]
     public emit<R = any>(message: FastEventMessage<Events, Meta>, retain?: boolean): R[]
     public emit<R = any>(): R[] {

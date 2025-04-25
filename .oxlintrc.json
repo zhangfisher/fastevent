@@ -20,7 +20,8 @@
             {
                 "html": false
             }
-        ]
+        ],
+        "no-this-alias": "off"
     },
     "overrides": [
         {

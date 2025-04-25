@@ -25,11 +25,11 @@
     },
     "scripts": {
         "test": "vitest",
-        "test:coverage": "vitest --coverage --exclude \"src/__benchmarks__/**\"",
+        "test:coverage": "vitest --coverage --exclude=\"src/__benchmarks__/**\"",
         "build": "tsup",
         "bench": "tsx src/__benchmarks__/index.ts",
         "changeset": "changeset",
-        "release": "pnpm build && changeset version && changeset publish",
+        "release": "bun run build && bun run changeset version && bun run changeset publish",
         "sync": "cnpm sync fastevent"
     },
     "keywords": [
@@ -50,5 +50,5 @@
         "vitest": "^3.1.1",
         "redux": "^5.0.1"
     },
-    "packageManager": "pnpm@9.0.0"
+    "packageManager": "bun@1.2.0"
 }

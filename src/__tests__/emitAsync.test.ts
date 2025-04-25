@@ -51,13 +51,13 @@ describe("异步发布与订阅", async () => {
         const emitter = new FastEvent()
         for (let i = 1; i <= 10; i++) {
             emitter.on("x", async () => {
-                if (i % 2 == 0) throw new Error("custom")
+                if (i % 2 === 0) throw new Error("custom")
                 return i
             })
         }
         const results = await emitter.emitAsync("x", 1)
         for (let i = 1; i <= 10; i++) {
-            if (i % 2 == 0) expect(results[i - 1]).toBeInstanceOf(Error)
+            if (i % 2 === 0) expect(results[i - 1]).toBeInstanceOf(Error)
             else expect(results[i - 1]).toBe(i)
         }
     })

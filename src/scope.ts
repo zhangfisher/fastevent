@@ -1,4 +1,4 @@
-import { FastEvent } from "./event";
+import type { FastEvent } from "./event";
 import { FastEventAnyListener, FastEventListener, FastEventListenOptions, FastEventMessage, FastEvents, FastEventSubscriber, ScopeEvents } from "./types";
 import { handleEmitArgs } from "./utils/handleEmitArgs";
 
@@ -107,8 +107,8 @@ export class FastEventScope<
         return this.emitter.emit(message as FastEventMessage<Events, FinalMeta>, retain)
     }
 
-    public async emitAsync<R = any>(type: string, payload?: any, retain?: boolean, meta?: FinalMeta): Promise<[R | Error][]>
-    public async emitAsync<R = any>(type: Types, payload?: Events[Types], retain?: boolean, meta?: FinalMeta): Promise<[R | Error][]>
+    public async emitAsync<R = any>(type: string, payload?: any, retain?: boolean, meta?: Record<string, any> & Partial<FinalMeta>): Promise<[R | Error][]>
+    public async emitAsync<R = any>(type: Types, payload?: Events[Types], retain?: boolean, meta?: Record<string, any> & Partial<FinalMeta>): Promise<[R | Error][]>
     public async emitAsync<R = any>(message: FastEventMessage<Events, FinalMeta>, retain?: boolean): Promise<R | Error>
     public async emitAsync<R = any>(message: FastEventMessage<Events, FinalMeta>, retain?: boolean): Promise<R | Error>
     public async emitAsync<R = any>(): Promise<[R | Error][]> {
