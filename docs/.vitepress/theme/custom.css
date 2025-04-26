@@ -1,0 +1,68 @@
+/* Hero区域样式 */
+.VPHomeHero {
+  padding: 80px 0;
+  text-align: center;
+}
+
+.VPHomeHero .title {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.VPHomeHero .tagline {
+  font-size: 1.5rem;
+  color: var(--vp-c-text-2);
+  margin-bottom: 2rem;
+}
+
+/* 特性网格样式 */
+.VPHomeFeatures {
+  padding: 40px 0;
+}
+
+.features {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.feature {
+  border: 1px solid var(--vp-c-divider);
+  border-radius: 8px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.feature:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+}
+
+.feature h3 {
+  font-size: 1.2rem;
+  margin-bottom: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.feature p {
+  color: var(--vp-c-text-2);
+  line-height: 1.6;
+}
+
+/* 响应式调整 */
+@media (max-width: 960px) {
+  .features {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .features {
+    grid-template-columns: 1fr;
+  }
+}
