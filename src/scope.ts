@@ -75,9 +75,6 @@ export class FastEventScope<
     onAny<P = any>(listener: FastEventAnyListener<{ [K: string]: P }, FinalMeta, Context>, options?: Pick<FastEventListenOptions, 'prepend'>): FastEventSubscriber {
         return this.on('**' as any, listener, options)
     }
-    offAll() {
-        this.emitter.offAll(this.prefix.substring(0, this.prefix.length - 1))
-    }
     off(listener: FastEventListener<any, any, any>): void
     off(type: string, listener: FastEventListener<any, any, any>): void
     off(type: Types, listener: FastEventListener<any, any, any>): void
@@ -90,8 +87,11 @@ export class FastEventScope<
         }
         this.emitter.off(...args)
     }
+    offAll() {
+        this.emitter.offAll(this.prefix.substring(0, this.prefix.length - 1))
+    }
     clear() {
-        this.offAll()
+        this.emitter.clear(this.prefix.substring(0, this.prefix.length - 1))
     }
 
     public emit<R = any>(type: string, payload?: any, retain?: boolean, meta?: FinalMeta): R[]

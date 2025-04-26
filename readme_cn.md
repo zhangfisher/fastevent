@@ -52,6 +52,88 @@ events.emit({
 
 # 指南
 
+## 事件触发
+
+FastEvent 提供了多种灵活的事件触发方式：
+
+### 基本事件触发
+
+```typescript
+const events = new FastEvent();
+
+// 方式1：参数形式
+events.emit('user/login', { id: 1, name: 'Alice' });
+
+// 方式2：消息对象形式
+events.emit({
+    type: 'user/login',
+    payload: { id: 1, name: 'Alice' },
+    meta: { timestamp: Date.now() },
+});
+```
+
+### 保留事件
+
+设置 `retain=true` 可以将事件保留供新订阅者使用：
+
+```typescript
+// 触发并保留事件
+events.emit('config/update', { theme: 'dark' }, true);
+
+// 后续订阅者会立即收到保留的事件
+events.on('config/update', (message) => {
+    console.log('配置:', message.payload); // { theme: 'dark' }
+});
+```
+
+### 事件元数据
+
+元数据可以在不同层级设置并自动合并：
+
+```typescript
+const events = new FastEvent({
+    meta: { app: 'MyApp' }, // 全局元数据
+});
+
+// 事件特定元数据
+events.emit('order/create', { id: '123' }, false, {
+    timestamp: Date.now(),
+});
+
+// 监听器接收合并后的元数据：
+// { type: 'order/create', app: 'MyApp', timestamp: ... }
+```
+
+### 返回值
+
+`emit()` 返回所有监听器的执行结果数组：
+
+```typescript
+events.on('calculate', () => 1);
+events.on('calculate', () => 2);
+
+const results = events.emit('calculate');
+console.log(results); // [1, 2]
+```
+
+### 类型安全的事件触发
+
+使用 TypeScript 时，事件数据会进行类型检查：
+
+```typescript
+interface MyEvents {
+    'user/login': { id: number; name: string };
+}
+
+const events = new FastEvent<MyEvents>();
+
+// 有效 - 数据符合类型定义
+events.emit('user/login', { id: 1, name: 'Alice' });
+
+// 错误 - 数据类型不匹配
+events.emit('user/login', { id: '1' }); // TypeScript 报错
+```
+
 ## 事件消息格式
 
 FastEvent 使用标准化的消息格式处理所有事件：
@@ -253,17 +335,145 @@ events.on('config/update', (message) => {
 });
 ```
 
-## 多级事件
+## 多级事件和通配符
 
-支持发布和订阅多级事件。
+FastEvent 支持层级化的事件结构和强大的通配符匹配功能。
 
-默认使用 `/` 作为事件路径分隔符，你也可以使用自定义的分隔符：
+### 事件路径结构
+
+事件可以使用路径分隔符（默认为'/'）组织成层级结构：
 
 ```typescript
-const events = new FastEvent({
+const events = new FastEvent();
+
+// 基本的多级事件
+events.on('user/profile/update', handler);
+events.on('user/settings/theme/change', handler);
+
+// 自定义分隔符
+const customEvents = new FastEvent({
     delimiter: '.',
 });
+customEvents.on('user.profile.update', handler);
 ```
+
+### 通配符模式
+
+FastEvent 支持两种类型的通配符：
+
+1. 单层通配符（`*`）：
+    - 匹配事件路径中的单个层级
+    - 可以在路径的任何层级使用
+
+```typescript
+// 匹配任意用户类型
+events.on('user/*/login', (message) => {
+    console.log('用户类型:', message.type.split('/')[1]);
+    // 匹配: user/admin/login, user/guest/login 等
+});
+
+// 匹配任意操作
+events.on('api/users/*/action/*', (message) => {
+    const [, , userId, , action] = message.type.split('/');
+    console.log(`用户 ${userId} 执行了 ${action} 操作`);
+    // 匹配: api/users/123/action/update, api/users/456/action/delete 等
+});
+```
+
+2. 多层通配符（`**`）：
+    - 匹配事件路径中的零个或多个层级
+    - 必须在路径模式的末尾使用
+
+```typescript
+// 匹配所有用户相关事件
+events.on('user/**', (message) => {
+    console.log('用户事件:', message.type);
+    // 匹配: user/login, user/profile/update, user/settings/theme/change 等
+});
+
+// 匹配所有 API 事件
+events.on('api/**', (message) => {
+    console.log('API 事件:', message.type, message.payload);
+    // 匹配: api/get, api/users/create, api/posts/123/comments/add 等
+});
+```
+
+### 高级通配符用法
+
+```typescript
+const events = new FastEvent();
+
+// 使用单层通配符
+events.on('service/*/user/update', (message) => {
+    // 匹配如下模式：
+    // service/auth/user/update
+    // service/admin/user/update
+    const parts = message.type.split('/');
+    const serviceType = parts[1];
+    console.log(`${serviceType} 服务用户更新:`, message.payload);
+});
+
+// 在末尾使用多层通配符
+events.on('service/auth/**', (message) => {
+    // 匹配如下模式：
+    // service/auth/user/update
+    // service/auth/user/profile/update
+    // service/auth/settings/theme/change
+    console.log('认证服务事件:', message.type, message.payload);
+});
+
+// 使用 TypeScript 的类型安全事件
+interface ApiEvents {
+    'api/users/profile': { userId: string; data: any };
+    'api/posts/comments': { postId: string; commentId: string; text: string };
+}
+
+const typedEvents = new FastEvent<ApiEvents>();
+
+// 精确匹配的类型安全
+typedEvents.on('api/users/profile', (message) => {
+    const { userId, data } = message.payload; // 正确的类型推断
+});
+
+// 通配符监听器仍然可用但会失去部分类型安全
+typedEvents.on('api/*', (message) => {
+    // message.payload 类型在这里是 any
+    console.log('API 事件:', message.type);
+});
+
+// 通配符事件监控
+events.on('**', (message) => {
+    console.log('事件拦截:', {
+        类型: message.type,
+        时间戳: new Date(),
+        数据: message.payload,
+    });
+});
+
+// 使用示例
+events.emit('service/auth/user/profile/update', { name: '张三' });
+events.emit('api/users/123/profile', { userId: '123', data: { age: 30 } });
+```
+
+### 重要说明
+
+1. 通配符限制：
+
+    - `**` 通配符必须在路径末尾使用
+    - `*` 可以在路径中多次使用
+    - 通配符不能在单个段中组合（例如，'a/\*\*/b' 是无效的）
+
+2. 性能考虑：
+
+    - 不使用通配符的具体模式匹配速度最快
+    - `*` 通配符比 `**` 更高效
+    - 过度使用 `**` 通配符可能影响性能
+
+3. 最佳实践：
+    - 尽可能使用具体的模式
+    - 限制 `**` 通配符的使用
+    - 仔细规划事件层级结构
+    - 使用 TypeScript 接口确保类型安全
 
 ## 全局事件监听
 
@@ -282,7 +492,7 @@ events.onAny(handler, { prepend: true });
 
 ## 元数据(Meta)
 
-元数据是一种为事件提供额外上下文信息的机制。你可以在全局范围内设置元数据，也可以为单个事件添加特定的元数据。
+元数据是一种为事件提供额外上下文信息的机制。你可以在不同层级设置元数据：全局、作用域级别或事件特定级别。
 
 ### 全局元数据
 
@@ -302,29 +512,82 @@ events.on('user/login', (message) => {
 });
 ```
 
-### 事件特定元数据
+### 作用域元数据
 
-在发布事件时可以传递额外的元数据，它会与全局元数据合并：
+创建作用域时可以指定元数据，它会与全局元数据合并：
 
 ```typescript
 const events = new FastEvent({
     meta: { app: 'MyApp' },
 });
 
-// 在发布事件时添加特定的元数据
-events.emit(
-    'order/create',
-    { orderId: '123' }, // 事件数据
+const userScope = events.scope('user', {
+    meta: { domain: 'user' },
+});
+
+userScope.on('login', (message) => {
+    console.log('元数据:', message.meta);
+    // { type: 'user/login', app: 'MyApp', domain: 'user' }
+});
+
+// 嵌套作用域会递归合并元数据
+const profileScope = userScope.scope('profile', {
+    meta: { section: 'profile' },
+});
+
+profileScope.on('update', (message) => {
+    console.log('元数据:', message.meta);
+    // { type: 'user/profile/update', app: 'MyApp', domain: 'user', section: 'profile' }
+});
+```
+
+### 事件特定元数据
+
+在发布事件时可以传递额外的元数据，它会与更高级别的元数据合并：
+
+```typescript
+const events = new FastEvent({
+    meta: { app: 'MyApp' },
+});
+
+const userScope = events.scope('user', {
+    meta: { domain: 'user' },
+});
+
+// 发布事件时添加特定元数据
+userScope.emit(
+    'login',
+    { userId: '123' }, // 事件数据
     false, // 不保留
-    { timestamp: Date.now() }, // 事件特定的元数据
+    { timestamp: Date.now() }, // 事件特定元数据
 );
 
 // 监听器接收合并后的元数据
-events.on('order/create', (message) => {
-    console.log('订单:', message.payload); // { orderId: '123' }
-    console.log('元数据:', message.meta); // { type: 'order/create', app: 'MyApp', timestamp: ... }
+userScope.on('login', (message) => {
+    console.log('元数据:', message.meta);
+    // { type: 'user/login', app: 'MyApp', domain: 'user', timestamp: ... }
 });
 ```
+
+### 元数据合并规则
+
+1. 优先级(从高到低):
+
+    - 事件特定元数据
+    - 作用域元数据(从内层到外层)
+    - 全局元数据
+    - 系统元数据(type 总是会被添加)
+
+2. 合并行为:
+
+    - 浅合并(仅顶层属性)
+    - 后定义的属性会覆盖先定义的
+    - 不会深度合并嵌套对象
+
+3. 特殊情况:
+    - `type` 总是保留为完整事件路径
+    - `undefined` 值会从结果中移除该属性
+    - 数组会被替换而不是连接
 
 ## 错误处理
 
@@ -440,51 +703,205 @@ events.emit('data/string', 'hello');
 events.emit('data/object', { value: true });
 ```
 
-## 自定义选项
+## 事件钩子
 
-FastEvent 构造函数支持多个选项：
+FastEvent 提供了多个钩子函数用于监控和调试事件系统：
 
 ```typescript
 const events = new FastEvent({
-  // 事件路径分隔符，默认为 '/'
-  delimiter: '.',
-  // 事件处理器的上下文
-  context: null,
-  // 元数据，会传递给所有事件处理器
-  meta: { ... },
+    // 当添加新的监听器时调用
+    onAddListener: (path: string[], listener: Function) => {
+        console.log('添加了新的监听器:', path.join('/'));
+    },
 
-  // 错误处理
-  ignoreErrors: true,
-  onListenerError: (type, error) => {
-    console.error(`事件错误:`, type, error);
-  },
+    // 当移除监听器时调用
+    onRemoveListener: (path: string[], listener: Function) => {
+        console.log('移除了监听器:', path.join('/'));
+    },
 
-  // 监听器添加/移除的回调
-  onAddListener: (path, listener) => {
-    console.log('添加监听器:', path);
-  },
-  onRemoveListener: (path, listener) => {
-    console.log('移除监听器:', path);
-  },
-  onClearListeners: () => {
-    console.log('清空监听器:', path);
-  },
-  onExecuteListener: (message: FastEventMessage, returns: any[], listeners: (FastEventListener<any, any, any> | [FastEventListener<any, any>, number])[]) => {
-    console.log('监听器执行后的回调:');
-  }
+    // 当清除监听器时调用
+    onClearListeners: () => {
+        console.log('已清除所有监听器');
+    },
+
+    // 当监听器抛出错误时调用
+    onListenerError: (type: string, error: Error) => {
+        console.error(`事件 ${type} 的监听器发生错误:`, error);
+    },
+
+    // 当监听器执行后调用（仅在调试模式下）
+    onExecuteListener: (message, returns, listeners) => {
+        console.log('事件执行完成:', {
+            类型: message.type,
+            数据: message.payload,
+            返回值: returns,
+            监听器数量: listeners.length,
+        });
+    },
 });
 ```
 
-### 调试
+这些钩子函数为事件系统的运行提供了有价值的洞察：
 
-启用`debug=true`并导入`fastevent/devtools`,可以在[Redux Dev Tools](https://chromewebstore.google.com/detail/redux-devtools/lmhkpmbekcpmknklioeibfkpmmfibljd?utm_source=ext_app_menu)中查看事件.
+1. `onAddListener`: 监控监听器注册
 
-```ts
+    - 在添加新的事件监听器时调用
+    - 接收事件路径数组和监听器函数
+    - 用于跟踪事件订阅情况
+
+2. `onRemoveListener`: 跟踪监听器移除
+
+    - 在移除监听器时调用
+    - 帮助监控事件取消订阅的模式
+    - 接收与 onAddListener 相同的参数
+
+3. `onClearListeners`: 通知批量监听器移除
+
+    - 在调用 offAll() 时触发
+    - 用于监控清理操作
+    - 不接收任何参数
+
+4. `onListenerError`: 错误处理钩子
+
+    - 当监听器抛出错误时调用
+    - 接收事件类型和错误对象
+    - 实现集中式错误处理
+    - 仅在 ignoreErrors 为 true 时调用
+
+5. `onExecuteListener`: 执行监控（调试模式）
+    - 仅在设置 debug: true 时激活
+    - 提供详细的执行信息
+    - 包含消息、返回值和监听器列表
+    - 用于调试和性能监控
+
+使用示例：
+
+```typescript
+const events = new FastEvent({
+    debug: true, // 启用调试模式以激活 onExecuteListener
+    onAddListener: (path, listener) => {
+        console.log(`添加了 ${path.join('/')} 的监听器`);
+        // 跟踪监听器数量或模式
+    },
+    onListenerError: (type, error) => {
+        console.error(`${type} 中发生错误:`, error);
+        // 记录到监控系统
+    },
+    onExecuteListener: (message, returns, listeners) => {
+        console.log(`事件 ${message.type} 执行完成:`, {
+            执行时间: Date.now(),
+            监听器数量: listeners.length,
+            执行结果: returns,
+        });
+        // 监控事件执行模式
+    },
+});
+
+// 触发钩子的示例事件
+events.on('user/login', () => {
+    // 将调用 onAddListener
+});
+
+events.on('data/process', () => {
+    throw new Error('处理失败');
+    // 将调用 onListenerError
+});
+
+events.emit('user/login', { id: 1 });
+// 将调用 onExecuteListener（如果 debug: true）
+
+events.offAll();
+// 将调用 onClearListeners
+```
+
+# 参数
+
+FastEvent 构造函数接受以下配置选项：
+
+````typescript
+interface FastEventOptions<Meta = Record<string, any>, Context = any> {
+    /**
+     * 事件发射器的唯一标识符
+     * @default 随机生成的字符串
+     */
+    id?: string;
+
+    /**
+     * 是否启用调试模式
+     * @default false
+     * @remarks 当为true时，可以在Redux DevTools中查看事件
+     */
+    debug?: boolean;
+
+    /**
+     * 事件路径的分隔符
+     * @default '/'
+     * @example
+     * ```ts
+     * new FastEvent({ delimiter: '.' }); // 使用点作为分隔符
+     * ```
+     */
+    delimiter?: string;
+
+    /**
+     * 事件处理器的默认执行上下文
+     * @default null
+     */
+    context?: Context;
+
+    /**
+     * 是否忽略监听器错误
+     * @default true
+     */
+    ignoreErrors?: boolean;
+
+    /**
+     * 附加到所有事件的全局元数据
+     * @default undefined
+     */
+    meta?: Meta;
+
+    /**
+     * 添加监听器时的回调
+     * @param path - 路径分段数组
+     * @param listener - 监听器函数
+     */
+    onAddListener?: (path: string[], listener: Function) => void;
+
+    /**
+     * 移除监听器时的回调
+     * @param path - 路径分段数组
+     * @param listener - 监听器函数
+     */
+    onRemoveListener?: (path: string[], listener: Function) => void;
+
+    /**
+     * 清除所有监听器时的回调
+     */
+    onClearListeners?: () => void;
+
+    /**
+     * 监听器抛出错误时的回调
+     * @param type - 事件类型
+     * @param error - 错误对象
+     */
+    onListenerError?: (type: string, error: Error) => void;
+
+    /**
+     * 监听器执行后的回调（仅在调试模式）
+     * @param message - 事件消息
+     * @param returns - 监听器返回值数组
+     * @param listeners - 已执行的监听器数组
+     */
+    onExecuteListener?: (message: FastEventMessage, returns: any[], listeners: (FastEventListener<any, any, any> | [FastEventListener<any, any>, number])[]) => void;
+}
+
+// 调试模式使用示例
 import 'fastevent/devtools';
-const emitter = new FastEvent<MyEvents>({
-    debug: true,
+const emitter = new FastEvent({
+    debug: true, // 启用调试模式以在Redux DevTools中查看事件
 });
-```
+````
 
 # 性能
 
