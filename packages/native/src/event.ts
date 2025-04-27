@@ -12,7 +12,10 @@ import {
     FastEventAnyListener,
     RequiredItems,
     Fallback,
-    FastEventEmitMessage
+    FastEventEmitMessage,
+    FastEventEmitOptions,
+    FastEventListenerArgs,
+    FastListenerMeta
 } from './types';
 import { handleEmitArgs } from './utils/handleEmitArgs';
 import { isPathMatched } from './utils/isPathMatched';
@@ -82,7 +85,7 @@ export class FastEvent<
     private _addListener(parts: string[], listener: FastEventListener<any, any>, options: Required<FastEventListenOptions>): FastListenerNode | undefined {
         const { count, prepend } = options
         return this._forEachNodes(parts, (node) => {
-            const newListener = count > 0 ? [listener, count] : listener as any
+            const newListener = [listener, count, 0] as unknown as FastListenerMeta// count > 0 ? [listener, count] : listener as any
             if (prepend) {
                 node.__listeners.splice(0, 0, newListener)
             } else {
@@ -190,11 +193,11 @@ export class FastEvent<
 
         if (typeof (options.filter) === 'function') {
             const oldListener = listener
-            listener = renameFn<FastEventListener>(function (message) {
+            listener = renameFn<FastEventListener>(function (message, args) {
                 if (options.filter.call(this, message)) {
-                    return oldListener.call(this, message)
+                    return oldListener.call(this, message, args)
                 }
-            }, listener.name || 'anonymous')
+            }, listener.name)
         }
 
         if (type === '**') {
@@ -212,7 +215,6 @@ export class FastEvent<
             listener
         }
     }
-
 
     /**
      * 注册一次性事件监听器
@@ -259,9 +261,9 @@ export class FastEvent<
     onAny<P = any>(listener: FastEventAnyListener<{ [K: string]: P }, Meta, Context>, options?: Pick<FastEventListenOptions, 'prepend'>): FastEventSubscriber {
         const listeners = this.listeners.__listeners
         if (options && options.prepend) {
-            listeners.splice(0, 0, listener)
+            listeners.splice(0, 0, [listener, 0, 0])
         } else {
-            listeners.push(listener)
+            listeners.push([listener, 0, 0])
         }
         return {
             off: () => this._removeListener(this.listeners, [], listener),
@@ -453,9 +455,9 @@ export class FastEvent<
      *   - 如果配置了ignoreErrors，返回错误对象
      *   - 否则抛出错误
      */
-    private _executeListener(listener: any, message: FastEventMessage): any {
+    private _executeListener(listener: any, message: FastEventMessage, args?: FastEventListenerArgs): any {
         try {
-            return listener.call(this._context || this, message)
+            return listener.call(this._context || this, message, args)
         } catch (e: any) {
             e._emitter = message.type
             if (typeof (this._options.onListenerError) === 'function') {
@@ -483,22 +485,25 @@ export class FastEvent<
      * - 对于普通监听器，直接执行并收集结果
      * - 对于带次数限制的监听器(数组形式)，执行后递减次数，当次数为0时移除该监听器
      */
-    private _executeListeners(node: FastListenerNode, message: FastEventMessage): any[] {
+    private _executeListeners(node: FastListenerNode, message: FastEventMessage, args?: FastEventListenerArgs): any[] {
         if (!node || !node.__listeners) return []
         let i = 0
         const listeners = node.__listeners
         let result: any[] = []
         while (i < listeners.length) {
             const listener = listeners[i]
-            if (Array.isArray(listener)) {
-                result.push(this._executeListener(listener[0], message))
-                listener[1]--
-                if (listener[1] === 0) {
-                    listeners.splice(i, 1)
-                    i-- // 抵消后面的i++
-                }
-            } else {
-                result.push(this._executeListener(listener, message))
+            result.push(this._executeListener(listener[0], message, args))
+            // if (listener[1] > -1) {
+            //     listener[1]--
+            //     if (listener[1] === 0) {
+            //         listeners.splice(i, 1)
+            //         i-- // 抵消后面的i++
+            //     }
+            // }
+            listener[2]++  // 实际执行的次数
+            if (listener[1] > 0 && listener[2] === listener[1]) { // =0不限执行次数，>0时代表执行次数限制
+                listeners.splice(i, 1)
+                i-- // 抵消后面的i++
             }
             i++
         }
@@ -557,27 +562,34 @@ export class FastEvent<
      *   meta: { time: Date.now() }
      * }, true);
      * ```
-     */
-    public emit<R = any>(type: Types, payload?: Events[Types], retain?: boolean, meta?: Record<string, any> & Partial<Meta>): R[]
+     * public emit<R = any>(type: Types, payload?: Events[Types], retain?: boolean, meta?: Record<string, any> & Partial<Meta>): R[]
     public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? Events[Types] : any, retain?: boolean, meta?: Record<string, any> & Partial<Meta>): R[]
     public emit<R = any>(message: FastEventEmitMessage<Events, Meta>, retain?: boolean): R[]
     public emit<R = any, T extends string = string>(message: FastEventEmitMessage<{
         [K in T]: K extends Types ? Events[K] : any
     }, Meta>, retain?: boolean): R[]
     public emit<R = any>(): R[] {
-        const [message, retain] = handleEmitArgs(arguments, this.options.meta)
+     */
+    public emit<R = any>(type: Types, payload?: Events[Types], options?: FastEventEmitOptions<Meta>): R[]
+    public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? Events[Types] : any, options?: FastEventEmitOptions<Meta>): R[]
+    public emit<R = any>(message: FastEventEmitMessage<Events, Meta>, options?: FastEventEmitOptions<Meta>): R[]
+    public emit<R = any, T extends string = string>(message: FastEventEmitMessage<{
+        [K in T]: K extends Types ? Events[K] : any
+    }, Meta>, options?: FastEventEmitOptions<Meta>): R[]
+    public emit<R = any>(): R[] {
+        const [message, args] = handleEmitArgs(arguments, this.options.meta)
         const parts = message.type.split(this._delimiter);
-        if (retain) {
+        if (args.retain) {
             this.retainedMessages.set(message.type, message)
         }
         const results: any[] = []
         // onAny侦听器保存在根节点中，所以需要执行 
-        results.push(...this._executeListeners(this.listeners, message))
+        results.push(...this._executeListeners(this.listeners, message, args))
         this._traverseToPath(this.listeners, parts, (node) => {
-            results.push(...this._executeListeners(node, message))
+            results.push(...this._executeListeners(node, message, args))
             // 用于调试时使用
             if (this._options.debug && typeof (this._options.onExecuteListener) === 'function') {
-                if (retain) {
+                if (args.retain) {
                     if (!message.meta) message.meta = { retain: true }
                 }
                 this._options.onExecuteListener.call(this, message, results, [...this.listeners.__listeners, ...node.__listeners])
@@ -622,10 +634,11 @@ export class FastEvent<
      * });
      * ```
      */
-    public async emitAsync<R = any>(type: string, payload?: any, retain?: boolean, meta?: Meta): Promise<[R | Error][]>
-    public async emitAsync<R = any>(type: Types, payload?: Events[Types], retain?: boolean, meta?: Meta): Promise<[R | Error][]>
+    public async emitAsync<R = any>(type: string, payload?: any, options?: FastEventEmitOptions<Meta>): Promise<[R | Error][]>
+    public async emitAsync<R = any>(type: Types, payload?: Events[Types], options?: FastEventEmitOptions<Meta>): Promise<[R | Error][]>
     public async emitAsync<R = any>(): Promise<[R | Error][]> {
-        const results = await Promise.allSettled(this.emit.apply(this, arguments as any))
+        const [message, emitOptions] = handleEmitArgs(arguments, this.options.meta)
+        const results = await Promise.allSettled(this.emit(message as FastEventMessage<Events, Meta>, emitOptions))
         return results.map((result) => {
             if (result.status === 'fulfilled') {
                 return result.value
@@ -731,4 +744,3 @@ export class FastEvent<
             this as any, prefix, options)
     }
 }
-

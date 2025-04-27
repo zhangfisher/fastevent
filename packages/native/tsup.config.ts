@@ -25,6 +25,7 @@ export default defineConfig([
         noExternal: ['redux'],
         clean: true,
         treeshake: true,
-        minify: true
+        minify: true,
+        tsconfig: "./tsconfig.devtool.json"
     }]
 )

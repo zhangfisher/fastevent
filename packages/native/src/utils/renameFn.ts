@@ -10,7 +10,7 @@
  */
 export function renameFn<F>(fn: F, name: string): F {
     Object.defineProperty(fn, 'name', {
-        value: name,
+        value: name || 'anonymous',
         configurable: true
     });
     return fn;

@@ -37,7 +37,7 @@ describe("异步发布与订阅", async () => {
         await emitter.emitAsync("a.b.c", 1)
         expect(events).toEqual(["a.b.c"])
     })
-    test("返回事件执行结果", async () => {
+    test("返回事件异步执行结果", async () => {
         const emitter = new FastEvent()
         for (let i = 1; i <= 10; i++) {
             emitter.on("x", async () => {

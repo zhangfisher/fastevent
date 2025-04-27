@@ -1,6 +1,7 @@
 import type { FastEvent } from "./event";
-import { FastEventAnyListener, FastEventEmitMessage, FastEventListener, FastEventListenOptions, FastEventMessage, FastEvents, FastEventSubscriber, ScopeEvents } from "./types";
+import { FastEventAnyListener, FastEventEmitMessage, FastEventEmitOptions, FastEventListener, FastEventListenerArgs, FastEventListenOptions, FastEventMessage, FastEvents, FastEventSubscriber, ScopeEvents } from "./types";
 import { handleEmitArgs } from "./utils/handleEmitArgs";
+import { renameFn } from "./utils/renameFn";
 
 export type FastEventScopeOptions<Meta, Context> = {
     meta?: Meta
@@ -40,13 +41,13 @@ export class FastEventScope<
         const scopePrefix = this.prefix
         if (scopePrefix.length === 0) return listener
         const scopeThis = this
-        const scopeListener = function (message: FastEventMessage) {
+        const scopeListener = renameFn(function (message: FastEventMessage, args?: FastEventListenerArgs) {
             if (message.type.startsWith(scopePrefix)) {
                 return listener.call(scopeThis.context || scopeThis.emitter.context, Object.assign({}, message, {
                     type: message.type.substring(scopePrefix.length)
-                }))
+                }), args)
             }
-        }
+        }, listener.name)
         return scopeListener
     }
     private _getScopeType(type: string) {
@@ -94,29 +95,27 @@ export class FastEventScope<
         this.emitter.clear(this.prefix.substring(0, this.prefix.length - 1))
     }
 
-    public emit<R = any>(type: Types, payload?: Events[Types], retain?: boolean, meta?: Record<string, any> & Partial<FinalMeta>): R[]
-    public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? Events[Types] : any, retain?: boolean, meta?: Record<string, any> & Partial<FinalMeta>): R[]
-    public emit<R = any>(message: FastEventEmitMessage<Events, FinalMeta>, retain?: boolean): R[]
+    public emit<R = any>(type: Types, payload?: Events[Types], options?: FastEventEmitOptions<FinalMeta>): R[]
+    public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? Events[Types] : any, options?: FastEventEmitOptions<FinalMeta>): R[]
+    public emit<R = any>(message: FastEventEmitMessage<Events, FinalMeta>, options?: FastEventEmitOptions<FinalMeta>): R[]
     public emit<R = any, T extends string = string>(message: FastEventEmitMessage<{
         [K in T]: K extends Types ? Events[K] : any
-    }, FinalMeta>, retain?: boolean): R[]
+    }, FinalMeta>, options?: FastEventEmitOptions<FinalMeta>): R[]
     public emit<R = any>(): R[] {
-        const [message, retain] = handleEmitArgs(arguments, this.emitter.options.meta)
+        const [message, options] = handleEmitArgs(arguments, this.emitter.options.meta, this.options.meta)
         message.type = this._getScopeType(message.type)!
-        if (typeof (this.options.meta) === 'object' || message.meta) message.meta = Object.assign({
-
-        }, this.options.meta, message.meta)
-        return this.emitter.emit(message as FastEventMessage<Events, FinalMeta>, retain)
+        return this.emitter.emit(message as FastEventMessage<Events, FinalMeta>, options)
     }
 
 
 
-    public async emitAsync<R = any>(type: string, payload?: any, retain?: boolean, meta?: Record<string, any> & Partial<FinalMeta>): Promise<[R | Error][]>
-    public async emitAsync<R = any>(type: Types, payload?: Events[Types], retain?: boolean, meta?: Record<string, any> & Partial<FinalMeta>): Promise<[R | Error][]>
-    public async emitAsync<R = any>(message: FastEventMessage<Events, FinalMeta>, retain?: boolean): Promise<R | Error>
-    public async emitAsync<R = any>(message: FastEventMessage<Events, FinalMeta>, retain?: boolean): Promise<R | Error>
+    public async emitAsync<R = any>(type: string, payload?: any, options?: FastEventEmitOptions<FinalMeta>): Promise<[R | Error][]>
+    public async emitAsync<R = any>(type: Types, payload?: Events[Types], options?: FastEventEmitOptions<FinalMeta>): Promise<[R | Error][]>
+    public async emitAsync<R = any>(message: FastEventMessage<Events, FinalMeta>, options?: FastEventEmitOptions<FinalMeta>): Promise<[R | Error][]>
     public async emitAsync<R = any>(): Promise<[R | Error][]> {
-        const results = await Promise.allSettled(this.emit.apply(this, arguments as any))
+        const [message, options] = handleEmitArgs(arguments, this.emitter.options.meta, this.options.meta)
+        message.type = this._getScopeType(message.type)!
+        const results = await Promise.allSettled(this.emitter.emit(message as FastEventMessage<Events, FinalMeta>, options))
         return results.map((result) => {
             if (result.status === 'fulfilled') {
                 return result.value

@@ -41,32 +41,33 @@ export type FastEventListener<
     C = any
 > = (this: C, message: FastEventMessage<{
     [K in T]: P
-}, M>) => any | Promise<any>
+}, M>, args?: FastEventListenerArgs) => any | Promise<any>
 
 // 任意事件类型
 export type FastEventAnyListener<
     Events extends Record<string, any> = Record<string, any>,
     Meta = never,
     Context = any
-> = (this: Context, message: FastEventMessage<Events, Meta>) => any | Promise<any>
+> = (this: Context, message: FastEventMessage<Events, Meta>, args?: FastEventListenerArgs) => any | Promise<any>
 
 /**
  * 传递给监听器的额外参数
  */
 export type FastEventListenerArgs = {
-
+    abortSignal?: AbortSignal                   // emit时传入的用于取消侦听的信号    
 }
 
 
+/**
+ * [监听器函数引用，需要执行多少次，实际执行的次数(用于负载均衡时记录)]
+ */
+export type FastListenerMeta = [FastEventListener<any, any>, number, number]
+
 export type FastListenerNode = {
-    __listeners: (FastEventListener<any, any, any> | [FastEventListener<any, any>, number])[];
+    __listeners: [FastEventListener<any, any>, number, number][];
 } & {
     [key: string]: FastListenerNode
 }
-
-
-
-
 
 export type FastEventSubscriber = {
     off: () => void
@@ -124,7 +125,7 @@ export type FastEventOptions<Meta = Record<string, any>, Context = any> = {
     // 当清空侦听器时回调
     onClearListeners?: () => void
     // 当执行侦听器后时回调
-    onExecuteListener?: (message: FastEventMessage, returns: any[], listeners: (FastEventListener<any, any, any> | [FastEventListener<any, any>, number])[]) => void
+    onExecuteListener?: (message: FastEventMessage, returns: any[], listeners: (FastListenerMeta)[]) => void
 }
 
 
@@ -145,11 +146,18 @@ export type FastEventListenOptions = {
     filter?: (message: FastEventMessage) => boolean
 }
 
-export type FastEventEmitOptions<M extends Record<string, any> = Record<string, any>> = {
-    retain?: boolean,
-    meta?: M
-    abortSignal?: AbortSignal               // 用于传递给监听器函数
-    executor: 'default' | 'race'            // 侦听器的执行策略
+export type FastEventEmitOptions<M = Record<string, any>> = {
+    retain?: boolean;
+    meta?: Record<string, any> & Partial<M>;
+    abortSignal?: AbortSignal;               // 用于传递给监听器函数
+    /**
+     * 
+     * default: 使用Promise.allSettled()执行所有监听器
+     * race: 使用Promise.race()执行所有监听器，只有第一个执行完成就返回,其他监听器执行结果会被忽略
+     * balance: 侦听器的执行策略
+     * sequence: 按照侦听器添加顺序依次执行
+     */
+    executor?: 'default' | 'race' | 'balance' | 'sequence';
 }
 
 export type Merge<T extends object, U extends object> = {

@@ -6,13 +6,13 @@ import { FastEvent } from "../event"
 describe("订阅与发布retain事件", async () => {
     test("简单发布订阅retain事件", () => {
         const emitter = new FastEvent()
-        emitter.emit("x", 1, true)
+        emitter.emit("x", 1, { retain: true })
         emitter.on("x", ({ payload, type }) => {
             expect(type).toBe("x")
             expect(payload).toBe(1)
         })
-        emitter.emit("a.b.c1", 1, true)
-        emitter.emit("a.b.c2", 2, true)
+        emitter.emit("a.b.c1", 1, { retain: true })
+        emitter.emit("a.b.c2", 2, { retain: true })
         emitter.on("a.b.c1", ({ payload, type }) => {
             expect(type).toBe("a.b.c1")
             expect(payload).toBe(1)
@@ -24,8 +24,8 @@ describe("订阅与发布retain事件", async () => {
     })
     test("不处理通配符的retain事件", () => {
         const emitter = new FastEvent()
-        emitter.emit("a.b.c1", 1, true)
-        emitter.emit("a.b.c2", 2, true)
+        emitter.emit("a.b.c1", 1, { retain: true })
+        emitter.emit("a.b.c2", 2, { retain: true })
         const events: string[] = []
         // 订阅所有a.b.*事件,由于c1,c2是
         emitter.on("a.b.*", ({ payload, type }) => {
@@ -36,10 +36,10 @@ describe("订阅与发布retain事件", async () => {
     test("简单发布订阅retain事件", () => {
         const emitter = new FastEvent()
         const events: string[] = []
-        emitter.emit("a", 1, true)
-        emitter.emit("a.b", 2, true)
-        emitter.emit("a.b.c", 3, true)
-        emitter.emit("a.b.c.d", 4, true)
+        emitter.emit("a", 1, { retain: true })
+        emitter.emit("a.b", 2, { retain: true })
+        emitter.emit("a.b.c", 3, { retain: true })
+        emitter.emit("a.b.c.d", 4, { retain: true })
 
         emitter.on("a", ({ payload, type }) => {
             expect(type).toBe("a")

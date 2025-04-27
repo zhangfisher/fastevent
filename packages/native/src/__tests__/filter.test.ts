@@ -82,10 +82,10 @@ describe("事件过滤器测试", () => {
         expect(listener).toHaveBeenCalledTimes(2)
         expect(listener).toHaveBeenNthCalledWith(1, expect.objectContaining({
             payload: 6
-        }))
+        }), {})
         expect(listener).toHaveBeenNthCalledWith(2, expect.objectContaining({
             payload: 8
-        }))
+        }), {})
     })
 
     test("过滤器可以基于事件元数据进行过滤", () => {
@@ -96,19 +96,19 @@ describe("事件过滤器测试", () => {
             filter: (message) => message.meta?.important === true
         })
 
-        emitter.emit("test", 1, false, { important: false })
-        emitter.emit("test", 2, false, { important: true })
+        emitter.emit("test", 1, { meta: { important: false } })
+        emitter.emit("test", 2, { meta: { important: true } })
         emitter.emit("test", 3)
-        emitter.emit("test", 4, false, { important: true })
+        emitter.emit("test", 4, { meta: { important: true } })
 
         expect(listener).toHaveBeenCalledTimes(2)
         expect(listener).toHaveBeenNthCalledWith(1, expect.objectContaining({
             payload: 2,
             meta: { important: true }
-        }))
+        }), { meta: { important: true } })
         expect(listener).toHaveBeenNthCalledWith(2, expect.objectContaining({
             payload: 4,
             meta: { important: true }
-        }))
+        }), { meta: { important: true } })
     })
 })

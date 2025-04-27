@@ -68,7 +68,7 @@ describe("scope", () => {
                 return "ok"
             })
 
-            await scope.emitAsync("x", 1, false, { event: 1 })
+            await scope.emitAsync("x", 1, { retain: false, meta: { event: 1 } })
             expect(receivedMeta).toEqual({
                 root: 1,
                 scope: 1,
@@ -309,7 +309,7 @@ describe("scope", () => {
 
 
         let receiveMeta: any
-        const listener = (({ type, meta }) => {
+        const listener = (({ type, meta }, args) => {
             receiveMeta = meta
         }) as FastEventListener
 

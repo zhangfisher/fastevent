@@ -60,7 +60,7 @@ describe('FastEvent钩子函数测试', () => {
         expect(onListenerError).toHaveBeenCalledWith('test', error)
     })
 
-    test('当开启debug模式时，执行监听器后应该触发onExecuteListener', () => {
+    test('当开启debug模式时,执行监听器后应该触发onExecuteListener', () => {
         const onExecuteListener = vi.fn()
         const emitter = new FastEvent({
             debug: true,
@@ -75,14 +75,15 @@ describe('FastEvent钩子函数测试', () => {
         expect(onExecuteListener).toHaveBeenCalledWith(
             expect.objectContaining({
                 type: 'test',
-                payload: 'payload'
+                payload: 'payload',
+                meta: undefined
             }),
             ['result'],
-            [listener]
+            [[listener, 0, 1]]
         )
     })
 
-    test('当未开启debug模式时，不应该触发onExecuteListener', () => {
+    test('当未开启debug模式时,不应该触发onExecuteListener', () => {
         const onExecuteListener = vi.fn()
         const emitter = new FastEvent({
             debug: false,

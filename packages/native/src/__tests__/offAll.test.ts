@@ -78,8 +78,8 @@ describe("offAll和clear方法测试", () => {
 
     test("offAll应清除保留的事件", () => {
         const emitter = new FastEvent()
-        emitter.emit("event1", "data1", true)
-        emitter.emit("event2", "data2", true)
+        emitter.emit("event1", "data1", { retain: true })
+        emitter.emit("event2", "data2", { retain: true })
 
         expect(emitter.retainedMessages.size).toBe(2)
         emitter.offAll()
@@ -88,9 +88,9 @@ describe("offAll和clear方法测试", () => {
 
     test("带前缀的offAll应只清除匹配的保留事件", () => {
         const emitter = new FastEvent()
-        emitter.emit("user/login", "data1", true)
-        emitter.emit("user/profile", "data2", true)
-        emitter.emit("system/start", "data3", true)
+        emitter.emit("user/login", "data1", { retain: true })
+        emitter.emit("user/profile", "data2", { retain: true })
+        emitter.emit("system/start", "data3", { retain: true })
 
         expect(emitter.retainedMessages.size).toBe(3)
         emitter.offAll("user")
@@ -117,9 +117,9 @@ describe("offAll和clear方法测试", () => {
             const emitter = new FastEvent()
             const scope = emitter.scope("user")
 
-            scope.emit("login", { id: 1 }, true)
-            scope.emit("logout", null, true)
-            emitter.emit("system", "data", true)
+            scope.emit("login", { id: 1 }, { retain: true })
+            scope.emit("logout", null, { retain: true })
+            emitter.emit("system", "data", { retain: true })
 
             expect(emitter.retainedMessages.size).toBe(3)
             scope.clear()
@@ -132,9 +132,9 @@ describe("offAll和clear方法测试", () => {
             const userScope = emitter.scope("user")
             const profileScope = userScope.scope("profile")
 
-            userScope.emit("login", null, true)
-            profileScope.emit("update", null, true)
-            profileScope.emit("delete", null, true)
+            userScope.emit("login", null, { retain: true })
+            profileScope.emit("update", null, { retain: true })
+            profileScope.emit("delete", null, { retain: true })
 
             const listener1 = vi.fn()
             const listener2 = vi.fn()
@@ -156,8 +156,8 @@ describe("offAll和clear方法测试", () => {
             const userScope = emitter.scope("user")
             const systemScope = emitter.scope("system")
 
-            userScope.emit("event1", null, true)
-            systemScope.emit("event2", null, true)
+            userScope.emit("event1", null, { retain: true })
+            systemScope.emit("event2", null, { retain: true })
 
             userScope.on("event1", vi.fn())
             systemScope.on("event2", vi.fn())
