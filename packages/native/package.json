@@ -1,18 +1,33 @@
 {
-    "name": "fastevent-repos",
+    "name": "fastevent",
     "version": "1.1.3",
     "description": "fast event emitter",
-    "private": true,
+    "main": "dist/index.js",
+    "module": "dist/index.mjs",
+    "types": "./dist/index.d.ts",
+    "private": false,
     "access": "public",
     "homepage": "https://github.com/zhangfisher/fastevent.git",
     "repository": {
         "type": "git",
         "url": "git+https://github.com/zhangfisher/fastevent.git"
     },
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.mjs",
+            "require": "./dist/index.js"
+        },
+        "./devtools": {
+            "types": "./devTools.d.ts",
+            "import": "./devTools.mjs",
+            "require": "./devTools.js"
+        }
+    },
     "scripts": {
         "test": "vitest",
         "test:coverage": "vitest --coverage --exclude=\"src/__benchmarks__/**\"  --exclude=src/devTools",
-        "build": "turbo build",
+        "build": "tsup",
         "bench": "tsx src/__benchmarks__/index.ts",
         "changeset": "changeset",
         "release": "bun run build && bun run changeset version && bun run changeset publish",
@@ -24,10 +39,25 @@
     "keywords": [
         "eventemitter"
     ],
+    "files": [
+        "dist",
+        "readme.md"
+    ],
     "author": "zhangfisher",
     "license": "MIT",
     "devDependencies": {
-        "@changesets/cli": "^2.28.1"
+        "@changesets/cli": "^2.28.1",
+        "@swc/core": "^1.11.16",
+        "@type-challenges/utils": "^0.1.1",
+        "@vitest/coverage-v8": "3.1.1",
+        "eventemitter2": "^6.4.9",
+        "redux": "^5.0.1",
+        "tinybench": "^4.0.1",
+        "tsup": "^8.4.0",
+        "tsx": "^4.19.3",
+        "typescript": "^5.8.2",
+        "vitepress": "^1.6.3",
+        "vitest": "^3.1.2"
     },
     "packageManager": "bun@1.2.0",
     "workspaces": [

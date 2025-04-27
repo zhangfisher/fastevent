@@ -7,7 +7,7 @@ export interface FaseEventMessageExtend {
 
 export type FastEventMessage<
     Events extends Record<string, any> = Record<string, any>,
-    M = unknown
+    M = any
 > = (
     {
         [K in keyof Events]: {
@@ -18,11 +18,26 @@ export type FastEventMessage<
     }[Exclude<keyof Events, number | symbol>]
 ) & FaseEventMessageExtend
 
+// 用于emit方法可使用
+export type FastEventEmitMessage<
+    Events extends Record<string, any> = Record<string, any>,
+    M = any
+> = (
+    {
+        [K in keyof Events]: {
+            type: Exclude<K, number | symbol>
+            payload?: Events[K]
+            meta?: M
+        }
+    }[Exclude<keyof Events, number | symbol>]
+) & FaseEventMessageExtend
+
+
 // 只针对指定类型
 export type FastEventListener<
     T extends string = string,
     P = any,
-    M = unknown,
+    M = any,
     C = any
 > = (this: C, message: FastEventMessage<{
     [K in T]: P
@@ -31,15 +46,27 @@ export type FastEventListener<
 // 任意事件类型
 export type FastEventAnyListener<
     Events extends Record<string, any> = Record<string, any>,
-    Meta = unknown,
+    Meta = never,
     Context = any
 > = (this: Context, message: FastEventMessage<Events, Meta>) => any | Promise<any>
+
+/**
+ * 传递给监听器的额外参数
+ */
+export type FastEventListenerArgs = {
+
+}
+
 
 export type FastListenerNode = {
     __listeners: (FastEventListener<any, any, any> | [FastEventListener<any, any>, number])[];
 } & {
     [key: string]: FastListenerNode
 }
+
+
+
+
 
 export type FastEventSubscriber = {
     off: () => void
@@ -115,9 +142,15 @@ export type FastEventListenOptions = {
     count?: number
     // 将侦听器添加到侦听器列表的头部
     prepend?: boolean
+    filter?: (message: FastEventMessage) => boolean
 }
 
-
+export type FastEventEmitOptions<M extends Record<string, any> = Record<string, any>> = {
+    retain?: boolean,
+    meta?: M
+    abortSignal?: AbortSignal               // 用于传递给监听器函数
+    executor: 'default' | 'race'            // 侦听器的执行策略
+}
 
 export type Merge<T extends object, U extends object> = {
     [K in keyof T | keyof U]:

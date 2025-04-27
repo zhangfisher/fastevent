@@ -1,5 +1,5 @@
 import type { FastEvent } from "./event";
-import { FastEventAnyListener, FastEventListener, FastEventListenOptions, FastEventMessage, FastEvents, FastEventSubscriber, ScopeEvents } from "./types";
+import { FastEventAnyListener, FastEventEmitMessage, FastEventListener, FastEventListenOptions, FastEventMessage, FastEvents, FastEventSubscriber, ScopeEvents } from "./types";
 import { handleEmitArgs } from "./utils/handleEmitArgs";
 
 export type FastEventScopeOptions<Meta, Context> = {
@@ -94,10 +94,12 @@ export class FastEventScope<
         this.emitter.clear(this.prefix.substring(0, this.prefix.length - 1))
     }
 
-    public emit<R = any>(type: string, payload?: any, retain?: boolean, meta?: FinalMeta): R[]
-    public emit<R = any>(type: Types, payload?: Events[Types], retain?: boolean, meta?: FinalMeta): R[]
-    public emit<R = any>(message: FastEventMessage<Events, FinalMeta>, retain?: boolean): R[]
-    public emit<R = any>(message: FastEventMessage<Events, FinalMeta>, retain?: boolean): R[]
+    public emit<R = any>(type: Types, payload?: Events[Types], retain?: boolean, meta?: Record<string, any> & Partial<FinalMeta>): R[]
+    public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? Events[Types] : any, retain?: boolean, meta?: Record<string, any> & Partial<FinalMeta>): R[]
+    public emit<R = any>(message: FastEventEmitMessage<Events, FinalMeta>, retain?: boolean): R[]
+    public emit<R = any, T extends string = string>(message: FastEventEmitMessage<{
+        [K in T]: K extends Types ? Events[K] : any
+    }, FinalMeta>, retain?: boolean): R[]
     public emit<R = any>(): R[] {
         const [message, retain] = handleEmitArgs(arguments, this.emitter.options.meta)
         message.type = this._getScopeType(message.type)!
@@ -106,6 +108,8 @@ export class FastEventScope<
         }, this.options.meta, message.meta)
         return this.emitter.emit(message as FastEventMessage<Events, FinalMeta>, retain)
     }
+
+
 
     public async emitAsync<R = any>(type: string, payload?: any, retain?: boolean, meta?: Record<string, any> & Partial<FinalMeta>): Promise<[R | Error][]>
     public async emitAsync<R = any>(type: Types, payload?: Events[Types], retain?: boolean, meta?: Record<string, any> & Partial<FinalMeta>): Promise<[R | Error][]>
@@ -166,15 +170,15 @@ export class FastEventScope<
      * profileScope.emit('update', { name: 'John' });
      * ```
      */
-    public scope<T extends string = string>(prefix: T, options?: FastEventScopeOptions<Record<string, any>, Context>) {
+    public scope<M extends Record<string, any> = Record<string, any>, T extends string = string>(prefix: T, options?: FastEventScopeOptions<M, Context>) {
         const meta = Object.assign({}, this.options.meta, options?.meta)
         // 如果options中提供了新的context，使用新的context；否则继承父scope的context
         const context = options?.context !== undefined ? options.context : this.context
         const opts = Object.assign({}, this.options, options, {
             meta: Object.keys(meta).length === 0 ? undefined : meta,
             context
-        }) as FastEventScopeOptions<FinalMeta, Context>
-        return new FastEventScope<ScopeEvents<Events, T>, FinalMeta, Context>(
+        }) as FastEventScopeOptions<FinalMeta & M, Context>
+        return new FastEventScope<ScopeEvents<Events, T>, FinalMeta & M, Context>(
             this.emitter as any,
             this.prefix + prefix,
             opts

@@ -1,8 +1,8 @@
 import { describe, test, expect } from "vitest"
 import type { Equal, Expect, NotAny } from '@type-challenges/utils'
-import { FastEvent } from "../event"
-import { FastEventMessage, ScopeEvents } from "../types"
-import { FastEventScopeMeta } from "../scope"
+import { FastEvent } from "../../event"
+import { FastEventMessage, ScopeEvents } from "../../types"
+import { FastEventScopeMeta } from "../../scope"
 
 describe("类型系统测试", () => {
     describe("作用域事件类型定义", () => {
@@ -263,7 +263,7 @@ describe("类型系统测试", () => {
 
         test("作用域应正确继承和扩展元数据类型", () => {
             type metaCases = [
-                Expect<Equal<typeof scope.options.meta, Record<string, any> & FastEventScopeMeta>>,
+                Expect<Equal<typeof scope.options.meta, CustomMeta & FastEventScopeMeta>>,
             ]
         })
 
@@ -272,7 +272,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, 'a'>>,
                     Expect<Equal<typeof message.payload, 1>>,
-                    Expect<Equal<typeof message.meta, Record<string, any> & FastEventScopeMeta>>
+                    Expect<Equal<typeof message.meta, CustomMeta & FastEventScopeMeta>>
                 ]
             })
 
@@ -305,7 +305,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, 'a'>>,
                     Expect<Equal<typeof message.payload, 1>>,
-                    Expect<Equal<typeof message.meta, Record<string, any> & FastEventScopeMeta>>
+                    Expect<Equal<typeof message.meta, CustomMeta & FastEventScopeMeta>>
                 ]
             })
 
@@ -313,7 +313,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, 'b'>>,
                     Expect<Equal<typeof message.payload, 2>>,
-                    Expect<Equal<typeof message.meta, Record<string, any> & FastEventScopeMeta>>
+                    Expect<Equal<typeof message.meta, CustomMeta & FastEventScopeMeta>>
                 ]
             })
 
@@ -321,7 +321,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, string>>,
                     Expect<Equal<typeof message.payload, any>>,
-                    Expect<Equal<typeof message.meta, Record<string, any> & FastEventScopeMeta>>
+                    Expect<Equal<typeof message.meta, CustomMeta & FastEventScopeMeta>>
                 ]
             })
 
@@ -329,7 +329,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, string>>,
                     Expect<Equal<typeof message.payload, boolean>>,
-                    Expect<Equal<typeof message.meta, Record<string, any> & FastEventScopeMeta>>
+                    Expect<Equal<typeof message.meta, CustomMeta & FastEventScopeMeta>>
                 ]
             })
         })
@@ -427,3 +427,64 @@ describe("类型系统测试", () => {
         })
     })
 })
+
+
+// interface MyEvents {
+//     'user/login': { id: number; name: string };
+//     'user/logout': { id: number };
+//     'system/error': { code: string; message: string };
+// }
+
+// const events = new FastEvent<MyEvents>();
+
+// // ✅ 正确：数据类型匹配
+// events.emit('user/login', { id: 1, name: 'Alice' });
+// // ✅ 正确：消息对象
+// events.emit({
+//     type: 'user/login',
+//     payload: { id: 1, name: 'Alice' }
+// });
+// // ✅ 正确：支持触发未定义的事件类型
+// events.emit({
+//     type: 'xxxxx',
+//     payload: { id: 1, name: 'Alice' }
+// });
+// // ✅ 正确：支持触发 未定义的事件类型
+// events.emit('xxxx', 1);
+
+
+// // ❌ 错误：已声明事件类型payload不匹配
+// events.emit('user/login', { id: "1", name: 'Alice' }); // TypeScript 错误
+// // ❌ 错误：id类型不匹配
+// events.emit({
+//     type: 'user/login',
+//     payload: { id: "1", name: 'Alice' }
+// });
+
+
+// const scope = events.scope('user')
+
+// // ✅ 正确：数据类型匹配
+// scope.emit('user/login', { id: 1, name: 'Alice' });
+// // ✅ 正确：支持触发 未定义的事件类型
+// scope.emit('xxxx', 1);
+// // ✅ 正确：消息对象
+// scope.emit({
+//     type: 'login',
+//     payload: { id: 1, name: 'Alice' }
+// });
+// // ✅ 正确：支持触发未定义的事件类型
+// scope.emit({
+//     type: 'xxxxx',
+//     payload: { id: 1, name: 'Alice' }
+// });
+
+
+
+// // ❌ 错误：已声明事件类型payload不匹配
+// scope.emit('login', { id: "1", name: 'Alice' }); // TypeScript 错误
+// // ❌ 错误：id类型不匹配
+// scope.emit({
+//     type: 'login',
+//     payload: { id: "1", name: 'Alice' }
+// }); 

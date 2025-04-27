@@ -1,0 +1,62 @@
+export default {
+    themeConfig: {
+        // https://vitepress.dev/reference/default-theme-config
+        outline: {
+            label: "目录",
+            level: [2, 5]
+        },
+        // https://vitepress.dev/reference/default-theme-config
+        nav: [
+            { text: '首页', link: '/' },
+            { text: '指南', link: '/zh/guide' },
+            { text: '参考', link: '/zh/reference' },
+            { text: '开源推荐', link: 'https://zhangfisher.github.io/repos/' },
+        ],
+        sidebar: {
+            "/zh/guide/": [
+                {
+                    text: '开始',
+                    collapsed: false,
+                    items: [
+                        { text: '安装', link: '/zh/guide/intro/install' },
+                        { text: '快速入门', link: '/zh/guide/intro/get-started' },
+                        { text: '更新历史', link: '/zh/guide/intro/history' },
+                        { text: '获取支持', link: '/zh/guide/intro/support' },
+                    ]
+                },
+                {
+                    text: '指南',
+                    collapsed: false,
+                    items: [
+                        {
+                            collapsed: false,
+                            items: [
+                                { text: '触发事件', link: '/zh/guide/use/event-trigger' },
+                                { text: '事件消息格式', link: '/zh/guide/use/event-message' },
+                                { text: '异步事件处理', link: '/zh/guide/use/async-events' },
+                                { text: '事件监听器', link: '/zh/guide/use/listener' },
+                                { text: '插值变量', link: '/zh/guide/use/interpolation' },
+                                { text: '日期时间', link: '/zh/guide/use/datetime' },
+                                { text: '复数', link: '/zh/guide/use/plural' },
+                                { text: '货币', link: '/zh/guide/use/currency' },
+                                { text: '切换语言', link: '/zh/guide/use/change-language' },
+                                { text: '名称空间', link: '/zh/guide/use/namespace' },
+                                { text: '记住切换语言', link: '/zh/guide/use/storage' },
+                                { text: '一词多译', link: '/zh/guide/use/multi-translate' },
+                            ]
+                        },
+                    ]
+                }
+            ],
+            "/zh/reference/": [
+                { text: '语言代码', link: '/zh/reference/lang-code' },
+                { text: 'VoerkaI18nScope', link: '/zh/reference/i18nscope' },
+                { text: 'VoerkaI18nManager', link: '/zh/reference/voerkai18n' },
+            ]
+        },
+        socialLinks: [
+            { icon: 'github', link: 'https://github.com/zhangfisher/voerka-i18n/' }
+        ]
+
+    }
+}

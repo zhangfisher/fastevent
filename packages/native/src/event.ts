@@ -11,11 +11,13 @@ import {
     FastEventMessage,
     FastEventAnyListener,
     RequiredItems,
-    Fallback
+    Fallback,
+    FastEventEmitMessage
 } from './types';
 import { handleEmitArgs } from './utils/handleEmitArgs';
 import { isPathMatched } from './utils/isPathMatched';
 import { removeItem } from './utils/removeItem';
+import { renameFn } from './utils/renameFn';
 
 /**
  * FastEvent 事件发射器类
@@ -73,7 +75,7 @@ export class FastEvent<
     }
 
     /** 获取事件发射器的配置选项 */
-    get options() { return this._options }
+    get options() { return this._options as RequiredItems<FastEventOptions<Meta, Context>, ['meta', 'context']> }
     get context() { return this._context }
     /** 获取事件发射器的唯一标识符 */
     get id() { return this._options.id! }
@@ -178,13 +180,22 @@ export class FastEvent<
     public on(type: '**', listener: FastEventAnyListener<Events, Meta, Fallback<Context, typeof this>>): FastEventSubscriber
     public on(): FastEventSubscriber {
         const type = arguments[0] as string
-        const listener = arguments[1] as FastEventListener
+        let listener = arguments[1] as FastEventListener
         const options = Object.assign({
             count: 0,
             prepend: false
         }, arguments[2]) as Required<FastEventListenOptions>
 
         if (type.length === 0) throw new Error('event type cannot be empty')
+
+        if (typeof (options.filter) === 'function') {
+            const oldListener = listener
+            listener = renameFn<FastEventListener>(function (message) {
+                if (options.filter.call(this, message)) {
+                    return oldListener.call(this, message)
+                }
+            }, listener.name || 'anonymous')
+        }
 
         if (type === '**') {
             return this.onAny(listener)
@@ -227,7 +238,8 @@ export class FastEvent<
     public once<T extends Types = Types>(type: T, listener: FastEventListener<Exclude<T, number | symbol>, Events[T], Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions): FastEventSubscriber
     public once<T extends string>(type: T, listener: FastEventAnyListener<Events, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions): FastEventSubscriber
     public once(): FastEventSubscriber {
-        return this.on(arguments[0], arguments[1], { count: 1 })
+        const options = Object.assign({}, arguments[2], { count: 1 })
+        return this.on(arguments[0], arguments[1], options)
     }
 
     /**
@@ -546,10 +558,12 @@ export class FastEvent<
      * }, true);
      * ```
      */
-    public emit<R = any>(type: string, payload?: any, retain?: boolean, meta?: Record<string, any> & Partial<Meta>): R[]
     public emit<R = any>(type: Types, payload?: Events[Types], retain?: boolean, meta?: Record<string, any> & Partial<Meta>): R[]
-    public emit<R = any>(message: FastEventMessage<Events, Meta>, retain?: boolean): R[]
-    public emit<R = any>(message: FastEventMessage<Events, Meta>, retain?: boolean): R[]
+    public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? Events[Types] : any, retain?: boolean, meta?: Record<string, any> & Partial<Meta>): R[]
+    public emit<R = any>(message: FastEventEmitMessage<Events, Meta>, retain?: boolean): R[]
+    public emit<R = any, T extends string = string>(message: FastEventEmitMessage<{
+        [K in T]: K extends Types ? Events[K] : any
+    }, Meta>, retain?: boolean): R[]
     public emit<R = any>(): R[] {
         const [message, retain] = handleEmitArgs(arguments, this.options.meta)
         const parts = message.type.split(this._delimiter);
@@ -712,8 +726,9 @@ export class FastEvent<
      * userEvents.offAll();  // 清理 'user' 前缀下的所有事件
      * ```
      */
-    scope<T extends string, M extends Record<string, any>, C = Context>(prefix: T, options?: FastEventScopeOptions<M, C>) {
+    scope<M extends Record<string, any> = Meta, C = Context, T extends string = string>(prefix: T, options?: FastEventScopeOptions<M, C>) {
         return new FastEventScope<ScopeEvents<Events, T>, M, C>(
             this as any, prefix, options)
     }
-} 
+}
+
