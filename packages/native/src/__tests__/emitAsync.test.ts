@@ -47,7 +47,7 @@ describe("异步发布与订阅", async () => {
         const results = await emitter.emitAsync("x", 1)
         expect(results).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     })
-    test("异步侦听器执行出错返回事件执行结果", async () => {
+    test("异步监听器执行出错返回事件执行结果", async () => {
         const emitter = new FastEvent()
         for (let i = 1; i <= 10; i++) {
             emitter.on("x", async () => {

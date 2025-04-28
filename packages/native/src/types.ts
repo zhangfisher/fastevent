@@ -50,12 +50,8 @@ export type FastEventAnyListener<
     Context = any
 > = (this: Context, message: FastEventMessage<Events, Meta>, args?: FastEventListenerArgs) => any | Promise<any>
 
-/**
- * 传递给监听器的额外参数
- */
-export type FastEventListenerArgs = {
-    abortSignal?: AbortSignal                   // emit时传入的用于取消侦听的信号    
-}
+
+
 
 
 /**
@@ -64,7 +60,7 @@ export type FastEventListenerArgs = {
 export type FastListenerMeta = [FastEventListener<any, any>, number, number]
 
 export type FastListenerNode = {
-    __listeners: [FastEventListener<any, any>, number, number][];
+    __listeners: FastListenerMeta[];
 } & {
     [key: string]: FastListenerNode
 }
@@ -124,8 +120,18 @@ export type FastEventOptions<Meta = Record<string, any>, Context = any> = {
     onRemoveListener?: (type: string[], listener: FastEventListener) => void
     // 当清空侦听器时回调
     onClearListeners?: () => void
+    // 当执行侦听器前时回调,返回false代表取消执行
+    onBeforeExecuteListener?: (message: FastEventMessage, args: FastEventListenerArgs) => boolean | void
     // 当执行侦听器后时回调
-    onExecuteListener?: (message: FastEventMessage, returns: any[], listeners: (FastListenerMeta)[]) => void
+    onAfterExecuteListener?: (message: FastEventMessage, returns: any[], listeners: FastListenerNode[]) => void
+    /**
+     * 全局执行器
+     * allSettled: 使用Promise.allSettled()执行所有监听器
+     * race: 使用Promise.race()执行所有监听器，只有第一个执行完成就返回,其他监听器执行结果会被忽略
+     * balance: 尽可能平均执行各个侦听器
+     * sequence: 按照侦听器添加顺序依次执行
+     */
+    executor?: FastListenerExecutorArgs
 }
 
 
@@ -146,18 +152,20 @@ export type FastEventListenOptions = {
     filter?: (message: FastEventMessage) => boolean
 }
 
-export type FastEventEmitOptions<M = Record<string, any>> = {
+export type FastListenerExecutorArgs = 'default' | 'allSettled' | 'race' | 'balance' | 'first' | 'last' | 'random' | IFastListenerExecutor;
+
+export type FastEventListenerArgs<M = Record<string, any>> = {
     retain?: boolean;
     meta?: Record<string, any> & Partial<M>;
     abortSignal?: AbortSignal;               // 用于传递给监听器函数
     /**
      * 
-     * default: 使用Promise.allSettled()执行所有监听器
+     * allSettled: 使用Promise.allSettled()执行所有监听器
      * race: 使用Promise.race()执行所有监听器，只有第一个执行完成就返回,其他监听器执行结果会被忽略
-     * balance: 侦听器的执行策略
+     * balance: 尽可能平均执行各个侦听器
      * sequence: 按照侦听器添加顺序依次执行
      */
-    executor?: 'default' | 'race' | 'balance' | 'sequence';
+    executor?: FastListenerExecutorArgs
 }
 
 export type Merge<T extends object, U extends object> = {
@@ -181,6 +189,7 @@ export type Fallback<T, F> =
 
 
 
-// type S1 = Fallback<never, { a: boolean }>
-// type S2 = Fallback<{ b: number }, { a: boolean }>
-// type S3 = Fallback<undefined, { a: boolean }>
+export type IFastListenerExecutor = (listeners: FastListenerMeta[], message: FastEventMessage, args: FastEventListenerArgs | undefined,
+    // 用来执行监听器的函数，内置一些通用逻辑
+    execute: (listener: FastEventListener, message: FastEventMessage, args?: FastEventListenerArgs) => Promise<any> | any
+) => Promise<any[]> | any[] 

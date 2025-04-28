@@ -1,22 +1,22 @@
-import { FastEventMessage, FastEvents, FastEventEmitOptions } from "../types"
+import { FastEventListenerArgs, FastEventMessage, FastEvents } from "../types"
 
 export function handleEmitArgs<
     Events extends FastEvents = FastEvents,
     Meta = unknown
->(args: IArguments, emitterScope: any, scopeMeta?: any): [FastEventMessage<Events, Meta>, FastEventEmitOptions<Meta>] {
+>(args: IArguments, emitterMeta: any, scopeMeta?: any, scopeExecutor?: any): [FastEventMessage<Events, Meta>, FastEventListenerArgs<Meta>] {
     let type: string, payload: any, meta: any
-    let emitOptions: FastEventEmitOptions<Meta> = {}
+    let emitArgs: FastEventListenerArgs<Meta> = {}
 
     if (typeof (args[0]) === 'object') {
         type = args[0].type as string
         payload = args[0].payload as any
-        emitOptions = args[1] || {}
+        emitArgs = typeof (args[1]) === 'boolean' ? { retain: args[1] } : args[1] || {}
     } else {
         type = args[0] as string
         payload = args[1] as any
-        emitOptions = args[2] || {}
+        emitArgs = typeof (args[2]) === 'boolean' ? { retain: args[2] } : args[2] || {}
     }
-    meta = Object.assign({}, emitterScope, scopeMeta, emitOptions.meta)
+    meta = Object.assign({}, emitterMeta, scopeMeta, emitArgs.meta)
     if (Object.keys(meta).length === 0) meta = undefined
 
     const message = {
@@ -26,8 +26,11 @@ export function handleEmitArgs<
     } as FastEventMessage<Events, Meta>
 
     if (meta !== undefined) {
-        emitOptions.meta = meta
+        emitArgs.meta = meta
+    }
+    if (emitArgs.executor === undefined) {
+        emitArgs.executor = scopeExecutor
     }
 
-    return [message, emitOptions]
+    return [message, emitArgs]
 }

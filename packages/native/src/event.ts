@@ -13,14 +13,16 @@ import {
     RequiredItems,
     Fallback,
     FastEventEmitMessage,
-    FastEventEmitOptions,
     FastEventListenerArgs,
-    FastListenerMeta
+    FastListenerMeta,
+    IFastListenerExecutor
 } from './types';
 import { handleEmitArgs } from './utils/handleEmitArgs';
 import { isPathMatched } from './utils/isPathMatched';
 import { removeItem } from './utils/removeItem';
 import { renameFn } from './utils/renameFn';
+import * as executors from "./executors"
+import { isFunction } from './utils/isFunction';
 
 /**
  * FastEvent 事件发射器类
@@ -178,16 +180,22 @@ export class FastEvent<
      * emitter.on('event', handler, { count: 3 });
      * ```
      */
+
+    public on<T extends Types = Types>(type: T, options?: FastEventListenOptions): FastEventSubscriber
+    public on<T extends string>(type: T, options?: FastEventListenOptions): FastEventSubscriber
+    public on(type: '**', options?: FastEventListenOptions): FastEventSubscriber
+
     public on<T extends Types = Types>(type: T, listener: FastEventListener<Exclude<T, number | symbol>, Events[T], Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions): FastEventSubscriber
     public on<T extends string>(type: T, listener: FastEventAnyListener<Events, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions): FastEventSubscriber
     public on(type: '**', listener: FastEventAnyListener<Record<string, any>, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions): FastEventSubscriber
     public on(): FastEventSubscriber {
         const type = arguments[0] as string
-        let listener = arguments[1] as FastEventListener
+        let listener = (isFunction(arguments[1]) ? arguments[1] : this.onMessage.bind(this)) as FastEventListener
+
         const options = Object.assign({
             count: 0,
             prepend: false
-        }, arguments[2]) as Required<FastEventListenOptions>
+        }, isFunction(arguments[1]) ? arguments[2] : arguments[1]) as Required<FastEventListenOptions>
 
         if (type.length === 0) throw new Error('event type cannot be empty')
 
@@ -233,11 +241,16 @@ export class FastEvent<
      * });
      * ```
      */
+    public once<T extends Types = Types>(type: T, options?: FastEventListenOptions): FastEventSubscriber
+    public once<T extends string>(type: T, options?: FastEventListenOptions): FastEventSubscriber
     public once<T extends Types = Types>(type: T, listener: FastEventListener<Exclude<T, number | symbol>, Events[T], Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions): FastEventSubscriber
     public once<T extends string>(type: T, listener: FastEventAnyListener<Events, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions): FastEventSubscriber
     public once(): FastEventSubscriber {
-        const options = Object.assign({}, arguments[2], { count: 1 })
-        return this.on(arguments[0], arguments[1], options)
+        if (isFunction(arguments[1])) {
+            return this.on(arguments[0], arguments[1], Object.assign({}, arguments[2], { count: 1 }))
+        } else {
+            return this.on(arguments[0], Object.assign({}, arguments[2], { count: 1 }))
+        }
     }
 
     /**
@@ -254,8 +267,19 @@ export class FastEvent<
      * subscriber.off();
      * ```listener: FastEventAnyListener<Events, Meta, Fallback<Context, typeof this>>): FastEventSubscriber
      */
-    onAny<P = any>(listener: FastEventAnyListener<Record<string, P>, Meta, Fallback<Context, typeof this>>, options?: Omit<FastEventListenOptions, 'count'>): FastEventSubscriber {
-        return this.on("**", listener as unknown as FastEventAnyListener<Events, Meta, Fallback<Context, typeof this>>, options)
+    onAny(options?: Omit<FastEventListenOptions, 'count'>): FastEventSubscriber
+    onAny<P = any>(listener: FastEventAnyListener<Record<string, P>, Meta, Fallback<Context, typeof this>>, options?: Omit<FastEventListenOptions, 'count'>): FastEventSubscriber
+    onAny(): FastEventSubscriber {
+        return this.on("**", arguments[0], arguments[1])
+    }
+    /**
+     * 
+     * 当调用on/once/onAny时如果没有指定监听器，则调用此方法
+     * 
+     * 此方法供子类继承
+     */
+    onMessage(message: FastEventMessage) {
+
     }
 
     off(listener: FastEventListener<any, any, any>): void
@@ -299,7 +323,7 @@ export class FastEvent<
      * - 如果没有提供prefix,则清除所有监听器
      * - 同时会清空保留的事件(_retainedEvents)
      * - 重置监听器对象为空
-
+ 
     * @example
      * 
      * ```ts
@@ -356,11 +380,11 @@ export class FastEvent<
         if (this.retainedMessages.has(type)) {
             const message = this.retainedMessages.get(type)
             const parts = type.split(this._delimiter);
+            const nodes: FastListenerNode[] = []
             this._traverseToPath(this.listeners, parts, (node) => {
-                this._executeListeners(node, message)
+                nodes.push(node)
             })
-            // onAny侦听器保存在根节点中，所以需要执行
-            this._executeListeners(this.listeners, message)
+            this._executeListeners(nodes, message)
         }
     }
 
@@ -442,23 +466,33 @@ export class FastEvent<
      *   - 如果配置了ignoreErrors，返回错误对象
      *   - 否则抛出错误
      */
-    private _executeListener(listener: any, message: FastEventMessage, args?: FastEventListenerArgs): any {
+    private _executeListener(listener: any, message: FastEventMessage, args: FastEventListenerArgs<any> | undefined): Promise<any> | any {
         try {
             return listener.call(this._context || this, message, args)
         } catch (e: any) {
-            e._emitter = message.type
+            e._emitter = `${listener.name || 'anonymous'}:${message.type}`
             if (typeof (this._options.onListenerError) === 'function') {
                 this._options.onListenerError.call(this._context || this, message.type, e)
             }
-            // 如果忽略错误，则返回错误对象
-            if (this._options.ignoreErrors) {
+            if (this._options.ignoreErrors) { // 如果忽略错误，则返回错误对象
                 return e
             } else {
                 throw e
             }
         }
     }
-
+    private _getListenerExecutor(args?: FastEventListenerArgs): IFastListenerExecutor | undefined {
+        if (!args) return
+        const executor = args.executor || this._options.executor
+        if (typeof (executor) === 'function') return executor
+        if (executor && executor in executors) return (executors as any)[executor]
+    }
+    /**
+     * 触发事件并执行对应的监听器
+     * @param type - 事件类型字符串或包含事件信息的对象
+     * @param payload - 事件携带的数据负载
+        return
+    }
     /**
      * 执行监听器节点中的所有监听函数
      * @param node - FastListenerNode类型的监听器节点
@@ -472,22 +506,33 @@ export class FastEvent<
      * - 对于普通监听器，直接执行并收集结果
      * - 对于带次数限制的监听器(数组形式)，执行后递减次数，当次数为0时移除该监听器
      */
-    private _executeListeners(node: FastListenerNode, message: FastEventMessage, args?: FastEventListenerArgs): any[] {
-        if (!node || !node.__listeners) return []
-        let i = 0
-        const listeners = node.__listeners
-        let result: any[] = []
-        while (i < listeners.length) {
-            const listener = listeners[i]
-            result.push(this._executeListener(listener[0], message, args))
-            listener[2]++  // 实际执行的次数
-            if (listener[1] > 0 && listener[2] === listener[1]) { // =0不限执行次数，>0时代表执行次数限制
-                listeners.splice(i, 1)
-                i-- // 抵消后面的i++
+    private _executeListeners(nodes: FastListenerNode[], message: FastEventMessage, args?: FastEventListenerArgs<Meta>): any[] {
+        if (!nodes || nodes.length == 0) return []
+
+        // 1. 遍历所有监听器任务,即需要执行的监听器函数列[]
+        const listeners = nodes.reduce<[FastListenerMeta, number, FastListenerMeta[]][]>((result, node) => {
+            return result.concat(node.__listeners.map((listener, i) => [listener, i, node.__listeners] as [FastListenerMeta, number, FastListenerMeta[]]));
+        }, []);
+
+        try {
+            const executeor = this._getListenerExecutor(args)
+            if (executeor) {
+                const r = executeor(listeners.map(listener => listener[0]), message, args, this._executeListener.bind(this)) as any[]
+                return r
+            } else {
+                return listeners.map(listener => this._executeListener(listener[0][0], message, args))
             }
-            i++
+        } finally {
+            // 由于可能涉及到删除修改__listeners，所以需要倒序， 从后往前删除
+            for (let i = listeners.length - 1; i >= 0; i--) {
+                const meta = listeners[i][0] as FastListenerMeta
+                meta[2]++  // 实际执行的次数
+                // =0不限执行次数，>0时代表执行次数限制
+                if (meta[1] > 0 && meta[1] === meta[2]) {
+                    listeners[i][2].splice(i, 1)
+                }
+            }
         }
-        return result
     }
     /**
      * 触发事件并执行对应的监听器
@@ -542,20 +587,19 @@ export class FastEvent<
      *   meta: { time: Date.now() }
      * }, true);
      * ```
-     * public emit<R = any>(type: Types, payload?: Events[Types], retain?: boolean, meta?: Record<string, any> & Partial<Meta>): R[]
-    public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? Events[Types] : any, retain?: boolean, meta?: Record<string, any> & Partial<Meta>): R[]
+     */
+    public emit<R = any>(type: Types, payload?: Events[Types], retain?: boolean): R[]
+    public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? Events[Types] : any, retain?: boolean): R[]
     public emit<R = any>(message: FastEventEmitMessage<Events, Meta>, retain?: boolean): R[]
     public emit<R = any, T extends string = string>(message: FastEventEmitMessage<{
         [K in T]: K extends Types ? Events[K] : any
     }, Meta>, retain?: boolean): R[]
-    public emit<R = any>(): R[] {
-     */
-    public emit<R = any>(type: Types, payload?: Events[Types], options?: FastEventEmitOptions<Meta>): R[]
-    public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? Events[Types] : any, options?: FastEventEmitOptions<Meta>): R[]
-    public emit<R = any>(message: FastEventEmitMessage<Events, Meta>, options?: FastEventEmitOptions<Meta>): R[]
+    public emit<R = any>(type: Types, payload?: Events[Types], options?: FastEventListenerArgs<Meta>): R[]
+    public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? Events[Types] : any, options?: FastEventListenerArgs<Meta>): R[]
+    public emit<R = any>(message: FastEventEmitMessage<Events, Meta>, options?: FastEventListenerArgs<Meta>): R[]
     public emit<R = any, T extends string = string>(message: FastEventEmitMessage<{
         [K in T]: K extends Types ? Events[K] : any
-    }, Meta>, options?: FastEventEmitOptions<Meta>): R[]
+    }, Meta>, options?: FastEventListenerArgs<Meta>): R[]
     public emit<R = any>(): R[] {
         const [message, args] = handleEmitArgs(arguments, this.options.meta)
         const parts = message.type.split(this._delimiter);
@@ -563,16 +607,22 @@ export class FastEvent<
             this.retainedMessages.set(message.type, message)
         }
         const results: any[] = []
+        const nodes: FastListenerNode[] = []
+
         this._traverseToPath(this.listeners, parts, (node) => {
-            results.push(...this._executeListeners(node, message, args))
-            // 用于调试时使用
-            if (this._options.debug && typeof (this._options.onExecuteListener) === 'function') {
-                if (args.retain) {
-                    if (!message.meta) message.meta = { retain: true }
-                }
-                this._options.onExecuteListener.call(this, message, results, [...this.listeners.__listeners, ...node.__listeners])
-            }
+            nodes.push(node)
         })
+        if (typeof (this._options.onBeforeExecuteListener) === 'function') {
+            if (this._options.onBeforeExecuteListener.call(this, message, args) === false) {
+                throw new Error('emit ' + message.type + ' is aborted')
+            }
+        }
+        // 执行监听器
+        results.push(...this._executeListeners(nodes, message, args))
+
+        if (typeof (this._options.onAfterExecuteListener) === 'function') {
+            this._options.onAfterExecuteListener.call(this, message, results, nodes)
+        }
         return results
     }
 
@@ -612,11 +662,10 @@ export class FastEvent<
      * });
      * ```
      */
-    public async emitAsync<R = any>(type: string, payload?: any, options?: FastEventEmitOptions<Meta>): Promise<[R | Error][]>
-    public async emitAsync<R = any>(type: Types, payload?: Events[Types], options?: FastEventEmitOptions<Meta>): Promise<[R | Error][]>
+    public async emitAsync<R = any>(type: string, payload?: any, options?: FastEventListenerArgs<Meta>): Promise<[R | Error][]>
+    public async emitAsync<R = any>(type: Types, payload?: Events[Types], options?: FastEventListenerArgs<Meta>): Promise<[R | Error][]>
     public async emitAsync<R = any>(): Promise<[R | Error][]> {
-        const [message, emitOptions] = handleEmitArgs(arguments, this.options.meta)
-        const results = await Promise.allSettled(this.emit(message as FastEventMessage<Events, Meta>, emitOptions))
+        const results = await Promise.allSettled(this.emit.apply(this, arguments as any))
         return results.map((result) => {
             if (result.status === 'fulfilled') {
                 return result.value

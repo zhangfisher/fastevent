@@ -51,7 +51,7 @@ await events.emitAsync({
 
 ### 异步事件触发
 
-对于需要等待所有监听器完成的场景，可以使用 `emitAsync`,`emitAsync`会使用`Promise.allSetted`来执行所有侦听器并返回结果。
+对于需要等待所有监听器完成的场景，可以使用 `emitAsync`,`emitAsync`会使用`Promise.allSetted`来执行所有监听器并返回结果。
 
 ### 调用次数限制
 
@@ -69,7 +69,7 @@ emitter.once('event', handler);
 
 ### 前置插入
 
-默认情况下，使用`on/once`注册监听器时将监听器添加到队列末尾,启用`prepend=true`可能将监听器添加到队列开头而非末尾：
+默认情况下，使用`on/once`注册监听器时将监听器添加到队列末尾,启用`prepend=true`可能将监听器添加到队列开头而非末尾,这将影响监听器的执行顺序。
 
 ```typescript
 emitter.on('event', handler1);
@@ -83,7 +83,7 @@ emitter.on('event', handler2, { prepend: true });
 
 ```typescript
 // 触发并保留事件
-events.emit('system/status', { online: true }, true);
+events.emit('system/status', { online: true }, { retain: true });
 
 // 后续的订阅者会立即收到保留的事件
 events.on('system/status', (message) => {
@@ -108,8 +108,6 @@ events.emit('order/create', { orderId: '123', total: 99.99 }, false, {
 使用 TypeScript 时，FastEvent 提供了完整的类型检查：
 
 ```typescript twoslash
-import { FastEvent } from 'fastevent';
-
 interface MyEvents {
     'user/login': { id: number; name: string };
     'user/logout': { id: number };
@@ -117,6 +115,13 @@ interface MyEvents {
 }
 
 const events = new FastEvent<MyEvents>();
+
+events.onAny<number>((message) => {
+    if (message.type === '1111') {
+    }
+    message.type = 'user/login';
+    message.payload;
+});
 
 // ✅ 正确：数据类型匹配
 events.emit('user/login', { id: 1, name: 'Alice' });
@@ -138,6 +143,31 @@ events.emit('user/login', { id: '1', name: 'Alice' }); // TypeScript 错误
 // ❌ 错误：id类型不匹配
 events.emit({
     type: 'user/login',
+    payload: { id: '1', name: 'Alice' },
+});
+
+const scope = events.scope('user');
+
+// ✅ 正确：数据类型匹配
+scope.emit('user/login', { id: 1, name: 'Alice' });
+// ✅ 正确：支持触发 未定义的事件类型
+scope.emit('xxxx', 1);
+// ✅ 正确：消息对象
+scope.emit({
+    type: 'login',
+    payload: { id: 1, name: 'Alice' },
+});
+// ✅ 正确：支持触发未定义的事件类型
+scope.emit({
+    type: 'xxxxx',
+    payload: { id: 1, name: 'Alice' },
+});
+
+// ❌ 错误：已声明事件类型payload不匹配
+scope.emit('login', { id: '1', name: 'Alice' }); // TypeScript 错误
+// ❌ 错误：id类型不匹配
+scope.emit({
+    type: 'login',
     payload: { id: '1', name: 'Alice' },
 });
 ```

@@ -66,7 +66,7 @@ export class FlexEventDevTools {
                 fastEventId: instance.id
             })
         }
-        instance.options.onExecuteListener = (message, returns, listeners) => {
+        instance.options.onAfterExecuteListener = (message, returns, listeners) => {
             const results = returns.map(r => r instanceof Error ? `Error(${r.message})` : r)
             const sresults = listeners.map(listener => (listener as any).name || 'anonymous')
                 .reduce((pre, cur, index) => {

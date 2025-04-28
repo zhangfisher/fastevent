@@ -49,7 +49,7 @@ describe("简单发布与订阅", async () => {
         const results = emitter.emit("x", 1)
         expect(results).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     })
-    test("侦听器执行出错返回事件执行结果", async () => {
+    test("监听器执行出错返回事件执行结果", async () => {
         const emitter = new FastEvent()
         for (let i = 1; i <= 10; i++) {
             emitter.on("x", () => {
@@ -63,21 +63,21 @@ describe("简单发布与订阅", async () => {
             else expect(results[i - 1]).toBe(i)
         }
     })
-    test("侦听器执行出错时emit出错", async () => {
+    test("监听器执行出错时emit出错", async () => {
         const emitter = new FastEvent({ ignoreErrors: false })
         const err = new Error("custom")
         for (let i = 1; i <= 10; i++) {
-            emitter.on("x", () => {
+            emitter.on("x", function xlistener() {
                 if (i % 2 == 0) throw err
                 return i
             })
         }
         expect(() => emitter.emit("x", 1)).toThrow(err);
-        // @ts-ignore,  当执行侦听器出错时会在错误对象上挂载一个_listener属性代表当前执行的侦听器路径
-        expect(err._emitter).toBe("x")
+        // @ts-ignore,  当执行监听器出错时会在错误对象上挂载一个_listener属性代表当前执行的监听器路径
+        expect(err._emitter).toBe("xlistener:x")
 
     })
-    test("添加侦听器时指定顺序", async () => {
+    test("添加监听器时指定顺序", async () => {
         const emitter = new FastEvent()
         const types: number[] = []
         emitter.on("x", () => {

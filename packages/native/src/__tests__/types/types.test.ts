@@ -437,6 +437,8 @@ function demo() {
 
     const events = new FastEvent<MyEvents>();
 
+    events.on("user/login")
+
     events.onAny<number>((message) => {
         if (message.type === "1111") {
 

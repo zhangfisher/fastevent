@@ -17,7 +17,7 @@ describe("退订事件", () => {
         emitter.emit("x", 1)
         expect(events).toEqual(["x"])
     })
-    test("根据事件类型和侦听器进行退订", () => {
+    test("根据事件类型和监听器进行退订", () => {
         const emitter = new FastEvent()
         const events: string[] = []
         const listener: FastEventListener<string, number> = (({ payload, type }) => {
@@ -31,7 +31,7 @@ describe("退订事件", () => {
         emitter.emit("x", 1)
         expect(events).toEqual(["x"])
     })
-    test("多级事件根据事件类型和侦听器进行退订", () => {
+    test("多级事件根据事件类型和监听器进行退订", () => {
         const emitter = new FastEvent()
         const events: string[] = []
         const listener: FastEventListener<string, number> = (({ payload, type }) => {
@@ -65,7 +65,7 @@ describe("退订事件", () => {
         expect(events).toEqual(["a/b/c/d"])
     })
 
-    test("退订指定的侦听器", () => {
+    test("退订指定的监听器", () => {
         const emitter = new FastEvent()
         const events: string[] = []
         const listener: FastEventListener<string, number> = ({ payload, type }) => {
@@ -85,7 +85,7 @@ describe("退订事件", () => {
         emitter.emit("a/b/c/d", 4)
         expect(events).toEqual(["a/b/c/d", "a/b/c/d", "a/b/c/d", "a/b/c/d"])
     })
-    test("退订指定的事件时不指定侦听器", () => {
+    test("退订指定的事件时不指定监听器", () => {
         const emitter = new FastEvent()
         const events: string[] = []
         const listener: FastEventListener<string, number> = ({ payload, type }) => {
@@ -106,7 +106,7 @@ describe("退订事件", () => {
         emitter.emit("d", 4)
         expect(events).toEqual(["a", "a", "b", "c", "d"])
     })
-    test("退订所有侦听器", () => {
+    test("退订所有监听器", () => {
         const emitter = new FastEvent()
         const events: string[] = []
         const listener: FastEventListener<string, number> = ({ payload, type }) => {

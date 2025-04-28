@@ -60,40 +60,52 @@ describe('FastEvent钩子函数测试', () => {
         expect(onListenerError).toHaveBeenCalledWith('test', error)
     })
 
-    test('当开启debug模式时,执行监听器后应该触发onExecuteListener', () => {
-        const onExecuteListener = vi.fn()
+    test('执行监听器后应该触发onAfterExecuteListener', () => {
+        const onAfterExecuteListener = vi.fn()
         const emitter = new FastEvent({
-            debug: true,
-            onExecuteListener
+            onAfterExecuteListener
         })
 
         const listener = () => 'result'
         emitter.on('test', listener)
         emitter.emit('test', 'payload')
 
-        expect(onExecuteListener).toHaveBeenCalledTimes(1)
-        expect(onExecuteListener).toHaveBeenCalledWith(
+        expect(onAfterExecuteListener).toHaveBeenCalledTimes(1)
+        expect(onAfterExecuteListener).toHaveBeenCalledWith(
             expect.objectContaining({
                 type: 'test',
                 payload: 'payload',
                 meta: undefined
             }),
             ['result'],
-            [[listener, 0, 1]]
+            [{ __listeners: [[listener, 0, 1]] }]
         )
     })
 
-    test('当未开启debug模式时,不应该触发onExecuteListener', () => {
-        const onExecuteListener = vi.fn()
+    test('当onBeforeExecuteListener返回false时应该中止事件执行', () => {
+        const onBeforeExecuteListener = vi.fn().mockReturnValue(false)
+        const onAfterExecuteListener = vi.fn()
+        const listener = vi.fn()
+
         const emitter = new FastEvent({
-            debug: false,
-            onExecuteListener
+            onBeforeExecuteListener,
+            onAfterExecuteListener
         })
 
-        emitter.on('test', () => { })
-        emitter.emit('test')
+        emitter.on('test', listener)
 
-        expect(onExecuteListener).not.toHaveBeenCalled()
+        expect(() => emitter.emit('test', 'payload')).toThrow('emit test is aborted')
+        expect(onBeforeExecuteListener).toHaveBeenCalledTimes(1)
+        expect(onBeforeExecuteListener).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'test',
+                payload: 'payload',
+                meta: undefined
+            }),
+            expect.any(Object)
+        )
+        expect(listener).not.toHaveBeenCalled()
+        expect(onAfterExecuteListener).not.toHaveBeenCalled()
     })
 
     test('多层级事件路径应该正确传递给onAddListener和onRemoveListener', () => {
