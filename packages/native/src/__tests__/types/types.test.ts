@@ -427,64 +427,73 @@ describe("类型系统测试", () => {
         })
     })
 })
+function demo() {
+
+    interface MyEvents {
+        'user/login': { id: number; name: string };
+        'user/logout': { id: number };
+        'system/error': { code: string; message: string };
+    }
+
+    const events = new FastEvent<MyEvents>();
+
+    events.onAny<number>((message) => {
+        if (message.type === "1111") {
+
+        }
+        message.type = "user/login"
+        message.payload
+    })
+
+    // ✅ 正确：数据类型匹配
+    events.emit('user/login', { id: 1, name: 'Alice' });
+    // ✅ 正确：消息对象
+    events.emit({
+        type: 'user/login',
+        payload: { id: 1, name: 'Alice' }
+    });
+    // ✅ 正确：支持触发未定义的事件类型
+    events.emit({
+        type: 'xxxxx',
+        payload: { id: 1, name: 'Alice' }
+    });
+    // ✅ 正确：支持触发 未定义的事件类型
+    events.emit('xxxx', 1);
 
 
-// interface MyEvents {
-//     'user/login': { id: number; name: string };
-//     'user/logout': { id: number };
-//     'system/error': { code: string; message: string };
-// }
-
-// const events = new FastEvent<MyEvents>();
-
-// // ✅ 正确：数据类型匹配
-// events.emit('user/login', { id: 1, name: 'Alice' });
-// // ✅ 正确：消息对象
-// events.emit({
-//     type: 'user/login',
-//     payload: { id: 1, name: 'Alice' }
-// });
-// // ✅ 正确：支持触发未定义的事件类型
-// events.emit({
-//     type: 'xxxxx',
-//     payload: { id: 1, name: 'Alice' }
-// });
-// // ✅ 正确：支持触发 未定义的事件类型
-// events.emit('xxxx', 1);
+    // ❌ 错误：已声明事件类型payload不匹配
+    events.emit('user/login', { id: "1", name: 'Alice' }); // TypeScript 错误
+    // ❌ 错误：id类型不匹配
+    events.emit({
+        type: 'user/login',
+        payload: { id: "1", name: 'Alice' }
+    });
 
 
-// // ❌ 错误：已声明事件类型payload不匹配
-// events.emit('user/login', { id: "1", name: 'Alice' }); // TypeScript 错误
-// // ❌ 错误：id类型不匹配
-// events.emit({
-//     type: 'user/login',
-//     payload: { id: "1", name: 'Alice' }
-// });
+    const scope = events.scope('user')
 
-
-// const scope = events.scope('user')
-
-// // ✅ 正确：数据类型匹配
-// scope.emit('user/login', { id: 1, name: 'Alice' });
-// // ✅ 正确：支持触发 未定义的事件类型
-// scope.emit('xxxx', 1);
-// // ✅ 正确：消息对象
-// scope.emit({
-//     type: 'login',
-//     payload: { id: 1, name: 'Alice' }
-// });
-// // ✅ 正确：支持触发未定义的事件类型
-// scope.emit({
-//     type: 'xxxxx',
-//     payload: { id: 1, name: 'Alice' }
-// });
+    // ✅ 正确：数据类型匹配
+    scope.emit('user/login', { id: 1, name: 'Alice' });
+    // ✅ 正确：支持触发 未定义的事件类型
+    scope.emit('xxxx', 1);
+    // ✅ 正确：消息对象
+    scope.emit({
+        type: 'login',
+        payload: { id: 1, name: 'Alice' }
+    });
+    // ✅ 正确：支持触发未定义的事件类型
+    scope.emit({
+        type: 'xxxxx',
+        payload: { id: 1, name: 'Alice' }
+    });
 
 
 
-// // ❌ 错误：已声明事件类型payload不匹配
-// scope.emit('login', { id: "1", name: 'Alice' }); // TypeScript 错误
-// // ❌ 错误：id类型不匹配
-// scope.emit({
-//     type: 'login',
-//     payload: { id: "1", name: 'Alice' }
-// }); 
+    // ❌ 错误：已声明事件类型payload不匹配
+    scope.emit('login', { id: "1", name: 'Alice' }); // TypeScript 错误
+    // ❌ 错误：id类型不匹配
+    scope.emit({
+        type: 'login',
+        payload: { id: "1", name: 'Alice' }
+    });
+}

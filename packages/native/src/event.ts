@@ -180,7 +180,7 @@ export class FastEvent<
      */
     public on<T extends Types = Types>(type: T, listener: FastEventListener<Exclude<T, number | symbol>, Events[T], Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions): FastEventSubscriber
     public on<T extends string>(type: T, listener: FastEventAnyListener<Events, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions): FastEventSubscriber
-    public on(type: '**', listener: FastEventAnyListener<Events, Meta, Fallback<Context, typeof this>>): FastEventSubscriber
+    public on(type: '**', listener: FastEventAnyListener<Record<string, any>, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions): FastEventSubscriber
     public on(): FastEventSubscriber {
         const type = arguments[0] as string
         let listener = arguments[1] as FastEventListener
@@ -198,10 +198,6 @@ export class FastEvent<
                     return oldListener.call(this, message, args)
                 }
             }, listener.name)
-        }
-
-        if (type === '**') {
-            return this.onAny(listener)
         }
 
         const parts = type.split(this._delimiter);
@@ -256,19 +252,10 @@ export class FastEvent<
      * 
      * // 取消监听
      * subscriber.off();
-     * ```
+     * ```listener: FastEventAnyListener<Events, Meta, Fallback<Context, typeof this>>): FastEventSubscriber
      */
-    onAny<P = any>(listener: FastEventAnyListener<{ [K: string]: P }, Meta, Context>, options?: Pick<FastEventListenOptions, 'prepend'>): FastEventSubscriber {
-        const listeners = this.listeners.__listeners
-        if (options && options.prepend) {
-            listeners.splice(0, 0, [listener, 0, 0])
-        } else {
-            listeners.push([listener, 0, 0])
-        }
-        return {
-            off: () => this._removeListener(this.listeners, [], listener),
-            listener
-        }
+    onAny<P = any>(listener: FastEventAnyListener<Record<string, P>, Meta, Fallback<Context, typeof this>>, options?: Omit<FastEventListenOptions, 'count'>): FastEventSubscriber {
+        return this.on("**", listener as unknown as FastEventAnyListener<Events, Meta, Fallback<Context, typeof this>>, options)
     }
 
     off(listener: FastEventListener<any, any, any>): void
@@ -493,13 +480,6 @@ export class FastEvent<
         while (i < listeners.length) {
             const listener = listeners[i]
             result.push(this._executeListener(listener[0], message, args))
-            // if (listener[1] > -1) {
-            //     listener[1]--
-            //     if (listener[1] === 0) {
-            //         listeners.splice(i, 1)
-            //         i-- // 抵消后面的i++
-            //     }
-            // }
             listener[2]++  // 实际执行的次数
             if (listener[1] > 0 && listener[2] === listener[1]) { // =0不限执行次数，>0时代表执行次数限制
                 listeners.splice(i, 1)
@@ -583,8 +563,6 @@ export class FastEvent<
             this.retainedMessages.set(message.type, message)
         }
         const results: any[] = []
-        // onAny侦听器保存在根节点中，所以需要执行 
-        results.push(...this._executeListeners(this.listeners, message, args))
         this._traverseToPath(this.listeners, parts, (node) => {
             results.push(...this._executeListeners(node, message, args))
             // 用于调试时使用
