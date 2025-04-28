@@ -5,7 +5,7 @@ export type FastEventBusNodeMessage<T extends FastEventEmitMessage = FastEventEm
     to?: string
 }
 
-export type FastEventBusOptions = FastEventOptions
+export type FastEventBusOptions<Meta = Record<string, any>, Context = any> = FastEventOptions<Meta, Context>
 
 export interface FastEventBusEvents {
     'node:connect': string

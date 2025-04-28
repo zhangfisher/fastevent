@@ -461,10 +461,12 @@ function demo() {
     });
     // ✅ 正确：支持触发 未定义的事件类型
     events.emit('xxxx', 1);
+    events.emit('user/ssddd', 1);
 
 
     // ❌ 错误：已声明事件类型payload不匹配
     events.emit('user/login', { id: "1", name: 'Alice' }); // TypeScript 错误
+    events.emit('user/login', 1); // TypeScript 错误
     // ❌ 错误：id类型不匹配
     events.emit({
         type: 'user/login',
@@ -498,4 +500,36 @@ function demo() {
         type: 'login',
         payload: { id: "1", name: 'Alice' }
     });
+
+    interface MyBaseEvents {
+        'login': string
+        'logout': boolean
+    }
+
+
+    interface MyBusEvents extends MyBaseEvents {
+        x: number
+    }
+    class MyEvent<T extends MyBusEvents> extends FastEvent<T> {
+        test() {
+            this.emit("y")
+        }
+    }
+
+    const bus = new MyEvent()
+
+    // ❌ 错误
+    bus.emit("x", "")
+    // ✅ 正确
+    bus.emit("x", 1)
+    bus.emit("x", 1)
+    bus.emit('x', "222")
+    // ❌ 错误
+    bus.emit("y")
+    bus.emit("y", 1)
+
+
+
+
+
 }

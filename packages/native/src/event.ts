@@ -591,15 +591,11 @@ export class FastEvent<
     public emit<R = any>(type: Types, payload?: Events[Types], retain?: boolean): R[]
     public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? Events[Types] : any, retain?: boolean): R[]
     public emit<R = any>(message: FastEventEmitMessage<Events, Meta>, retain?: boolean): R[]
-    public emit<R = any, T extends string = string>(message: FastEventEmitMessage<{
-        [K in T]: K extends Types ? Events[K] : any
-    }, Meta>, retain?: boolean): R[]
+    public emit<R = any, T extends string = string>(message: FastEventEmitMessage<{ [K in T]: K extends Types ? Events[K] : any }, Meta>, retain?: boolean): R[]
     public emit<R = any>(type: Types, payload?: Events[Types], options?: FastEventListenerArgs<Meta>): R[]
     public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? Events[Types] : any, options?: FastEventListenerArgs<Meta>): R[]
     public emit<R = any>(message: FastEventEmitMessage<Events, Meta>, options?: FastEventListenerArgs<Meta>): R[]
-    public emit<R = any, T extends string = string>(message: FastEventEmitMessage<{
-        [K in T]: K extends Types ? Events[K] : any
-    }, Meta>, options?: FastEventListenerArgs<Meta>): R[]
+    public emit<R = any, T extends string = string>(message: FastEventEmitMessage<{ [K in T]: K extends Types ? Events[K] : any }, Meta>, options?: FastEventListenerArgs<Meta>): R[]
     public emit<R = any>(): R[] {
         const [message, args] = handleEmitArgs(arguments, this.options.meta)
         const parts = message.type.split(this._delimiter);

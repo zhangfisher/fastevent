@@ -43,15 +43,20 @@
  */
 
 import { FastEvent } from "../event";
-import { FastEventMessage } from '../types';
-import { FastEventBusNode } from "./node";
+import { FastEventMessage, FastEvents } from '../types';
+import type { FastEventBusNode } from "./node";
 import { FastEventBusEvents, FastEventBusNodeMessage, FastEventBusOptions } from "./types";
 
 
-export class FastEventBus extends FastEvent<FastEventBusEvents> {
-    nodes: Map<string, FastEventBusNode>;
+export class FastEventBus<
+    Events extends FastEventBusEvents = FastEventBusEvents,
+    Meta extends Record<string, any> = Record<string, any>,
+    Context = never,
+    Types extends keyof Events = Exclude<keyof Events, number | symbol>
+> extends FastEvent<Events, Meta, Context, Types> {
+    nodes: Map<string, FastEventBusNode<any, any, any>>;
 
-    constructor(options?: FastEventBusOptions) {
+    constructor(options?: FastEventBusOptions<Meta, Context>) {
         super(options);
         this.nodes = new Map();
     }
@@ -60,15 +65,12 @@ export class FastEventBus extends FastEvent<FastEventBusEvents> {
      * 添加节点到事件总线
      * @param node 要添加的节点
      */
-    add(node: FastEventBusNode): void {
-        if (!node.id) {
-            throw new Error('Node must have an id');
-        }
+    add(node: FastEventBusNode<any, any, any, any>): void {
         if (this.nodes.has(node.id)) {
             throw new Error(`Node with id ${node.id} already exists`);
         }
         this.nodes.set(node.id, node);
-        node.eventBus = this;
+        node.connect(this)
         this.emit("node:connect", node.id)
     }
 
@@ -89,7 +91,7 @@ export class FastEventBus extends FastEvent<FastEventBusEvents> {
      * 广播消息到所有节点
      * @param message 要广播的消息
      */
-    broadcast<T extends FastEventBusNodeMessage>(message: T): void {
+    broadcast<T extends FastEventMessage>(message: T): void {
         const busMessage: FastEventBusNodeMessage<T> = {
             ...message,
             from: ''
@@ -114,7 +116,7 @@ export class FastEventBus extends FastEvent<FastEventBusEvents> {
             from: '',
             to: toNodeId
         };
-        targetNode.onMessage(busMessage);
+        targetNode._onMessage(busMessage);
     }
 
 }

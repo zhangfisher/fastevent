@@ -1,6 +1,6 @@
 import { FastEvent } from "../event";
 import { FastEventListenerArgs, FastEventOptions, FastEvents } from "../types";
-import { FastEventBus } from "./eventbus";
+import type { FastEventBus } from "./eventbus";
 import { FastEventBusNodeMessage, NamespaceDelimiter } from "./types";
 
 export type FastEventBusNodeOptions<Meta = Record<string, any>, Context = any> = FastEventOptions<Meta, Context>
@@ -10,8 +10,8 @@ export class FastEventBusNode<
     Meta extends Record<string, any> = Record<string, any>,
     Context = never,
     Types extends keyof Events = Exclude<keyof Events, number | symbol>
-> extends FastEvent<EventSource, Meta, Context> {
-    eventBus?: FastEventBus;
+> extends FastEvent<Events, Meta, Context> {
+    eventBus?: FastEventBus<any, any, any>;
     constructor(options?: FastEventBusNodeOptions<Meta, Context>) {
         super(options)
         this.options.onBeforeExecuteListener = this._onBeforeExecuteListener.bind(this)
@@ -31,7 +31,7 @@ export class FastEventBusNode<
         // 处理包括名称空间前缀的事件,即emit("<节点id>::<事件名>")
         if (message.type.includes(NamespaceDelimiter)) {
             const [namespace, type] = message.type.split(NamespaceDelimiter)
-            const emitter = (namespace ? this.eventBus?.nodes.get(namespace) : this.eventBus!) as FastEvent
+            const emitter = (namespace ? this.eventBus?.nodes.get(namespace) : this.eventBus!) as unknown as FastEvent
             if (!emitter) {
                 throw new Error(`Node ${namespace} not found`);
             } else { // 转发到全局或其他节点触发事件
@@ -46,7 +46,7 @@ export class FastEventBusNode<
      * 加入事件总线
      * @param eventBus 要加入的事件总线
      */
-    connect(eventBus: FastEventBus): void {
+    connect(eventBus: FastEventBus<any, any, any, any>): void {
         this.eventBus = eventBus
         eventBus.add(this);
     }
@@ -89,20 +89,7 @@ export class FastEventBusNode<
      * @param message 接收到的消息
      */
     _onMessage<T extends FastEventBusNodeMessage>(message: FastEventBusNodeMessage<T>): void {
-        // 如果消息有特定目标且不是当前节点，忽略该消息
-        if (message.to && message.to !== this.id) {
-            return;
-        }
 
-        // 处理订阅的消息（node::event 格式）
-        if (message.type) {
-            // 原始事件类型
-            this.emit(message.type, message);
-
-            // 带源节点的事件类型（node::event）
-            const nodeEvent = `${message.from}::${message.type}`;
-            this.emit(nodeEvent, message);
-        }
     }
     /**
      * 供子类继承重载
