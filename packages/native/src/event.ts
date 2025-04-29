@@ -508,7 +508,7 @@ export class FastEvent<
      * - 对于带次数限制的监听器(数组形式)，执行后递减次数，当次数为0时移除该监听器
      */
     private _executeListeners(nodes: FastListenerNode[], message: FastEventMessage, args?: FastEventListenerArgs<Meta>): any[] {
-        if (!nodes || nodes.length == 0) return []
+        if (!nodes || nodes.length === 0) return []
 
         // 1. 遍历所有监听器任务,即需要执行的监听器函数列[]
         const listeners = nodes.reduce<[FastListenerMeta, number, FastListenerMeta[]][]>((result, node) => {
@@ -599,7 +599,7 @@ export class FastEvent<
     public emit<R = any, T extends string = string>(message: FastEventEmitMessage<{ [K in T]: K extends Types ? Events[K] : any }, Meta>, options?: FastEventListenerArgs<Meta>): R[]
     public emit<R = any>(message: FastEventEmitMessage<Events, Meta>, options?: FastEventListenerArgs<Meta>): R[]
     public emit<R = any>(): R[] {
-        const [message, args] = handleEmitArgs(arguments, this.options.meta)
+        const [message, args] = handleEmitArgs<Events, Meta>(arguments, this.options.meta)
         const parts = message.type.split(this._delimiter);
         if (args.retain) {
             this.retainedMessages.set(message.type, message)

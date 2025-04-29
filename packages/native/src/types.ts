@@ -41,14 +41,14 @@ export type FastEventListener<
     C = any
 > = (this: C, message: FastEventMessage<{
     [K in T]: P
-}, M>, args?: FastEventListenerArgs) => any | Promise<any>
+}, M>, args: FastEventListenerArgs<M>) => any | Promise<any>
 
 // 任意事件类型
 export type FastEventAnyListener<
     Events extends Record<string, any> = Record<string, any>,
     Meta = never,
     Context = any
-> = (this: Context, message: FastEventMessage<Events, Meta>, args?: FastEventListenerArgs) => any | Promise<any>
+> = (this: Context, message: FastEventMessage<Events, Meta>, args: FastEventListenerArgs<Meta>) => any | Promise<any>
 
 
 
@@ -121,9 +121,9 @@ export type FastEventOptions<Meta = Record<string, any>, Context = any> = {
     // 当清空侦听器时回调
     onClearListeners?: () => void
     // 当执行侦听器前时回调,返回false代表取消执行
-    onBeforeExecuteListener?: (message: FastEventMessage, args: FastEventListenerArgs) => boolean | void
+    onBeforeExecuteListener?: (message: FastEventMessage<any, Meta>, args: FastEventListenerArgs<Meta>) => boolean | void
     // 当执行侦听器后时回调
-    onAfterExecuteListener?: (message: FastEventMessage, returns: any[], listeners: FastListenerNode[]) => void
+    onAfterExecuteListener?: (message: FastEventMessage<any, Meta>, returns: any[], listeners: FastListenerNode[]) => void
     /**
      * 全局执行器
      * allSettled: 使用Promise.allSettled()执行所有监听器
@@ -156,7 +156,7 @@ export type FastListenerExecutorArgs = 'default' | 'allSettled' | 'race' | 'bala
 
 export type FastEventListenerArgs<M = Record<string, any>> = {
     retain?: boolean;
-    meta?: Record<string, any> & Partial<M>;
+    meta?: Partial<M> & Record<string, any>;
     abortSignal?: AbortSignal;               // 用于传递给监听器函数
     /**
      * 

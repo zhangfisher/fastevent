@@ -602,3 +602,35 @@ function bar() {
     }
 }
 
+function demo2() {
+    const emitter = new FastEvent({
+        meta: {
+            source: 'web',
+            timeout: 1000,
+        },
+    });
+    // 监听者接收到的元数据
+    emitter.on('x', (message, args) => {
+        message.meta;
+        args.meta;
+    });
+}
+
+function demo3() {
+    const emitter = new FastEvent({
+        meta: {
+            source: 'web',
+            timeout: 1000,
+        },
+    });
+    // 监听者接收到的元数据
+    emitter.on('x', (message, args) => {
+        message.meta;
+        args.meta;
+    });
+    emitter.emit('x', 1, {
+        meta: {
+            url: 'https://github.com/zhangfisher/repos'
+        }
+    })
+}

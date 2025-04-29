@@ -1,22 +1,52 @@
-# 元数据系统
+# 元数据
 
-FastEvent 提供了灵活的元数据机制，允许为事件附加上下文信息，同时保持类型安全。
+FastEvent 提供了灵活的元数据机制，允许为事件监听器提供额外的上下文数据，用来传递给事件监听者。
 
-## 基本元数据
+## 全局元数据
+
+在创建`FastEvent`实例时，可以传入`meta`选项来指定全局元数据。
+
+```typescript twoslash
+import { FastEvent } from 'fastevent';
+
+const emitter = new FastEvent({
+    meta: {
+        source: 'web',
+        timeout: 1000,
+    },
+});
+// 监听者接收到的元数据
+emitter.on('x', (message, args) => {
+    message.meta; // { source: 'web', timeout: 1000 }
+    args.meta;
+});
+```
 
 ### 添加自定义元数据
 
-```typescript
-// 触发事件时添加元数据
-emitter.emit(
-    'user/login',
-    { userId: '123' },
-    false, // 不保留
-    {
-        ip: '192.168.1.1',
-        device: 'iOS',
+也可以在触发事件时添加元数据。
+
+```typescript twoslash
+import { FastEvent } from 'fastevent';
+
+const emitter = new FastEvent({
+    meta: {
+        source: 'web',
+        timeout: 1000,
     },
-);
+});
+// 监听者接收到的元数据
+emitter.on('x', (message, args) => {
+    // { source: 'web', timeout: 1000,url: 'https://github.com/zhangfisher/repos' }
+    message.meta;
+    // { url: 'https://github.com/zhangfisher/repos' }
+    args.meta;
+});
+emitter.emit('x', 1, {
+    meta: {
+        url: 'https://github.com/zhangfisher/repos',
+    },
+});
 ```
 
 ## 类型安全的元数据

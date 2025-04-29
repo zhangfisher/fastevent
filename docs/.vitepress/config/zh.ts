@@ -34,7 +34,7 @@ export default {
                                 { text: '触发事件', link: '/zh/guide/use/event-trigger' },
                                 { text: '订阅事件', link: '/zh/guide/use/subscribe-events' },
                                 { text: '取消订阅', link: '/zh/guide/use/off-events' },
-                                { text: '复数', link: '/zh/guide/use/plural' },
+                                { text: '元数据', link: '/zh/guide/use/metadata' },
                                 { text: '货币', link: '/zh/guide/use/currency' },
                                 { text: '切换语言', link: '/zh/guide/use/change-language' },
                                 { text: '名称空间', link: '/zh/guide/use/namespace' },

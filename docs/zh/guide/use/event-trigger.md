@@ -105,7 +105,7 @@ emitter.on('system/status', (message) => {
 
 `emit`和`emitAsync`触发结果时会执行注册的监听器函数并返回结果。
 
-```typescript twoslash
+```typescript
 import { FastEvent } from 'fastevent';
 const emitter = new FastEvent();
 

@@ -50,7 +50,7 @@ export class FastEventScope<
         const scopePrefix = this.prefix
         if (scopePrefix.length === 0) return listener
         const scopeThis = this
-        const scopeListener = renameFn(function (message: FastEventMessage, args?: FastEventListenerArgs) {
+        const scopeListener = renameFn(function (message: FastEventMessage, args: FastEventListenerArgs) {
             if (message.type.startsWith(scopePrefix)) {
                 return listener.call(scopeThis.context || scopeThis.emitter.context, Object.assign({}, message, {
                     type: message.type.substring(scopePrefix.length)

@@ -17,12 +17,16 @@ describe("传递Meta数据", async () => {
         const emitter = new FastEvent({
             meta: { a: 1, b: 2 }
         })
-        emitter.on("x", ({ payload, type, meta }) => {
+        emitter.on("x", ({ payload, type, meta }, args) => {
             expect(type).toBe("x")
             expect(payload).toBe(1)
-            expect(meta.a).toBe(10)
+            expect(meta.a).toBe(1)
             expect(meta.b).toBe(20)
+            expect(meta.c).toBe(30)
+            expect(args.meta).toEqual({ a: 1, b: 20, c: 30 })
         })
-        emitter.emit("x", 1, false, { a: 10, b: 20 })
+        emitter.emit("x", 1, {
+            meta: { b: 20, c: 30 }
+        })
     })
 }) 
