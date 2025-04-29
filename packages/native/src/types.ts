@@ -1,7 +1,7 @@
 
 
 
-export interface FaseEventMessageExtend {
+export interface FaseEventMessageExtends {
 
 }
 
@@ -16,7 +16,7 @@ export type FastEventMessage<
             meta: M
         }
     }[Exclude<keyof Events, number | symbol>]
-) & FaseEventMessageExtend
+) & FaseEventMessageExtends
 
 // 用于emit方法可使用
 export type FastEventEmitMessage<
@@ -30,7 +30,7 @@ export type FastEventEmitMessage<
             meta?: M
         }
     }[Exclude<keyof Events, number | symbol>]
-) & FaseEventMessageExtend
+) & FaseEventMessageExtends
 
 
 // 只针对指定类型
@@ -149,7 +149,7 @@ export type FastEventListenOptions = {
     count?: number
     // 将侦听器添加到侦听器列表的头部
     prepend?: boolean
-    filter?: (message: FastEventMessage) => boolean
+    filter?: (message: FastEventMessage, args: FastEventListenerArgs<any>) => boolean
 }
 
 export type FastListenerExecutorArgs = 'default' | 'allSettled' | 'race' | 'balance' | 'first' | 'last' | 'random' | IFastListenerExecutor;

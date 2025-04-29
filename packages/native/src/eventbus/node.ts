@@ -1,5 +1,5 @@
 import { FastEvent } from "../event";
-import { FastEventListenerArgs, FastEventOptions, FastEvents } from "../types";
+import { FastEventListenerArgs, FastEventMessage, FastEventOptions, FastEvents } from "../types";
 import type { FastEventBus } from "./eventbus";
 import { FastEventBusNodeMessage, NamespaceDelimiter } from "./types";
 
@@ -76,7 +76,7 @@ export class FastEventBusNode<
      * 广播消息到所有其他节点
      * @param message 要广播的消息
      */
-    broadcast<T extends FastEventBusNodeMessage>(message: T): void {
+    broadcast<T extends FastEventMessage>(message: T): void {
         if (!this.eventBus) {
             throw new Error('Node is not connected to any event bus');
         }

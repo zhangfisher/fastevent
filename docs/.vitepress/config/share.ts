@@ -1,5 +1,5 @@
 import { transformerTwoslash } from '@shikijs/vitepress-twoslash'
-import { createTwoslasher } from 'twoslash-eslint'
+import { createFileSystemTypesCache } from '@shikijs/vitepress-twoslash/cache-fs'
 
 export default {
     base: '/fastevent/',
@@ -13,14 +13,7 @@ export default {
     markdown: {
         codeTransformers: [
             transformerTwoslash({
-                explicitTrigger: /\beslint-check\b/,
-            }),
-            createTwoslasher({
-                eslintConfig: [
-                    {
-                        files: ['**']
-                    }
-                ]
+                // typesCache: createFileSystemTypesCache()
             })
         ],
         // Explicitly load these languages for types hightlighting

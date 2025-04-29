@@ -202,7 +202,7 @@ export class FastEvent<
         if (typeof (options.filter) === 'function') {
             const oldListener = listener
             listener = renameFn<FastEventListener>(function (message, args) {
-                if (options.filter.call(this, message)) {
+                if (options.filter.call(this, message, args!)) {
                     return oldListener.call(this, message, args)
                 }
             }, listener.name)
@@ -277,11 +277,12 @@ export class FastEvent<
      * 当调用on/once/onAny时如果没有指定监听器，则调用此方法
      * 
      * 此方法供子类继承
+     * 
      */
+    //  eslint-disable-next-line @typescript-eslint/no-unused-vars
     onMessage(message: FastEventMessage) {
 
     }
-
     off(listener: FastEventListener<any, any, any>): void
     off(type: string, listener: FastEventListener<any, any, any>): void
     off(type: Types, listener: FastEventListener<any, any, any>): void
@@ -588,14 +589,15 @@ export class FastEvent<
      * }, true);
      * ```
      */
-    public emit<R = any>(type: Types, payload?: Events[Types], retain?: boolean): R[]
+    public emit<R = any, T extends Types = Types>(type: T, payload?: Events[T], retain?: boolean): R[]
     public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? Events[Types] : any, retain?: boolean): R[]
-    public emit<R = any>(message: FastEventEmitMessage<Events, Meta>, retain?: boolean): R[]
     public emit<R = any, T extends string = string>(message: FastEventEmitMessage<{ [K in T]: K extends Types ? Events[K] : any }, Meta>, retain?: boolean): R[]
-    public emit<R = any>(type: Types, payload?: Events[Types], options?: FastEventListenerArgs<Meta>): R[]
+    public emit<R = any>(message: FastEventEmitMessage<Events, Meta>, retain?: boolean): R[]
+    //----
+    public emit<R = any, T extends Types = Types>(type: T, payload?: Events[T], options?: FastEventListenerArgs<Meta>): R[]
     public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? Events[Types] : any, options?: FastEventListenerArgs<Meta>): R[]
-    public emit<R = any>(message: FastEventEmitMessage<Events, Meta>, options?: FastEventListenerArgs<Meta>): R[]
     public emit<R = any, T extends string = string>(message: FastEventEmitMessage<{ [K in T]: K extends Types ? Events[K] : any }, Meta>, options?: FastEventListenerArgs<Meta>): R[]
+    public emit<R = any>(message: FastEventEmitMessage<Events, Meta>, options?: FastEventListenerArgs<Meta>): R[]
     public emit<R = any>(): R[] {
         const [message, args] = handleEmitArgs(arguments, this.options.meta)
         const parts = message.type.split(this._delimiter);
@@ -658,8 +660,16 @@ export class FastEvent<
      * });
      * ```
      */
+    public async emitAsync<R = any>(type: string, payload?: any, retain?: boolean): Promise<[R | Error][]>
+    public async emitAsync<R = any>(type: Types, payload?: Events[Types], retain?: boolean): Promise<[R | Error][]>
+    public async emitAsync<R = any, T extends string = string>(message: FastEventEmitMessage<{ [K in T]: K extends Types ? Events[K] : any }, Meta>, retain?: boolean): Promise<[R | Error][]>
+    public async emitAsync<R = any>(message: FastEventEmitMessage<Events, Meta>, retain?: boolean): Promise<[R | Error][]>
+    // ---    
     public async emitAsync<R = any>(type: string, payload?: any, options?: FastEventListenerArgs<Meta>): Promise<[R | Error][]>
     public async emitAsync<R = any>(type: Types, payload?: Events[Types], options?: FastEventListenerArgs<Meta>): Promise<[R | Error][]>
+    public async emitAsync<R = any, T extends string = string>(message: FastEventEmitMessage<{ [K in T]: K extends Types ? Events[K] : any }, Meta>, options?: FastEventListenerArgs<Meta>): Promise<[R | Error][]>
+    public async emitAsync<R = any>(message: FastEventEmitMessage<Events, Meta>, options?: FastEventListenerArgs<Meta>): Promise<[R | Error][]>
+
     public async emitAsync<R = any>(): Promise<[R | Error][]> {
         const results = await Promise.allSettled(this.emit.apply(this, arguments as any))
         return results.map((result) => {

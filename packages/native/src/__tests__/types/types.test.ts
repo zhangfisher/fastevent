@@ -3,6 +3,8 @@ import type { Equal, Expect, NotAny } from '@type-challenges/utils'
 import { FastEvent } from "../../event"
 import { FastEventMessage, ScopeEvents } from "../../types"
 import { FastEventScopeMeta } from "../../scope"
+import { FastEventBus } from "../../eventbus"
+import { E } from "vitest/dist/chunks/environment.d.Dmw5ulng.js"
 
 describe("类型系统测试", () => {
     describe("作用域事件类型定义", () => {
@@ -433,6 +435,7 @@ function demo() {
         'user/login': { id: number; name: string };
         'user/logout': { id: number };
         'system/error': { code: string; message: string };
+        'order': number
     }
 
     const events = new FastEvent<MyEvents>();
@@ -462,11 +465,12 @@ function demo() {
     // ✅ 正确：支持触发 未定义的事件类型
     events.emit('xxxx', 1);
     events.emit('user/ssddd', 1);
-
+    events.emit('order', 1);
 
     // ❌ 错误：已声明事件类型payload不匹配
     events.emit('user/login', { id: "1", name: 'Alice' }); // TypeScript 错误
     events.emit('user/login', 1); // TypeScript 错误
+    events.emit('order', '1');
     // ❌ 错误：id类型不匹配
     events.emit({
         type: 'user/login',
@@ -501,35 +505,100 @@ function demo() {
         payload: { id: "1", name: 'Alice' }
     });
 
-    interface MyBaseEvents {
-        'login': string
-        'logout': boolean
-    }
+    const emitter = new FastEvent();
+    emitter.on('event', (message, args) => {
+        //                              ^^^
+    });
+    // ------------------- FastEventBus -------------------
+    const bus = new FastEventBus<{
+        join: string
+    }>()
+
+    // ✅✅✅ 正确 ✅✅✅
+    bus.emit('node:connect', "dd")
+    bus.emit('node:disconnect', "dd")
+    bus.emit({
+        type: 'node:connect',
+        payload: 'done'
+    })
+    bus.emit({
+        type: 'node:disconnect',
+        payload: 'done'
+    })
+    bus.emit('join', 'done')
+    bus.emit({
+        type: 'join',
+        payload: 'done'
+    })
+    bus.emit('11111')
+    bus.emit("x", 1)
+
+    // ❌❌❌ 错误 ❌❌❌
+    bus.emit('node:connect', 1)
+    bus.emit('node:disconnect', 1)
+    bus.emit('join', 1)
+    bus.emit({
+        type: 'node:connect',
+        payload: 1
+    })
+    bus.emit({
+        type: 'node:disconnect',
+        payload: 1
+    })
+    bus.emit({
+        type: 'join',
+        payload: 1
+    })
+}
 
 
-    interface MyBusEvents extends MyBaseEvents {
-        x: number
-    }
-    class MyEvent<T extends MyBusEvents> extends FastEvent<T> {
-        test() {
-            this.emit("y")
+function bar() {
+    type Dict = Record<string, unknown>
+    class Base<Events extends Dict = Dict, Types extends keyof Events = keyof Events> {
+        events?: Events
+        print<T extends Types>(key: T, value: Events[T]): void {
+
         }
     }
+    type ChildType = { count: number }
+    class Child<Events extends Dict> extends Base<ChildType & Events> {
 
-    const bus = new MyEvent()
+        test() {
+            type PrintType = typeof this.print
+            type EventType = typeof this.events
+            this.print('count', 1)
+            this.print('name', "autostore")
+            this.print('count', "")
+        }
+    }
+    const child = new Child<{ name: string }>()
+    child.print('count', 1)
+    child.print('count', "1")
+    child.print('name', "1")
+    child.print('name', 1)
 
-    // ❌ 错误
-    bus.emit("x", "")
-    // ✅ 正确
-    bus.emit("x", 1)
-    bus.emit("x", 1)
-    bus.emit('x', "222")
-    // ❌ 错误
-    bus.emit("y")
-    bus.emit("y", 1)
+    class Child2 extends Base<{ count: number }> {
 
+        test() {
+            type Print = typeof this.print
+            this.print('count', 1)
+            this.print('count', "1")
+            this.print('name', "111")
+            this.print('name', 1)
+            this.print("ddd", 1)
 
+        }
+    }
+    class Child3 extends Base {
 
+        test() {
+            this.print('count', 1)
+            this.print('count', 1)
+            this.print('name', "111")
+            this.print('name', 1)
+            this.print("ddd", 1)
 
-
+        }
+    }
 }
+

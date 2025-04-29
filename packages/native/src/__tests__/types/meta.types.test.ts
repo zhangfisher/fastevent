@@ -184,5 +184,23 @@ describe("FastEvent元数据类型检查", () => {
             ]
         })
     })
+
+    test("事件元数据推断", () => {
+        const emitter = new FastEvent();
+        emitter.emit('order/create', { orderId: '123', total: 99.99 }, {
+            retain: false,
+            meta: {
+                timestamp: Date.now(),
+                source: 'web',
+                userId: 'user_123',
+            }
+        });
+
+        emitter.on('order/create', (message) => {
+            message.meta; // { timestamp: number; source: string; userId: string; }
+            //
+        });
+    })
+
 })
 

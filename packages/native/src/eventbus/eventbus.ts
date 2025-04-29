@@ -49,11 +49,10 @@ import { FastEventBusEvents, FastEventBusNodeMessage, FastEventBusOptions } from
 
 
 export class FastEventBus<
-    Events extends FastEventBusEvents = FastEventBusEvents,
+    Events extends FastEvents = FastEvents,
     Meta extends Record<string, any> = Record<string, any>,
-    Context = never,
-    Types extends keyof Events = Exclude<keyof Events, number | symbol>
-> extends FastEvent<Events, Meta, Context, Types> {
+    Context = never
+> extends FastEvent<FastEventBusEvents & Events, Meta, Context> {
     nodes: Map<string, FastEventBusNode<any, any, any>>;
 
     constructor(options?: FastEventBusOptions<Meta, Context>) {
@@ -72,6 +71,10 @@ export class FastEventBus<
         this.nodes.set(node.id, node);
         node.connect(this)
         this.emit("node:connect", node.id)
+        this.emit("sdfsdf", 1)
+
+        this.emit("xxxx", 2)
+
     }
 
     /**
@@ -120,3 +123,4 @@ export class FastEventBus<
     }
 
 }
+

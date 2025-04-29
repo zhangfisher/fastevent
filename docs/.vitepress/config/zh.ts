@@ -32,11 +32,8 @@ export default {
                             collapsed: false,
                             items: [
                                 { text: '触发事件', link: '/zh/guide/use/event-trigger' },
-                                { text: '事件消息格式', link: '/zh/guide/use/event-message' },
-                                { text: '异步事件处理', link: '/zh/guide/use/async-events' },
-                                { text: '事件监听器', link: '/zh/guide/use/listener' },
-                                { text: '插值变量', link: '/zh/guide/use/interpolation' },
-                                { text: '日期时间', link: '/zh/guide/use/datetime' },
+                                { text: '订阅事件', link: '/zh/guide/use/subscribe-events' },
+                                { text: '取消订阅', link: '/zh/guide/use/off-events' },
                                 { text: '复数', link: '/zh/guide/use/plural' },
                                 { text: '货币', link: '/zh/guide/use/currency' },
                                 { text: '切换语言', link: '/zh/guide/use/change-language' },

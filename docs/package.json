@@ -19,7 +19,6 @@
         "fastevent": "workspace:*"
     },
     "devDependencies": {
-        "@shikijs/vitepress-twoslash": "^3.3.0",
-        "twoslash-eslint": "^0.3.1"
+        "@shikijs/vitepress-twoslash": "^3.3.0"
     }
 }

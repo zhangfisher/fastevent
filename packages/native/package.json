@@ -25,7 +25,7 @@
         }
     },
     "scripts": {
-        "test": "vitest",
+        "test": "vitest --exclude='src/__tests__/eventbus.test.ts'",
         "test:coverage": "vitest --coverage --exclude=\"src/__benchmarks__/**\"  --exclude=src/devTools",
         "build": "tsup",
         "bench": "tsx src/__benchmarks__/index.ts",
