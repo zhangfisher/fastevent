@@ -11,7 +11,7 @@ hero:
           link: /zh/guide/intro/get-started
         - theme: alt
           text: Github
-          link: https://github.com/zhangfisher/voerka-i18n
+          link: https://github.com/zhangfisher/fastevent
 
 features:
     - title: ⚡ 高性能
@@ -20,8 +20,8 @@ features:
       details: 强大的单级(\*)和多级(\*\*)通配符匹配
     - title: 🏗️ 层级作用域
       details: 嵌套作用域管理，自动路径前缀
-    - title: 🔄 异步事件
-      details: 原生支持 async/await 事件处理
+    - title: 🔄 事件执行器
+      details: 支持多种监听器事件执行器
     - title: 📝 元数据系统
       details: 全局/作用域/事件级别的元数据合并
     - title: 💾 保留消息

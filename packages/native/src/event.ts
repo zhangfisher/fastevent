@@ -181,13 +181,13 @@ export class FastEvent<
      * ```
      */
 
-    public on<T extends Types = Types>(type: T, options?: FastEventListenOptions): FastEventSubscriber
-    public on<T extends string>(type: T, options?: FastEventListenOptions): FastEventSubscriber
-    public on(type: '**', options?: FastEventListenOptions): FastEventSubscriber
+    public on<T extends Types = Types>(type: T, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
+    public on<T extends string>(type: T, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
+    public on(type: '**', options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
 
-    public on<T extends Types = Types>(type: T, listener: FastEventListener<Exclude<T, number | symbol>, Events[T], Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions): FastEventSubscriber
-    public on<T extends string>(type: T, listener: FastEventAnyListener<Events, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions): FastEventSubscriber
-    public on(type: '**', listener: FastEventAnyListener<Record<string, any>, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions): FastEventSubscriber
+    public on<T extends Types = Types>(type: T, listener: FastEventListener<Exclude<T, number | symbol>, Events[T], Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
+    public on<T extends string>(type: T, listener: FastEventAnyListener<Events, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
+    public on(type: '**', listener: FastEventAnyListener<Record<string, any>, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
     public on(): FastEventSubscriber {
         const type = arguments[0] as string
         let listener = (isFunction(arguments[1]) ? arguments[1] : this.onMessage.bind(this)) as FastEventListener
@@ -199,25 +199,32 @@ export class FastEvent<
 
         if (type.length === 0) throw new Error('event type cannot be empty')
 
-        if (typeof (options.filter) === 'function') {
+        const parts = type.split(this._delimiter);
+        // 退订函数
+
+        if (isFunction(options.filter) || isFunction(options.off)) {
             const oldListener = listener
             listener = renameFn<FastEventListener>(function (message, args) {
-                if (options.filter.call(this, message, args!)) {
+                // 如果满足条件就退订
+                if (isFunction(options.off) && options.off.call(this, message, args)) {
+                    off()
+                    return
+                }
+                // 如果满足条件就触发监听器
+                if (isFunction(options.filter)) {
+                    if (options.filter.call(this, message, args!)) return oldListener.call(this, message, args)
+                } else {
                     return oldListener.call(this, message, args)
                 }
             }, listener.name)
         }
 
-        const parts = type.split(this._delimiter);
         const node = this._addListener(parts, listener, options)
-
+        const off = () => node && this._removeListener(node, parts, listener)
         // Retain不支持通配符
         if (node && !type.includes('*')) this._emitForLastEvent(type)
 
-        return {
-            off: () => node && this._removeListener(node, parts, listener),
-            listener
-        }
+        return { off, listener }
     }
 
     /**
@@ -241,10 +248,10 @@ export class FastEvent<
      * });
      * ```
      */
-    public once<T extends Types = Types>(type: T, options?: FastEventListenOptions): FastEventSubscriber
-    public once<T extends string>(type: T, options?: FastEventListenOptions): FastEventSubscriber
-    public once<T extends Types = Types>(type: T, listener: FastEventListener<Exclude<T, number | symbol>, Events[T], Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions): FastEventSubscriber
-    public once<T extends string>(type: T, listener: FastEventAnyListener<Events, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions): FastEventSubscriber
+    public once<T extends Types = Types>(type: T, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
+    public once<T extends string>(type: T, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
+    public once<T extends Types = Types>(type: T, listener: FastEventListener<Exclude<T, number | symbol>, Events[T], Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
+    public once<T extends string>(type: T, listener: FastEventAnyListener<Events, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
     public once(): FastEventSubscriber {
         if (isFunction(arguments[1])) {
             return this.on(arguments[0], arguments[1], Object.assign({}, arguments[2], { count: 1 }))
@@ -267,8 +274,8 @@ export class FastEvent<
      * subscriber.off();
      * ```listener: FastEventAnyListener<Events, Meta, Fallback<Context, typeof this>>): FastEventSubscriber
      */
-    onAny(options?: Omit<FastEventListenOptions, 'count'>): FastEventSubscriber
-    onAny<P = any>(listener: FastEventAnyListener<Record<string, P>, Meta, Fallback<Context, typeof this>>, options?: Omit<FastEventListenOptions, 'count'>): FastEventSubscriber
+    onAny(options?: Omit<FastEventListenOptions<Events, Meta>, 'count'>): FastEventSubscriber
+    onAny<P = any>(listener: FastEventAnyListener<Record<string, P>, Meta, Fallback<Context, typeof this>>, options?: Omit<FastEventListenOptions<Events, Meta>, 'count'>): FastEventSubscriber
     onAny(): FastEventSubscriber {
         return this.on("**", arguments[0], arguments[1])
     }
@@ -518,8 +525,7 @@ export class FastEvent<
         try {
             const executeor = this._getListenerExecutor(args)
             if (executeor) {
-                const r = executeor(listeners.map(listener => listener[0]), message, args, this._executeListener.bind(this)) as any[]
-                return r
+                return executeor(listeners.map(listener => listener[0]), message, args, this._executeListener.bind(this)) as any[]
             } else {
                 return listeners.map(listener => this._executeListener(listener[0][0], message, args))
             }

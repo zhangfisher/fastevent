@@ -146,3 +146,25 @@ event.clear('user');
 :::warning 提示
 `clear`和`offAll`的区别在于,`clear`会清除保留的事件消息,而`offAll`不会.
 :::
+
+### 自动取消订阅
+
+`FastEvent`支持在订阅时指定`until`参数，用于在接收到满足条件的消息时自动取消订阅。
+
+```ts
+import { FastEvent } from 'fastevent';
+
+const emitter = new FastEvent();
+
+emitter.on(
+    'click',
+    (message, args) => {
+        console.log(message);
+    },
+    {
+        until: (message, args) => {
+            return message.payload === 'exit'; //   [!code++]
+        },
+    },
+);
+```

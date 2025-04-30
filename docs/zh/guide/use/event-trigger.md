@@ -163,7 +163,7 @@ const results = await emitter.emitAsync('event');
 
 触发事件时可以指定额外元数据用来传递给监听者。
 
-```typescript twoslash
+```typescript
 import { FastEvent } from 'fastevent';
 const emitter = new FastEvent();
 emitter.emit('order/create', { orderId: '123', total: 99.99 }, false, {

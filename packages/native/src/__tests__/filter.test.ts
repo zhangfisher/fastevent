@@ -2,7 +2,7 @@ import { describe, test, expect, vi } from "vitest"
 import { FastEvent } from "../event"
 
 describe("事件过滤器测试", () => {
-    test("当过滤器返回true时，监听器应该被执行", () => {
+    test("当过滤器返回true时,监听器应该被执行", () => {
         const emitter = new FastEvent()
         const listener = vi.fn()
 
@@ -18,7 +18,7 @@ describe("事件过滤器测试", () => {
         expect(listener).toHaveBeenCalledTimes(1)
     })
 
-    test("当过滤器返回false时，监听器不应该被执行", () => {
+    test("当过滤器返回false时,监听器不应该被执行", () => {
         const emitter = new FastEvent()
         const listener = vi.fn()
 
@@ -57,11 +57,11 @@ describe("事件过滤器测试", () => {
             }
         })
 
-        // 第一次触发，过滤器返回false，监听器不执行
+        // 第一次触发,过滤器返回false,监听器不执行
         emitter.emit("test", 1)
         expect(listener).not.toHaveBeenCalled()
 
-        // 第二次触发 ，由于是once，监听器已被移除
+        // 第二次触发 ,由于是once,监听器已被移除
         emitter.emit("test", 2)
         expect(listener).not.toHaveBeenCalled()
     })

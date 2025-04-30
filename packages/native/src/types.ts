@@ -141,14 +141,17 @@ export type PickScopeEvents<T extends Record<string, any>, Prefix extends string
 };
 export type ScopeEvents<T extends Record<string, any>, Prefix extends string> = PickScopeEvents<T, Prefix>
 
-export type FastEventListenOptions = {
+export type FastEventListenOptions<
+    Events extends Record<string, any> = Record<string, any>,
+    Meta = any
+> = {
     // 侦听执行次数，当为1时为单次侦听，为0时为永久侦听，其他值为执行次数,每执行一次减一，减到0时移除侦听器
     count?: number
     // 将侦听器添加到侦听器列表的头部
     prepend?: boolean
-    filter?: (message: FastEventMessage, args: FastEventListenerArgs<any>) => boolean
+    filter?: (message: FastEventMessage<Events, Meta>, args: FastEventListenerArgs<Meta>) => boolean
     // 当执行侦听器前，如果此函数返回true则自动注销监听
-    until?: (message: FastEventMessage, args: FastEventListenerArgs<any>) => boolean
+    off?: (message: FastEventMessage<Events, Meta>, args: FastEventListenerArgs<Meta>) => boolean
 }
 
 export type FastListenerExecutorArgs = 'default' | 'allSettled' | 'race' | 'balance' | 'first' | 'last' | 'random' | IFastListenerExecutor;
