@@ -1,10 +1,40 @@
 /* eslint-disable no-unused-vars */
+
 import { describe, test, expect } from "vitest"
 import type { Equal, Expect, NotAny } from '@type-challenges/utils'
 import { FastEvent } from "../../event"
 import { FastEventScopeMeta } from "../../scope"
+import { FastEvents } from "../../types"
 
-describe("类型系统测试", () => {
+describe("事件作用域类型测试", () => {
+
+
+    type CustomEvents = {
+        a: boolean
+        b: number
+        c: string
+    }
+    const emitter = new FastEvent();
+    test("scope事件类型测试", () => {
+
+        const scope = emitter.scope<{
+            x: number,
+            y: string
+        }>("a/b/c")
+
+        scope.on('x', (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, 'x'>>,
+                Expect<Equal<typeof message.payload, number>>,
+                Expect<Equal<typeof message.meta, Record<string, any> & FastEventScopeMeta>>,
+            ]
+        })
+
+
+    })
+})
+
+describe("作用域上下文类型系统", () => {
     test("未指定上下文时应使用默认上下文类型", () => {
         const withoutCtxEmitter = new FastEvent()
         type Ctx1 = Expect<Equal<typeof withoutCtxEmitter.options.context, never>>
@@ -97,62 +127,27 @@ describe("类型系统测试", () => {
 })
 
 
-// interface MyEvents {
-//     'user/login': { id: number; name: string };
-//     'user/logout': { id: number };
-//     'system/error': { code: string; message: string };
-// }
-
-// const events = new FastEvent<MyEvents>();
-
-// // ✅ 正确：数据类型匹配
-// events.emit('user/login', { id: 1, name: 'Alice' });
-// // ✅ 正确：消息对象
-// events.emit({
-//     type: 'user/login',
-//     payload: { id: 1, name: 'Alice' }
-// });
-// // ✅ 正确：支持触发未定义的事件类型
-// events.emit({
-//     type: 'xxxxx',
-//     payload: { id: 1, name: 'Alice' }
-// });
-// // ✅ 正确：支持触发 未定义的事件类型
-// events.emit('xxxx', 1);
 
 
-// // ❌ 错误：已声明事件类型payload不匹配
-// events.emit('user/login', { id: "1", name: 'Alice' }); // TypeScript 错误
-// // ❌ 错误：id类型不匹配
-// events.emit({
-//     type: 'user/login',
-//     payload: { id: "1", name: 'Alice' }
-// });
+// const listener = (({ type }) => {
+//     anyEvents.push(type)
+// }) as FastEventListener
+
+// emitter.onAny(listener)
 
 
-// const scope = events.scope('user')
+// const dScope = scope.scope("d") // a/b/c/d
+// dScope.onAny(listener)
 
-// // ✅ 正确：数据类型匹配
-// scope.emit('user/login', { id: 1, name: 'Alice' });
-// // ✅ 正确：支持触发 未定义的事件类型
-// scope.emit('xxxx', 1);
-// // ✅ 正确：消息对象
-// scope.emit({
-//     type: 'login',
-//     payload: { id: 1, name: 'Alice' }
-// });
-// // ✅ 正确：支持触发未定义的事件类型
-// scope.emit({
-//     type: 'xxxxx',
-//     payload: { id: 1, name: 'Alice' }
-// });
+// const eScope = scope.scope("e")// a/b/c/e
+// eScope.onAny(listener)
 
+// const fScope = scope.scope("f")// a/b/c/f
+// fScope.onAny(listener)
 
-
-// // ❌ 错误：已声明事件类型payload不匹配
-// scope.emit('login', { id: "1", name: 'Alice' }); // TypeScript 错误
-// // ❌ 错误：id类型不匹配
-// scope.emit({
-//     type: 'login',
-//     payload: { id: "1", name: 'Alice' }
-// }); 
+// const anyEvents: string[] = []
+// emitter.emit("root", 1)
+// scope.emit("c", 1)
+// dScope.emit("d", 1)
+// eScope.emit("e", 1)
+// fScope.emit("f", 1)

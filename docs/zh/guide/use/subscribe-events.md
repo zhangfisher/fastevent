@@ -220,6 +220,37 @@ event.onAny((message) => {
 });
 ```
 
+### 默认监听器
+
+使用`on/once/onAny`方法订阅事件时，也要可以不指定监听器函数，这时会使用默认的监听器`onMessage`。
+
+```typescript
+const emitter = new FastEvent();
+// 默认监听器
+emitter.onMessage = (message) => {
+    console.log('收到事件:', message.type);
+};
+// 订阅事件到默认监听器
+emitter.on('user/login');
+emitter.once('user/logout');
+emitter.onAny();
+```
+
+`onMessage`一般更多地用于类继承时使用，如下：
+
+```ts
+class MyEmitter extends FastEvent {
+    onMessage(message) {
+        console.log('收到事件:', message.type);
+    }
+}
+const emitter = new MyEmitter();
+// 订阅事件到默认监听器
+emitter.on('user/login');
+emitter.once('user/logout');
+emitter.onAny();
+```
+
 ### 通配符匹配
 
 FastEvent 支持两种类型的通配符：
@@ -242,7 +273,7 @@ event.on('user/**', (message) => {
 });
 ```
 
-`**`可以匹配任意数量的路径层级，但是只能在事件的使用。
+`**`可以匹配任意数量的路径层级，但是**只能在事件名称的最后面有效**。
 
 ```typescript
 event.on('user/**', listener); // ✅ 正确

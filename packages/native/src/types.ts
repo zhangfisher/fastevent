@@ -13,7 +13,7 @@ export type FastEventMessage<
         [K in keyof Events]: {
             type: Exclude<K, number | symbol>
             payload: Events[K]
-            meta: M
+            meta: M & Record<string, any>
         }
     }[Exclude<keyof Events, number | symbol>]
 ) & FaseEventMessageExtends
@@ -134,15 +134,12 @@ export type FastEventOptions<Meta = Record<string, any>, Context = any> = {
     executor?: FastListenerExecutorArgs
 }
 
-
 export type FastEvents = Record<string, any>
-
 
 export type PickScopeEvents<T extends Record<string, any>, Prefix extends string> = {
     [K in keyof T as K extends `${Prefix}/${infer Rest}` ? Rest : never]: T[K];
 };
 export type ScopeEvents<T extends Record<string, any>, Prefix extends string> = PickScopeEvents<T, Prefix>
-
 
 export type FastEventListenOptions = {
     // 侦听执行次数，当为1时为单次侦听，为0时为永久侦听，其他值为执行次数,每执行一次减一，减到0时移除侦听器

@@ -6,7 +6,6 @@ import {
     FastListeners,
     FastListenerNode,
     FastEventSubscriber,
-    ScopeEvents,
     FastEventListenOptions,
     FastEventMessage,
     FastEventAnyListener,
@@ -23,6 +22,7 @@ import { removeItem } from './utils/removeItem';
 import { renameFn } from './utils/renameFn';
 import * as executors from "./executors"
 import { isFunction } from './utils/isFunction';
+import { ScopeEvents } from './types';
 
 /**
  * FastEvent 事件发射器类
@@ -772,8 +772,13 @@ export class FastEvent<
      * userEvents.offAll();  // 清理 'user' 前缀下的所有事件
      * ```
      */
-    scope<M extends Record<string, any> = Meta, C = Context, T extends string = string>(prefix: T, options?: FastEventScopeOptions<M, C>) {
-        return new FastEventScope<ScopeEvents<Events, T>, M, C>(
-            this as any, prefix, options)
+    scope<
+        E extends FastEvents = FastEvents,
+        P extends string = string,
+        M extends Record<string, any> = Record<string, any>,
+        C = Context
+    >(prefix: P, options?: FastEventScopeOptions<M, C>) {
+        return new FastEventScope<ScopeEvents<Events, P> & E, Meta & M, C>(
+            this as any, prefix, options as FastEventScopeOptions<Meta & M, C>)
     }
-}
+} 

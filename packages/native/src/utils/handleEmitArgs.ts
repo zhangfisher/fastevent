@@ -25,9 +25,6 @@ export function handleEmitArgs<
         meta
     } as FastEventMessage<Events, Meta>
 
-    if (meta !== undefined) {
-        emitArgs.meta = meta
-    }
     if (emitArgs.executor === undefined) {
         emitArgs.executor = scopeExecutor
     }

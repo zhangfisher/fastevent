@@ -1,7 +1,8 @@
+/* eslint-disable no-unused-vars */
 import { describe, test, expect } from "vitest"
 import type { Equal, Expect, NotAny } from '@type-challenges/utils'
 import { FastEvent } from "../../event"
-import { FastEventMessage, ScopeEvents } from "../../types"
+import { FastEventMessage, PickScopeEvents, ScopeEvents } from "../../types"
 import { FastEventScopeMeta } from "../../scope"
 import { FastEventBus } from "../../eventbus"
 import { E } from "vitest/dist/chunks/environment.d.Dmw5ulng.js"
@@ -54,7 +55,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, 'a'>>,
                     Expect<Equal<typeof message.payload, boolean>>,
-                    Expect<Equal<typeof message.meta, CustomMeta>>
+                    Expect<Equal<typeof message.meta, CustomMeta & Record<string, any>>>
                 ]
             })
 
@@ -62,7 +63,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, "b">>,
                     Expect<Equal<typeof message.payload, number>>,
-                    Expect<Equal<typeof message.meta, CustomMeta>>
+                    Expect<Equal<typeof message.meta, CustomMeta & Record<string, any>>>
                 ]
             })
 
@@ -70,7 +71,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, "c">>,
                     Expect<Equal<typeof message.payload, string>>,
-                    Expect<Equal<typeof message.meta, CustomMeta>>
+                    Expect<Equal<typeof message.meta, CustomMeta & Record<string, any>>>
                 ]
             })
 
@@ -78,7 +79,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, keyof CustomEvents>>,
                     Expect<Equal<typeof message.payload, CustomEvents[keyof CustomEvents]>>,
-                    Expect<Equal<typeof message.meta, CustomMeta>>
+                    Expect<Equal<typeof message.meta, CustomMeta & Record<string, any>>>
                 ]
             })
         })
@@ -88,7 +89,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, 'a'>>,
                     Expect<Equal<typeof message.payload, boolean>>,
-                    Expect<Equal<typeof message.meta, CustomMeta>>
+                    Expect<Equal<typeof message.meta, CustomMeta & Record<string, any>>>
                 ]
             })
 
@@ -96,7 +97,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, "b">>,
                     Expect<Equal<typeof message.payload, number>>,
-                    Expect<Equal<typeof message.meta, CustomMeta>>
+                    Expect<Equal<typeof message.meta, CustomMeta & Record<string, any>>>
                 ]
             })
 
@@ -104,7 +105,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, keyof CustomEvents>>,
                     Expect<Equal<typeof message.payload, CustomEvents[keyof CustomEvents]>>,
-                    Expect<Equal<typeof message.meta, CustomMeta>>
+                    Expect<Equal<typeof message.meta, CustomMeta & Record<string, any>>>
                 ]
             })
         })
@@ -144,7 +145,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, 'a'>>,
                     Expect<Equal<typeof message.payload, boolean>>,
-                    Expect<Equal<typeof message.meta, CustomMeta>>
+                    Expect<Equal<typeof message.meta, CustomMeta & Record<string, any>>>
                 ]
             })
 
@@ -152,7 +153,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, 'b'>>,
                     Expect<Equal<typeof message.payload, number>>,
-                    Expect<Equal<typeof message.meta, CustomMeta>>
+                    Expect<Equal<typeof message.meta, CustomMeta & Record<string, any>>>
                 ]
             })
 
@@ -160,7 +161,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, keyof CustomEvents>>,
                     Expect<Equal<typeof message.payload, CustomEvents[keyof CustomEvents]>>,
-                    Expect<Equal<typeof message.meta, CustomMeta>>
+                    Expect<Equal<typeof message.meta, CustomMeta & Record<string, any>>>
                 ]
             })
 
@@ -168,7 +169,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, string>>,
                     Expect<Equal<typeof message.payload, boolean>>,
-                    Expect<Equal<typeof message.meta, CustomMeta>>
+                    Expect<Equal<typeof message.meta, CustomMeta & Record<string, any>>>
                 ]
             })
         })
@@ -264,8 +265,9 @@ describe("类型系统测试", () => {
         const scope = emitter.scope("x/y/z")
 
         test("作用域应正确继承和扩展元数据类型", () => {
+            typeof scope.options.meta
             type metaCases = [
-                Expect<Equal<typeof scope.options.meta, CustomMeta & FastEventScopeMeta>>,
+                Expect<Equal<typeof scope.options.meta, CustomMeta & FastEventScopeMeta & Record<string, any>>>,
             ]
         })
 
@@ -274,14 +276,15 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, 'a'>>,
                     Expect<Equal<typeof message.payload, 1>>,
-                    Expect<Equal<typeof message.meta, CustomMeta & FastEventScopeMeta>>
+                    Expect<Equal<typeof message.meta, CustomMeta & FastEventScopeMeta & Record<string, any>>>
                 ]
             })
 
             scope.on("b", (message) => {
                 type cases = [
                     Expect<Equal<typeof message.type, "b">>,
-                    Expect<Equal<typeof message.payload, 2>>
+                    Expect<Equal<typeof message.payload, 2>>,
+                    Expect<Equal<typeof message.meta, CustomMeta & FastEventScopeMeta & Record<string, any>>>
                 ]
             })
         })
@@ -293,7 +296,12 @@ describe("类型系统测试", () => {
                     Expect<Equal<typeof message.payload, 1>>
                 ]
             })
-
+            scope.once("b", (message) => {
+                type cases = [
+                    Expect<Equal<typeof message.type, 'b'>>,
+                    Expect<Equal<typeof message.payload, 2>>
+                ]
+            })
             scope.once("c", (message) => {
                 type cases = [
                     Expect<Equal<typeof message.type, 'c'>>,
@@ -307,7 +315,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, 'a'>>,
                     Expect<Equal<typeof message.payload, 1>>,
-                    Expect<Equal<typeof message.meta, CustomMeta & FastEventScopeMeta>>
+                    Expect<Equal<typeof message.meta, CustomMeta & FastEventScopeMeta & Record<string, any>>>
                 ]
             })
 
@@ -315,15 +323,15 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, 'b'>>,
                     Expect<Equal<typeof message.payload, 2>>,
-                    Expect<Equal<typeof message.meta, CustomMeta & FastEventScopeMeta>>
+                    Expect<Equal<typeof message.meta, CustomMeta & FastEventScopeMeta & Record<string, any>>>
                 ]
             })
 
             scope.waitFor("xxxx").then((message) => {
                 type cases = [
-                    Expect<Equal<typeof message.type, string>>,
+                    Expect<Equal<typeof message.type, 'xxxx'>>,
                     Expect<Equal<typeof message.payload, any>>,
-                    Expect<Equal<typeof message.meta, CustomMeta & FastEventScopeMeta>>
+                    Expect<Equal<typeof message.meta, CustomMeta & FastEventScopeMeta & Record<string, any>>>
                 ]
             })
 
@@ -331,306 +339,139 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, string>>,
                     Expect<Equal<typeof message.payload, boolean>>,
-                    Expect<Equal<typeof message.meta, CustomMeta & FastEventScopeMeta>>
+                    Expect<Equal<typeof message.meta, CustomMeta & FastEventScopeMeta & Record<string, any>>>
                 ]
             })
         })
     })
 
-    describe("作用域上下文类型系统", () => {
-        test("未指定上下文时应使用默认上下文类型", () => {
-            const withoutCtxEmitter = new FastEvent()
-            type Ctx1 = Expect<Equal<typeof withoutCtxEmitter.options.context, never>>
+})
 
-            withoutCtxEmitter.on("xxx", function (this, message) {
-                type cases = [
-                    Expect<Equal<typeof this, FastEvent>>
-                ]
-            })
 
-            withoutCtxEmitter.once("xxx", function (this, message) {
-                type cases = [
-                    Expect<Equal<typeof this, FastEvent>>
-                ]
-            })
+
+describe("作用域事件类型检查", () => {
+
+    interface CustomEvents {
+        x: number
+        y: string
+        z: boolean
+        'a/b/x': 1
+        'a/b/y': 2
+        'a/b/z': 3
+    }
+    test("Scope根据前缀从全局事件类型推断Scope事件", () => {
+        // 如果没有指定元数据时，默认使用全局元数据
+        const emitter = new FastEvent<CustomEvents>()
+        const scope = emitter.scope("a/b")
+        scope.types
+        scope.on("x", (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, 'x'>>,
+                Expect<Equal<typeof message.payload, 1>>
+            ]
+        })
+        scope.once("y", (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, 'y'>>,
+                Expect<Equal<typeof message.payload, 2>>
+            ]
+        })
+        scope.onAny((message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, string>>,
+                Expect<Equal<typeof message.payload, any>>
+            ]
+        })
+    })
+    test("Scope自定义事件类型与全局事件类型合并", () => {
+        type ScopeCustomEvents = {
+            m: number,
+            n: boolean
+        }
+        const emitter = new FastEvent<CustomEvents>()
+        // ❌ 无法从全局事件中推导出scope事件类型
+        // const scope = emitter.scope<ScopeCustomEvents>("a/b")
+        //✅ 当为scope指定事件前缀类型时，才从全局事件中推导出scope事件类型
+        const scope = emitter.scope<ScopeCustomEvents, 'a/b'>("a/b")
+        scope.types
+        // 从全局事件中推导出来的
+        scope.on("x", (message) => {
+            type cases = [
+                // 从全局继承的事件无法推导事件类型
+                Expect<Equal<typeof message.type, 'x'>>,
+                Expect<Equal<typeof message.payload, 1>>
+            ]
+        })
+        scope.once("y", (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, 'y'>>,
+                Expect<Equal<typeof message.payload, 2>>
+            ]
+        })
+        // 仅限scope事件
+        scope.on('m', (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, 'm'>>,
+                Expect<Equal<typeof message.payload, number>>
+            ]
+        })
+        scope.once('n', (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, 'n'>>,
+                Expect<Equal<typeof message.payload, boolean>>
+            ]
+        })
+        scope.onAny((message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, string>>,
+                Expect<Equal<typeof message.payload, any>>
+            ]
+        })
+    })
+
+
+
+    test("嵌套Scope合并元数据", () => {
+
+        type RootEvents = {
+            'root/x': 100,
+            'root/children/x': 200,
+            'root/children/grandsond/x': 300
+        }
+
+        // 如果没有指定元数据时，默认使用全局元数据
+        const emitter = new FastEvent<RootEvents>()
+        type RootScopeEvents = { root: string }
+        type ChildScopeEvents = { children: string }
+        type GrandsondDScopeEvents = { grandson: number }
+
+        const rootScope = emitter.scope<RootScopeEvents, 'root'>("root")
+        const childrenScope = rootScope.scope<ChildScopeEvents, 'children'>("children")
+        const GrandsondScope = rootScope.scope<ChildScopeEvents, 'grandsond'>("grandsond")
+
+        type cases = [
+            Expect<Equal<typeof rootScope.types, PickScopeEvents<RootEvents, "root"> & RootScopeEvents>>,
+            Expect<Equal<typeof childrenScope.types, CustomMeta & OrderType & UserType & FastEventScopeMeta>>,
+            Expect<Equal<typeof GrandsondScope.types, CustomMeta & OrderType & UserType & FastEventScopeMeta>>
+        ]
+
+
+        childrenScope.on("x", (message) => {
+            type cases = [
+                Expect<Equal<typeof message.meta, FinalMeta>>
+            ]
+        })
+        childrenScope.once("x", (message) => {
+            type cases = [
+                Expect<Equal<typeof message.meta, FinalMeta>>
+            ]
         })
 
-        test("指定上下文时的类型推导", () => {
-            const emitter = new FastEvent({
-                context: {
-                    root: true
-                }
-            })
-            type Ctx = Expect<Equal<typeof emitter.options.context, { root: boolean }>>
-
-            emitter.on("xxx", function (this, message) {
-                type cases = [
-                    Expect<Equal<typeof this, { root: boolean }>>
-                ]
-            })
-
-            emitter.once("xxx", function (this, message) {
-                type cases = [
-                    Expect<Equal<typeof this, { root: boolean }>>
-                ]
-            })
-        })
-
-        test("作用域继承上下文时的类型推导", () => {
-            const emitter = new FastEvent({
-                context: {
-                    root: true
-                }
-            })
-            const withoutCtxScope = emitter.scope("x/y/z")
-            type withoutScopeCtx = Expect<Equal<typeof withoutCtxScope.options.context, { root: boolean }>>
-
-            withoutCtxScope.on("xxx", function (this, message) {
-                type cases = [
-                    Expect<Equal<typeof this, { root: boolean }>>
-                ]
-            })
-
-            withoutCtxScope.once("xxx", function (this, message) {
-                type cases = [
-                    Expect<Equal<typeof this, { root: boolean }>>
-                ]
-            })
-        })
-
-        test("作用域自定义上下文时的类型推导", () => {
-            const emitter = new FastEvent({
-                context: {
-                    root: true
-                }
-            })
-            const scope = emitter.scope("x/y/z", {
-                context: 1
-            })
-            type scopeCtx = Expect<Equal<typeof scope.options.context, number>>
-
-            scope.on("a", function (this, message) {
-                type cases = [
-                    Expect<Equal<typeof this, number>>,
-                    Expect<Equal<typeof message.type, string>>,
-                    Expect<Equal<typeof message.payload, any>>,
-                    Expect<Equal<typeof message.meta, Record<string, any> & FastEventScopeMeta>>
-                ]
-            })
-
-            scope.once("a", function (this, message) {
-                type cases = [
-                    Expect<Equal<typeof this, number>>,
-                    Expect<Equal<typeof message.type, string>>,
-                    Expect<Equal<typeof message.payload, any>>,
-                    Expect<Equal<typeof message.meta, Record<string, any> & FastEventScopeMeta>>
-                ]
-            })
+        childrenScope.onAny((message) => {
+            type cases = [
+                Expect<Equal<typeof message.meta, FinalMeta>>
+            ]
         })
     })
 })
-function demo() {
 
-    interface MyEvents {
-        'user/login': { id: number; name: string };
-        'user/logout': { id: number };
-        'system/error': { code: string; message: string };
-        'order': number
-    }
-
-    const events = new FastEvent<MyEvents>();
-
-    events.on("user/login")
-
-    events.onAny<number>((message) => {
-        if (message.type === "1111") {
-
-        }
-        message.type = "user/login"
-        message.payload
-    })
-
-    // ✅ 正确：数据类型匹配
-    events.emit('user/login', { id: 1, name: 'Alice' });
-    // ✅ 正确：消息对象
-    events.emit({
-        type: 'user/login',
-        payload: { id: 1, name: 'Alice' }
-    });
-    // ✅ 正确：支持触发未定义的事件类型
-    events.emit({
-        type: 'xxxxx',
-        payload: { id: 1, name: 'Alice' }
-    });
-    // ✅ 正确：支持触发 未定义的事件类型
-    events.emit('xxxx', 1);
-    events.emit('user/ssddd', 1);
-    events.emit('order', 1);
-
-    // ❌ 错误：已声明事件类型payload不匹配
-    events.emit('user/login', { id: "1", name: 'Alice' }); // TypeScript 错误
-    events.emit('user/login', 1); // TypeScript 错误
-    events.emit('order', '1');
-    // ❌ 错误：id类型不匹配
-    events.emit({
-        type: 'user/login',
-        payload: { id: "1", name: 'Alice' }
-    });
-
-
-    const scope = events.scope('user')
-
-    // ✅ 正确：数据类型匹配
-    scope.emit('user/login', { id: 1, name: 'Alice' });
-    // ✅ 正确：支持触发 未定义的事件类型
-    scope.emit('xxxx', 1);
-    // ✅ 正确：消息对象
-    scope.emit({
-        type: 'login',
-        payload: { id: 1, name: 'Alice' }
-    });
-    // ✅ 正确：支持触发未定义的事件类型
-    scope.emit({
-        type: 'xxxxx',
-        payload: { id: 1, name: 'Alice' }
-    });
-
-
-
-    // ❌ 错误：已声明事件类型payload不匹配
-    scope.emit('login', { id: "1", name: 'Alice' }); // TypeScript 错误
-    // ❌ 错误：id类型不匹配
-    scope.emit({
-        type: 'login',
-        payload: { id: "1", name: 'Alice' }
-    });
-
-    const emitter = new FastEvent();
-    emitter.on('event', (message, args) => {
-        //                              ^^^
-    });
-    // ------------------- FastEventBus -------------------
-    const bus = new FastEventBus<{
-        join: string
-    }>()
-
-    // ✅✅✅ 正确 ✅✅✅
-    bus.emit('node:connect', "dd")
-    bus.emit('node:disconnect', "dd")
-    bus.emit({
-        type: 'node:connect',
-        payload: 'done'
-    })
-    bus.emit({
-        type: 'node:disconnect',
-        payload: 'done'
-    })
-    bus.emit('join', 'done')
-    bus.emit({
-        type: 'join',
-        payload: 'done'
-    })
-    bus.emit('11111')
-    bus.emit("x", 1)
-
-    // ❌❌❌ 错误 ❌❌❌
-    bus.emit('node:connect', 1)
-    bus.emit('node:disconnect', 1)
-    bus.emit('join', 1)
-    bus.emit({
-        type: 'node:connect',
-        payload: 1
-    })
-    bus.emit({
-        type: 'node:disconnect',
-        payload: 1
-    })
-    bus.emit({
-        type: 'join',
-        payload: 1
-    })
-}
-
-
-function bar() {
-    type Dict = Record<string, unknown>
-    class Base<Events extends Dict = Dict, Types extends keyof Events = keyof Events> {
-        events?: Events
-        print<T extends Types>(key: T, value: Events[T]): void {
-
-        }
-    }
-    type ChildType = { count: number }
-    class Child<Events extends Dict> extends Base<ChildType & Events> {
-
-        test() {
-            type PrintType = typeof this.print
-            type EventType = typeof this.events
-            this.print('count', 1)
-            this.print('name', "autostore")
-            this.print('count', "")
-        }
-    }
-    const child = new Child<{ name: string }>()
-    child.print('count', 1)
-    child.print('count', "1")
-    child.print('name', "1")
-    child.print('name', 1)
-
-    class Child2 extends Base<{ count: number }> {
-
-        test() {
-            type Print = typeof this.print
-            this.print('count', 1)
-            this.print('count', "1")
-            this.print('name', "111")
-            this.print('name', 1)
-            this.print("ddd", 1)
-
-        }
-    }
-    class Child3 extends Base {
-
-        test() {
-            this.print('count', 1)
-            this.print('count', 1)
-            this.print('name', "111")
-            this.print('name', 1)
-            this.print("ddd", 1)
-
-        }
-    }
-}
-
-function demo2() {
-    const emitter = new FastEvent({
-        meta: {
-            source: 'web',
-            timeout: 1000,
-        },
-    });
-    // 监听者接收到的元数据
-    emitter.on('x', (message, args) => {
-        message.meta;
-        args.meta;
-    });
-}
-
-function demo3() {
-    const emitter = new FastEvent({
-        meta: {
-            source: 'web',
-            timeout: 1000,
-        },
-    });
-    // 监听者接收到的元数据
-    emitter.on('x', (message, args) => {
-        message.meta;
-        args.meta;
-    });
-    emitter.emit('x', 1, {
-        meta: {
-            url: 'https://github.com/zhangfisher/repos'
-        }
-    })
-}

@@ -1,7 +1,6 @@
 import type { FastEvent } from "./event";
 import { FastListenerExecutorArgs, FastEventAnyListener, FastEventEmitMessage, FastEventListener, FastEventListenerArgs, FastEventListenOptions, FastEventMessage, FastEvents, FastEventSubscriber, ScopeEvents } from "./types";
 import { handleEmitArgs } from "./utils/handleEmitArgs";
-import { isFunction } from "./utils/isFunction";
 import { renameFn } from "./utils/renameFn";
 
 export type FastEventScopeOptions<Meta, Context> = {
@@ -30,6 +29,8 @@ export class FastEventScope<
     FinalMeta extends Record<string, any> = Meta & FastEventScopeMeta,
 > {
     options: Required<FastEventScopeOptions<FinalMeta, Context>>
+    // @ts-ignore
+    types: Events
     constructor(public emitter: FastEvent<Events>, public prefix: string, options?: FastEventScopeOptions<Meta, Context>) {
         this.options = Object.assign({}, {
             scope: prefix
@@ -178,15 +179,20 @@ export class FastEventScope<
      * profileScope.emit('update', { name: 'John' });
      * ```
      */
-    public scope<M extends Record<string, any> = Record<string, any>, T extends string = string>(prefix: T, options?: FastEventScopeOptions<M, Context>) {
+    public scope<
+        E extends FastEvents = FastEvents,
+        P extends string = string,
+        M extends Record<string, any> = Record<string, any>,
+        C = Context
+    >(prefix: P, options?: FastEventScopeOptions<Partial<FinalMeta> & M, C>) {
         const meta = Object.assign({}, this.options.meta, options?.meta)
         // 如果options中提供了新的context，使用新的context；否则继承父scope的context
         const context = options?.context !== undefined ? options.context : this.context
         const opts = Object.assign({}, this.options, options, {
             meta: Object.keys(meta).length === 0 ? undefined : meta,
             context
-        }) as FastEventScopeOptions<FinalMeta & M, Context>
-        return new FastEventScope<ScopeEvents<Events, T>, FinalMeta & M, Context>(
+        }) as FastEventScopeOptions<FinalMeta & M, C>
+        return new FastEventScope<ScopeEvents<Events, P> & E, FinalMeta & M, C>(
             this.emitter as any,
             this.prefix + prefix,
             opts

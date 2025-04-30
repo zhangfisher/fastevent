@@ -1,7 +1,7 @@
-import { describe, test, expect } from "vitest"
-import type { Equal, Expect, NotAny } from '@type-challenges/utils'
+/* eslint-disable no-unused-vars */
+import { describe, test } from "vitest"
+import type { Equal, Expect } from '@type-challenges/utils'
 import { FastEvent } from "../../event"
-import { FastEventMessage, ScopeEvents } from "../../types"
 import { FastEventScopeMeta } from "../../scope"
 
 describe("FastEvent元数据类型检查", () => {
@@ -23,18 +23,18 @@ describe("FastEvent元数据类型检查", () => {
         ]
         emitter.on("x", (message) => {
             type cases = [
-                Expect<Equal<typeof message.meta, CustomMeta>>
+                Expect<Equal<typeof message.meta, CustomMeta & Record<string, any>>>
             ]
         })
         emitter.once("x", (message) => {
             type cases = [
-                Expect<Equal<typeof message.meta, CustomMeta>>
+                Expect<Equal<typeof message.meta, CustomMeta & Record<string, any>>>
             ]
         })
 
         emitter.onAny((message) => {
             type cases = [
-                Expect<Equal<typeof message.meta, CustomMeta>>
+                Expect<Equal<typeof message.meta, CustomMeta & Record<string, any>>>
             ]
         })
     })
@@ -56,135 +56,21 @@ describe("FastEvent元数据类型检查", () => {
         ]
         emitter.on("x", (message) => {
             type cases = [
-                Expect<Equal<typeof message.meta, OrderType>>
+                Expect<Equal<typeof message.meta, OrderType & Record<string, any>>>
             ]
         })
         emitter.once("x", (message) => {
             type cases = [
-                Expect<Equal<typeof message.meta, OrderType>>
+                Expect<Equal<typeof message.meta, OrderType & Record<string, any>>>
             ]
         })
 
         emitter.onAny((message) => {
             type cases = [
-                Expect<Equal<typeof message.meta, OrderType>>
+                Expect<Equal<typeof message.meta, OrderType & Record<string, any>>>
             ]
         })
     })
-    test("Scope没有指定元数据时,默认使用全局元数据和Scope元数据", () => {
-        // 如果没有指定元数据时，默认使用全局元数据
-        const emitter = new FastEvent<CustomEvents, CustomMeta>()
-        const scope = emitter.scope("scope")
-        type cases = [
-            Expect<Equal<typeof scope.options.meta, CustomMeta & FastEventScopeMeta>>
-        ]
-        scope.on("x", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.meta, CustomMeta & FastEventScopeMeta>>
-            ]
-        })
-        scope.once("x", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.meta, CustomMeta & FastEventScopeMeta>>
-            ]
-        })
-
-        scope.onAny((message) => {
-            type cases = [
-                Expect<Equal<typeof message.meta, CustomMeta & FastEventScopeMeta>>
-            ]
-        })
-    })
-    test("Scope指定了额外的元数据", () => {
-        // 如果没有指定元数据时，默认使用全局元数据
-        const emitter = new FastEvent<CustomEvents, CustomMeta>()
-        const scope = emitter.scope("scope", {
-            meta: {
-                name: "FastEvent",
-                price: 100,
-                count: 3
-            }
-        })
-        type OrderType = {
-            name: string
-            price: number
-            count: number
-        }
-        type cases = [
-            Expect<Equal<typeof scope.options.meta, OrderType & FastEventScopeMeta>>
-        ]
-        scope.on("x", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.meta, OrderType & FastEventScopeMeta>>
-            ]
-        })
-        scope.once("x", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.meta, OrderType & FastEventScopeMeta>>
-            ]
-        })
-
-        scope.onAny((message) => {
-            type cases = [
-                Expect<Equal<typeof message.meta, OrderType & FastEventScopeMeta>>
-            ]
-        })
-    })
-
-    test("嵌套Scope合并元数据", () => {
-        // 如果没有指定元数据时，默认使用全局元数据
-        const emitter = new FastEvent<CustomEvents, CustomMeta>()
-        const rootScope = emitter.scope("root", {
-            meta: {
-                name: "FastEvent",
-                price: 100,
-                count: 3
-            }
-        })
-        type OrderType = {
-            name: string
-            price: number
-            count: number
-        }
-        const childrenScope = rootScope.scope("children", {
-            meta: {
-                name: "John",
-                vip: true,
-                age: 18
-            }
-        })
-
-        type UserType = {
-            name: string
-            vip: boolean,
-            age: number
-        }
-        type FinalMeta = OrderType & UserType & FastEventScopeMeta
-
-        type cases = [
-            Expect<Equal<typeof rootScope.options.meta, OrderType & FastEventScopeMeta>>,
-            Expect<Equal<typeof childrenScope.options.meta, OrderType & UserType & FastEventScopeMeta>>
-        ]
-
-
-        childrenScope.on("x", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.meta, FinalMeta>>
-            ]
-        })
-        childrenScope.once("x", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.meta, FinalMeta>>
-            ]
-        })
-
-        childrenScope.onAny((message) => {
-            type cases = [
-                Expect<Equal<typeof message.meta, FinalMeta>>
-            ]
-        })
-    })
-
     test("事件元数据推断", () => {
         const emitter = new FastEvent();
         emitter.emit('order/create', { orderId: '123', total: 99.99 }, {
@@ -203,4 +89,3 @@ describe("FastEvent元数据类型检查", () => {
     })
 
 })
-
