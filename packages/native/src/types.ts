@@ -110,8 +110,6 @@ export type FastEventOptions<Meta = Record<string, any>, Context = any> = {
     context?: Context
     // 当执行侦听器函数出错时是否忽略,默认true
     ignoreErrors?: boolean
-    // 当侦听器函数执行出错时的回调，用于诊断时使用,可以打印错误信息
-    onListenerError?: ((type: string, error: Error) => void)
     // 额外的全局元数据，当触发事件时传递给侦听器
     meta?: Meta
     // 当创建新侦听器时回调
@@ -120,6 +118,8 @@ export type FastEventOptions<Meta = Record<string, any>, Context = any> = {
     onRemoveListener?: (type: string[], listener: FastEventListener) => void
     // 当清空侦听器时回调
     onClearListeners?: () => void
+    // 当侦听器函数执行出错时的回调，用于诊断时使用,可以打印错误信息
+    onListenerError?: ((type: string, error: Error) => void)
     // 当执行侦听器前时回调,返回false代表取消执行
     onBeforeExecuteListener?: (message: FastEventMessage<any, Meta>, args: FastEventListenerArgs<Meta>) => boolean | void
     // 当执行侦听器后时回调
@@ -147,6 +147,8 @@ export type FastEventListenOptions = {
     // 将侦听器添加到侦听器列表的头部
     prepend?: boolean
     filter?: (message: FastEventMessage, args: FastEventListenerArgs<any>) => boolean
+    // 当执行侦听器前，如果此函数返回true则自动注销监听
+    until?: (message: FastEventMessage, args: FastEventListenerArgs<any>) => boolean
 }
 
 export type FastListenerExecutorArgs = 'default' | 'allSettled' | 'race' | 'balance' | 'first' | 'last' | 'random' | IFastListenerExecutor;

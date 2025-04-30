@@ -441,35 +441,71 @@ describe("作用域事件类型检查", () => {
 
         // 如果没有指定元数据时，默认使用全局元数据
         const emitter = new FastEvent<RootEvents>()
-        type RootScopeEvents = { root: string }
-        type ChildScopeEvents = { children: string }
-        type GrandsondDScopeEvents = { grandson: number }
+        type RootScopeEvents = { root: 1 }
+        type ChildScopeEvents = { children: 2 }
+        type GrandsondDScopeEvents = { grandson: 3 }
 
         const rootScope = emitter.scope<RootScopeEvents, 'root'>("root")
         const childrenScope = rootScope.scope<ChildScopeEvents, 'children'>("children")
-        const GrandsondScope = rootScope.scope<ChildScopeEvents, 'grandsond'>("grandsond")
+        const GrandsondScope = childrenScope.scope<GrandsondDScopeEvents, 'grandsond'>("grandsond")
 
         type cases = [
-            Expect<Equal<typeof rootScope.types, PickScopeEvents<RootEvents, "root"> & RootScopeEvents>>,
-            Expect<Equal<typeof childrenScope.types, CustomMeta & OrderType & UserType & FastEventScopeMeta>>,
-            Expect<Equal<typeof GrandsondScope.types, CustomMeta & OrderType & UserType & FastEventScopeMeta>>
+            Expect<Equal<typeof rootScope.types,
+                PickScopeEvents<RootEvents, "root"> & RootScopeEvents>>,
+            Expect<Equal<typeof childrenScope.types,
+                PickScopeEvents<PickScopeEvents<RootEvents, "root"> & RootScopeEvents, "children"> & ChildScopeEvents>>,
+            Expect<Equal<typeof GrandsondScope.types,
+                PickScopeEvents<PickScopeEvents<PickScopeEvents<RootEvents, "root"> & RootScopeEvents, "children"> & ChildScopeEvents, "grandsond"> & GrandsondDScopeEvents>>
         ]
 
-
+        //  childrenScope
         childrenScope.on("x", (message) => {
             type cases = [
-                Expect<Equal<typeof message.meta, FinalMeta>>
+                Expect<Equal<typeof message.type, 'x'>>,
+                Expect<Equal<typeof message.payload, 200>>,
             ]
         })
-        childrenScope.once("x", (message) => {
+        childrenScope.on('children', (message) => {
             type cases = [
-                Expect<Equal<typeof message.meta, FinalMeta>>
+                Expect<Equal<typeof message.type, 'children'>>,
+                Expect<Equal<typeof message.payload, 2>>,
             ]
         })
-
+        childrenScope.on('grandsond/x', (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, 'grandsond/x'>>,
+                Expect<Equal<typeof message.payload, 300>>,
+            ]
+        })
         childrenScope.onAny((message) => {
             type cases = [
-                Expect<Equal<typeof message.meta, FinalMeta>>
+                Expect<Equal<typeof message.type, string>>,
+                Expect<Equal<typeof message.payload, any>>,
+            ]
+        })
+        //  GrandsondScope 
+        GrandsondScope.on('grandson', (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, 'grandson'>>,
+                Expect<Equal<typeof message.payload, 3>>,
+            ]
+        })
+        GrandsondScope.on('x', (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, 'x'>>,
+                Expect<Equal<typeof message.payload, 300>>,
+            ]
+        })
+        GrandsondScope.on('xxxx', (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, string>>,
+                Expect<Equal<typeof message.payload, any>>,
+            ]
+        })
+        GrandsondScope.onAny((message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, string>>,
+                Expect<Equal<typeof message.payload, any>>,
             ]
         })
     })

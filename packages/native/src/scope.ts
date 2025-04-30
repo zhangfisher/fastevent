@@ -6,13 +6,6 @@ import { renameFn } from "./utils/renameFn";
 export type FastEventScopeOptions<Meta, Context> = {
     meta?: Meta
     context?: Context
-    /**
-     * 全局执行器
-     * allSettled: 使用Promise.allSettled()执行所有监听器
-     * race: 使用Promise.race()执行所有监听器，只有第一个执行完成就返回,其他监听器执行结果会被忽略
-     * balance: 尽可能平均执行各个监听器
-     * sequence: 按照监听器添加顺序依次执行
-     */
     executor?: FastListenerExecutorArgs
 }
 

@@ -87,5 +87,23 @@ describe("FastEvent元数据类型检查", () => {
             //
         });
     })
+    test("Scope作用域类型合并", () => {
+        const emitter = new FastEvent({
+            meta: { root: 1 },
+        });
 
+        const scope = emitter.scope('a/b/c', {
+            meta: { c: 1 },
+        });
+
+        scope.on('a/b/c', (message) => {
+            type cases = [
+                Expect<Equal<typeof message.meta, {
+                    root: number;
+                } & {
+                    c: number;
+                } & FastEventScopeMeta & Record<string, any>>>
+            ]
+        });
+    })
 })

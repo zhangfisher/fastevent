@@ -11,12 +11,14 @@ export function handleEmitArgs<
         type = args[0].type as string
         payload = args[0].payload as any
         emitArgs = typeof (args[1]) === 'boolean' ? { retain: args[1] } : args[1] || {}
+        meta = args[0].meta
     } else {
         type = args[0] as string
         payload = args[1] as any
         emitArgs = typeof (args[2]) === 'boolean' ? { retain: args[2] } : args[2] || {}
     }
-    meta = Object.assign({}, emitterMeta, scopeMeta, emitArgs.meta)
+    meta = Object.assign({}, emitterMeta, scopeMeta, emitArgs.meta, meta)
+
     if (Object.keys(meta).length === 0) meta = undefined
 
     const message = {

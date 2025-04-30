@@ -80,7 +80,60 @@ const profileScope = userScope.scope('profile');
 
 作用域可以设置元数据，并且会与父级的元数据合并.
 
+```ts
+import { FastEvent } from 'fastevent';
+
+const emitter = new FastEvent({
+    meta: { root: 1 },
+});
+
+const scope = emitter.scope('a/b/c', {
+    meta: { c: 1 },
+});
+
+scope.on('a/b/c', (message) => {
+    message.meta; // { root: number, c: number, scope:string }
+});
+```
+
+-   `scope.meta`会继承合并父级的`meta`。
+-   `scope.meta`会默认注入一个`scope`属性，表示当前作用域的名称。
+
+更多关于元数据的信息请参考[元数据](./metadata.md)
+
 ### 上下文
+
+`上下文`指的是事件处理函数（`监听器`）中的`this`对象，作用域会**覆盖**的上下文。
+
+```ts
+import { FastEvent } from 'fastevent';
+const context = { x: 1, y: 2 };
+const emitter = new FastEvent({
+    context,
+});
+const scopeContext = { a: 1, b: 2 };
+const scope = emitter.scope('user', {
+    context: scopeContext, // 指定上下文 // [!]code ++
+});
+scope.on('hello', { context }, function (this, message) {
+    this === scopeContext; // true// [!]code ++
+});
+```
+
+关于上下文的信息请参考[上下文](./context.md)
+
+### 执行器
+
+事件作用域也可以配置自己监听器执行器。
+
+```ts
+const emitter = new FastEvent();
+const scope = emitter.scope('user', {
+    executor: 'race',
+});
+```
+
+关于执行器的信息请参考[执行器](./executor.md)
 
 ### 类型安全
 
@@ -102,21 +155,6 @@ userScope.emit('login', { userId: '123' }); // ✅
 // 类型错误
 userScope.emit('login', { userId: 123 }); // ❌
 userScope.emit('unknown', {}); // ❌
-```
-
-### 独立上下文
-
-每个作用域可以有自己的配置和上下文：
-
-```typescript
-const userScope = emitter.scope('user', {
-    context: { service: 'userService' },
-    meta: { domain: 'user' },
-});
-
-userScope.on('login', function () {
-    console.log(this); // { service: 'userService' }
-});
 ```
 
 ## 使用场景
