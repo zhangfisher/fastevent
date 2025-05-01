@@ -23,6 +23,7 @@ import { renameFn } from './utils/renameFn';
 import * as executors from "./executors"
 import { isFunction } from './utils/isFunction';
 import { ScopeEvents } from './types';
+import { FastListenerDecorator } from './decorators';
 
 /**
  * FastEvent 事件发射器类
@@ -156,6 +157,12 @@ export class FastEvent<
             return isRemove
         })
     }
+    private _wrapListener(listener: FastEventListener<any, any, any, any>, decorators: FastListenerDecorator[]): FastEventListener<any, any, any, any> {
+        decorators.forEach(decorator => {
+            listener = renameFn(decorator(listener), listener.name)
+        })
+        return listener
+    }
     /**
      * 注册事件监听器
      * @param type - 事件类型，支持以下格式：
@@ -200,7 +207,10 @@ export class FastEvent<
         if (type.length === 0) throw new Error('event type cannot be empty')
 
         const parts = type.split(this._delimiter);
-        // 退订函数
+
+        if (options.decorators && options.decorators.length > 0) {
+            listener = this._wrapListener(listener, options.decorators)
+        }
 
         if (isFunction(options.filter) || isFunction(options.off)) {
             const oldListener = listener
@@ -535,7 +545,7 @@ export class FastEvent<
                 const meta = listeners[i][0] as FastListenerMeta
                 meta[2]++  // 实际执行的次数
                 // =0不限执行次数，>0时代表执行次数限制
-                if (meta[1] > 0 && meta[1] === meta[2]) {
+                if (meta[1] > 0 && meta[1] <= meta[2]) {
                     listeners[i][2].splice(i, 1)
                 }
             }

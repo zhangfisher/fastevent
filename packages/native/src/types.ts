@@ -1,3 +1,4 @@
+import { type FastListenerDecorator } from "./decorators/types"
 
 
 
@@ -152,6 +153,9 @@ export type FastEventListenOptions<
     filter?: (message: FastEventMessage<Events, Meta>, args: FastEventListenerArgs<Meta>) => boolean
     // 当执行侦听器前，如果此函数返回true则自动注销监听
     off?: (message: FastEventMessage<Events, Meta>, args: FastEventListenerArgs<Meta>) => boolean
+    // 对监听器函数进行包装装饰，返回包装后的函数
+    decorators?: FastListenerDecorator[]
+
 }
 
 export type FastListenerExecutorArgs = 'default' | 'allSettled' | 'race' | 'balance' | 'first' | 'last' | 'random' | IFastListenerExecutor;

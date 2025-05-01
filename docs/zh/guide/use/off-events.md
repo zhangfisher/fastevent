@@ -149,7 +149,7 @@ event.clear('user');
 
 ### 自动取消订阅
 
-`FastEvent`支持在订阅时指定`until`参数，用于在接收到满足条件的消息时自动取消订阅。
+`FastEvent`支持在订阅时指定`off`参数，用于在接收到满足条件的消息时自动取消订阅。
 
 ```ts
 import { FastEvent } from 'fastevent';
@@ -162,9 +162,13 @@ emitter.on(
         console.log(message);
     },
     {
-        until: (message, args) => {
+        off: (message, args) => {
             return message.payload === 'exit'; //   [!code++]
         },
     },
 );
+emitter.emit('click', '1');
+emitter.emit('click', 'exit');
 ```
+
+-   以上示例将在接收到`payload=exit`消息时自动取消订阅。

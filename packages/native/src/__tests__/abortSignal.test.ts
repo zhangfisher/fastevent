@@ -4,7 +4,6 @@
 
 import { describe, test, expect, vi } from "vitest"
 import { FastEvent } from "../event"
-import { FastEventMessage } from "../../dist"
 
 describe("触发事件时传递AbortSignal参数给监听器", () => {
     test("emit方法传递AbortSignal给监听器", () => {

@@ -4,6 +4,77 @@ import { FastEventListener } from '../types';
 
 
 describe("退订事件", () => {
+    describe("使用options.off自动退订", () => {
+        test("基本的自动退订 - 事件触发一次后取消订阅", () => {
+            const emitter = new FastEvent()
+            const events: string[] = []
+            emitter.on("test", ({ type }) => {
+                events.push(type)
+            }, {
+                off: () => true // 返回true表示取消订阅
+            })
+
+            emitter.emit("test")
+            emitter.emit("test")
+            emitter.emit("test")
+
+            expect(events).toEqual([])
+        })
+
+        test("条件性自动退订 - 根据payload决定是否取消订阅", () => {
+            const emitter = new FastEvent()
+            const events: number[] = []
+            emitter.on("test", ({ payload }) => {
+                events.push(payload)
+            }, {
+                off: ({ payload }) => payload >= 3 // 当payload >= 3时取消订阅
+            })
+
+            emitter.emit("test", 1)
+            emitter.emit("test", 2)
+            emitter.emit("test", 3)
+            emitter.emit("test", 4)
+            emitter.emit("test", 5)
+
+            expect(events).toEqual([1, 2]) // 只接收到1,2
+        })
+
+        test("once方法与options.off结合使用", () => {
+            const emitter = new FastEvent()
+            const events: number[] = []
+            emitter.once("test", ({ payload }) => {
+                events.push(payload)
+            }, {
+                off: ({ payload }) => payload > 2
+            })
+
+            emitter.emit("test", 1)
+            emitter.emit("test", 2)
+            emitter.emit("test", 3)
+            emitter.emit("test", 4)
+
+            expect(events).toEqual([1])
+        })
+
+        test("onAny方法与options.off结合使用", () => {
+            const emitter = new FastEvent()
+            const events: string[] = []
+            emitter.onAny(({ type }) => {
+                events.push(type)
+            }, {
+                off: ({ type }) => type === "c" // 当收到事件c时取消订阅
+            })
+
+            emitter.emit("a")
+            emitter.emit("b")
+            emitter.emit("c")
+            emitter.emit("d")
+            emitter.emit("e")
+
+            expect(events).toEqual(["a", "b"]) // 只接收到a,b,c
+        })
+    })
+
     test("基本退订事件", () => {
         const emitter = new FastEvent()
         const events: string[] = []
@@ -211,4 +282,3 @@ describe("退订事件", () => {
         expect(events).toEqual(["a/1", "a/b/2", "a/b/c/3", "a/b/c/d/4", "a/b/c/d/e/5"])
     })
 })
-
