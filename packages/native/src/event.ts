@@ -95,7 +95,7 @@ export class FastEvent<
                 node.__listeners.push(newListener)
             }
             this.listenerCount++
-            if (typeof (this._options.onAddListener) === 'function') {
+            if (isFunction(this._options.onAddListener)) {
                 this._options.onAddListener(parts, listener)
             }
         })
@@ -150,7 +150,7 @@ export class FastEvent<
             const isRemove = item === listener
             if (isRemove) {
                 this.listenerCount--
-                if (typeof (this._options.onRemoveListener) === 'function') {
+                if (isFunction(this._options.onRemoveListener)) {
                     this._options.onRemoveListener(path, listener)
                 }
             }
@@ -307,8 +307,8 @@ export class FastEvent<
     off(type: Types): void
     off() {
         const args = arguments
-        const type = typeof (args[0]) === 'function' ? undefined : args[0]
-        const listener = typeof (args[0]) === 'function' ? args[0] : args[1]
+        const type = isFunction(args[0]) ? undefined : args[0]
+        const listener = isFunction(args[0]) ? args[0] : args[1]
         const parts = type ? type.split(this._delimiter) : []
         const hasWildcard = type ? type.includes('*') : false
         if (type && !hasWildcard) {
@@ -368,7 +368,7 @@ export class FastEvent<
             this.retainedMessages.clear()
             this.listeners = { __listeners: [] } as unknown as FastListeners
         }
-        if (typeof (this._options.onClearListeners) === 'function') this._options.onClearListeners.call(this)
+        if (isFunction(this._options.onClearListeners)) this._options.onClearListeners.call(this)
     }
     /**
      * 移除保留的事件
@@ -489,7 +489,7 @@ export class FastEvent<
             return listener.call(this._context || this, message, args)
         } catch (e: any) {
             e._emitter = `${listener.name || 'anonymous'}:${message.type}`
-            if (typeof (this._options.onListenerError) === 'function') {
+            if (isFunction(this._options.onListenerError)) {
                 this._options.onListenerError.call(this._context || this, message.type, e)
             }
             if (this._options.ignoreErrors) { // 如果忽略错误，则返回错误对象
@@ -502,7 +502,7 @@ export class FastEvent<
     private _getListenerExecutor(args?: FastEventListenerArgs): IFastListenerExecutor | undefined {
         if (!args) return
         const executor = args.executor || this._options.executor
-        if (typeof (executor) === 'function') return executor
+        if (isFunction(executor)) return executor
         if (executor && executor in executors) return (executors as any)[executor]
     }
     /**
@@ -626,7 +626,7 @@ export class FastEvent<
         this._traverseToPath(this.listeners, parts, (node) => {
             nodes.push(node)
         })
-        if (typeof (this._options.onBeforeExecuteListener) === 'function') {
+        if (isFunction(this._options.onBeforeExecuteListener)) {
             if (this._options.onBeforeExecuteListener.call(this, message, args) === false) {
                 throw new Error('emit ' + message.type + ' is aborted')
             }
@@ -634,7 +634,7 @@ export class FastEvent<
         // 执行监听器
         results.push(...this._executeListeners(nodes, message, args))
 
-        if (typeof (this._options.onAfterExecuteListener) === 'function') {
+        if (isFunction(this._options.onAfterExecuteListener)) {
             this._options.onAfterExecuteListener.call(this, message, results, nodes)
         }
         return results

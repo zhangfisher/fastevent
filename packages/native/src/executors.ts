@@ -37,7 +37,7 @@ export const balance: IFastListenerExecutor = (listeners, message, args, execute
         // 为什么所有监听器的执行次数均减1？
         // 因为监听器执行完毕后会自动+1，但是在balance执行器中，只有一个会监听器会执行，因此在此先减一用来抵消后续的+1
         listener[2]--
-        if (count == undefined || count > listener[2]) {
+        if (count === undefined || count > listener[2]) {
             count = listener[2]
             index = i
         }

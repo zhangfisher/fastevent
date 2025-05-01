@@ -1,3 +1,4 @@
+import { QueueOverflowError } from "../consts"
 import { FastEventListener, FastEventListenerArgs, FastEventMessage } from "../types"
 import { FastListenerDecorator } from "./types"
 
@@ -23,7 +24,7 @@ export const queue = (options?: QueueListenerDecoratorOptions): FastListenerDeco
     const { size, overflow, maxExpandSize, expandOverflow } = Object.assign({
         size: 10,
         maxExpandSize: 100,
-        overflow: 'slide',
+        overflow: 'expend',
         expandOverflow: 'slide'
     }, options)
 
@@ -47,9 +48,7 @@ export const queue = (options?: QueueListenerDecoratorOptions): FastListenerDeco
                 buffer.push(message)
                 return true
             case 'throw':
-                throw new Error(buffer.length >= maxExpandSize ?
-                    'Queue reached maximum size' :
-                    'Queue buffer overflow')
+                throw new QueueOverflowError()
             default:
                 return false
         }
@@ -69,7 +68,6 @@ export const queue = (options?: QueueListenerDecoratorOptions): FastListenerDeco
             isHandling = true
             try {
                 await listener(message, args)
-
                 // 处理缓冲区中的消息
                 while (buffer.length > 0) {
                     const nextMessage = buffer.shift()
