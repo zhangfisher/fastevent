@@ -189,14 +189,7 @@ export class FastEvent<
         return (target: object, propKey: string, descriptor: any, receiver?: any) => {
             // 如何被装饰的是一个函数
             if (typeof descriptor.value === 'function') {
-                const methodListener = descriptor.value
-                this.on(type, methodListener, options)
-                return {
-                    ...descriptor,
-                    value: function (message: any) {
-                        return this[methodListener.name](message, arguments)
-                    }
-                }
+                this.on(type, descriptor.value, options)
             } else {
                 this.on(type, (message: FastEventMessage) => {
                     Reflect.set(target, propKey, message.payload)
