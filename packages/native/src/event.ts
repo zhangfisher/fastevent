@@ -14,7 +14,8 @@ import {
     FastEventEmitMessage,
     FastEventListenerArgs,
     FastListenerMeta,
-    IFastListenerExecutor
+    IFastListenerExecutor,
+    FastEventListenDecorator
 } from './types';
 import { handleEmitArgs } from './utils/handleEmitArgs';
 import { isPathMatched } from './utils/isPathMatched';
@@ -185,7 +186,18 @@ export class FastEvent<
      * 
      */
     private _createListenDecorator(type: string, options?: FastEventListenOptions<Events, Meta>) {
-
+        return (target: object, propKey: string, descriptor: any) => {
+            // 如何被装饰的是一个函数
+            if (typeof descriptor.value === 'function') {
+                const methodListener = descriptor.value
+                this.on(type, methodListener, options)
+            } else {
+                this.on(type, (message: FastEventMessage) => {
+                    Reflect.set(target, propKey, message.payload)
+                }, options)
+            }
+            return descriptor
+        }
     }
     /**
      * 注册事件监听器
@@ -212,14 +224,14 @@ export class FastEvent<
      * ```
      */
 
-    public on<T extends Types = Types>(type: T, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
-    public on<T extends string>(type: T, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
-    public on(type: '**', options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
+    public on<T extends Types = Types>(type: T, options?: FastEventListenOptions<Events, Meta>): FastEventListenDecorator<Events, Meta>
+    public on<T extends string>(type: T, options?: FastEventListenOptions<Events, Meta>): FastEventListenDecorator<Events, Meta>
+    public on(type: '**', options?: FastEventListenOptions<Events, Meta>): FastEventListenDecorator<Events, Meta>
 
     public on<T extends Types = Types>(type: T, listener: FastEventListener<Exclude<T, number | symbol>, Events[T], Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
     public on<T extends string>(type: T, listener: FastEventAnyListener<Events, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
     public on(type: '**', listener: FastEventAnyListener<Record<string, any>, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
-    public on(): FastEventSubscriber {
+    public on(): FastEventSubscriber | FastEventListenDecorator<Events, Meta> {
         const type = arguments[0] as string
         let listener = (isFunction(arguments[1]) ? arguments[1] : this.onMessage.bind(this)) as FastEventListener
 

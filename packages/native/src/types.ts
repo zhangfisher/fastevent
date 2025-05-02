@@ -201,4 +201,17 @@ export type Fallback<T, F> =
 export type IFastListenerExecutor = (listeners: FastListenerMeta[], message: FastEventMessage, args: FastEventListenerArgs | undefined,
     // 用来执行监听器的函数，内置一些通用逻辑
     execute: (listener: FastEventListener, message: FastEventMessage, args?: FastEventListenerArgs) => Promise<any> | any
-) => Promise<any[]> | any[] 
+) => Promise<any[]> | any[]
+
+// public on<T extends Types = Types>(type: T, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
+// public on<T extends string>(type: T, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
+// public on(type: '**', options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
+export interface FastEventListenDecorator<
+    Events extends Record<string, any>,
+    Meta,
+    Context = never,
+    Types extends keyof Events = Exclude<keyof Events, number | symbol>
+> {
+    (target: Object, propertyKey: string, descriptor: TypedPropertyDescriptor<FastEventListener<Exclude<keyof Events, number | symbol>, Events[Types], Meta, Context>>): TypedPropertyDescriptor<FastEventListener<Exclude<keyof Events, number | symbol>, Events[Types], Meta, Context>> | void;
+}
+
