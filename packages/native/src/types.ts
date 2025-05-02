@@ -206,12 +206,14 @@ export type IFastListenerExecutor = (listeners: FastListenerMeta[], message: Fas
 // public on<T extends Types = Types>(type: T, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
 // public on<T extends string>(type: T, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
 // public on(type: '**', options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
+
+
+
 export interface FastEventListenDecorator<
-    Events extends Record<string, any>,
-    Meta,
-    Context = never,
-    Types extends keyof Events = Exclude<keyof Events, number | symbol>
+    Listener,
+    Meta
 > {
-    (target: Object, propertyKey: string, descriptor: TypedPropertyDescriptor<FastEventListener<Exclude<keyof Events, number | symbol>, Events[Types], Meta, Context>>): TypedPropertyDescriptor<FastEventListener<Exclude<keyof Events, number | symbol>, Events[Types], Meta, Context>> | void;
+    <T extends Listener>(target: object, propertyKey: string, descriptor: TypedPropertyDescriptor<T>): TypedPropertyDescriptor<T>
+    // <T = FastEventListener<Exclude<keyof Events, number | symbol>, Events[Types], Meta, Context>>(target: Object, propertyKey: string, descriptor: TypedPropertyDescriptor<T>): TypedPropertyDescriptor<T> | void;
 }
 
