@@ -1,11 +1,14 @@
-import { type FastListenerDecorator } from "./decorators/types"
+import { type FastListenerPipe } from "./pipe/types"
 
 
 
 export interface FaseEventMessageExtends {
 
 }
-
+// 用来扩展全局Meta类型
+export interface FastEventMeta {
+    priority?: number
+}
 export type FastEventMessage<
     Events extends Record<string, any> = Record<string, any>,
     M = any
@@ -14,7 +17,7 @@ export type FastEventMessage<
         [K in keyof Events]: {
             type: Exclude<K, number | symbol>
             payload: Events[K]
-            meta: M & Record<string, any>
+            meta: FastEventMeta & M & Record<string, any>
         }
     }[Exclude<keyof Events, number | symbol>]
 ) & FaseEventMessageExtends
@@ -28,7 +31,7 @@ export type FastEventEmitMessage<
         [K in keyof Events]: {
             type: Exclude<K, number | symbol>
             payload?: Events[K]
-            meta?: M
+            meta?: FastEventMeta & M & Record<string, any>
         }
     }[Exclude<keyof Events, number | symbol>]
 ) & FaseEventMessageExtends
@@ -154,7 +157,7 @@ export type FastEventListenOptions<
     // 当执行侦听器前，如果此函数返回true则自动注销监听
     off?: (message: FastEventMessage<Events, Meta>, args: FastEventListenerArgs<Meta>) => boolean
     // 对监听器函数进行包装装饰，返回包装后的函数
-    decorators?: FastListenerDecorator[]
+    pipes?: FastListenerPipe[]
 
 }
 

@@ -23,7 +23,7 @@ import { renameFn } from './utils/renameFn';
 import * as executors from "./executors"
 import { isFunction } from './utils/isFunction';
 import { ScopeEvents } from './types';
-import { FastListenerDecorator } from './decorators';
+import { FastListenerPipe } from './pipe';
 
 /**
  * FastEvent 事件发射器类
@@ -157,11 +157,35 @@ export class FastEvent<
             return isRemove
         })
     }
-    private _wrapListener(listener: FastEventListener<any, any, any, any>, decorators: FastListenerDecorator[]): FastEventListener<any, any, any, any> {
+    private _wrapListener(listener: FastEventListener<any, any, any, any>, decorators: FastListenerPipe[]): FastEventListener<any, any, any, any> {
         decorators.forEach(decorator => {
             listener = renameFn(decorator(listener), listener.name)
         })
         return listener
+    }
+
+    /**
+     * 创建监听装饰器
+     * const emitter = new FastEvent()
+    * 
+    * class MyClass{
+    *    // 监听事件时传入onEvent,this指向的是当前类实例
+    *    @emitter.on("event",options)
+    *    onEvent(message,args){
+    *    }
+    *    // 监听事件时传入onEvent,this指向的是当前类实例
+    *    @emitter.once("event",options)
+    *    onEvent(message,args){
+    *    }
+    *    // 将接收到的消息的message.payload值写入count
+    *    @emitter.on("event",options)
+    *    count:number = 0
+    * }
+    * 
+     * 
+     */
+    private _createListenDecorator(type: string, options?: FastEventListenOptions<Events, Meta>) {
+
     }
     /**
      * 注册事件监听器
@@ -208,8 +232,8 @@ export class FastEvent<
 
         const parts = type.split(this._delimiter);
 
-        if (options.decorators && options.decorators.length > 0) {
-            listener = this._wrapListener(listener, options.decorators)
+        if (options.pipes && options.pipes.length > 0) {
+            listener = this._wrapListener(listener, options.pipes)
         }
 
         if (isFunction(options.filter) || isFunction(options.off)) {

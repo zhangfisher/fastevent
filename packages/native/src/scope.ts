@@ -1,17 +1,16 @@
 import type { FastEvent } from "./event";
-import { FastListenerExecutorArgs, FastEventAnyListener, FastEventEmitMessage, FastEventListener, FastEventListenerArgs, FastEventListenOptions, FastEventMessage, FastEvents, FastEventSubscriber, ScopeEvents } from "./types";
+import { FastListenerExecutorArgs, FastEventAnyListener, FastEventEmitMessage, FastEventListener, FastEventListenerArgs, FastEventListenOptions, FastEventMessage, FastEvents, FastEventSubscriber, ScopeEvents, FastEventMeta } from "./types";
 import { handleEmitArgs } from "./utils/handleEmitArgs";
 import { renameFn } from "./utils/renameFn";
 
 export type FastEventScopeOptions<Meta, Context> = {
-    meta?: Meta
+    meta?: FastEventMeta & Meta
     context?: Context
     executor?: FastListenerExecutorArgs
 }
 
 export type FastEventScopeMeta = {
     scope: string
-    context: any
 }
 
 export class FastEventScope<

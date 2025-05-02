@@ -3,6 +3,7 @@ import { describe, test, expect } from "vitest"
 import type { Equal, Expect, NotAny } from '@type-challenges/utils'
 import { FastEvent } from "../../event"
 import { FastEventScopeMeta } from "../../scope"
+import { FastEventMeta } from "../../types"
 
 describe("类型系统测试", () => {
     test("未指定上下文时应使用默认上下文类型", () => {
@@ -81,7 +82,7 @@ describe("类型系统测试", () => {
                 Expect<Equal<typeof this, number>>,
                 Expect<Equal<typeof message.type, 'a'>>,
                 Expect<Equal<typeof message.payload, any>>,
-                Expect<Equal<typeof message.meta, Record<string, any> & FastEventScopeMeta>>
+                Expect<Equal<typeof message.meta, FastEventMeta & Record<string, any> & FastEventScopeMeta>>
             ]
         })
 
@@ -90,7 +91,7 @@ describe("类型系统测试", () => {
                 Expect<Equal<typeof this, number>>,
                 Expect<Equal<typeof message.type, 'a'>>,
                 Expect<Equal<typeof message.payload, any>>,
-                Expect<Equal<typeof message.meta, Record<string, any> & FastEventScopeMeta>>
+                Expect<Equal<typeof message.meta, FastEventMeta & Record<string, any> & FastEventScopeMeta>>
             ]
         })
     })

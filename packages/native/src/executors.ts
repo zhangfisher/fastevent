@@ -6,6 +6,12 @@ export const allSettled: IFastListenerExecutor = (listeners, message, args, exec
 
 export const race: IFastListenerExecutor = (listeners, message, args, execute) => {
     let winner: FastListenerMeta | undefined
+    let abortController: AbortController | undefined
+    if (!args || (args && !args.abortSignal)) {
+        abortController = new AbortController()
+        if (!args) args = {}
+        args.abortSignal = abortController.signal
+    }
     const result = Promise.race(listeners.map(listener => {
         listener[2]--
         return Promise.resolve(execute(listener[0], message, args)).then((result: any) => {
@@ -13,6 +19,7 @@ export const race: IFastListenerExecutor = (listeners, message, args, execute) =
                 winner = listener
                 listener[2]++
             }
+            abortController?.abort()
             return result
         })
     }))

@@ -19,7 +19,7 @@ export default defineConfig([
             'src/devTools.ts'
         ],
         format: ['esm', 'cjs'],
-        dts: true,
+        dts: false,
         splitting: false,
         sourcemap: true,
         noExternal: ['redux'],

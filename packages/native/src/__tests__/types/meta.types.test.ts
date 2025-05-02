@@ -3,6 +3,7 @@ import { describe, test } from "vitest"
 import type { Equal, Expect } from '@type-challenges/utils'
 import { FastEvent } from "../../event"
 import { FastEventScopeMeta } from "../../scope"
+import { FastEventMeta } from "../../types"
 
 describe("FastEvent元数据类型检查", () => {
 
@@ -23,18 +24,18 @@ describe("FastEvent元数据类型检查", () => {
         ]
         emitter.on("x", (message) => {
             type cases = [
-                Expect<Equal<typeof message.meta, CustomMeta & Record<string, any>>>
+                Expect<Equal<typeof message.meta, FastEventMeta & CustomMeta & Record<string, any>>>
             ]
         })
         emitter.once("x", (message) => {
             type cases = [
-                Expect<Equal<typeof message.meta, CustomMeta & Record<string, any>>>
+                Expect<Equal<typeof message.meta, FastEventMeta & CustomMeta & Record<string, any>>>
             ]
         })
 
         emitter.onAny((message) => {
             type cases = [
-                Expect<Equal<typeof message.meta, CustomMeta & Record<string, any>>>
+                Expect<Equal<typeof message.meta, FastEventMeta & CustomMeta & Record<string, any>>>
             ]
         })
     })
@@ -56,18 +57,18 @@ describe("FastEvent元数据类型检查", () => {
         ]
         emitter.on("x", (message) => {
             type cases = [
-                Expect<Equal<typeof message.meta, OrderType & Record<string, any>>>
+                Expect<Equal<typeof message.meta, FastEventMeta & OrderType & Record<string, any>>>
             ]
         })
         emitter.once("x", (message) => {
             type cases = [
-                Expect<Equal<typeof message.meta, OrderType & Record<string, any>>>
+                Expect<Equal<typeof message.meta, FastEventMeta & OrderType & Record<string, any>>>
             ]
         })
 
         emitter.onAny((message) => {
             type cases = [
-                Expect<Equal<typeof message.meta, OrderType & Record<string, any>>>
+                Expect<Equal<typeof message.meta, FastEventMeta & OrderType & Record<string, any>>>
             ]
         })
     })
@@ -98,7 +99,7 @@ describe("FastEvent元数据类型检查", () => {
 
         scope.on('a/b/c', (message) => {
             type cases = [
-                Expect<Equal<typeof message.meta, {
+                Expect<Equal<typeof message.meta, FastEventMeta & {
                     root: number;
                 } & {
                     c: number;

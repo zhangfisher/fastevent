@@ -100,7 +100,7 @@ export class FlexEventDevTools {
                 ...state,
                 [action.fastEventId]: getDefaultFastEventState(instance)
             }
-        } else if (action.type == '__ADD_LISTENER__') {
+        } else if (action.type === '__ADD_LISTENER__') {
             const eventState = state[action.fastEventId] || getDefaultFastEventState(instance)
             eventState.listenerCount++
             return {
@@ -109,7 +109,7 @@ export class FlexEventDevTools {
                     ...eventState
                 }
             }
-        } else if (action.type == '__REMOVE_LISTENER__') {
+        } else if (action.type === '__REMOVE_LISTENER__') {
             const eventState = state[action.fastEventId]
             if (!eventState) return state
             eventState.listenerCount++

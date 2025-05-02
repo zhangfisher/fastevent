@@ -1,5 +1,5 @@
 export * from "./event"
 export * from "./scope"
 export * from "./types"
-export * from "./decorators"
+export * from "./pipe"
 export * from "./consts"

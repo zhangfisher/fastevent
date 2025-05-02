@@ -2,7 +2,7 @@
 import { describe, test, expect } from "vitest"
 import type { Equal, Expect, NotAny } from '@type-challenges/utils'
 import { FastEvent } from "../../event"
-import { FastEventMessage, PickScopeEvents, ScopeEvents } from "../../types"
+import { FastEventMessage, FastEventMeta, PickScopeEvents, ScopeEvents } from "../../types"
 import { FastEventScopeMeta } from "../../scope"
 import { FastEventBus } from "../../eventbus"
 import { E } from "vitest/dist/chunks/environment.d.Dmw5ulng.js"
@@ -55,7 +55,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, 'a'>>,
                     Expect<Equal<typeof message.payload, boolean>>,
-                    Expect<Equal<typeof message.meta, CustomMeta & Record<string, any>>>
+                    Expect<Equal<typeof message.meta, FastEventMeta & CustomMeta & Record<string, any>>>
                 ]
             })
 
@@ -63,7 +63,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, "b">>,
                     Expect<Equal<typeof message.payload, number>>,
-                    Expect<Equal<typeof message.meta, CustomMeta & Record<string, any>>>
+                    Expect<Equal<typeof message.meta, FastEventMeta & CustomMeta & Record<string, any>>>
                 ]
             })
 
@@ -71,7 +71,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, "c">>,
                     Expect<Equal<typeof message.payload, string>>,
-                    Expect<Equal<typeof message.meta, CustomMeta & Record<string, any>>>
+                    Expect<Equal<typeof message.meta, FastEventMeta & CustomMeta & Record<string, any>>>
                 ]
             })
 
@@ -79,7 +79,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, keyof CustomEvents>>,
                     Expect<Equal<typeof message.payload, CustomEvents[keyof CustomEvents]>>,
-                    Expect<Equal<typeof message.meta, CustomMeta & Record<string, any>>>
+                    Expect<Equal<typeof message.meta, FastEventMeta & CustomMeta & Record<string, any>>>
                 ]
             })
         })
@@ -89,7 +89,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, 'a'>>,
                     Expect<Equal<typeof message.payload, boolean>>,
-                    Expect<Equal<typeof message.meta, CustomMeta & Record<string, any>>>
+                    Expect<Equal<typeof message.meta, FastEventMeta & CustomMeta & Record<string, any>>>
                 ]
             })
 
@@ -97,7 +97,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, "b">>,
                     Expect<Equal<typeof message.payload, number>>,
-                    Expect<Equal<typeof message.meta, CustomMeta & Record<string, any>>>
+                    Expect<Equal<typeof message.meta, FastEventMeta & CustomMeta & Record<string, any>>>
                 ]
             })
 
@@ -105,7 +105,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, keyof CustomEvents>>,
                     Expect<Equal<typeof message.payload, CustomEvents[keyof CustomEvents]>>,
-                    Expect<Equal<typeof message.meta, CustomMeta & Record<string, any>>>
+                    Expect<Equal<typeof message.meta, FastEventMeta & CustomMeta & Record<string, any>>>
                 ]
             })
         })
@@ -145,7 +145,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, 'a'>>,
                     Expect<Equal<typeof message.payload, boolean>>,
-                    Expect<Equal<typeof message.meta, CustomMeta & Record<string, any>>>
+                    Expect<Equal<typeof message.meta, FastEventMeta & CustomMeta & Record<string, any>>>
                 ]
             })
 
@@ -153,7 +153,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, 'b'>>,
                     Expect<Equal<typeof message.payload, number>>,
-                    Expect<Equal<typeof message.meta, CustomMeta & Record<string, any>>>
+                    Expect<Equal<typeof message.meta, FastEventMeta & CustomMeta & Record<string, any>>>
                 ]
             })
 
@@ -161,7 +161,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, keyof CustomEvents>>,
                     Expect<Equal<typeof message.payload, CustomEvents[keyof CustomEvents]>>,
-                    Expect<Equal<typeof message.meta, CustomMeta & Record<string, any>>>
+                    Expect<Equal<typeof message.meta, FastEventMeta & CustomMeta & Record<string, any>>>
                 ]
             })
 
@@ -169,7 +169,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, string>>,
                     Expect<Equal<typeof message.payload, boolean>>,
-                    Expect<Equal<typeof message.meta, CustomMeta & Record<string, any>>>
+                    Expect<Equal<typeof message.meta, FastEventMeta & CustomMeta & Record<string, any>>>
                 ]
             })
         })
@@ -183,7 +183,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, 'a'>>,
                     Expect<Equal<typeof message.payload, any>>,
-                    Expect<Equal<typeof message.meta, Record<string, any>>>
+                    Expect<Equal<typeof message.meta, FastEventMeta & Record<string, any>>>
                 ]
             })
 
@@ -191,7 +191,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, "b">>,
                     Expect<Equal<typeof message.payload, any>>,
-                    Expect<Equal<typeof message.meta, Record<string, any>>>
+                    Expect<Equal<typeof message.meta, FastEventMeta & Record<string, any>>>
                 ]
             })
         })
@@ -201,7 +201,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, 'a'>>,
                     Expect<Equal<typeof message.payload, any>>,
-                    Expect<Equal<typeof message.meta, Record<string, any>>>
+                    Expect<Equal<typeof message.meta, FastEventMeta & Record<string, any>>>
                 ]
             })
 
@@ -209,7 +209,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, "b">>,
                     Expect<Equal<typeof message.payload, any>>,
-                    Expect<Equal<typeof message.meta, Record<string, any>>>
+                    Expect<Equal<typeof message.meta, FastEventMeta & Record<string, any>>>
                 ]
             })
         })
@@ -267,7 +267,7 @@ describe("类型系统测试", () => {
         test("作用域应正确继承和扩展元数据类型", () => {
             typeof scope.options.meta
             type metaCases = [
-                Expect<Equal<typeof scope.options.meta, CustomMeta & FastEventScopeMeta & Record<string, any>>>,
+                Expect<Equal<typeof scope.options.meta, FastEventMeta & FastEventMeta & CustomMeta & Record<string, any> & FastEventScopeMeta>>,
             ]
         })
 
@@ -276,7 +276,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, 'a'>>,
                     Expect<Equal<typeof message.payload, 1>>,
-                    Expect<Equal<typeof message.meta, CustomMeta & FastEventScopeMeta & Record<string, any>>>
+                    Expect<Equal<typeof message.meta, FastEventMeta & FastEventMeta & CustomMeta & Record<string, any> & FastEventScopeMeta>>
                 ]
             })
 
@@ -284,7 +284,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, "b">>,
                     Expect<Equal<typeof message.payload, 2>>,
-                    Expect<Equal<typeof message.meta, CustomMeta & FastEventScopeMeta & Record<string, any>>>
+                    Expect<Equal<typeof message.meta, FastEventMeta & FastEventMeta & CustomMeta & Record<string, any> & FastEventScopeMeta>>
                 ]
             })
         })
@@ -315,7 +315,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, 'a'>>,
                     Expect<Equal<typeof message.payload, 1>>,
-                    Expect<Equal<typeof message.meta, CustomMeta & FastEventScopeMeta & Record<string, any>>>
+                    Expect<Equal<typeof message.meta, FastEventMeta & FastEventMeta & CustomMeta & Record<string, any> & FastEventScopeMeta>>
                 ]
             })
 
@@ -323,7 +323,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, 'b'>>,
                     Expect<Equal<typeof message.payload, 2>>,
-                    Expect<Equal<typeof message.meta, CustomMeta & FastEventScopeMeta & Record<string, any>>>
+                    Expect<Equal<typeof message.meta, FastEventMeta & FastEventMeta & CustomMeta & Record<string, any> & FastEventScopeMeta>>
                 ]
             })
 
@@ -331,7 +331,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, 'xxxx'>>,
                     Expect<Equal<typeof message.payload, any>>,
-                    Expect<Equal<typeof message.meta, CustomMeta & FastEventScopeMeta & Record<string, any>>>
+                    Expect<Equal<typeof message.meta, FastEventMeta & FastEventMeta & CustomMeta & Record<string, any> & FastEventScopeMeta>>
                 ]
             })
 
@@ -339,7 +339,7 @@ describe("类型系统测试", () => {
                 type cases = [
                     Expect<Equal<typeof message.type, string>>,
                     Expect<Equal<typeof message.payload, boolean>>,
-                    Expect<Equal<typeof message.meta, CustomMeta & FastEventScopeMeta & Record<string, any>>>
+                    Expect<Equal<typeof message.meta, FastEventMeta & FastEventMeta & CustomMeta & Record<string, any> & FastEventScopeMeta>>
                 ]
             })
         })

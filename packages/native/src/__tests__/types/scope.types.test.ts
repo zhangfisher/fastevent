@@ -4,7 +4,7 @@ import { describe, test, expect } from "vitest"
 import type { Equal, Expect, NotAny } from '@type-challenges/utils'
 import { FastEvent } from "../../event"
 import { FastEventScopeMeta } from "../../scope"
-import { FastEvents } from "../../types"
+import { FastEventMeta, FastEvents } from "../../types"
 
 describe("事件作用域类型测试", () => {
 
@@ -26,7 +26,7 @@ describe("事件作用域类型测试", () => {
             type cases = [
                 Expect<Equal<typeof message.type, 'x'>>,
                 Expect<Equal<typeof message.payload, number>>,
-                Expect<Equal<typeof message.meta, Record<string, any> & FastEventScopeMeta>>,
+                Expect<Equal<typeof message.meta, FastEventMeta & Record<string, any> & FastEventScopeMeta>>,
             ]
         })
 
@@ -111,7 +111,7 @@ describe("作用域上下文类型系统", () => {
                 Expect<Equal<typeof this, number>>,
                 Expect<Equal<typeof message.type, 'a'>>,
                 Expect<Equal<typeof message.payload, any>>,
-                Expect<Equal<typeof message.meta, Record<string, any> & FastEventScopeMeta>>
+                Expect<Equal<typeof message.meta, FastEventMeta & Record<string, any> & FastEventScopeMeta>>
             ]
         })
 
@@ -120,7 +120,7 @@ describe("作用域上下文类型系统", () => {
                 Expect<Equal<typeof this, number>>,
                 Expect<Equal<typeof message.type, 'a'>>,
                 Expect<Equal<typeof message.payload, any>>,
-                Expect<Equal<typeof message.meta, Record<string, any> & FastEventScopeMeta>>
+                Expect<Equal<typeof message.meta, FastEventMeta & Record<string, any> & FastEventScopeMeta>>
             ]
         })
     })

@@ -1,9 +1,9 @@
-import { describe, it, expect, vi, beforeEach, afterEach, test } from "vitest"
+import { describe, expect, vi, beforeEach, afterEach, test } from "vitest"
 import { FastEvent } from "../event"
-import { queue } from "../decorators/queue"
+import { queue } from "../pipe/queue"
 import { QueueOverflowError } from "../consts"
 
-describe("监听器装饰器", () => {
+describe("监听器Pipe操作: Queue", () => {
     let emitter: FastEvent
 
     beforeEach(() => {
@@ -15,14 +15,14 @@ describe("监听器装饰器", () => {
         vi.useRealTimers()
     })
     describe("Queue is not overflow", () => {
-        test("size=1时应该正确处理所有消息", () => {
+        test("size=5时应该正确处理所有消息", () => {
             const results: number[] = []
             emitter.on("test", async (msg) => {
                 // 每个消息处理时间不同
                 await delay(Math.floor((Math.random() * 100)))
                 results.push(msg.payload)
             }, {
-                decorators: [queue({ size: 1 })]
+                pipes: [queue({ size: 5 })]
             })
 
             const promises = [
@@ -49,7 +49,7 @@ describe("监听器装饰器", () => {
                 await delay(Math.floor((Math.random() * 10)))
                 results.push(msg.payload)
             }, {
-                decorators: [queue({ size: 10 })]
+                pipes: [queue({ size: 10 })]
             })
             const length = 10
             const promises: any[] = []
@@ -79,7 +79,7 @@ describe("监听器装饰器", () => {
                 first = false
                 results.push(msg.payload)
             }, {
-                decorators: [queue({ size: 3, overflow: 'slide' })]
+                pipes: [queue({ size: 3, overflow: 'slide' })]
             })
 
             // 快速发送12个消息
@@ -117,7 +117,7 @@ describe("监听器装饰器", () => {
                 first = false
                 results.push(msg.payload)
             }, {
-                decorators: [queue({ size: 3, overflow: 'drop' })]
+                pipes: [queue({ size: 3, overflow: 'drop' })]
             })
 
             const promises = [
@@ -151,7 +151,7 @@ describe("监听器装饰器", () => {
                 first = false
                 results.push(msg.payload)
             }, {
-                decorators: [queue({ size: 3, overflow: 'throw' })]
+                pipes: [queue({ size: 3, overflow: 'throw' })]
             })
 
             const promises = [
@@ -178,6 +178,50 @@ describe("监听器装饰器", () => {
 
     })
 
+    describe("Queue with options.onNew", () => {
+        test("应该根据消息优先级顺序处理", () => {
+            const results: number[] = []
+            let first: boolean = true
+            emitter.on("test", async (msg) => {
+                await delay(first ? 500 : 10)  // 每个消息处理时间相同
+                first = false
+                results.push(msg.payload)
+            }, {
+                pipes: [queue({
+                    size: 5,
+                    onNew: (newMsg, queuedMsgs) => {
+                        // 根据priority排序，高优先级（数字大）的排在前面
+                        const insertIndex = queuedMsgs.findIndex(
+                            msg => (msg.meta.priority ?? 0) < (newMsg.meta.priority ?? 0)
+                        )
+                        queuedMsgs.splice(insertIndex, 0, newMsg)
+                    }
+                })]
+            })
+
+            // 发送不同优先级的消息
+            const promises = [
+                ...emitter.emit("test", 1, { meta: { priority: 1 } }),   //  
+                ...emitter.emit("test", 2, { meta: { priority: 1 } }),   //  低
+                ...emitter.emit("test", 3, { meta: { priority: 3 } }),   //  
+                ...emitter.emit("test", 4, { meta: { priority: 2 } }),   //  
+                ...emitter.emit("test", 5, { meta: { priority: 5 } }),   //  
+                ...emitter.emit("test", 6, { meta: { priority: 4 } }),   //  高
+            ]
+
+            return new Promise<void>(resolve => {
+                vi.runAllTimersAsync()
+                Promise.all(promises).then(() => {
+                    // 验证消息按优先级顺序处理： 
+                    // 第1条消息因为还没有入列，所以先得到处理
+                    expect(results).toEqual([1, 5, 6, 3, 4, 2])
+                }).finally(() => {
+                    resolve()
+                })
+            })
+        })
+    })
+
     describe("Queue with overflow=expand", () => {
 
         test("应该在达到maxExpandSize时切换到drop策略", () => {
@@ -189,7 +233,7 @@ describe("监听器装饰器", () => {
                 first = false
                 results.push(msg.payload)
             }, {
-                decorators: [queue({
+                pipes: [queue({
                     size: 2,           // 初始缓冲区大小为2
                     overflow: "expand", // 使用expand策略
                     expandOverflow: 'drop',
@@ -226,7 +270,7 @@ describe("监听器装饰器", () => {
                 first = false
                 results.push(msg.payload)
             }, {
-                decorators: [queue({
+                pipes: [queue({
                     size: 2,           // 初始缓冲区大小为2
                     overflow: "expand", // 使用expand策略
                     // expandOverflow: 'slide',  默认
@@ -263,7 +307,7 @@ describe("监听器装饰器", () => {
                 first = false
                 results.push(msg.payload)
             }, {
-                decorators: [queue({
+                pipes: [queue({
                     size: 2,           // 初始缓冲区大小为2
                     overflow: "expand", // 使用expand策略
                     expandOverflow: 'throw',
