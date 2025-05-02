@@ -85,4 +85,4 @@ export const queue = (options?: QueueListenerDecoratorOptions): FastListenerDeco
 
 export const dropping = (size: number = 10) => queue({ size, overflow: 'drop' })
 export const sliding = (size: number = 10) => queue({ size, overflow: 'slide' })
-export const expanding = (size: number = 10, maxExpandSize: number = 100) => queue({ size, maxExpandSize, overflow: 'expand' })
+export const expanding = (options?: Omit<QueueListenerDecoratorOptions, 'overflow'>) => queue(Object.assign({}, options, { overflow: 'expand' as QueueListenerDecoratorOptions['overflow'] }))
