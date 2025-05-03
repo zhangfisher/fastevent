@@ -14,8 +14,7 @@ import {
     FastEventEmitMessage,
     FastEventListenerArgs,
     FastListenerMeta,
-    IFastListenerExecutor,
-    FastEventListenDecorator
+    IFastListenerExecutor
 } from './types';
 import { handleEmitArgs } from './utils/handleEmitArgs';
 import { isPathMatched } from './utils/isPathMatched';
@@ -166,39 +165,6 @@ export class FastEvent<
     }
 
     /**
-     * 创建监听装饰器
-     * const emitter = new FastEvent()
-    * 
-    * class MyClass{
-    *    // 监听事件时传入onEvent,this指向的是当前类实例
-    *    @emitter.on("event",options)
-    *    onEvent(message,args){
-    *    }
-    *    // 监听事件时传入onEvent,this指向的是当前类实例
-    *    @emitter.once("event",options)
-    *    onEvent(message,args){
-    *    }
-    *    // 将接收到的消息的message.payload值写入count
-    *    @emitter.on("event",options)
-    *    count:number = 0
-    * }
-    * 
-     * 
-     */
-    private _createListenDecorator(type: string, options?: FastEventListenOptions<Events, Meta>) {
-        return (target: object, propKey: string, descriptor: any, receiver?: any) => {
-            // 如何被装饰的是一个函数
-            if (typeof descriptor.value === 'function') {
-                this.on(type, descriptor.value, options)
-            } else {
-                this.on(type, (message: FastEventMessage) => {
-                    Reflect.set(target, propKey, message.payload)
-                }, options)
-            }
-            return descriptor
-        }
-    }
-    /**
      * 注册事件监听器
      * @param type - 事件类型，支持以下格式：
      *   - 普通字符串：'user/login'
@@ -223,21 +189,17 @@ export class FastEvent<
      * ```
      */
 
-    public on<T extends Types = Types>(type: T, options?: FastEventListenOptions<Events, Meta>): FastEventListenDecorator<FastEventListener<Exclude<T, number | symbol>, Events[T], Meta, Fallback<Context, typeof this>>, Meta>
-    public on<T extends string>(type: T, options?: FastEventListenOptions<Events, Meta>): FastEventListenDecorator<FastEventAnyListener<Events, Meta, Fallback<Context, typeof this>>, Meta>
-    public on(type: '**', options?: FastEventListenOptions<Events, Meta>): FastEventListenDecorator<FastEventAnyListener<Record<string, any>, Meta, Fallback<Context, typeof this>>, Meta>
+    public on<T extends Types = Types>(type: T, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
+    public on<T extends string>(type: T, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
+    public on(type: '**', options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
 
     public on<T extends Types = Types>(type: T, listener: FastEventListener<Exclude<T, number | symbol>, Events[T], Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
     public on<T extends string>(type: T, listener: FastEventAnyListener<Events, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
     public on(type: '**', listener: FastEventAnyListener<Record<string, any>, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
-    public on(): FastEventSubscriber | FastEventListenDecorator<Events, Meta> {
-
-        if (!isFunction(arguments[1])) { // 没有提供listener时返回一个装饰器
-            return this._createListenDecorator(arguments[0], arguments[1])
-        }
+    public on(): FastEventSubscriber {
 
         const type = arguments[0] as string
-        let listener = arguments[1] as FastEventListener
+        let listener = isFunction(arguments[1]) ? arguments[1] : this.onMessage.bind(this)
 
         const options = Object.assign({
             count: 0,
@@ -298,11 +260,11 @@ export class FastEvent<
      * });
      * ```
      */
-    public once<T extends Types = Types>(type: T, options?: FastEventListenOptions<Events, Meta>): FastEventListenDecorator<FastEventListener<Exclude<T, number | symbol>, Events[T], Meta, Fallback<Context, typeof this>>, Meta>
-    public once<T extends string>(type: T, options?: FastEventListenOptions<Events, Meta>): FastEventListenDecorator<FastEventAnyListener<Events, Meta, Fallback<Context, typeof this>>, Meta>
+    public once<T extends Types = Types>(type: T, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
+    public once<T extends string>(type: T, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
     public once<T extends Types = Types>(type: T, listener: FastEventListener<Exclude<T, number | symbol>, Events[T], Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
     public once<T extends string>(type: T, listener: FastEventAnyListener<Events, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
-    public once(): FastEventSubscriber | FastEventListenDecorator<Events, Meta> {
+    public once(): FastEventSubscriber {
         if (isFunction(arguments[1])) {
             return this.on(arguments[0], arguments[1], Object.assign({}, arguments[2], { count: 1 }))
         } else {

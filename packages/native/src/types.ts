@@ -203,17 +203,3 @@ export type IFastListenerExecutor = (listeners: FastListenerMeta[], message: Fas
     execute: (listener: FastEventListener, message: FastEventMessage, args?: FastEventListenerArgs) => Promise<any> | any
 ) => Promise<any[]> | any[]
 
-// public on<T extends Types = Types>(type: T, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
-// public on<T extends string>(type: T, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
-// public on(type: '**', options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
-
-
-
-export interface FastEventListenDecorator<
-    Listener,
-    Meta
-> {
-    <T extends Listener>(target: object, propertyKey: string, descriptor: TypedPropertyDescriptor<T>): TypedPropertyDescriptor<T>
-    // <T = FastEventListener<Exclude<keyof Events, number | symbol>, Events[Types], Meta, Context>>(target: Object, propertyKey: string, descriptor: TypedPropertyDescriptor<T>): TypedPropertyDescriptor<T> | void;
-}
-
