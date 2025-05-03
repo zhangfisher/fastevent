@@ -39,16 +39,51 @@ export default {
                                 { text: '元数据', link: '/zh/guide/use/metadata' },
                                 { text: '上下文', link: '/zh/guide/use/context' },
                                 { text: '事件钩子', link: '/zh/guide/use/hooks' },
-                                { text: '执行器', link: '/zh/guide/use/executor' }
+                                { text: '执行器', link: '/zh/guide/use/executor' },
+                                { text: '监听管道', link: '/zh/guide/use/pipe' }
                             ]
                         },
                     ]
                 }
             ],
             "/zh/reference/": [
-                { text: '语言代码', link: '/zh/reference/lang-code' },
-                { text: 'VoerkaI18nScope', link: '/zh/reference/i18nscope' },
-                { text: 'VoerkaI18nManager', link: '/zh/reference/voerkai18n' },
+                {
+                    text: 'FastEvent',
+                    collapsed: false, link: '/zh/reference/event',
+                    items: [
+                        {
+                            text: '属性',
+                            collapsed: false,
+                            items: [
+                                { text: 'id', link: '/zh/reference/event/attrs/id' },
+                                { text: 'options', link: '/zh/reference/event/attrs/options' },
+                                { text: 'context', link: '/zh/reference/event/attrs/context' },
+                                { text: 'listeners', link: '/zh/reference/event/attrs/listeners' },
+                                { text: 'listenerCount', link: '/zh/reference/event/attrs/listenerCount' },
+                                { text: 'retainedMessages', link: '/zh/reference/event/attrs/retainedMessages' },
+                            ]
+                        },
+                        {
+                            text: '方法',
+                            collapsed: false,
+                            items: [
+                                { text: 'emit', link: '/zh/reference/event/methods/emit' },
+                                { text: 'emitAsync', link: '/zh/reference/event/methods/emitAsync' },
+                                { text: 'on', link: '/zh/reference/event/methods/on' },
+                                { text: 'once', link: '/zh/reference/event/methods/once' },
+                                { text: 'onAny', link: '/zh/reference/event/methods/onAny' },
+                                { text: 'off', link: '/zh/reference/event/methods/off' },
+                                { text: 'offAll', link: '/zh/reference/event/methods/offAll' },
+                                { text: 'waitfor', link: '/zh/reference/event/methods/waitfor' },
+                                { text: 'scope', link: '/zh/reference/event/methods/scope' },
+                            ]
+                        }
+                    ]
+                },
+                {
+                    text: 'FastEventScope',
+                    collapsed: false, link: '/zh/reference/scope'
+                },
             ]
         },
         socialLinks: [
