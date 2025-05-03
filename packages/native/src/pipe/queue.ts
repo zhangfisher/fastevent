@@ -77,7 +77,7 @@ export const queue = (options?: QueueListenerPipeOptions): FastListenerPipe => {
         }
     }
     return (listener: FastEventListener): FastEventListener => {
-        return async (message: FastEventMessage<any>, args: FastEventListenerArgs) => {
+        return async function (message: FastEventMessage<any>, args: FastEventListenerArgs) {
             if (isHandling) {
                 // 如果正在处理消息，尝试将新消息添加到缓冲区
                 if (buffer.length < currentSize) {
@@ -90,12 +90,12 @@ export const queue = (options?: QueueListenerPipeOptions): FastListenerPipe => {
             // 如果没有正在处理的消息，先处理当前消息
             isHandling = true
             try {
-                await listener(message, args)
+                await listener.call(this, message, args)
                 // 处理缓冲区中的消息
                 while (buffer.length > 0) {
                     const nextMessage = buffer.shift()
                     if (nextMessage) {
-                        await listener(nextMessage, args)
+                        await listener.call(this, nextMessage, args)
                     }
                 }
             } finally {

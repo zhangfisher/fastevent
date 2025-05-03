@@ -10,7 +10,7 @@ import { FastListenerPipe } from "./types"
  */
 export const timeout = <T = any>(ms: number, defaultValue?: T): FastListenerPipe => {
     return (listener: FastEventListener): FastEventListener => {
-        return async (message: FastEventMessage, args: FastEventListenerArgs) => {
+        return async function (message: FastEventMessage, args: FastEventListenerArgs) {
             let timeoutId: any
 
             const timeoutPromise = new Promise((resolve, reject) => {
@@ -23,7 +23,7 @@ export const timeout = <T = any>(ms: number, defaultValue?: T): FastListenerPipe
                 }, ms)
             })
 
-            const listenerPromise = Promise.resolve(listener(message, args))
+            const listenerPromise = Promise.resolve(listener.call(this, message, args))
 
             try {
                 return await Promise.race([listenerPromise, timeoutPromise])

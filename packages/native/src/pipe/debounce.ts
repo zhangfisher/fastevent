@@ -19,7 +19,7 @@ export const debounce = (ms: number, options?: DebounceOptions): FastListenerPip
         let isBlocked = false
         let timeoutId: any = null
 
-        return async (message: FastEventMessage, args: FastEventListenerArgs) => {
+        return async function (message: FastEventMessage, args: FastEventListenerArgs) {
             // 如果当前处于防抖动时间内，丢弃消息
             if (isBlocked) {
                 if (options?.drop) {
@@ -33,7 +33,7 @@ export const debounce = (ms: number, options?: DebounceOptions): FastListenerPip
                 isBlocked = true
 
                 // 执行监听器
-                const result = await listener(message, args)
+                const result = await listener.call(this, message, args)
 
                 // 设置定时器，在ms毫秒后解除阻塞
                 timeoutId = setTimeout(() => {

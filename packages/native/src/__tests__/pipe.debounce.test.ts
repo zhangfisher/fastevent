@@ -172,17 +172,23 @@ describe("监听器Pipe操作: Debounce", () => {
 
         // 每2ms发送一条消息，总共发送100条
         const promises: any[] = []
-        for (let i = 1; i <= 100; i++) {
-            await delay(2) // 每2ms发送一条消息
-            promises.push(...emitter.emit("test", i))
+        const emitMessages = async () => {
+            for (let i = 1; i <= 100; i++) {
+                await delay(2)
+                emitter.emit("test", i)
+            }
         }
+        emitMessages()
         return new Promise<void>((resolve) => {
             vi.runAllTimersAsync().then(async () => {
                 await Promise.all(promises)
-                // 1. 只有第一条消息被执行
-                expect(results).toEqual([1])
-                // 2. 其他99条消息都被丢弃
-                expect(dropped).toEqual(Array.from({ length: 99 }, (_, i) => i + 2))
+                // 1. 接收到从1开始，间隔5的数列
+                expect(results).toEqual([1, 6, 11, 16, 21, 26, 31, 36, 41, 46, 51, 56, 61, 66, 71, 76, 81, 86, 91, 96])
+                // 2. 其他消息均会被丢弃
+                expect(Array.from({ length: 100 }).map((_, i) => i + 1).filter((i) => {
+                    return !results.includes(i)
+                })).toEqual(dropped)
+
                 resolve()
             })
         })
