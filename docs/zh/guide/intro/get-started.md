@@ -32,7 +32,6 @@ bun add fastevent
 import { FastEvent } from 'fastevent';
 
 // 创建基本事件发射器
-const emitter = new FastEvent();
 
 // 或创建带类型定义的事件发射器
 interface Events {
@@ -73,6 +72,10 @@ emitter.once('message/new', (message) => {
 ```typescript
 // 同步触发事件
 emitter.emit('user/login', { userId: '123' });
+
+// 同步触发事件,并且配置retain=true
+// 保留最后一次事件数据，以便后续订阅者可以接收最后一次事件数据
+emitter.emit('user/login', { userId: '123' },true);
 
 // 异步触发事件
 await emitter.emitAsync('message/new', { content: 'Hello' });
@@ -165,4 +168,4 @@ emitter.emit('user/login', { userId: 123 }); // ❌ 类型错误
 emitter.emit('unknown/event', {}); // ❌ 未定义的事件
 ```
 
-通过以上步骤，你已经了解了 FastEvent 的基本用法。更多高级特性和详细说明，请参考后续章节。
+通过以上步骤，你已经了解了`FastEvent`的基本用法。更多高级特性和详细说明，请参考后续章节。

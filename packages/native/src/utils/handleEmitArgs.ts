@@ -1,7 +1,7 @@
-import { FastEventListenerArgs, FastEventMessage, FastEvents } from "../types"
+import { FastEventListenerArgs, FastEventMessage } from "../types"
 
 export function handleEmitArgs<
-    Events extends FastEvents = FastEvents,
+    Events extends Record<string, any> = Record<string, any>,
     Meta = unknown
 >(args: IArguments, emitterMeta: any, scopeMeta?: any, scopeExecutor?: any): [FastEventMessage<Events, Meta>, FastEventListenerArgs<Meta>] {
     let type: string, payload: any, meta: any

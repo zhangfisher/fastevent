@@ -2,7 +2,6 @@ import { FastEventScope, type FastEventScopeOptions } from './scope';
 import {
     FastEventListener,
     FastEventOptions,
-    FastEvents,
     FastListeners,
     FastListenerNode,
     FastEventSubscriber,
@@ -14,7 +13,8 @@ import {
     FastEventEmitMessage,
     FastEventListenerArgs,
     FastListenerMeta,
-    IFastListenerExecutor
+    IFastListenerExecutor,
+    FastEvents
 } from './types';
 import { handleEmitArgs } from './utils/handleEmitArgs';
 import { isPathMatched } from './utils/isPathMatched';
@@ -33,10 +33,11 @@ import { FastListenerPipe } from './pipe';
  * @template Types - 事件类型的键名类型，默认为Events的键名类型
  */
 export class FastEvent<
-    Events extends FastEvents = FastEvents,
+    Events extends Record<string, any> = Record<string, any>,
     Meta extends Record<string, any> = Record<string, any>,
     Context = never,
-    Types extends keyof Events = Exclude<keyof Events, number | symbol>
+    AllEvents extends Record<string, any> = Events & FastEvents,
+    Types extends keyof AllEvents = Exclude<keyof (AllEvents), number | symbol>
 > {
     /** 事件监听器树结构，存储所有注册的事件监听器 */
     public listeners: FastListeners = { __listeners: [] } as unknown as FastListeners
@@ -189,13 +190,13 @@ export class FastEvent<
      * ```
      */
 
-    public on<T extends Types = Types>(type: T, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
-    public on<T extends string>(type: T, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
-    public on(type: '**', options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
+    public on<T extends Types = Types>(type: T, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber
+    public on<T extends string>(type: T, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber
+    public on(type: '**', options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber
 
-    public on<T extends Types = Types>(type: T, listener: FastEventListener<Exclude<T, number | symbol>, Events[T], Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
-    public on<T extends string>(type: T, listener: FastEventAnyListener<Events, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
-    public on(type: '**', listener: FastEventAnyListener<Record<string, any>, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
+    public on<T extends Types = Types>(type: T, listener: FastEventListener<Exclude<T, number | symbol>, AllEvents[T], Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber
+    public on<T extends string>(type: T, listener: FastEventAnyListener<AllEvents, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber
+    public on(type: '**', listener: FastEventAnyListener<Record<string, any>, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber
     public on(): FastEventSubscriber {
 
         const type = arguments[0] as string
@@ -260,10 +261,10 @@ export class FastEvent<
      * });
      * ```
      */
-    public once<T extends Types = Types>(type: T, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
-    public once<T extends string>(type: T, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
-    public once<T extends Types = Types>(type: T, listener: FastEventListener<Exclude<T, number | symbol>, Events[T], Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
-    public once<T extends string>(type: T, listener: FastEventAnyListener<Events, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<Events, Meta>): FastEventSubscriber
+    public once<T extends Types = Types>(type: T, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber
+    public once<T extends string>(type: T, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber
+    public once<T extends Types = Types>(type: T, listener: FastEventListener<Exclude<T, number | symbol>, AllEvents[T], Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber
+    public once<T extends string>(type: T, listener: FastEventAnyListener<AllEvents, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber
     public once(): FastEventSubscriber {
         if (isFunction(arguments[1])) {
             return this.on(arguments[0], arguments[1], Object.assign({}, arguments[2], { count: 1 }))
@@ -284,10 +285,10 @@ export class FastEvent<
      * 
      * // 取消监听
      * subscriber.off();
-     * ```listener: FastEventAnyListener<Events, Meta, Fallback<Context, typeof this>>): FastEventSubscriber
+     * ```listener: FastEventAnyListener<AllEvents, Meta, Fallback<Context, typeof this>>): FastEventSubscriber
      */
-    onAny(options?: Omit<FastEventListenOptions<Events, Meta>, 'count'>): FastEventSubscriber
-    onAny<P = any>(listener: FastEventAnyListener<Record<string, P>, Meta, Fallback<Context, typeof this>>, options?: Omit<FastEventListenOptions<Events, Meta>, 'count'>): FastEventSubscriber
+    onAny(options?: Omit<FastEventListenOptions<AllEvents, Meta>, 'count'>): FastEventSubscriber
+    onAny<P = any>(listener: FastEventAnyListener<Record<string, P>, Meta, Fallback<Context, typeof this>>, options?: Omit<FastEventListenOptions<AllEvents, Meta>, 'count'>): FastEventSubscriber
     onAny(): FastEventSubscriber {
         return this.on("**", arguments[0], arguments[1])
     }
@@ -506,7 +507,7 @@ export class FastEvent<
             let result = listener.call(this._context || this, message, args)
             // 自动处理reject Promise
             if (result && result instanceof Promise) {
-                result.catch(e => { this._onListenerError(listener, message, args, e) })
+                result = result.catch(e => { return this._onListenerError(listener, message, args, e) })
             }
             return result
         } catch (e: any) {
@@ -619,17 +620,17 @@ export class FastEvent<
      * }, true);
      * ```
      */
-    public emit<R = any, T extends Types = Types>(type: T, payload?: Events[T], retain?: boolean): R[]
-    public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? Events[Types] : any, retain?: boolean): R[]
-    public emit<R = any, T extends string = string>(message: FastEventEmitMessage<{ [K in T]: K extends Types ? Events[K] : any }, Meta>, retain?: boolean): R[]
-    public emit<R = any>(message: FastEventEmitMessage<Events, Meta>, retain?: boolean): R[]
+    public emit<R = any, T extends Types = Types>(type: T, payload?: AllEvents[T], retain?: boolean): R[]
+    public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? AllEvents[Types] : any, retain?: boolean): R[]
+    public emit<R = any, T extends string = string>(message: FastEventEmitMessage<{ [K in T]: K extends Types ? AllEvents[K] : any }, Meta>, retain?: boolean): R[]
+    public emit<R = any>(message: FastEventEmitMessage<AllEvents, Meta>, retain?: boolean): R[]
     //----
-    public emit<R = any, T extends Types = Types>(type: T, payload?: Events[T], options?: FastEventListenerArgs<Meta>): R[]
-    public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? Events[Types] : any, options?: FastEventListenerArgs<Meta>): R[]
-    public emit<R = any, T extends string = string>(message: FastEventEmitMessage<{ [K in T]: K extends Types ? Events[K] : any }, Meta>, options?: FastEventListenerArgs<Meta>): R[]
-    public emit<R = any>(message: FastEventEmitMessage<Events, Meta>, options?: FastEventListenerArgs<Meta>): R[]
+    public emit<R = any, T extends Types = Types>(type: T, payload?: AllEvents[T], options?: FastEventListenerArgs<Meta>): R[]
+    public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? AllEvents[Types] : any, options?: FastEventListenerArgs<Meta>): R[]
+    public emit<R = any, T extends string = string>(message: FastEventEmitMessage<{ [K in T]: K extends Types ? AllEvents[K] : any }, Meta>, options?: FastEventListenerArgs<Meta>): R[]
+    public emit<R = any>(message: FastEventEmitMessage<AllEvents, Meta>, options?: FastEventListenerArgs<Meta>): R[]
     public emit<R = any>(): R[] {
-        const [message, args] = handleEmitArgs<Events, Meta>(arguments, this.options.meta)
+        const [message, args] = handleEmitArgs<AllEvents, Meta>(arguments, this.options.meta)
         const parts = message.type.split(this._delimiter);
         if (args.retain) {
             this.retainedMessages.set(message.type, message)
@@ -691,14 +692,14 @@ export class FastEvent<
      * ```
      */
     public async emitAsync<R = any>(type: string, payload?: any, retain?: boolean): Promise<[R | Error][]>
-    public async emitAsync<R = any>(type: Types, payload?: Events[Types], retain?: boolean): Promise<[R | Error][]>
-    public async emitAsync<R = any, T extends string = string>(message: FastEventEmitMessage<{ [K in T]: K extends Types ? Events[K] : any }, Meta>, retain?: boolean): Promise<[R | Error][]>
-    public async emitAsync<R = any>(message: FastEventEmitMessage<Events, Meta>, retain?: boolean): Promise<[R | Error][]>
+    public async emitAsync<R = any>(type: Types, payload?: AllEvents[Types], retain?: boolean): Promise<[R | Error][]>
+    public async emitAsync<R = any, T extends string = string>(message: FastEventEmitMessage<{ [K in T]: K extends Types ? AllEvents[K] : any }, Meta>, retain?: boolean): Promise<[R | Error][]>
+    public async emitAsync<R = any>(message: FastEventEmitMessage<AllEvents, Meta>, retain?: boolean): Promise<[R | Error][]>
     // ---    
     public async emitAsync<R = any>(type: string, payload?: any, options?: FastEventListenerArgs<Meta>): Promise<[R | Error][]>
-    public async emitAsync<R = any>(type: Types, payload?: Events[Types], options?: FastEventListenerArgs<Meta>): Promise<[R | Error][]>
-    public async emitAsync<R = any, T extends string = string>(message: FastEventEmitMessage<{ [K in T]: K extends Types ? Events[K] : any }, Meta>, options?: FastEventListenerArgs<Meta>): Promise<[R | Error][]>
-    public async emitAsync<R = any>(message: FastEventEmitMessage<Events, Meta>, options?: FastEventListenerArgs<Meta>): Promise<[R | Error][]>
+    public async emitAsync<R = any>(type: Types, payload?: AllEvents[Types], options?: FastEventListenerArgs<Meta>): Promise<[R | Error][]>
+    public async emitAsync<R = any, T extends string = string>(message: FastEventEmitMessage<{ [K in T]: K extends Types ? AllEvents[K] : any }, Meta>, options?: FastEventListenerArgs<Meta>): Promise<[R | Error][]>
+    public async emitAsync<R = any>(message: FastEventEmitMessage<AllEvents, Meta>, options?: FastEventListenerArgs<Meta>): Promise<[R | Error][]>
 
     public async emitAsync<R = any>(): Promise<[R | Error][]> {
         const results = await Promise.allSettled(this.emit.apply(this, arguments as any))
@@ -738,16 +739,16 @@ export class FastEvent<
      * console.log('服务器就绪');
      * ```
      */
-    public waitFor<T extends Types>(type: T, timeout?: number): Promise<FastEventMessage<{ [key in T]: Events[T] }, Meta>>
-    public waitFor(type: string, timeout?: number): Promise<FastEventMessage<Events, Meta>>
+    public waitFor<T extends Types>(type: T, timeout?: number): Promise<FastEventMessage<{ [key in T]: AllEvents[T] }, Meta>>
+    public waitFor(type: string, timeout?: number): Promise<FastEventMessage<AllEvents, Meta>>
     public waitFor<P = any>(type: string, timeout?: number): Promise<FastEventMessage<{ [key: string]: P }, Meta>>
-    public waitFor(): Promise<FastEventMessage<Events, Meta>> {
+    public waitFor(): Promise<FastEventMessage<AllEvents, Meta>> {
         const type = arguments[0] as any
         const timeout = arguments[1] as number
-        return new Promise<FastEventMessage<Events, Meta>>((resolve, reject) => {
+        return new Promise<FastEventMessage<AllEvents, Meta>>((resolve, reject) => {
             let tid: any
             let subscriber: FastEventSubscriber
-            const listener = (message: FastEventMessage<Events, Meta>) => {
+            const listener = (message: FastEventMessage<AllEvents, Meta>) => {
                 clearTimeout(tid)
                 subscriber.off()
                 resolve(message)
@@ -803,12 +804,12 @@ export class FastEvent<
      * ```
      */
     scope<
-        E extends FastEvents = FastEvents,
+        E extends Record<string, any> = Record<string, any>,
         P extends string = string,
         M extends Record<string, any> = Record<string, any>,
         C = Context
     >(prefix: P, options?: FastEventScopeOptions<M, C>) {
-        return new FastEventScope<ScopeEvents<Events, P> & E, Meta & M, C>(
+        return new FastEventScope<ScopeEvents<AllEvents, P> & E, Meta & M, C>(
             this as any, prefix, options as FastEventScopeOptions<Meta & M, C>)
     }
 } 

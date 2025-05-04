@@ -4,7 +4,7 @@ import { describe, test, expect } from "vitest"
 import type { Equal, Expect, NotAny } from '@type-challenges/utils'
 import { FastEvent } from "../../event"
 import { FastEventScopeMeta } from "../../scope"
-import { FastEventMeta, FastEvents } from "../../types"
+import { FastEventMeta } from "../../types"
 
 describe("事件作用域类型测试", () => {
 

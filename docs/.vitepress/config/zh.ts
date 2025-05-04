@@ -40,9 +40,10 @@ export default {
                                 { text: '上下文', link: '/zh/guide/use/context' },
                                 { text: '事件钩子', link: '/zh/guide/use/hooks' },
                                 { text: '执行器', link: '/zh/guide/use/executor' },
+                                { text: '错误处理', link: '/zh/guide/use/error_handle' },
                                 { text: '监听管道', link: '/zh/guide/use/pipe' },
                                 { text: 'Typescript', link: '/zh/guide/use/typescript' },
-                                { text: '调试', link: '/zh/guide/use/devTools' }
+                                { text: '调试工具', link: '/zh/guide/use/devTools' }
                             ]
                         },
                     ]

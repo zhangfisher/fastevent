@@ -107,4 +107,19 @@ describe("FastEvent元数据类型检查", () => {
             ]
         });
     })
+
+    test("自定义Meta", () => {
+
+        type CustomMeta = { x: number; y: number; z?: number };
+        const emitter = new FastEvent<{ a: number }, CustomMeta>({
+            meta: {
+                x: 1,
+                y: 2,
+            },
+        });
+
+        emitter.on('click', (message) => {
+            message.meta; // { x: number; y: number,z?: number  } & Record<string,any>
+        });
+    })
 })

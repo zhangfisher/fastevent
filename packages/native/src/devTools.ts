@@ -20,6 +20,7 @@
 import { legacy_createStore as createStore } from "redux"
 import { WeakObjectMap } from "./utils/WeakObjectMap"
 import { FastEvent } from "./event"
+import { FastListenerMeta } from "./types"
 
 const initialState = {
 
@@ -48,43 +49,44 @@ export class FlexEventDevTools {
             this.reduxStore.dispatch({
                 type: "__ADD_LISTENER__",
                 event: type.join("/"),
-                listener,
-                fastEventId: instance.id
+                listener: listener.name || 'anonymous',
+                emitter: instance.id
             })
         }
         instance.options.onRemoveListener = (type: string[], listener: any) => {
             this.reduxStore.dispatch({
                 type: "__REMOVE_LISTENER__",
                 event: type.join("/"),
-                listener,
-                fastEventId: instance.id
+                listener: listener.name || 'anonymous',
+                emitter: instance.id
             })
         }
         instance.options.onClearListeners = () => {
             this.reduxStore.dispatch({
                 type: "__CLEAR_LISTENERS__",
-                fastEventId: instance.id
+                emitter: instance.id
             })
         }
         instance.options.onAfterExecuteListener = (message, returns, listeners) => {
             const results = returns.map(r => r instanceof Error ? `Error(${r.message})` : r)
-            const sresults = listeners.map(listener => (listener as any).name || 'anonymous')
-                .reduce((pre, cur, index) => {
-                    pre[cur] = results[index]
-                    return pre
-                }, {})
-            console.log(`FastEvent<\x1B[31m${message.type}<\x1B[30m> is emit, listeners:`, listeners)
+            const sresults = listeners.reduce<FastListenerMeta[]>((results, cur) => {
+                results.push(...cur.__listeners)
+                return results
+            }, [])
+                .map((listener, i) => `${listener[0].name || 'anonymous'}(${listener[2]}) -> ${results[i]}`)
+
+            console.log(`FastEvent<\x1B[31m${message.type}\x1B[30m> is emit, listeners:`, listeners)
             this.reduxStore.dispatch({
                 type: message.type,
                 payload: message.payload,
                 meta: message.meta,
-                returns: sresults,
-                fastEventId: instance.id
+                emitter: instance.id,
+                returns: sresults
             })
         }
         this.reduxStore.dispatch({
             type: "__ADD_FASTEVENT__",
-            fastEventId: instance.id
+            emitter: instance.id
         })
     }
     remove(instance: FastEvent) {
@@ -94,48 +96,48 @@ export class FlexEventDevTools {
     }
     private reducer(state: any = initialState, action: any) {
         if (action.type.startsWith("@@")) return state
-        const instance = this.fastEvents.get(action.fastEventId) as FastEvent
+        const instance = this.fastEvents.get(action.emitter) as FastEvent
         if (action.type === '__ADD_FASTEVENT__') {
             return {
                 ...state,
-                [action.fastEventId]: getDefaultFastEventState(instance)
+                [action.emitter]: getDefaultFastEventState(instance)
             }
         } else if (action.type === '__ADD_LISTENER__') {
-            const eventState = state[action.fastEventId] || getDefaultFastEventState(instance)
+            const eventState = state[action.emitter] || getDefaultFastEventState(instance)
             eventState.listenerCount++
             return {
                 ...state,
-                [action.fastEventId]: {
+                [action.emitter]: {
                     ...eventState
                 }
             }
         } else if (action.type === '__REMOVE_LISTENER__') {
-            const eventState = state[action.fastEventId]
+            const eventState = state[action.emitter]
             if (!eventState) return state
             eventState.listenerCount++
             return {
                 ...state,
-                [action.fastEventId]: {
+                [action.emitter]: {
                     ...eventState
                 }
             }
         } else if (action.type === '__CLEAR_LISTENERS__') {
-            const eventState = state[action.fastEventId]
+            const eventState = state[action.emitter]
             if (!eventState) return state
             eventState.listenerCount++
             return {
                 ...state,
-                [action.fastEventId]: getDefaultFastEventState(instance)
+                [action.emitter]: getDefaultFastEventState(instance)
             }
         } else {
-            const eventState = state[action.fastEventId]
+            const eventState = state[action.emitter]
             if (!eventState) return state
             eventState.messageCount++
             eventState.listenerCount = instance.listenerCount
             eventState.retainMessageCount = instance.retainedMessages.size
             return {
                 ...state,
-                [action.fastEventId]: { ...eventState }
+                [action.emitter]: { ...eventState }
             }
         }
     }

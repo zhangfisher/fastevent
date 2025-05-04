@@ -43,13 +43,13 @@
  */
 
 import { FastEvent } from "../event";
-import { FastEventMessage, FastEvents } from '../types';
+import { FastEventMessage } from '../types';
 import type { FastEventBusNode } from "./node";
 import { FastEventBusEvents, FastEventBusNodeMessage, FastEventBusOptions } from "./types";
 
 
 export class FastEventBus<
-    Events extends FastEvents = FastEvents,
+    Events extends Record<string, any> = Record<string, any>,
     Meta extends Record<string, any> = Record<string, any>,
     Context = never
 > extends FastEvent<FastEventBusEvents & Events, Meta, Context> {

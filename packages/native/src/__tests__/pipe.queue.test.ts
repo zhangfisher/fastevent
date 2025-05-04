@@ -166,9 +166,9 @@ describe("监听器Pipe操作: Queue", () => {
             return new Promise<void>(resolve => {
                 vi.runAllTimersAsync()
                 Promise.allSettled(promises).then(emitResults => {
-                    expect((emitResults[4] as any).reason).toBeInstanceOf(QueueOverflowError)
-                    expect((emitResults[5] as any).reason).toBeInstanceOf(QueueOverflowError)
-                    expect((emitResults[6] as any).reason).toBeInstanceOf(QueueOverflowError)
+                    expect((emitResults[4] as any).value).toBeInstanceOf(QueueOverflowError)
+                    expect((emitResults[5] as any).value).toBeInstanceOf(QueueOverflowError)
+                    expect((emitResults[6] as any).value).toBeInstanceOf(QueueOverflowError)
                     expect(results).toEqual([1, 2, 3, 4])
                 }).finally(() => {
                     resolve()
@@ -331,9 +331,9 @@ describe("监听器Pipe操作: Queue", () => {
                 vi.runAllTimersAsync()
                 Promise.allSettled(promises).then(emitResults => {
                     try {
-                        expect((emitResults[5] as any).reason).toBeInstanceOf(QueueOverflowError)
-                        expect((emitResults[6] as any).reason).toBeInstanceOf(QueueOverflowError)
-                        expect((emitResults[7] as any).reason).toBeInstanceOf(QueueOverflowError)
+                        expect((emitResults[5] as any).value).toBeInstanceOf(QueueOverflowError)
+                        expect((emitResults[6] as any).value).toBeInstanceOf(QueueOverflowError)
+                        expect((emitResults[7] as any).value).toBeInstanceOf(QueueOverflowError)
                         expect(results).toEqual([1, 2, 3, 4, 5])
                         resolve()
                     } catch (err) {

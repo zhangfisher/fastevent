@@ -54,10 +54,6 @@ export type FastEventAnyListener<
     Context = any
 > = (this: Context, message: FastEventMessage<Events, Meta>, args: FastEventListenerArgs<Meta>) => any | Promise<any>
 
-
-
-
-
 /**
  * [监听器函数引用，需要执行多少次，实际执行的次数(用于负载均衡时记录)]
  */
@@ -138,7 +134,9 @@ export type FastEventOptions<Meta = Record<string, any>, Context = any> = {
     executor?: FastListenerExecutorArgs
 }
 
-export type FastEvents = Record<string, any>
+export interface FastEvents {
+
+}
 
 export type PickScopeEvents<T extends Record<string, any>, Prefix extends string> = {
     [K in keyof T as K extends `${Prefix}/${infer Rest}` ? Rest : never]: T[K];
@@ -158,7 +156,6 @@ export type FastEventListenOptions<
     off?: (message: FastEventMessage<Events, Meta>, args: FastEventListenerArgs<Meta>) => boolean
     // 对监听器函数进行包装装饰，返回包装后的函数
     pipes?: FastListenerPipe[]
-
 }
 
 export type FastListenerExecutorArgs = 'default' | 'allSettled' | 'race' | 'balance' | 'first' | 'last' | 'random' | IFastListenerExecutor;

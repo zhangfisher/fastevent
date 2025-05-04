@@ -2,7 +2,6 @@
 import { describe, test } from "vitest"
 import type { Equal, Expect } from '@type-challenges/utils'
 import { FastEvent } from "../../event"
-import { FastEvents } from "../../types"
 
 describe("事件继承类型测试", () => {
     test("基本子类继承类型", () => {

@@ -8,3 +8,12 @@ createRoot(document.getElementById('root')!).render(
         <App />
     </StrictMode>,
 );
+
+declare module '../../../packages/native/src/index' {
+    interface FastEvents {
+        click: { x: number; y: number };
+        mousemove: boolean;
+        scroll: number;
+        focus: string;
+    }
+}

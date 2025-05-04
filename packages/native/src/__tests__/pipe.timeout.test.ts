@@ -54,7 +54,7 @@ describe("监听器Pipe操作: Timeout", () => {
             return new Promise<void>(resolve => {
                 vi.runAllTimersAsync()
                 Promise.allSettled(promises).then(emitResults => {
-                    expect((emitResults[0] as any).reason).toBeInstanceOf(TimeoutError)
+                    expect((emitResults[0] as any).value).toBeInstanceOf(TimeoutError)
                     expect(results).toEqual([])
                 }).finally(() => {
                     resolve()

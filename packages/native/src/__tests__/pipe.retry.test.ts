@@ -63,7 +63,7 @@ describe("监听器Pipe操作: Retry", () => {
             return new Promise<void>(resolve => {
                 vi.runAllTimersAsync()
                 Promise.allSettled(promises).then(emitResults => {
-                    expect((emitResults[0] as any).reason).toBe(error)
+                    expect((emitResults[0] as any).value).toBe(error)
                     expect(mockFn).toHaveBeenCalledTimes(3)
                     expect(dropCallback).toHaveBeenCalledWith({
                         "type": "test",
@@ -112,7 +112,7 @@ describe("监听器Pipe操作: Retry", () => {
             return new Promise<void>(resolve => {
                 vi.runAllTimersAsync()
                 Promise.allSettled(promises).then(emitResults => {
-                    expect((emitResults[0] as any).reason).toBe(error)
+                    expect((emitResults[0] as any).value).toBe(error)
                     expect(mockFn).toHaveBeenCalledTimes(3)
                 }).finally(() => {
                     resolve()

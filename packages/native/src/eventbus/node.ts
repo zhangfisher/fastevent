@@ -1,12 +1,12 @@
 import { FastEvent } from "../event";
-import { FastEventListenerArgs, FastEventMessage, FastEventOptions, FastEvents } from "../types";
+import { FastEventListenerArgs, FastEventMessage, FastEventOptions } from "../types";
 import type { FastEventBus } from "./eventbus";
 import { FastEventBusNodeMessage, NamespaceDelimiter } from "./types";
 
 export type FastEventBusNodeOptions<Meta = Record<string, any>, Context = any> = FastEventOptions<Meta, Context>
 
 export class FastEventBusNode<
-    Events extends FastEvents = FastEvents,
+    Events extends Record<string, any> = Record<string, any>,
     Meta extends Record<string, any> = Record<string, any>,
     Context = never,
     Types extends keyof Events = Exclude<keyof Events, number | symbol>

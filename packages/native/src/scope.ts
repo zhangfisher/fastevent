@@ -1,5 +1,5 @@
 import type { FastEvent } from "./event";
-import { FastListenerExecutorArgs, FastEventAnyListener, FastEventEmitMessage, FastEventListener, FastEventListenerArgs, FastEventListenOptions, FastEventMessage, FastEvents, FastEventSubscriber, ScopeEvents, FastEventMeta } from "./types";
+import { FastListenerExecutorArgs, FastEventAnyListener, FastEventEmitMessage, FastEventListener, FastEventListenerArgs, FastEventListenOptions, FastEventMessage, FastEventSubscriber, ScopeEvents, FastEventMeta } from "./types";
 import { handleEmitArgs } from "./utils/handleEmitArgs";
 import { renameFn } from "./utils/renameFn";
 
@@ -14,7 +14,7 @@ export type FastEventScopeMeta = {
 }
 
 export class FastEventScope<
-    Events extends FastEvents = FastEvents,
+    Events extends Record<string, any> = Record<string, any>,
     Meta extends Record<string, any> = Record<string, any>,
     Context = any,
     Types extends keyof Events = keyof Events,
@@ -172,7 +172,7 @@ export class FastEventScope<
      * ```
      */
     public scope<
-        E extends FastEvents = FastEvents,
+        E extends Record<string, any> = Record<string, any>,
         P extends string = string,
         M extends Record<string, any> = Record<string, any>,
         C = Context

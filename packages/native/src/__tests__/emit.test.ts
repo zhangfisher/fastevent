@@ -121,8 +121,8 @@ describe("简单发布与订阅", async () => {
         expect(results[2].status).toBe('fulfilled')
         expect((results[2] as any).value).toBe(2)
 
-        expect(results[3].status).toBe('rejected')
-        expect((results[3] as any).reason).toBeInstanceOf(Error)
+        expect(results[3].status).toBe('fulfilled')
+        expect((results[3] as any).value).toBeInstanceOf(Error)
 
     })
     test("ignoreErrors=false时监听器的返回结果", async () => {
