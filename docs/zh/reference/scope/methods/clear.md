@@ -1,11 +1,11 @@
-# offAll
+# clear
 
-取消所有事件的监听器订阅。
+同`offAll`取消所有事件的监听器订阅，但会清除所有保留事件消息。
 
 ## 方法签名
 
 ```ts
- offAll(entry?: string):void
+ clear(entry?: string):void
 ```
 
 ## 参数

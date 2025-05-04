@@ -1,8 +1,9 @@
 import { transformerTwoslash } from '@shikijs/vitepress-twoslash'
-import { createFileSystemTypesCache } from '@shikijs/vitepress-twoslash/cache-fs'
 
 export default {
     base: '/fastevent/',
+    title: 'FastEvent',
+    description: '轻量级的事件订阅发布库',
     vue: {
         template: {
             compilerOptions: {

@@ -1,4 +1,4 @@
-# waitFor() 方法
+# waitFor
 
 异步等待指定事件触发。
 

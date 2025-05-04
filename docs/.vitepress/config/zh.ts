@@ -71,6 +71,7 @@ export default {
                                         { text: 'listeners', link: '/zh/reference/event/attrs/listeners' },
                                         { text: 'listenerCount', link: '/zh/reference/event/attrs/listenerCount' },
                                         { text: 'retainedMessages', link: '/zh/reference/event/attrs/retainedMessages' },
+                                        { text: 'events', link: '/zh/reference/event/attrs/events' },
                                     ]
                                 },
                                 {
@@ -84,6 +85,7 @@ export default {
                                         { text: 'onAny', link: '/zh/reference/event/methods/onAny' },
                                         { text: 'off', link: '/zh/reference/event/methods/off' },
                                         { text: 'offAll', link: '/zh/reference/event/methods/offAll' },
+                                        { text: 'clear', link: '/zh/reference/event/methods/clear' },
                                         { text: 'waitfor', link: '/zh/reference/event/methods/waitfor' },
                                         { text: 'scope', link: '/zh/reference/event/methods/scope' },
                                     ]
@@ -93,7 +95,38 @@ export default {
                         {
                             text: 'FastEventScope类',
                             collapsed: false,
-                            link: '/zh/reference/scope'
+                            items: [
+                                {
+                                    text: '构造函数',
+                                    link: '/zh/reference/scope/constructor',
+                                },
+                                {
+                                    text: '属性',
+                                    collapsed: false,
+                                    items: [
+                                        { text: 'prefix', link: '/zh/reference/scope/attrs/prefix' },
+                                        { text: 'context', link: '/zh/reference/scope/attrs/context' },
+                                        { text: 'options', link: '/zh/reference/scope/attrs/options' },
+                                        { text: 'events', link: '/zh/reference/scope/attrs/events' },
+                                    ]
+                                },
+                                {
+                                    text: '方法',
+                                    collapsed: false,
+                                    items: [
+                                        { text: 'emit', link: '/zh/reference/scope/methods/emit' },
+                                        { text: 'emitAsync', link: '/zh/reference/scope/methods/emitAsync' },
+                                        { text: 'on', link: '/zh/reference/scope/methods/on' },
+                                        { text: 'once', link: '/zh/reference/scope/methods/once' },
+                                        { text: 'onAny', link: '/zh/reference/scope/methods/onAny' },
+                                        { text: 'off', link: '/zh/reference/scope/methods/off' },
+                                        { text: 'offAll', link: '/zh/reference/scope/methods/offAll' },
+                                        { text: 'clear', link: '/zh/reference/scope/methods/clear' },
+                                        { text: 'waitfor', link: '/zh/reference/scope/methods/waitfor' },
+                                        { text: 'scope', link: '/zh/reference/scope/methods/scope' },
+                                    ]
+                                }
+                            ]
                         },
                     ]
                 },
@@ -101,7 +134,7 @@ export default {
             ]
         },
         socialLinks: [
-            { icon: 'github', link: 'https://github.com/zhangfisher/voerka-i18n/' }
+            { icon: 'github', link: 'https://github.com/zhangfisher/fastevent/' }
         ]
 
     }

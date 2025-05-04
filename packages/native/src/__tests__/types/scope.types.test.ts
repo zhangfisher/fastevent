@@ -4,7 +4,7 @@ import { describe, test, expect } from "vitest"
 import type { Equal, Expect, NotAny } from '@type-challenges/utils'
 import { FastEvent } from "../../event"
 import { FastEventScopeMeta } from "../../scope"
-import { FastEventMeta } from "../../types"
+import { FastEventMeta, FastEvents, PickScopeEvents } from "../../types"
 
 describe("事件作用域类型测试", () => {
 
@@ -27,6 +27,24 @@ describe("事件作用域类型测试", () => {
                 Expect<Equal<typeof message.type, 'x'>>,
                 Expect<Equal<typeof message.payload, number>>,
                 Expect<Equal<typeof message.meta, FastEventMeta & Record<string, any> & FastEventScopeMeta>>,
+            ]
+        })
+
+
+    })
+    test("scope事件类型测试", () => {
+        type CustomScopeEvents = {
+            x: number,
+            y: string
+        }
+        const scope = emitter.scope<CustomScopeEvents>("a/b/c")
+
+        type ScopeEvents = Expect<Equal<typeof scope.events, PickScopeEvents<Record<string, any> & FastEvents, string> & CustomScopeEvents>>
+
+        scope.on('x', (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, 'x'>>,
+                Expect<Equal<typeof message.payload, number>>
             ]
         })
 

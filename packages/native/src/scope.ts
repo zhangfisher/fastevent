@@ -22,7 +22,7 @@ export class FastEventScope<
 > {
     options: Required<FastEventScopeOptions<FinalMeta, Context>>
     // @ts-ignore
-    types: Events
+    events: Events
     constructor(public emitter: FastEvent<Events>, public prefix: string, options?: FastEventScopeOptions<Meta, Context>) {
         this.options = Object.assign({}, {
             scope: prefix

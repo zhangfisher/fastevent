@@ -1,108 +1,141 @@
 export default {
-  themeConfig: {
-    // https://vitepress.dev/reference/default-theme-config
-    outline: {
-      label: "TOC",
-      level: [2, 5]
-    },
-    // https://vitepress.dev/reference/default-theme-config
-    nav: [
-      { text: 'Home', link: '/en' },
-      { text: 'Guide', link: '/en/guide' },
-      { text: 'Reference', link: '/en/reference' },
-      { text: 'Repos', link: 'https://zhangfisher.github.io/repos/' },
-    ],
-    sidebar: {
-      "/en/guide/": [
-        {
-          text: 'Start',
-          collapsed: false,
-          items: [
-            { text: 'Install', link: '/en/guide/intro/install' },
-            { text: 'Get Started', link: '/en/guide/intro/get-started' },
-            { text: 'History', link: '/en/guide/intro/history' },
-            { text: 'Question', link: '/en/guide/intro/question' },
-            { text: 'Support', link: '/en/guide/intro/support' },
-          ]
+    themeConfig: {
+        // https://vitepress.dev/reference/default-theme-config
+        outline: {
+            label: "TOC",
+            level: [2, 5]
         },
-        {
-          text: 'Guide',
-          collapsed: false,
-          items: [
-            { 
-              collapsed: false,
-              items: [
-                { text: 'Workflow', link: '/en/guide/use/workflow' },
-                { text: 'Translate', link: '/en/guide/use/t' },
-                { text: 'Component', link: '/en/guide/use/translate' },
-                { text: 'Paragraph', link: '/en/guide/use/paragraph' },
-                { text: 'Interpolation', link: '/en/guide/use/interpolation' },
-                { text: 'DateTime', link: '/en/guide/use/datetime' },
-                { text: 'Plural', link: '/en/guide/use/plural' },
-                { text: 'Currency', link: '/en/guide/use/currency' },
-                { text: 'Change Language', link: '/en/guide/use/change-language' },
-                { text: 'Namespace', link: '/en/guide/use/namespace' },
-                { text: 'Remember', link: '/en/guide/use/storage' },
-                { text: 'Polysemy', link: '/en/guide/use/multi-translate' },
-              ]
-            },
-          ]
+        // https://vitepress.dev/reference/default-theme-config
+        nav: [
+            { text: 'Home', link: '/en/' },
+            { text: 'Guide', link: '/en/guide/index' },
+            { text: 'Reference', link: '/en/reference/index' },
+            { text: 'Open Source', link: 'https://zhangfisher.github.io/repos/' },
+        ],
+        sidebar: {
+            "/en/guide/": [
+                {
+                    text: 'Start',
+                    collapsed: false,
+                    items: [
+                        { text: 'Install', link: '/en/guide/intro/install' },
+                        { text: 'Getting Started', link: '/en/guide/intro/get-started' },
+                        { text: 'History', link: '/en/guide/intro/history' },
+                        { text: 'Support', link: '/en/guide/intro/support' },
+                    ]
+                },
+                {
+                    text: '指南',
+                    collapsed: false,
+                    items: [
+                        {
+                            collapsed: false,
+                            items: [
+                                { text: 'Trigger', link: '/en/guide/use/event-trigger' },
+                                { text: 'Subscribe', link: '/en/guide/use/subscribe-events' },
+                                { text: 'off Events', link: '/en/guide/use/off-events' },
+                                { text: 'Scope', link: '/en/guide/use/scopes' },
+                                { text: 'WaitFor', link: '/en/guide/use/waitfor' },
+                                { text: 'Metadata', link: '/en/guide/use/metadata' },
+                                { text: 'Context', link: '/en/guide/use/context' },
+                                { text: 'Hooks', link: '/en/guide/use/hooks' },
+                                { text: 'Executor', link: '/en/guide/use/executor' },
+                                { text: 'Error', link: '/en/guide/use/error_handle' },
+                                { text: '监Pipe', link: '/en/guide/use/pipe' },
+                                { text: 'Typescript', link: '/en/guide/use/typescript' },
+                                { text: 'DevTools', link: '/en/guide/use/devTools' }
+                            ]
+                        },
+                    ]
+                }
+            ],
+            "/en/reference/": [
+                {
+                    text: 'Reference',
+                    items: [
+                        {
+                            text: 'FastEvent',
+                            collapsed: false,
+                            items: [
+                                {
+                                    text: 'Constructor',
+                                    link: '/en/reference/event/constructor',
+                                },
+                                {
+                                    text: 'Properties',
+                                    collapsed: false,
+                                    items: [
+                                        { text: 'id', link: '/en/reference/event/attrs/id' },
+                                        { text: 'options', link: '/en/reference/event/attrs/options' },
+                                        { text: 'context', link: '/en/reference/event/attrs/context' },
+                                        { text: 'listeners', link: '/en/reference/event/attrs/listeners' },
+                                        { text: 'listenerCount', link: '/en/reference/event/attrs/listenerCount' },
+                                        { text: 'retainedMessages', link: '/en/reference/event/attrs/retainedMessages' },
+                                        { text: 'events', link: '/en/reference/event/attrs/events' },
+                                    ]
+                                },
+                                {
+                                    text: 'Method',
+                                    collapsed: false,
+                                    items: [
+                                        { text: 'emit', link: '/en/reference/event/methods/emit' },
+                                        { text: 'emitAsync', link: '/en/reference/event/methods/emitAsync' },
+                                        { text: 'on', link: '/en/reference/event/methods/on' },
+                                        { text: 'once', link: '/en/reference/event/methods/once' },
+                                        { text: 'onAny', link: '/en/reference/event/methods/onAny' },
+                                        { text: 'off', link: '/en/reference/event/methods/off' },
+                                        { text: 'offAll', link: '/en/reference/event/methods/offAll' },
+                                        { text: 'clear', link: '/en/reference/event/methods/clear' },
+                                        { text: 'waitfor', link: '/en/reference/event/methods/waitfor' },
+                                        { text: 'scope', link: '/en/reference/event/methods/scope' },
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            text: 'FastEventScope',
+                            collapsed: false,
+                            items: [
+                                {
+                                    text: 'Constructor',
+                                    link: '/en/reference/scope/constructor',
+                                },
+                                {
+                                    text: 'Properties',
+                                    collapsed: false,
+                                    items: [
+                                        { text: 'prefix', link: '/en/reference/scope/attrs/prefix' },
+                                        { text: 'context', link: '/en/reference/scope/attrs/context' },
+                                        { text: 'options', link: '/en/reference/scope/attrs/options' },
+                                        { text: 'events', link: '/en/reference/scope/attrs/events' },
+                                    ]
+                                },
+                                {
+                                    text: 'Method',
+                                    collapsed: false,
+                                    items: [
+                                        { text: 'emit', link: '/en/reference/scope/methods/emit' },
+                                        { text: 'emitAsync', link: '/en/reference/scope/methods/emitAsync' },
+                                        { text: 'on', link: '/en/reference/scope/methods/on' },
+                                        { text: 'once', link: '/en/reference/scope/methods/once' },
+                                        { text: 'onAny', link: '/en/reference/scope/methods/onAny' },
+                                        { text: 'off', link: '/en/reference/scope/methods/off' },
+                                        { text: 'offAll', link: '/en/reference/scope/methods/offAll' },
+                                        { text: 'clear', link: '/en/reference/scope/methods/clear' },
+                                        { text: 'waitfor', link: '/en/reference/scope/methods/waitfor' },
+                                        { text: 'scope', link: '/en/reference/scope/methods/scope' },
+                                    ]
+                                }
+                            ]
+                        },
+                    ]
+                },
+
+            ]
         },
-        {
-          text: 'Integration',
-          collapsed: false,
-          items: [
-            { text:'Vue', link: '/en/guide/integration/vue' },
-            { text:'Vue2', link: '/en/guide/integration/vue2' },
-            { text:'React', link: '/en/guide/integration/react' },
-            { text:'Nextjs', link: '/en/guide/integration/nextjs' },
-            { text:'Svelte', link: '/en/guide/integration/svelte' },
-            { text:'Solid', link: '/en/guide/integration/solid' },
-            { text:'uniapp', link: '/en/guide/integration/uniapp' },
-            { text:'openinula', link: '/en/guide/integration/openinula' },
-          ]
-        },
-        {
-          text: 'Advanced',
-          collapsed: false,
-          items: [
-            { text: 'Configuration', link: '/en/guide/advanced/settings'  },
-            { text: 'Runtime', link: '/en/guide/advanced/runtime'  },
-            { text: 'IdMap', link: '/en/guide/advanced/idMap'  },
-            { text: 'Library ', link: '/en/guide/advanced/multi-libs' },
-            { text: 'Events', link: '/en/guide/advanced/events' },
-            { text: 'Transform', link: '/en/guide/advanced/transform' },
-            { text: 'Formatter', link: '/en/guide/advanced/custom-formatter' },
-            { text: 'Auto Import', link: '/en/guide/advanced/auto-import'  },
-            { text: 'Language Pack', link: '/en/guide/advanced/lang-pack'  },
-            { text: 'Auto Translate', link: '/en/guide/advanced/auto-translate' },
-            { text: 'Dynamic Language', link: '/en/guide/advanced/dynamic-add'  },
-            { text: 'Entry Path', link: '/en/guide/advanced/lang-entry-path'  },
-            { text: 'Patch', link: '/en/guide/advanced/lang-patch' },
-            { text: 'Edit Patch', link: '/en/guide/advanced/edit-patch'  },
-            { text: 'TypeScript', link: '/en/guide/advanced/typescript' },
-          ]
-        },
-        {
-          text: 'Tools',
-          collapsed: false,
-          items: [
-            { text: 'Cli', link: '/en/guide/tools/cli' },
-            { text: 'Plugins', link: '/en/guide/tools/plugins' },
-            { text: 'Babel', link: '/en/guide/tools/babel' },
-            { text: 'Eslint', link: '/en/guide/tools/eslint' }
-          ]
-        }
-      ],
-      "/reference/": [ 
-            { text: 'Language Code', link: '/reference/lang-code' },
-            { text: 'VoerkaI18nScope', link: '/reference/i18nscope' },
-            { text: 'VoerkaI18nManager', link: '/reference/voerkai18n' },
-          ]  
-    },
-    socialLinks: [
-      { icon: 'github', link: 'https://github.com/zhangfisher/voerka-i18n/' }
-    ]  
-  
-  }
-} 
+        socialLinks: [
+            { icon: 'github', link: 'https://github.com/zhangfisher/fastevent/' }
+        ]
+
+    }
+}

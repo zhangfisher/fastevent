@@ -56,6 +56,8 @@ export class FastEvent<
 
     /** 当前注册的监听器总数 */
     listenerCount: number = 0
+    // @ts-ignore
+    events: Events
     /**
      * 创建FastEvent实例
      * @param options - 事件发射器的配置选项

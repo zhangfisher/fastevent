@@ -1,4 +1,4 @@
-# emitAsync() 方法
+# emitAsync
 
 `emitAsync`是`emit`的异步版本，调用方法与`emit`相同。
 

@@ -1,76 +1,97 @@
-# Getting Started
+# FastEvent
 
-## Introduction
+🌟 **Top 20 Core Features**
 
-FastEvent is a powerful TypeScript event management library that provides flexible event subscription and publishing mechanisms, supporting features such as event wildcards, scoping, and asynchronous events.
+## Event Handling Core Features
 
-Compared to `EventEmitter2`, `FastEvent` has the following advantages:
+🚀 **Flexible Event Triggering Mechanism**
 
--   `FastEvent` performs about `1+` times better than `EventEmitter2` when publishing and subscribing with wildcards
--   `FastEvent` has a package size of `6.3kb`, while `EventEmitter2` is `43.4kb`
--   `FastEvent` offers more comprehensive features
+Supports both synchronous (`emit`) and asynchronous (`emitAsync`) event triggering. Asynchronous triggering waits for all `Promise` executions to complete, perfectly handling asynchronous listeners.
 
-## Installation
+🎯 **Powerful Event Routing**
 
-Install using npm:
+Uses a delimiter (`/`) based event path system, supporting multi-level event organization like `user/profile/update`, making event structures clearer.
 
-```bash
-npm install fastevent
-```
+🌲 **Tree-structured Listener Storage**
 
-Or using yarn:
+Uses efficient tree structures to store event listeners, optimizing event lookup and triggering performance, supporting large-scale event processing.
 
-```bash
-yarn add fastevent
-```
+🎭 **Wildcard Matching Support**
 
-## Basic Usage
+Provides `*` (single-level) and `**` (multi-level) wildcards for flexible event matching, such as `user/*` or `user/**`.
 
-```typescript
-import { FastEvent } from 'fastevent';
+## Listener Management Features
 
-// Create event instance
-const events = new FastEvent();
+⚡ **Smart Listener Registration**
 
-// Subscribe to event
-events.on('user/login', (message) => {
-    console.log('User login:', message.payload);
-    console.log('Event type:', message.type);
-    console.log('Metadata:', message.meta);
-});
+Supports three listener modes: regular (`on`), one-time (`once`) and global (`onAny`), meeting different scenario requirements.
 
-// Publish event - Method 1: Parameters
-events.emit('user/login', { id: 1, name: 'Alice' });
+🎨 **Rich Listener Options**
 
-// Publish event - Method 2: Message object
-events.emit({
-    type: 'user/login',
-    payload: { id: 1, name: 'Alice' },
-    meta: { timestamp: Date.now() },
-});
-```
+Provides options like `count` (execution limit), `prepend` (priority control) for precise listener behavior control.
 
-## Type Safety
+🔄 **Listener Pipeline Processing**
 
-FastEvent provides full TypeScript support for type-safe events:
+Supports listener decorator chains through `pipes` option, enabling pre- and post-processing of listeners.
 
-```typescript
-interface MyEvents {
-    'user/login': { id: number; name: string };
-    'user/logout': { id: number };
-}
+🎪 **Dynamic Listener Control**
 
-const events = new FastEvent<MyEvents>();
+Supports `filter` (filter conditions) and `off` (auto-unregister conditions) options for dynamic listener behavior control.
 
-// TypeScript will enforce correct event types and payloads
-events.on('user/login', (message) => {
-    const { id, name } = message.payload; // Properly typed
-});
-```
+## Advanced Functionality Features
 
-## Next Steps
+🔢 **Scope Management**
 
--   Learn about [Event Message Format](/guide/event-message)
--   Explore [Event Scopes](/guide/scopes)
--   Understand the [Metadata System](/guide/metadata)
--   Master [Wildcards](/guide/wildcards)
+Creates isolated event scopes through `scope` method, supporting namespace isolation and hierarchical management.
+
+💾 **Message Retention Mechanism**
+
+Supports `retain` option to keep the last event message, allowing new subscribers to immediately get the latest state.
+
+⏳ **Event Waiting Mechanism**
+
+Provides `waitFor` method supporting `Promise` style event waiting with timeout configuration.
+
+🎛 **Metadata Extension**
+
+Supports attaching metadata (`meta`) to event messages, providing additional context information.
+
+## Error Handling & Debugging Features
+
+🛡 **Robust Error Handling**
+
+Provides complete error handling mechanism, supporting `ignoreErrors` option and `onListenerError` callback.
+
+🔍 **Debugging Tool Support**
+
+Built-in debug mode (`debug` option), supports development tool integration for easier problem diagnosis.
+
+## Extensibility & Integration Features
+
+🔌 **Extensible Executor**
+
+Supports custom executors (`executor`) to control listener execution methods and order.
+
+🎣 **Rich Lifecycle Hooks**
+
+Provides multiple hook functions like `onAddListener`, `onRemoveListener` for custom behaviors.
+
+## Type System Support
+
+📝 **Complete TypeScript Support**
+
+Provides comprehensive generic type definitions, supporting static checking of event types, payload types and metadata types.
+
+🎯 **Smart Type Inference**
+
+Supports automatic inference of listener parameter types from event definitions, providing complete type safety.
+
+## Performance & Reliability
+
+⚡ **High-performance Design**
+
+Uses efficient tree storage structures and carefully optimized event dispatching mechanism to ensure high performance.
+
+🛡 **Reliable Concurrency Handling**
+
+Ensures reliability in high concurrency scenarios through well-designed event queues and asynchronous processing mechanisms.
