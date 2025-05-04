@@ -469,6 +469,21 @@ export class FastEvent<
         traverseNodes(entryNode, callback, []);
     }
 
+    private _onListenerError(listener: FastEventListener, message: FastEventMessage, args: FastEventListenerArgs<any> | undefined, e: any) {
+        if (e instanceof Error) {
+            // @ts-ignore
+            e._emitter = `${listener.name || 'anonymous'}:${message.type}`
+        }
+        if (isFunction(this._options.onListenerError)) {
+            try { this._options.onListenerError.call(this, listener, e, message, args) } catch { }
+        }
+        if (this._options.ignoreErrors) {
+            return e
+        } else {
+            throw e
+        }
+
+    }
     /**
      * 执行单个监听器函数
      * @param listener - 要执行的监听器函数或包装过的监听器对象
@@ -488,17 +503,14 @@ export class FastEvent<
      */
     private _executeListener(listener: any, message: FastEventMessage, args: FastEventListenerArgs<any> | undefined): Promise<any> | any {
         try {
-            return listener.call(this._context || this, message, args)
+            let result = listener.call(this._context || this, message, args)
+            // 自动处理reject Promise
+            if (result && result instanceof Promise) {
+                result.catch(e => { this._onListenerError(listener, message, args, e) })
+            }
+            return result
         } catch (e: any) {
-            e._emitter = `${listener.name || 'anonymous'}:${message.type}`
-            if (isFunction(this._options.onListenerError)) {
-                this._options.onListenerError.call(this._context || this, message.type, e)
-            }
-            if (this._options.ignoreErrors) { // 如果忽略错误，则返回错误对象
-                return e
-            } else {
-                throw e
-            }
+            return this._onListenerError(listener, message, args, e)
         }
     }
     private _getListenerExecutor(args?: FastEventListenerArgs): IFastListenerExecutor | undefined {
@@ -639,9 +651,9 @@ export class FastEvent<
         if (isFunction(this._options.onAfterExecuteListener)) {
             this._options.onAfterExecuteListener.call(this, message, results, nodes)
         }
+
         return results
     }
-
     /**
      * 异步触发事件
      * @param type - 事件类型，可以是字符串或预定义的事件类型

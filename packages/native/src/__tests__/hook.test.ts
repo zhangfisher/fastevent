@@ -57,7 +57,13 @@ describe('FastEvent钩子函数测试', () => {
         emitter.emit('test')
 
         expect(onListenerError).toHaveBeenCalledTimes(1)
-        expect(onListenerError).toHaveBeenCalledWith('test', error)
+        expect(onListenerError).toHaveBeenCalledWith(listener, error, {
+            "meta": undefined,
+            "payload": undefined,
+            "type": "test",
+        }, {
+            executor: undefined
+        })
     })
 
     test('执行监听器后应该触发onAfterExecuteListener', () => {
@@ -144,11 +150,18 @@ describe('FastEvent钩子函数测试', () => {
         })
 
         const error = new Error('测试错误')
-        emitter.on('test', () => {
+        const listener = () => {
             throw error
-        })
+        }
+        emitter.on('test', listener)
 
         expect(() => emitter.emit('test')).toThrow(error)
-        expect(onListenerError).toHaveBeenCalledWith('test', error)
+        expect(onListenerError).toHaveBeenCalledWith(listener, error, {
+            "meta": undefined,
+            "payload": undefined,
+            "type": "test",
+        }, {
+            executor: undefined
+        })
     })
 })

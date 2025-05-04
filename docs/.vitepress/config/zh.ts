@@ -9,7 +9,7 @@ export default {
         nav: [
             { text: '首页', link: '/' },
             { text: '指南', link: '/zh/guide' },
-            { text: '参考', link: '/zh/reference' },
+            { text: '参考', link: '/zh/reference/index' },
             { text: '开源推荐', link: 'https://zhangfisher.github.io/repos/' },
         ],
         sidebar: {
@@ -40,7 +40,9 @@ export default {
                                 { text: '上下文', link: '/zh/guide/use/context' },
                                 { text: '事件钩子', link: '/zh/guide/use/hooks' },
                                 { text: '执行器', link: '/zh/guide/use/executor' },
-                                { text: '监听管道', link: '/zh/guide/use/pipe' }
+                                { text: '监听管道', link: '/zh/guide/use/pipe' },
+                                { text: 'Typescript', link: '/zh/guide/use/typescript' },
+                                { text: '调试', link: '/zh/guide/use/devTools' }
                             ]
                         },
                     ]
@@ -48,42 +50,53 @@ export default {
             ],
             "/zh/reference/": [
                 {
-                    text: 'FastEvent',
-                    collapsed: false, link: '/zh/reference/event',
+                    text: '参考',
                     items: [
                         {
-                            text: '属性',
+                            text: 'FastEvent类',
                             collapsed: false,
                             items: [
-                                { text: 'id', link: '/zh/reference/event/attrs/id' },
-                                { text: 'options', link: '/zh/reference/event/attrs/options' },
-                                { text: 'context', link: '/zh/reference/event/attrs/context' },
-                                { text: 'listeners', link: '/zh/reference/event/attrs/listeners' },
-                                { text: 'listenerCount', link: '/zh/reference/event/attrs/listenerCount' },
-                                { text: 'retainedMessages', link: '/zh/reference/event/attrs/retainedMessages' },
+                                {
+                                    text: '构造函数',
+                                    link: '/zh/reference/event/constructor',
+                                },
+                                {
+                                    text: '属性',
+                                    collapsed: false,
+                                    items: [
+                                        { text: 'id', link: '/zh/reference/event/attrs/id' },
+                                        { text: 'options', link: '/zh/reference/event/attrs/options' },
+                                        { text: 'context', link: '/zh/reference/event/attrs/context' },
+                                        { text: 'listeners', link: '/zh/reference/event/attrs/listeners' },
+                                        { text: 'listenerCount', link: '/zh/reference/event/attrs/listenerCount' },
+                                        { text: 'retainedMessages', link: '/zh/reference/event/attrs/retainedMessages' },
+                                    ]
+                                },
+                                {
+                                    text: '方法',
+                                    collapsed: false,
+                                    items: [
+                                        { text: 'emit', link: '/zh/reference/event/methods/emit' },
+                                        { text: 'emitAsync', link: '/zh/reference/event/methods/emitAsync' },
+                                        { text: 'on', link: '/zh/reference/event/methods/on' },
+                                        { text: 'once', link: '/zh/reference/event/methods/once' },
+                                        { text: 'onAny', link: '/zh/reference/event/methods/onAny' },
+                                        { text: 'off', link: '/zh/reference/event/methods/off' },
+                                        { text: 'offAll', link: '/zh/reference/event/methods/offAll' },
+                                        { text: 'waitfor', link: '/zh/reference/event/methods/waitfor' },
+                                        { text: 'scope', link: '/zh/reference/event/methods/scope' },
+                                    ]
+                                }
                             ]
                         },
                         {
-                            text: '方法',
+                            text: 'FastEventScope类',
                             collapsed: false,
-                            items: [
-                                { text: 'emit', link: '/zh/reference/event/methods/emit' },
-                                { text: 'emitAsync', link: '/zh/reference/event/methods/emitAsync' },
-                                { text: 'on', link: '/zh/reference/event/methods/on' },
-                                { text: 'once', link: '/zh/reference/event/methods/once' },
-                                { text: 'onAny', link: '/zh/reference/event/methods/onAny' },
-                                { text: 'off', link: '/zh/reference/event/methods/off' },
-                                { text: 'offAll', link: '/zh/reference/event/methods/offAll' },
-                                { text: 'waitfor', link: '/zh/reference/event/methods/waitfor' },
-                                { text: 'scope', link: '/zh/reference/event/methods/scope' },
-                            ]
-                        }
+                            link: '/zh/reference/scope'
+                        },
                     ]
                 },
-                {
-                    text: 'FastEventScope',
-                    collapsed: false, link: '/zh/reference/scope'
-                },
+
             ]
         },
         socialLinks: [

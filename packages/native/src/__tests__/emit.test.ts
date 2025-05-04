@@ -103,4 +103,41 @@ describe("简单发布与订阅", async () => {
             meta: { a: 1 }
         })
     })
+    test("监听器的返回结果", async () => {
+        const emitter = new FastEvent<{ click: number }>();
+
+        emitter.on('click', () => 1)
+        emitter.on('click', () => { throw new Error('custom') })
+        emitter.on('click', async () => 2)
+        emitter.on('click', async () => { throw new Error('custom') })
+
+        const results = await Promise.allSettled(emitter.emit('click'))
+        expect(results[0].status).toBe('fulfilled')
+        expect((results[0] as any).value).toBe(1)
+
+        expect(results[1].status).toBe('fulfilled')
+        expect((results[1] as any).value).toBeInstanceOf(Error)
+
+        expect(results[2].status).toBe('fulfilled')
+        expect((results[2] as any).value).toBe(2)
+
+        expect(results[3].status).toBe('rejected')
+        expect((results[3] as any).reason).toBeInstanceOf(Error)
+
+    })
+    test("ignoreErrors=false时监听器的返回结果", async () => {
+        const emitter = new FastEvent<{ click: number }>({
+            ignoreErrors: false
+        });
+
+        emitter.on('click', () => 1)
+        emitter.on('click', () => { throw new Error('custom') })
+        emitter.on('click', async () => 2)
+        emitter.on('click', async () => { throw new Error('custom') })
+        try {
+            emitter.emit('click')
+        } catch (e: any) {
+            expect(e).toBeInstanceOf(Error)
+        }
+    })
 })
