@@ -6,7 +6,9 @@ import share from './share'
 export default defineConfig({
     ...share,
     locales: {
-        root: { label: '简体中文', ...zh, link: '/' },
+        // @ts-ignore
+        root: { label: '简体中文', ...zh },
+        // @ts-ignore
         en: { label: 'English', ...en }
     }
 })

@@ -27,7 +27,8 @@
     "author": "zhangfisher",
     "license": "MIT",
     "devDependencies": {
-        "@changesets/cli": "^2.28.1"
+        "@changesets/cli": "^2.28.1",
+        "turbo": "^2.5.2"
     },
     "packageManager": "bun@1.2.0",
     "workspaces": [

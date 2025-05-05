@@ -4,6 +4,9 @@
 
 import { describe, test, expect, vi } from "vitest"
 import { FastEvent } from "../event"
+import { AbortError } from "../consts"
+
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 describe("触发事件时传递AbortSignal参数给监听器", () => {
     test("emit方法传递AbortSignal给监听器", () => {
@@ -44,15 +47,12 @@ describe("触发事件时传递AbortSignal参数给监听器", () => {
         expect(results).toEqual(["async result"])
     })
 
-    test("监听器可以检测AbortSignal是否已中断", () => {
+    test("传入已Abored的AbortSignal", () => {
         const emitter = new FastEvent()
         const controller = new AbortController()
         const signal = controller.signal
 
         const listener = vi.fn((message, args) => {
-            if (args?.abortSignal?.aborted) {
-                throw new Error("操作已取消")
-            }
             return "正常执行"
         })
 
@@ -69,8 +69,7 @@ describe("触发事件时传递AbortSignal参数给监听器", () => {
         results = emitter.emit("test", undefined, {
             abortSignal: signal
         })
-        expect(results[0]).toBeInstanceOf(Error)
-        expect(results[0].message).toBe("操作已取消")
+        expect(results[0]).toBeInstanceOf(AbortError)
     })
 
     test("emit方法传递AbortSignal给多个监听器", () => {
@@ -98,29 +97,102 @@ describe("触发事件时传递AbortSignal参数给监听器", () => {
         expect(results).toEqual(["result1", "result2"])
     })
 
-    test("emitAsync方法可以中断监听器执行", async () => {
-        const emitter = new FastEvent()
-        const controller = new AbortController()
-        const signal = controller.signal
+    test("监听器自行处理AbortSignal并返回AbortError错误", () => {
+        return new Promise<void>(resolve => {
+            const emitter = new FastEvent<{ click: number }>()
+            let hasAbortSignal: boolean = false
+            emitter.on("click", (message, { abortSignal }) => {
+                return new Promise<void>((resolve, reject) => {
+                    abortSignal!.addEventListener("abort", () => {
+                        hasAbortSignal = true
+                        reject(new AbortError())
+                    })
+                    delay(1000).then(() => resolve())
+                })
+            })
 
-        const listener = vi.fn(async (message, args) => {
-            await new Promise(resolve => setTimeout(resolve, 100))
-            if (args?.abortSignal?.aborted) {
-                throw new Error("操作已取消")
-            }
-            return "async result"
+            // 创建一个 AbortController 实例
+            const abortController = new AbortController()
+
+            // 传入 AbortController.signal
+            const results = emitter.emit("click", 1, {
+                abortSignal: abortController.signal
+            })
+            setTimeout(() => {
+                abortController.abort()   // [!code++]
+                Promise.allSettled(results).then((r) => {
+                    expect(r[0].status).toBe("fulfilled")
+                    expect((r[0] as any).value).toBeInstanceOf(AbortError)
+                    expect(hasAbortSignal).toBe(true)
+                    resolve()
+                })
+            }, 10)
         })
+    })
+    test("监听器自行处理AbortSignal并返回指定值", () => {
+        return new Promise<void>(resolve => {
+            const emitter = new FastEvent<{ click: number }>()
+            let hasAbortSignal: boolean = false
+            emitter.on("click", (message, { abortSignal }) => {
+                return new Promise<number>((resolve) => {
+                    abortSignal!.addEventListener("abort", () => {
+                        hasAbortSignal = true
+                        resolve(100)
+                    })
+                    delay(1000).then(() => resolve(0))
+                })
+            })
 
-        emitter.on("test", listener)
+            // 创建一个 AbortController 实例
+            const abortController = new AbortController()
 
-        // 启动异步触发但立即中断
-        const promise = emitter.emitAsync("test", undefined, {
-            abortSignal: signal
+            // 传入 AbortController.signal
+            const results = emitter.emit("click", 1, {
+                abortSignal: abortController.signal
+            })
+            setTimeout(() => {
+                abortController.abort()   // [!code++]
+                Promise.allSettled(results).then((r) => {
+                    expect(r[0].status).toBe("fulfilled")
+                    expect((r[0] as any).value).toBe(100)
+                    expect(hasAbortSignal).toBe(true)
+                    resolve()
+                })
+            }, 10)
         })
-        controller.abort()
+    })
+    test("中止多个监听器", () => {
+        return new Promise<void>(resolve => {
+            const emitter = new FastEvent<{ click: number }>()
+            const length: number = 10
+            const listeners = Array.from({ length }).map((_, i) => vi.fn((message, { abortSignal }) => {
+                return new Promise<number>((resolve) => {
+                    delay(1000).then(() => resolve(0))
+                    abortSignal!.addEventListener("abort", () => {
+                        resolve(i + 1)
+                    })
+                })
+            }))
+            listeners.map(listener => emitter.on("click", listener))
 
-        const results = await promise as unknown as (Error)[]
-        expect(results[0]).toBeInstanceOf(Error)
-        expect(results[0].message).toBe("操作已取消")
+            // 创建一个 AbortController 实例
+            const abortController = new AbortController()
+
+            // 传入 AbortController.signal
+            const results = emitter.emit("click", 1, {
+                abortSignal: abortController.signal
+            })
+            setTimeout(() => {
+                abortController.abort()   // [!code++]
+                Promise.allSettled(results).then((emitResults) => {
+                    expect(emitResults.length).toBe(length)
+                    emitResults.forEach((r, i) => {
+                        expect(r.status).toBe("fulfilled")
+                        expect((r as any).value).toBe(i + 1)
+                    })
+                    resolve()
+                })
+            }, 10)
+        })
     })
 })

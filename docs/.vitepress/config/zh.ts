@@ -36,6 +36,7 @@ export default {
                                 { text: '取消订阅', link: '/zh/guide/use/off-events' },
                                 { text: '事件作用域', link: '/zh/guide/use/scopes' },
                                 { text: '等待事件触发', link: '/zh/guide/use/waitfor' },
+                                { text: '中止执行', link: '/zh/guide/use/abort' },
                                 { text: '元数据', link: '/zh/guide/use/metadata' },
                                 { text: '上下文', link: '/zh/guide/use/context' },
                                 { text: '事件钩子', link: '/zh/guide/use/hooks' },

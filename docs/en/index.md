@@ -14,22 +14,28 @@ hero:
           link: https://github.com/zhangfisher/fastevent
 
 features:
-    - title: ⚡ Powerful
-      details: 比 EventEmitter2 快 1 倍以上 
-    - title: 🔍 通配符支持
-      details: 强大的单级(\*)和多级(\*\*)通配符匹配
-    - title: 🏗️ 层级作用域
-      details: 嵌套作用域管理，自动路径前缀
-    - title: 🔄 事件执行器
-      details: 支持多种监听器事件执行器
-    - title: 📝 元数据系统
-      details: 全局/作用域/事件级别的元数据合并
-    - title: 💾 保留消息
-      details: 事件持久化，新订阅者自动获取
-    - title: 🛠️ 完整 TypeScript 支持
-      details: 严格类型检查，自动补全
-    - title: 🔧 事件钩子
-      details: 监听器生命周期监控和调试
-    - title: 🐞 调试插件
-      details: 浏览器调试插件，自动记录事件处理过程
+    - title: ⚡ High Performance
+      details: Over 2x faster than EventEmitter2, optimized for high-frequency event handling
+    - title: 🔍 Wildcard Patterns
+      details: Powerful event pattern matching with single-level (*) and multi-level (**) wildcards
+    - title: 🏗️ Hierarchical Scopes
+      details: Nested event scopes with automatic path prefixing for better event organization
+    - title: 🔄 Event Executors
+      details: Flexible event execution strategies with customizable listener executors
+    - title: 📝 Metadata System
+      details: Rich metadata support at global, scope, and event levels with automatic merging
+    - title: 💾 Retained Events
+      details: Event persistence with automatic delivery to new subscribers
+    - title: � Async Support
+      details: First-class support for async event listeners and Promise-based operations
+    - title: �️ Type Safety
+      details: Comprehensive TypeScript support with strict type checking and autocompletion
+    - title: 🎯 Event Filtering
+      details: Built-in event filtering and conditional execution capabilities
+    - title: 🔧 Lifecycle Hooks
+      details: Complete listener lifecycle monitoring and debugging hooks
+    - title: 🐞 Debug Tools
+      details: Browser-based debugging tools for event flow visualization
+    - title: � Pipe System
+      details: Transform and decorate event listeners with powerful pipe operators
 ---

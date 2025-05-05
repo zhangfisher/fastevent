@@ -188,25 +188,3 @@ async function waitForStateSync() {
     }
 }
 ```
-
-## Important Notes
-
-1. Wildcard Usage
-   - Wildcards (* and **) only at end of event types
-   - Single-level (*) matches one level only
-   - Multi-level (**) matches any levels
-   - No wildcards in middle of event types
-
-2. Timeout Handling
-   - Set reasonable timeouts to avoid infinite waits
-   - Timeouts automatically clean up listeners
-   - Timeouts throw errors - ensure proper error handling
-
-3. Memory Management
-   - waitFor automatically cleans up listeners after trigger/timeout
-   - No manual off() calls needed
-
-4. Scope Usage
-   - Be aware of automatic prefix handling in scopes
-   - Can trigger via scope or main emitter
-   - Event message types automatically handle prefixes

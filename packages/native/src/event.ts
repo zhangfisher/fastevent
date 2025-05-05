@@ -24,6 +24,7 @@ import * as executors from "./executors"
 import { isFunction } from './utils/isFunction';
 import { ScopeEvents } from './types';
 import { FastListenerPipe } from './pipe';
+import { AbortError } from './consts';
 
 /**
  * FastEvent 事件发射器类
@@ -506,6 +507,10 @@ export class FastEvent<
      */
     private _executeListener(listener: any, message: FastEventMessage, args: FastEventListenerArgs<any> | undefined): Promise<any> | any {
         try {
+            // 如果传入已经aborted的abortSignal，则直接返回
+            if (args && args.abortSignal && args.abortSignal.aborted) {
+                return this._onListenerError(listener, message, args, new AbortError(listener.name))
+            }
             let result = listener.call(this._context || this, message, args)
             // 自动处理reject Promise
             if (result && result instanceof Promise) {

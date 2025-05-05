@@ -1,4 +1,5 @@
 export default {
+    link: '/en/',
     themeConfig: {
         // https://vitepress.dev/reference/default-theme-config
         outline: {
@@ -25,7 +26,7 @@ export default {
                     ]
                 },
                 {
-                    text: '指南',
+                    text: 'Guide',
                     collapsed: false,
                     items: [
                         {
@@ -36,12 +37,13 @@ export default {
                                 { text: 'off Events', link: '/en/guide/use/off-events' },
                                 { text: 'Scope', link: '/en/guide/use/scopes' },
                                 { text: 'WaitFor', link: '/en/guide/use/waitfor' },
+                                { text: 'Abort', link: '/zh/guide/use/abort' },
                                 { text: 'Metadata', link: '/en/guide/use/metadata' },
                                 { text: 'Context', link: '/en/guide/use/context' },
                                 { text: 'Hooks', link: '/en/guide/use/hooks' },
                                 { text: 'Executor', link: '/en/guide/use/executor' },
                                 { text: 'Error', link: '/en/guide/use/error_handle' },
-                                { text: '监Pipe', link: '/en/guide/use/pipe' },
+                                { text: 'Pipe', link: '/en/guide/use/pipe' },
                                 { text: 'Typescript', link: '/en/guide/use/typescript' },
                                 { text: 'DevTools', link: '/en/guide/use/devTools' }
                             ]
