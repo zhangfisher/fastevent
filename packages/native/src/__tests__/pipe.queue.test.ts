@@ -70,7 +70,8 @@ describe("监听器Pipe操作: Queue", () => {
     // 使用Promise包装setTimeout，配合vi.advanceTimersByTime使用
     const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
     describe("Queue is overflow", () => {
-        test("超出缓冲区时应该根据slide策略处理消息", () => {
+        test("超出缓冲区时应该根据slide策略处理消息并触发onDrop回调", () => {
+            const droppedMessages: number[] = []
             const results: number[] = []
             let first: boolean = true
             // 不传入任何配置，使用默认值
@@ -79,10 +80,15 @@ describe("监听器Pipe操作: Queue", () => {
                 first = false
                 results.push(msg.payload)
             }, {
-                pipes: [queue({ size: 3, overflow: 'slide' })]
+                pipes: [
+                    queue({
+                        size: 3,
+                        overflow: 'slide',
+                        onDrop: (msg) => droppedMessages.push(msg.payload)
+                    })]
             })
 
-            // 快速发送12个消息
+            // 快速发送11个消息
             // - 第1个消息直接处理
             // - 接下来10个消息进入缓冲区（默认大小为10）
             // - 第12个消息由于缓冲区已满，根据slide策略会替换掉最早进入缓冲区的消息
@@ -104,12 +110,14 @@ describe("监听器Pipe操作: Queue", () => {
                 vi.runAllTimersAsync()
                 Promise.all(promises).then(() => {
                     expect(results).toEqual([1, 9, 10, 11])
+                    expect(droppedMessages).toEqual([2, 3, 4, 5, 6, 7, 8])  // 验证被丢弃的消息
                 }).finally(() => {
                     resolve()
                 })
             })
         })
-        test("当缓冲区满时应该drop消息", () => {
+        test("当缓冲区满时应该drop消息并触发onDrop回调", () => {
+            const droppedMessages: number[] = []
             const results: number[] = []
             let first: boolean = true
             emitter.on("test", async (msg) => {
@@ -117,7 +125,8 @@ describe("监听器Pipe操作: Queue", () => {
                 first = false
                 results.push(msg.payload)
             }, {
-                pipes: [queue({ size: 3, overflow: 'drop' })]
+                pipes: [queue({ size: 3, overflow: 'drop', onDrop: (msg) => droppedMessages.push(msg.payload) })],
+
             })
 
             const promises = [
@@ -138,12 +147,14 @@ describe("监听器Pipe操作: Queue", () => {
                 vi.runAllTimersAsync()
                 Promise.all(promises).then(() => {
                     expect(results).toEqual([1, 2, 3, 4])
+                    expect(droppedMessages).toEqual([5, 6, 7, 8, 9, 10, 11])  // 验证被丢弃的消息
                 }).finally(() => {
                     resolve()
                 })
             })
         })
-        test("当缓冲区满时应该throw", () => {
+        test("当缓冲区满时应该throw并触发onDrop回调", () => {
+            const droppedMessages: number[] = []
             const results: number[] = []
             let first: boolean = true
             emitter.on("test", async (msg) => {
@@ -151,7 +162,8 @@ describe("监听器Pipe操作: Queue", () => {
                 first = false
                 results.push(msg.payload)
             }, {
-                pipes: [queue({ size: 3, overflow: 'throw' })]
+                pipes: [queue({ size: 3, overflow: 'throw', onDrop: (msg) => droppedMessages.push(msg.payload) })],
+
             })
 
             const promises = [
@@ -178,7 +190,7 @@ describe("监听器Pipe操作: Queue", () => {
 
     })
 
-    describe("Queue with options.onNew", () => {
+    describe("Queue with options.onEnter", () => {
         test("应该根据消息优先级顺序处理", () => {
             const results: number[] = []
             let first: boolean = true
@@ -189,12 +201,12 @@ describe("监听器Pipe操作: Queue", () => {
             }, {
                 pipes: [queue({
                     size: 5,
-                    onNew: (newMsg, queuedMsgs) => {
+                    onEnter: (newMsg, queuedMsgs) => {
                         // 根据priority排序，高优先级（数字大）的排在前面
                         const insertIndex = queuedMsgs.findIndex(
-                            msg => (msg.meta.priority ?? 0) < (newMsg.meta.priority ?? 0)
+                            msg => (msg[0].meta.priority ?? 0) < (newMsg.meta.priority ?? 0)
                         )
-                        queuedMsgs.splice(insertIndex, 0, newMsg)
+                        queuedMsgs.splice(insertIndex, 0, [newMsg, 0])
                     }
                 })]
             })

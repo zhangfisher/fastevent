@@ -20,39 +20,33 @@ export type QueueListenerPipeOptions = {
     maxExpandSize?: number                      //  缓冲区扩展到到多大时不再扩展
     expandOverflow?: Omit<FastQueueOverflows, 'expand'>
     overflow?: FastQueueOverflows
+    // =0不启用此机制，当消息在队列中的时间到达lifetime（ms）后，自动丢弃
+    lifetime?: number
     // 当新消息到达时触发此回调，可以用来处理新消息，转让默认是采用push操作
-    onNew?: (newMessage: FastEventMessage, messages: FastEventMessage[]) => void
+    onEnter?: (newMessage: FastEventMessage, messages: [FastEventMessage, number][]) => void
+    // 当消息被丢弃时触发此回调
+    onDrop?: (message: FastEventMessage) => void
 }
 
-/**
- * 对消息队列进行排序
- * 
- * 
- * 
- * @param messages 
- * @param options 
- */
-function sortMessageQueue(messages: FastEventMessage[], options: Required<QueueListenerPipeOptions>) {
-
-}
 
 export const queue = (options?: QueueListenerPipeOptions): FastListenerPipe => {
-    const { size, overflow, maxExpandSize, expandOverflow, onNew } = Object.assign({
+    const { lifetime, size, overflow, maxExpandSize, expandOverflow, onEnter, onDrop } = Object.assign({
         size: 10,
         maxExpandSize: 100,
         overflow: 'expand',
         expandOverflow: 'slide',
+        lifetime: 0
     }, options)
 
-    const buffer: FastEventMessage[] = []
+    const buffer: [FastEventMessage, number][] = []
     let currentSize = size      // 当前缓冲区大小
     let isHandling = false     // 是否正在处理缓冲区中的消息
 
     const pushMessage = (message: FastEventMessage) => {
-        if (isFunction(onNew)) {
-            onNew(message, buffer)
+        if (isFunction(onEnter)) {
+            onEnter(message, buffer)
         } else {
-            buffer.push(message)
+            buffer.push(lifetime > 0 ? [message, 0] : [message, Date.now()])
         }
     }
 
@@ -61,16 +55,19 @@ export const queue = (options?: QueueListenerPipeOptions): FastListenerPipe => {
         const strategy = (buffer.length >= maxExpandSize && overflow === 'expand') ? expandOverflow : overflow
         switch (strategy) {
             case 'drop':
+                if (isFunction(onDrop)) onDrop(message)
                 return false
             case 'expand':
                 currentSize = Math.min(currentSize + size, maxExpandSize)
                 pushMessage(message)
                 return true
             case 'slide':
-                buffer.shift() // 移除最旧的消息
+                const msg = buffer.shift() // 移除最旧的消息
+                if (isFunction(onDrop) && msg) onDrop(msg[0])
                 pushMessage(message)
                 return true
             case 'throw':
+                if (isFunction(onDrop)) onDrop(message)
                 throw new QueueOverflowError()
             default:
                 return false
@@ -93,8 +90,13 @@ export const queue = (options?: QueueListenerPipeOptions): FastListenerPipe => {
                 await listener.call(this, message, args)
                 // 处理缓冲区中的消息
                 while (buffer.length > 0) {
-                    const nextMessage = buffer.shift()
+                    const [nextMessage, enterTime] = buffer.shift() || [undefined, 0]
                     if (nextMessage) {
+                        // 如果消息在缓冲区中停留的时间超过lifetime，丢弃该消息
+                        if (lifetime > 0 && Date.now() - enterTime > lifetime) {
+                            if (isFunction(onDrop)) onDrop(nextMessage)
+                            continue
+                        }
                         await listener.call(this, nextMessage, args)
                     }
                 }
@@ -103,7 +105,6 @@ export const queue = (options?: QueueListenerPipeOptions): FastListenerPipe => {
             }
         }
     }
-
 }
 
 export const dropping = (size: number = 10) => queue({ size, overflow: 'drop' })

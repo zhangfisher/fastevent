@@ -1,5 +1,7 @@
 # FastEvent
 
+[WebSite](https://zhangfisher.github.io/fastevent/)
+
 FastEvent 是一个功能强大的`TypeScript`事件管理库，提供了灵活的事件订阅和发布机制，支持事件通配符、作用域、异步事件等特性。
 
 # 安装
