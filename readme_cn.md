@@ -2,12 +2,6 @@
 
 FastEvent 是一个功能强大的`TypeScript`事件管理库，提供了灵活的事件订阅和发布机制，支持事件通配符、作用域、异步事件等特性。
 
-对比`EventEmitter2`，`FastEvent`具有以下优势：
-
--   `FastEvent`的性能比`EventEmitter2`高 `1~2`倍左右。
--   `FastEvent`包大小为 `6.xkb`，而`EventEmitter2`为 `43.4kb`。
--   `FastEvent`拥有更丰富的功能。
-
 # 安装
 
 使用 npm 安装:

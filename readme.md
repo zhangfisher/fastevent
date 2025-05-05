@@ -2,11 +2,7 @@
 
 FastEvent is a powerful TypeScript event management library that provides flexible event subscription and publishing mechanisms, supporting features such as event wildcards, scoping, and asynchronous events.
 
-Compared to `EventEmitter2`, `FastEvent` has the following advantages:
-
--   `FastEvent` performs about `1+` times better than `EventEmitter2` when publishing and subscribing with wildcards.
--   `FastEvent` has a package size of `6.3kb`, while `EventEmitter2` is `43.4kb`.
--   `FastEvent` offers more comprehensive features.
+[Document](https://zhangfisher.github.io/fastevent/)
 
 # Installation
 
