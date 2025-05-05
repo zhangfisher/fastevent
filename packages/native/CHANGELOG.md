@@ -1,5 +1,11 @@
 # fastevent
 
+## 2.0.1
+
+### Patch Changes
+
+-   9b0a21e: 修复 Pipe 函数没有导出的问题
+
 ## 2.0.0
 
 ### Major Changes
