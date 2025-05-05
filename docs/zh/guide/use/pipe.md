@@ -43,6 +43,119 @@ emitter.on(
 
 ## 指南
 
+
+### queue (队列)
+
+触发的消息放入监听听的消息队列中，监听器函数从队列中依次提取消息进行处理。
+
+```typescript
+// 基本队列
+emitter.on(
+    'task',
+    async (msg) => {
+        await processTask(msg.payload);
+    },
+    {
+        pipes: [
+            queue({
+                size: 5 // 最多同时放置5消息 // [!code++]
+            })], 
+    },
+);
+```
+ 
+
+#### 参数
+
+| 参数 | 类型 | 默认值| 描述 |
+| --- | --- | --- | --- |
+| `size` | `number` | `10` | 队列大小 |
+| `overflow` | `'slide' \| 'drop' \| 'throw' \| 'expand'` | `'slide'` | 队列满时的处理策略 |
+| `expandOverflow` | `'slide' \| 'drop' \| 'throw'` | `'slide'` | 扩展策略(当 `overflow=expand`时使用) |
+| `maxExpandSize` | `number` | `100` | 最大扩展大小 |
+| `onEnter` | `(newMsg, queuedMsgs) => void` |  | 新消息入队时的回调函数 |
+| `onDrop` | `(msg) => void` |  | 当新消息被丢弃时的回调函数 |
+| `lifetime` | `number` | | 指定消息在队列中保存的最大时长(毫秒)，超过会丢弃。 |
+
+
+#### 示例
+
+**示例 1**：基本队列功能，限制任务队列大小
+
+```typescript
+// 基本队列
+emitter.on(
+    'task',
+    async (msg) => {
+        await processTask(msg.payload);
+    },
+    {
+        pipes: [queue({ size: 5 })], // 最多同时放置5个任务
+    },
+);
+```
+
+**示例 2**：队列溢出处理，当队列满时移除最旧的任务
+
+```typescript
+// 队列溢出处理
+emitter.on(
+    'log',
+    (msg) => {
+        writeToDisk(msg.payload);
+    },
+    {
+        pipes: [
+            queue({
+                size: 10,
+                overflow: 'slide', // 移除最旧的任务
+            }),
+        ],
+    },
+);
+```
+
+**示例 3**：优先级队列，根据任务优先级调整处理顺序
+
+```typescript
+// 优先级队列
+emitter.on(
+    'job',
+    async (msg) => {
+        await runJob(msg.payload);
+    },
+    {
+        pipes: [
+            queue({
+                size: 3,
+                // 根据优先级排序
+                onEnter: (newMsg, [queuedMsgs]) => {
+                    // 根据优先级排序
+                    const insertIndex = queuedMsgs.findIndex((msg) => (msg.meta.priority ?? 0) < (newMsg.meta.priority ?? 0));
+                    queuedMsgs.splice(insertIndex, 0, newMsg);
+                },
+            }),
+        ],
+    },
+);
+// 触发消息时在meta中指定优先级
+emitter.emit("job", { payload: 'job1', meta: { priority: 1 } })
+
+```
+
+
+### dropping
+
+等效于`queue({ size, overflow: 'drop' })`，当队列溢出时用于丢弃消息。
+
+### sliding
+
+等效于`queue({ size, overflow: 'slide' })`，当队列溢出时用于丢弃最早的消息。
+
+### expanding
+
+等效于`queue({ size, overflow: 'expand' })`，当队列溢出时自动扩展。
+
 ### timeout (超时控制)
 
 `timeout pipe`用于为监听器函数设置执行时间限制，如果超过指定时间未完成则会中断执行。
@@ -444,108 +557,3 @@ emitter.on(
 );
 ```
  
-
-### queue (队列)
-
-`queue pipe` 用于将监听器的执行放入队列中，控制并发执行和处理顺序。
-
-#### 功能
-
--   控制监听器的并发执行
--   管理事件处理队列
--   支持多种溢出处理策略
--   可以自定义队列排序逻辑
-
-#### 使用方法
-
-```typescript
-queue(options: {
-  size?: number,
-  overflow?: 'slide' | 'drop' | 'throw' | 'expand',
-  expandOverflow?: 'slide' | 'drop' | 'throw',
-  maxExpandSize?: number,
-  onNew?: (newMsg: FastEventMessage, queuedMsgs: FastEventMessage[]) => void
-})
-```
-
-**参数：**
-
--   `size`: 队列大小
--   `overflow`: 队列满时的处理策略
--   `expandOverflow`: 扩展策略(当 overflow 为`expand`时使用)
--   `maxExpandSize`: 最大扩展大小
--   `onNew`: 新消息入队时的处理函数
-
-#### 示例
-
-**示例 1**：基本队列功能，限制任务队列大小
-
-```typescript
-// 基本队列
-emitter.on(
-    'task',
-    async (msg) => {
-        await processTask(msg.payload);
-    },
-    {
-        pipes: [queue({ size: 5 })], // 最多同时放置5个任务
-    },
-);
-```
-
-**示例 2**：队列溢出处理，当队列满时移除最旧的任务
-
-```typescript
-// 队列溢出处理
-emitter.on(
-    'log',
-    (msg) => {
-        writeToDisk(msg.payload);
-    },
-    {
-        pipes: [
-            queue({
-                size: 10,
-                overflow: 'slide', // 移除最旧的任务
-            }),
-        ],
-    },
-);
-```
-
-**示例 3**：优先级队列，根据任务优先级调整处理顺序
-
-```typescript
-// 优先级队列
-emitter.on(
-    'job',
-    async (msg) => {
-        await runJob(msg.payload);
-    },
-    {
-        pipes: [
-            queue({
-                size: 3,
-                onNew: (newMsg, queuedMsgs) => {
-                    // 根据优先级排序
-                    const insertIndex = queuedMsgs.findIndex((msg) => (msg.meta.priority ?? 0) < (newMsg.meta.priority ?? 0));
-                    queuedMsgs.splice(insertIndex, 0, newMsg);
-                },
-            }),
-        ],
-    },
-);
-```
-
-
-### dropping
-
-等效于`queue({ size, overflow: 'drop' })`，当队列溢出时用于丢弃消息。
-
-### sliding
-
-等效于`queue({ size, overflow: 'slide' })`，当队列溢出时用于丢弃最早的消息。
-
-### expanding
-
-等效于`queue({ size, overflow: 'expand' })`，当队列溢出时自动扩展。

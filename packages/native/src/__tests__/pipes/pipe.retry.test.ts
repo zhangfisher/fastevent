@@ -1,6 +1,6 @@
 import { describe, expect, vi, beforeEach, afterEach, test } from "vitest"
-import { FastEvent } from "../event"
-import { retry } from "../pipe/retry"
+import { FastEvent } from "../../event"
+import { retry } from "../../pipe/retry"
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 

@@ -1,7 +1,7 @@
 import { describe, expect, vi, beforeEach, afterEach, test } from "vitest"
-import { FastEvent } from "../event"
-import { queue } from "../pipe/queue"
-import { QueueOverflowError } from "../consts"
+import { FastEvent } from "../../event"
+import { queue } from "../../pipe/queue"
+import { QueueOverflowError } from "../../consts"
 
 describe("监听器Pipe操作: Queue", () => {
     let emitter: FastEvent
@@ -40,6 +40,7 @@ describe("监听器Pipe操作: Queue", () => {
                 }).finally(() => {
                     resolve()
                 })
+
             })
         })
 
@@ -356,4 +357,53 @@ describe("监听器Pipe操作: Queue", () => {
         })
 
     })
+
+    describe("Queue with lifetime", () => {
+
+        test("超时的消息应该被丢弃并触发onDrop回调", () => {
+            const results: number[] = []
+            const droppedMessages: number[] = []
+            let first: boolean = true
+
+            emitter.on("test", async (msg) => {
+                await delay(1000)
+                first = false
+                results.push(msg.payload)
+            }, {
+                pipes: [queue({
+                    size: 5,
+                    lifetime: 500, // 设置消息生命周期为500ms
+                    onDrop: (msg) => droppedMessages.push(msg.payload)
+                })]
+            })
+
+            const promises = [
+                ...emitter.emit("test", 1),  // 马上处理
+                ...emitter.emit("test", 2),  // 进入队列
+                ...emitter.emit("test", 3),  // 进入队列
+                ...emitter.emit("test", 4),  // 进入队列
+                ...emitter.emit("test", 5),  // 进入队列
+            ]
+
+            return new Promise<void>(resolve => {
+                // 推进时间600ms，使队列中的消息超时
+                vi.advanceTimersByTime(600)
+                promises.push(...[
+                    ...emitter.emit("test", 6),  // 马上处理
+                    ...emitter.emit("test", 7),  // 进入队列
+                    ...emitter.emit("test", 8),  // 进入队列
+                    ...emitter.emit("test", 9),  // 进入队列
+                    ...emitter.emit("test", 10),  // 进入队列
+                ])
+                vi.runAllTimersAsync()
+                Promise.all(promises).then(() => {
+                    expect(results).toEqual([1, 6])  // 只有第一个消息被处理
+                    expect(droppedMessages).toEqual([2, 3, 4, 5, 7, 8, 9, 10])  // 其他消息因超时被丢弃
+                }).finally(() => {
+                    resolve()
+                })
+            })
+        })
+    })
+
 })

@@ -46,7 +46,7 @@ export const queue = (options?: QueueListenerPipeOptions): FastListenerPipe => {
         if (isFunction(onEnter)) {
             onEnter(message, buffer)
         } else {
-            buffer.push(lifetime > 0 ? [message, 0] : [message, Date.now()])
+            buffer.push(lifetime > 0 ? [message, Date.now()] : [message, 0])
         }
     }
 

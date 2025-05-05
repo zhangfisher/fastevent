@@ -1,7 +1,7 @@
 import { describe, expect, vi, beforeEach, afterEach, test } from "vitest"
-import { FastEvent } from "../event"
-import { timeout } from "../pipe/timeout"
-import { TimeoutError } from "../consts"
+import { FastEvent } from "../../event"
+import { timeout } from "../../pipe/timeout"
+import { TimeoutError } from "../../consts"
 
 describe("监听器Pipe操作: Timeout", () => {
     let emitter: FastEvent

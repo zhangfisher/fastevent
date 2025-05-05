@@ -20,7 +20,7 @@ export default {
                     items: [
                         { text: '安装', link: '/zh/guide/intro/install' },
                         { text: '快速入门', link: '/zh/guide/intro/get-started' },
-                        { text: '更新历史', link: '/zh/guide/intro/history' },
+                        { text: '更新历史', link: '/zh/guide/intro/CHANGELOG' },
                         { text: '获取支持', link: '/zh/guide/intro/support' },
                     ]
                 },

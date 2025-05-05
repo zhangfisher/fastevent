@@ -1,6 +1,6 @@
 import { describe, expect, vi, beforeEach, afterEach, test } from "vitest"
-import { FastEvent } from "../event"
-import { throttle } from "../pipe/throttle"
+import { FastEvent } from "../../event"
+import { throttle } from "../../pipe/throttle"
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 
 describe("监听器Pipe操作: Throttle", () => {
