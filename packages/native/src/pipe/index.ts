@@ -1,5 +1,7 @@
 export * from "./types"
 export * from "./queue"
+export * from "./retry"
 export * from "./timeout"
 export * from "./debounce"
 export * from "./throttle"
+export * from "./memorize"

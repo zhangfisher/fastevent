@@ -61,25 +61,258 @@ typedEvents.on('user/login', (message) => {
 
 # Guide
 
-## Event Triggering
+## Core Features
 
-FastEvent provides flexible ways to trigger events with different parameter combinations:
+### Event Emission and Listening
 
-### Basic Event Triggering
+FastEvent provides a comprehensive API for event emission and subscription:
 
 ```typescript
 const events = new FastEvent();
 
-// Method 1: Parameters form
+// Basic event emission
 events.emit('user/login', { id: 1, name: 'Alice' });
 
-// Method 2: Message object form
-events.emit({
-    type: 'user/login',
-    payload: { id: 1, name: 'Alice' },
-    meta: { timestamp: Date.now() },
+// With metadata and retention
+events.emit('config/theme', { dark: true }, true, { timestamp: Date.now() });
+
+// Async event emission
+const results = await events.emitAsync('data/process', { items: [...] });
+
+// Event subscription
+events.on('user/login', (message) => {
+    console.log('User logged in:', message.payload);
+});
+
+// One-time listener
+events.once('startup', () => console.log('App started'));
+
+// Listen with options
+events.on('data/update', handler, {
+    count: 3,       // Max trigger count
+    prepend: true,  // Add to start of queue
+    filter: (msg) => msg.payload.important
+});
+
+// Global listener
+events.onAny((message) => {
+    console.log('Event occurred:', message.type);
 });
 ```
+
+### Event Listening
+
+Multiple ways to subscribe to events, with support for wildcards and options:
+
+```typescript
+const events = new FastEvent();
+
+// Basic event listening
+events.on('user/login', (message) => {
+    console.log('User logged in:', message.payload);
+});
+
+// One-time event listening
+events.once('startup', (message) => {
+    console.log('Application started');
+});
+
+// Listen with options
+events.on('data/update', handler, {
+    count: 3, // Listen only 3 times
+    prepend: true, // Add listener to the beginning
+    filter: (msg) => msg.payload.important, // Only handle important updates
+    off: (msg) => msg.payload.final, // Auto unsubscribe on final update
+});
+
+// Listen to all events
+events.onAny((message) => {
+    console.log('Event occurred:', message.type);
+});
+```
+
+### Event Scoping
+
+Create namespaced event handlers with shared context and metadata:
+
+```typescript
+const events = new FastEvent();
+
+// Basic scope creation
+const userScope = events.scope('user', {
+    meta: { domain: 'user' },
+    context: { userId: 1 },
+});
+
+// These are equivalent:
+userScope.on('login', handler);
+events.on('user/login', handler);
+
+// Nested scopes with context inheritance
+const profileScope = userScope.scope('profile', {
+    meta: { section: 'profile' }, // Merges with parent meta
+    context: { role: 'admin' }, // Extends parent context
+});
+
+// The final event will have combined metadata
+profileScope.emit('update', { name: 'John' }); // Emits: user/profile/update
+// Meta: { domain: 'user', section: 'profile' }
+
+// Scope with custom executor
+const adminScope = events.scope('admin', {
+    context: { permissions: ['all'] },
+    executor: async (listeners, message) => {
+        // Custom parallel execution
+        return await Promise.all(
+            listeners.map((listener) => {
+                try {
+                    return listener.call(adminScope.context, message);
+                } catch (error) {
+                    console.error(`Admin scope error:`, error);
+                    return error;
+                }
+            }),
+        );
+    },
+});
+
+// Access scope context in listeners
+adminScope.on('action', function () {
+    console.log(this.permissions); // Access scope context: ['all']
+});
+
+// Scope-specific error handling
+const apiScope = events.scope('api', {
+    meta: { source: 'api' },
+    onListenerError: (type, error) => {
+        console.error(`API Error in ${type}:`, error);
+    },
+});
+
+// Clean up scope events
+profileScope.offAll(); // Removes all listeners in user/profile/*
+profileScope.clear(); // Also clears retained events
+```
+
+Advanced scope features:
+
+-   Automatic prefix management for event types
+-   Metadata inheritance and merging from parent scopes
+-   Context inheritance with override capability
+-   Custom executor functions per scope
+-   Scope-specific error handling
+-   Isolated cleanup with `offAll()` and `clear()`
+
+### Event Patterns
+
+Support for flexible event pattern matching:
+
+```typescript
+const events = new FastEvent();
+
+// Exact match
+events.on('user/login', handler);
+
+// Single-level wildcard
+events.on('user/*/action', (message) => {
+    // Matches: user/admin/action, user/guest/action, etc.
+});
+
+// Multi-level wildcard
+events.on('api/**', (message) => {
+    // Matches: api/users, api/users/create, api/posts/123/comments, etc.
+});
+```
+
+### Event Retention
+
+Keep last event value for late subscribers:
+
+```typescript
+const events = new FastEvent();
+
+// Emit and retain event
+events.emit('config/theme', { dark: true }, true);
+
+// Later subscribers immediately receive retained value
+events.on('config/theme', (message) => {
+    console.log('Theme:', message.payload); // Immediately outputs: { dark: true }
+});
+```
+
+### Async Operations
+
+Support for asynchronous event handling and waiting:
+
+```typescript
+const events = new FastEvent();
+
+// Async event handlers
+events.on('data/process', async (message) => {
+    const result = await processData(message.payload);
+    return result;
+});
+
+// Wait for specific event
+try {
+    const event = await events.waitFor('server/ready', 5000);
+    console.log('Server is ready:', event.payload);
+} catch (error) {
+    console.log('Timeout waiting for server');
+}
+
+// Async event emission with error handling
+const results = await events.emitAsync('batch/process', items);
+results.forEach((result) => {
+    if (result instanceof Error) {
+        console.error('Processing failed:', result);
+    } else {
+        console.log('Success:', result);
+    }
+});
+```
+
+### Error Handling
+
+Flexible error handling strategies:
+
+```typescript
+const events = new FastEvent({
+    ignoreErrors: true, // Don't throw errors
+    onListenerError: (type, error) => {
+        console.error(`Error in ${type}:`, error);
+    },
+});
+
+// Error in listener won't break execution
+events.on('process', () => {
+    throw new Error('Processing failed');
+});
+events.emit('process'); // Error is caught and handled
+```
+
+### Type Safety
+
+Full TypeScript support for type-safe events:
+
+```typescript
+interface MyEvents {
+    'user/login': { id: number; name: string };
+    'user/logout': { id: number };
+}
+
+const events = new FastEvent<MyEvents>();
+
+// Type checking for event names and payloads
+events.on('user/login', (message) => {
+    const { id, name } = message.payload; // Properly typed
+});
+
+// Error: wrong payload type
+events.emit('user/login', { id: '1' }); // TypeScript error
+```
+
+## Event Triggering
 
 ### Retained Events
 

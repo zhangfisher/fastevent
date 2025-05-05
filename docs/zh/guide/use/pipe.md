@@ -120,25 +120,7 @@ const results = await Promise.all([
 ]);
 // results: [200, 'timeout', 100]
 ```
-
-**示例 4**：链式调用中的 timeout，展示如何在整个处理流程中设置超时
-
-```typescript
-// 链式调用中的timeout
-emitter.on(
-    'process',
-    async (msg) => {
-        const data = await transformData(msg.payload);
-        return validate(data);
-    },
-    {
-        pipes: [
-            timeout(1000), // 整个处理流程1秒超时
-            retry(2), // 失败时重试2次
-        ],
-    },
-);
-```
+ 
 
 ### throttle (节流)
 
@@ -221,38 +203,7 @@ for (let i = 0; i < 5; i++) {
 }
 // 最终count值为1
 ```
-
-**示例 4**：带时间戳的节流，记录日志并处理被跳过的日志条目
-
-```typescript
-// 带时间戳的节流
-emitter.on(
-    'log',
-    (msg) => {
-        console.log(`[${new Date().toISOString()}]`, msg.payload);
-    },
-    {
-        pipes: [
-            throttle(1000, {
-                drop: (msg) => {
-                    console.log(`跳过日志: ${msg.payload}`);
-                },
-            }),
-        ],
-    },
-);
-```
-
-**示例 5**：混合快速和慢速触发场景，展示节流在不同触发频率下的行为
-
-```typescript
-// 混合快速和慢速触发
-emitter.emit('log', 'First message');
-await delay(300);
-emitter.emit('log', 'Second message'); // 会被跳过
-await delay(800);
-emitter.emit('log', 'Third message'); // 会执行
-```
+ 
 
 ### memorize (缓存)
 
@@ -327,68 +278,8 @@ await emitter.emit('getUser', 1); // callCount = 1
 await emitter.emit('getUser', 1); // callCount仍为1，使用缓存
 await emitter.emit('getUser', 2); // callCount = 2，新参数
 ```
-
-**示例 4**：复杂参数的缓存，使用 JSON 序列化比较参数是否相同
-
-```typescript
-// 复杂参数的缓存
-emitter.on(
-    'search',
-    (msg) => {
-        return db.query({
-            keyword: msg.payload.keyword,
-            filters: msg.payload.filters,
-        });
-    },
-    {
-        pipes: [
-            memorize((msg) => {
-                // 只有当keyword和filters完全相同时使用缓存
-                return JSON.stringify(msg.payload) === JSON.stringify(lastQuery);
-            }),
-        ],
-    },
-);
-```
-
-**示例 5**：带过期时间的缓存，10 秒内使用缓存结果
-
-```typescript
-// 带过期时间的缓存
-emitter.on(
-    'getConfig',
-    async (msg) => {
-        return await fetchConfig(msg.payload);
-    },
-    {
-        pipes: [
-            memorize((msg, cached) => {
-                // 10秒内使用缓存
-                return cached && Date.now() - cached.timestamp < 10000;
-            }),
-        ],
-    },
-);
-```
-
-**示例 6**：组合使用缓存和超时，展示复杂场景下的缓存应用
-
-```typescript
-// 组合使用缓存和超时
-emitter.on(
-    'apiRequest',
-    async (msg) => {
-        const result = await fetchApi(msg.payload);
-        return result;
-    },
-    {
-        pipes: [
-            memorize(),
-            timeout(5000), // 5秒超时
-        ],
-    },
-);
-```
+ 
+ 
 
 ### retry (重试)
 
@@ -471,73 +362,7 @@ emitter.on(
         ],
     },
 );
-```
-
-**示例 4**：条件性重试，仅对特定错误进行重试
-
-```typescript
-// 条件性重试
-emitter.on(
-    'processPayment',
-    async (msg) => {
-        const result = await paymentGateway(msg.payload);
-        if (result.status === 'pending') {
-            throw new Error('Payment pending');
-        }
-        return result;
-    },
-    {
-        pipes: [
-            retry(3, {
-                shouldRetry: (error) => error.message.includes('pending'), // 仅重试特定错误
-                interval: 2000,
-            }),
-        ],
-    },
-);
-```
-
-**示例 5**：重试成功场景演示，展示重试机制如何最终成功
-
-```typescript
-// 重试成功场景
-let attempt = 0;
-emitter.on(
-    'unstableService',
-    async () => {
-        attempt++;
-        if (attempt < 3) {
-            throw new Error('Service unavailable');
-        }
-        return 'Success';
-    },
-    {
-        pipes: [retry(3)],
-    },
-);
-
-const result = await emitter.emit('unstableService');
-// result: 'Success' (在第3次尝试时成功)
-```
-
-**示例 6**：组合使用重试和超时，展示复杂场景下的重试应用
-
-```typescript
-// 组合使用重试和超时
-emitter.on(
-    'apiCall',
-    async () => {
-        const result = await fetchApi();
-        return result;
-    },
-    {
-        pipes: [
-            retry(2, { interval: 1000 }),
-            timeout(3000), // 每次调用最多3秒
-        ],
-    },
-);
-```
+``` 
 
 ### debounce (防抖)
 
@@ -618,73 +443,7 @@ emitter.on(
     },
 );
 ```
-
-**示例 4**：最大等待时间，确保分析事件最多延迟 2 秒必须发送
-
-```typescript
-// 最大等待时间
-let lastCall = 0;
-emitter.on(
-    'analytics',
-    (msg) => {
-        lastCall = Date.now();
-        sendAnalytics(msg.payload);
-    },
-    {
-        pipes: [
-            debounce(500, {
-                maxWait: 2000, // 最多等待2秒必须执行
-                drop: (msg) => trackDroppedEvent(msg),
-            }),
-        ],
-    },
-);
-```
-
-**示例 5**：连续触发场景，展示防抖如何限制频繁输入事件
-
-```typescript
-// 连续触发场景
-let executionCount = 0;
-emitter.on(
-    'typing',
-    () => {
-        executionCount++;
-    },
-    {
-        pipes: [debounce(100)],
-    },
-);
-
-// 快速连续输入
-for (let i = 0; i < 10; i++) {
-    emitter.emit('typing');
-    await delay(50);
-}
-await delay(150);
-// executionCount最终为1
-```
-
-**示例 6**：带取消功能的防抖，防止过时的 fetch 请求
-
-```typescript
-// 带取消功能的防抖
-const controller = new AbortController();
-emitter.on(
-    'fetch',
-    async (msg) => {
-        const data = await fetchWithSignal(msg.payload, controller.signal);
-        return data;
-    },
-    {
-        pipes: [
-            debounce(300, {
-                cancel: controller.abort.bind(controller),
-            }),
-        ],
-    },
-);
-```
+ 
 
 ### queue (队列)
 
@@ -778,24 +537,15 @@ emitter.on(
 );
 ```
 
-**示例 4**：可扩展队列，动态调整队列大小
 
-```typescript
-// 可扩展队列
-emitter.on(
-    'request',
-    async (msg) => {
-        await handleRequest(msg.payload);
-    },
-    {
-        pipes: [
-            queue({
-                size: 2,
-                overflow: 'expand',
-                maxExpandSize: 4,
-                expandOverflow: 'drop',
-            }),
-        ],
-    },
-);
-```
+### dropping
+
+等效于`queue({ size, overflow: 'drop' })`，当队列溢出时用于丢弃消息。
+
+### sliding
+
+等效于`queue({ size, overflow: 'slide' })`，当队列溢出时用于丢弃最早的消息。
+
+### expanding
+
+等效于`queue({ size, overflow: 'expand' })`，当队列溢出时自动扩展。
