@@ -185,6 +185,11 @@ export type Merge<T extends object, U extends object> = {
 export type RequiredItems<T extends object, Items extends string[]> = Omit<T, Items[number]> & {
     [K in Items[number] & keyof T]-?: Exclude<T[K], undefined>;
 };
+type Expand<T> = T extends infer O ? { [K in keyof O]: O[K] } : never;
+
+export type OptionalItems<T, K extends keyof T> = Expand<
+    Omit<T, K> & { [P in K]?: T[P] }
+>;
 
 
 
@@ -199,4 +204,5 @@ export type IFastListenerExecutor = (listeners: FastListenerMeta[], message: Fas
     // 用来执行监听器的函数，内置一些通用逻辑
     execute: (listener: FastEventListener, message: FastEventMessage, args?: FastEventListenerArgs) => Promise<any> | any
 ) => Promise<any[]> | any[]
+
 

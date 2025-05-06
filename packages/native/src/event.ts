@@ -25,7 +25,6 @@ import { isFunction } from './utils/isFunction';
 import { ScopeEvents } from './types';
 import { FastListenerPipe } from './pipe';
 import { AbortError } from './consts';
-import { isFastEventScope } from './utils/isFastEventScope';
 import { parseScopeArgs } from './utils/parseScopeArgs';
 
 /**
@@ -88,7 +87,7 @@ export class FastEvent<
     }
 
     /** 获取事件发射器的配置选项 */
-    get options() { return this._options as RequiredItems<FastEventOptions<Meta, Context>, ['meta', 'context']> }
+    get options() { return this._options }
     get context() { return this._context }
     get meta() { return this.options.meta }
     /** 获取事件发射器的唯一标识符 */

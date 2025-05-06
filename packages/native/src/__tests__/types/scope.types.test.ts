@@ -4,7 +4,7 @@ import { describe, test, expect } from "vitest"
 import type { Equal, Expect, NotAny } from '@type-challenges/utils'
 import { FastEvent } from "../../event"
 import { FastEventScope, FastEventScopeMeta } from "../../scope"
-import { FastEventMeta, FastEvents, PickScopeEvents } from "../../types"
+import { FastEventMeta, FastEventOptions, FastEvents, PickScopeEvents, RequiredItems } from "../../types"
 
 declare module "../../types" {
     interface FastEventMeta {
@@ -150,6 +150,11 @@ describe("作用域上下文类型系统", () => {
             ]
         })
     })
+
+})
+
+
+describe("作用域类继承类型系统", () => {
 
     test("继承作用域类", () => {
         type MyScopeEvents = {
@@ -299,6 +304,28 @@ describe("作用域上下文类型系统", () => {
             ]
         })
     })
+    test("继承作用域类", () => {
+        type MyScopeEvents = {
+            a: number
+            b: string
+            c: boolean
+        }
+        interface MyEventOptions extends FastEventOptions {
+            count?: number
+        }
+
+        class MyEvent extends FastEvent {
+            constructor(options?: MyEventOptions) {
+                super(Object.assign({}, options))
+            }
+            get options() {
+                return super.options as unknown as RequiredItems<MyEventOptions, ['meta', 'context']>
+            }
+        }
+        const emitter = new MyEvent({
+            meta: {
+                root: 100
+            }
+        })
+    })
 })
-
-
