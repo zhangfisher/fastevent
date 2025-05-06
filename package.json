@@ -14,6 +14,7 @@
         "test:coverage": "vitest --coverage --exclude=\"src/__benchmarks__/**\"  --exclude=src/devTools",
         "build": "turbo build",
         "bench": "tsx src/__benchmarks__/index.ts",
+        "update:changelog": "cpx packages/native/CHANGELOG.md docs/zh/guide/intro/",
         "changeset": "changeset",
         "release": "bun run build && bun run changeset version && cpx packages/native/CHANGELOG.md docs/zh/guide/intro/ && bun run changeset publish",
         "sync": "cnpm sync fastevent",
