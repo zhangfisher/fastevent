@@ -16,7 +16,7 @@ import {
     IFastListenerExecutor,
     FastEvents
 } from './types';
-import { handleEmitArgs } from './utils/handleEmitArgs';
+import { parseEmitArgs } from './utils/parseEmitArgs';
 import { isPathMatched } from './utils/isPathMatched';
 import { removeItem } from './utils/removeItem';
 import { renameFn } from './utils/renameFn';
@@ -25,6 +25,8 @@ import { isFunction } from './utils/isFunction';
 import { ScopeEvents } from './types';
 import { FastListenerPipe } from './pipe';
 import { AbortError } from './consts';
+import { isFastEventScope } from './utils/isFastEventScope';
+import { parseScopeArgs } from './utils/parseScopeArgs';
 
 /**
  * FastEvent 事件发射器类
@@ -40,6 +42,7 @@ export class FastEvent<
     AllEvents extends Record<string, any> = Events & FastEvents,
     Types extends keyof AllEvents = Exclude<keyof (AllEvents), number | symbol>
 > {
+    __FastEvent__: boolean = true
     /** 事件监听器树结构，存储所有注册的事件监听器 */
     public listeners: FastListeners = { __listeners: [] } as unknown as FastListeners
 
@@ -87,6 +90,7 @@ export class FastEvent<
     /** 获取事件发射器的配置选项 */
     get options() { return this._options as RequiredItems<FastEventOptions<Meta, Context>, ['meta', 'context']> }
     get context() { return this._context }
+    get meta() { return this.options.meta }
     /** 获取事件发射器的唯一标识符 */
     get id() { return this._options.id! }
     private _addListener(parts: string[], listener: FastEventListener<any, any>, options: Required<FastEventListenOptions>): FastListenerNode | undefined {
@@ -637,7 +641,7 @@ export class FastEvent<
     public emit<R = any, T extends string = string>(message: FastEventEmitMessage<{ [K in T]: K extends Types ? AllEvents[K] : any }, Meta>, options?: FastEventListenerArgs<Meta>): R[]
     public emit<R = any>(message: FastEventEmitMessage<AllEvents, Meta>, options?: FastEventListenerArgs<Meta>): R[]
     public emit<R = any>(): R[] {
-        const [message, args] = handleEmitArgs<AllEvents, Meta>(arguments, this.options.meta)
+        const [message, args] = parseEmitArgs<AllEvents, Meta>(arguments, this.options.meta)
         const parts = message.type.split(this._delimiter);
         if (args.retain) {
             this.retainedMessages.set(message.type, message)
@@ -815,8 +819,28 @@ export class FastEvent<
         P extends string = string,
         M extends Record<string, any> = Record<string, any>,
         C = Context
-    >(prefix: P, options?: FastEventScopeOptions<M, C>) {
-        return new FastEventScope<ScopeEvents<AllEvents, P> & E, Meta & M, C>(
-            this as any, prefix, options as FastEventScopeOptions<Meta & M, C>)
+    >(prefix: P, options?: FastEventScopeOptions<M, C>): FastEventScope<ScopeEvents<AllEvents, P> & E, Meta & M, C>
+    scope<
+        E extends Record<string, any> = Record<string, any>,
+        P extends string = string,
+        M extends Record<string, any> = Record<string, any>,
+        C = Context,
+        ScopeObject extends FastEventScope<any, any, any> = FastEventScope<ScopeEvents<AllEvents, P> & E, Meta & M, C>
+    >(prefix: P, scopeObj: ScopeObject, options?: FastEventScopeOptions<M, C>): ScopeObject
+    scope<
+        E extends Record<string, any> = Record<string, any>,
+        P extends string = string,
+        M extends Record<string, any> = Record<string, any>,
+        C = Context
+    >() {
+        const [prefix, scopeObj, options] = parseScopeArgs(arguments, this.options.meta, this.options.context)
+        let scope
+        if (scopeObj) {
+            scope = scopeObj
+        } else {
+            scope = new FastEventScope<ScopeEvents<AllEvents, P> & E, Meta & M, C>()
+        }
+        scope.bind(this as any, prefix, options as FastEventScopeOptions<Meta & M, C>)
+        return scope
     }
 } 

@@ -1,3 +1,4 @@
+// eslint-disable  no-unused-vars
 import { describe, test, expect } from "vitest"
 import { FastEvent } from "../event"
 import { FastEventListener } from '../types';

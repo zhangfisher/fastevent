@@ -1,6 +1,6 @@
 import { FastEventListenerArgs, FastEventMessage } from "../types"
 
-export function handleEmitArgs<
+export function parseEmitArgs<
     Events extends Record<string, any> = Record<string, any>,
     Meta = unknown
 >(args: IArguments, emitterMeta: any, scopeMeta?: any, scopeExecutor?: any): [FastEventMessage<Events, Meta>, FastEventListenerArgs<Meta>] {

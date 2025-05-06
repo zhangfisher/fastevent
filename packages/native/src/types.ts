@@ -7,7 +7,7 @@ export interface FaseEventMessageExtends {
 }
 // 用来扩展全局Meta类型
 export interface FastEventMeta {
-    priority?: number
+
 }
 export type FastEventMessage<
     Events extends Record<string, any> = Record<string, any>,

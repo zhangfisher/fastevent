@@ -1,6 +1,7 @@
 import type { FastEvent } from "./event";
 import { FastListenerExecutorArgs, FastEventAnyListener, FastEventEmitMessage, FastEventListener, FastEventListenerArgs, FastEventListenOptions, FastEventMessage, FastEventSubscriber, ScopeEvents, FastEventMeta } from "./types";
-import { handleEmitArgs } from "./utils/handleEmitArgs";
+import { parseEmitArgs } from "./utils/parseEmitArgs";
+import { parseScopeArgs } from "./utils/parseScopeArgs";
 import { renameFn } from "./utils/renameFn";
 
 export type FastEventScopeOptions<Meta, Context> = {
@@ -18,12 +19,17 @@ export class FastEventScope<
     Meta extends Record<string, any> = Record<string, any>,
     Context = any,
     Types extends keyof Events = keyof Events,
-    FinalMeta extends Record<string, any> = Meta & FastEventScopeMeta,
+    FinalMeta extends Record<string, any> = FastEventMeta & FastEventScopeMeta & Meta,
 > {
-    options: Required<FastEventScopeOptions<FinalMeta, Context>>
+    __FastEventScope__: boolean = true
+    emitter!: FastEvent<Events>
+    options!: Required<FastEventScopeOptions<FinalMeta, Context>>
     // @ts-ignore
     events: Events
-    constructor(public emitter: FastEvent<Events>, public prefix: string, options?: FastEventScopeOptions<Meta, Context>) {
+    prefix: string = ''
+    get context() { return this.options.context }
+    bind(emitter: FastEvent<any>, prefix: string, options?: FastEventScopeOptions<Meta, Context>) {
+        this.emitter = emitter
         this.options = Object.assign({}, {
             scope: prefix
         }, options) as unknown as Required<FastEventScopeOptions<FinalMeta, Context>>
@@ -31,7 +37,6 @@ export class FastEventScope<
             this.prefix = prefix + emitter.options.delimiter
         }
     }
-    get context() { return this.options.context }
     /**
      * 获取作用域监听器
      * 当启用作用域时,对原始监听器进行包装,添加作用域前缀处理逻辑
@@ -104,7 +109,7 @@ export class FastEventScope<
         [K in T]: K extends Types ? Events[K] : any
     }, FinalMeta>, options?: FastEventListenerArgs<FinalMeta>): R[]
     public emit<R = any>(): R[] {
-        const [message, options] = handleEmitArgs(
+        const [message, options] = parseEmitArgs(
             arguments,
             this.emitter.options.meta,
             this.options.meta,
@@ -176,18 +181,28 @@ export class FastEventScope<
         P extends string = string,
         M extends Record<string, any> = Record<string, any>,
         C = Context
-    >(prefix: P, options?: FastEventScopeOptions<Partial<FinalMeta> & M, C>) {
-        const meta = Object.assign({}, this.options.meta, options?.meta)
-        // 如果options中提供了新的context，使用新的context；否则继承父scope的context
-        const context = options?.context !== undefined ? options.context : this.context
-        const opts = Object.assign({}, this.options, options, {
-            meta: Object.keys(meta).length === 0 ? undefined : meta,
-            context
-        }) as FastEventScopeOptions<FinalMeta & M, C>
-        return new FastEventScope<ScopeEvents<Events, P> & E, FinalMeta & M, C>(
-            this.emitter as any,
-            this.prefix + prefix,
-            opts
-        )
+    >(prefix: P, options?: FastEventScopeOptions<Partial<FinalMeta> & M, C>): FastEventScope<ScopeEvents<Events, P> & E, FinalMeta & M, C>
+    scope<
+        E extends Record<string, any> = Record<string, any>,
+        P extends string = string,
+        M extends Record<string, any> = Record<string, any>,
+        C = Context,
+        ScopeInstance extends FastEventScope<any, any, any> = FastEventScope<ScopeEvents<ScopeEvents<Events, P> & E, P> & E, FinalMeta & M, C>
+    >(prefix: P, scopeObj: ScopeInstance, options?: FastEventScopeOptions<M, C>): ScopeInstance
+    scope<
+        E extends Record<string, any> = Record<string, any>,
+        P extends string = string,
+        M extends Record<string, any> = Record<string, any>,
+        C = Context
+    >() {
+        const [prefix, scopeObj, options] = parseScopeArgs(arguments, this.options.meta, this.options.context)
+        let scope: FastEventScope<ScopeEvents<Events, P> & E, FinalMeta & M, C>
+        if (scopeObj) {
+            scope = scopeObj
+        } else {
+            scope = new FastEventScope<ScopeEvents<Events, P> & E, FinalMeta & M, C>()
+        }
+        scope.bind(this.emitter as any, this.prefix + prefix, options)
+        return scope
     }
 }
