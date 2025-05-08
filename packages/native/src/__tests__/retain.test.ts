@@ -1,4 +1,4 @@
-import { describe, test, expect } from "vitest"
+import { describe, test, expect, vi } from "vitest"
 import { FastEvent } from "../event"
 
 
@@ -22,13 +22,27 @@ describe("订阅与发布retain事件", async () => {
             expect(payload).toBe(2)
         })
     })
+    test("取消retain事件", () => {
+        const emitter = new FastEvent()
+        emitter.emit("x", 1, true)
+        emitter.on("x", ({ payload, type }) => {
+            expect(type).toBe("x")
+            expect(payload).toBe(1)
+        })
+        emitter.emit("x") // 取消保留事件
+        // 以下事件不会触发
+        const listener = vi.fn()
+        emitter.on("x", listener)
+        expect(listener).not.toHaveBeenCalled()
+    })
+
     test("不处理通配符的retain事件", () => {
         const emitter = new FastEvent()
         emitter.emit("a.b.c1", 1, { retain: true })
         emitter.emit("a.b.c2", 2, { retain: true })
         const events: string[] = []
         // 订阅所有a.b.*事件,由于c1,c2是
-        emitter.on("a.b.*", ({ payload, type }) => {
+        emitter.on("a.b.*", ({ type }) => {
             events.push(type)
         })
         expect(events).toEqual([])
@@ -90,7 +104,7 @@ describe("订阅与发布retain事件", async () => {
         emitter.emit("a.b.c2", 2, true)
         const events: string[] = []
         // 订阅所有a.b.*事件,由于c1,c2是
-        emitter.on("a.b.*", ({ payload, type }) => {
+        emitter.on("a.b.*", ({ type }) => {
             events.push(type)
         })
         expect(events).toEqual([])

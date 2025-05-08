@@ -99,7 +99,13 @@ emitter.emit('system/status', { online: true }, true);
 emitter.on('system/status', (message) => {
     console.log('当前状态:', message.payload.online);
 });
+// 可以清除保留的事件。
+emitter.emit('system/status')
+
 ```
+:::warning 提示
+保留事件也叫粘性消息。
+:::
 
 ### 返回结果
 

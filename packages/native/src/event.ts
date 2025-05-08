@@ -634,18 +634,31 @@ export class FastEvent<
      *   payload: { userId: 123 },
      *   meta: { time: Date.now() }
      * }, true);
+     * 
+     * // 清除保留事件
+     * emitter.emit("user/login")
+     * 
      * ```
      */
+    // 用于清除保留事件
+    public emit<T extends Types = Types>(type: T): void
+    public emit(type: string): void
+    // 支持retain参数
     public emit<R = any, T extends Types = Types>(type: T, payload?: AllEvents[T], retain?: boolean): R[]
     public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? AllEvents[Types] : any, retain?: boolean): R[]
     public emit<R = any, T extends string = string>(message: FastEventEmitMessage<{ [K in T]: K extends Types ? AllEvents[K] : any }, Meta>, retain?: boolean): R[]
     public emit<R = any>(message: FastEventEmitMessage<AllEvents, Meta>, retain?: boolean): R[]
-    //----
+    // 使用完整的配置选项
     public emit<R = any, T extends Types = Types>(type: T, payload?: AllEvents[T], options?: FastEventListenerArgs<Meta>): R[]
     public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? AllEvents[Types] : any, options?: FastEventListenerArgs<Meta>): R[]
     public emit<R = any, T extends string = string>(message: FastEventEmitMessage<{ [K in T]: K extends Types ? AllEvents[K] : any }, Meta>, options?: FastEventListenerArgs<Meta>): R[]
     public emit<R = any>(message: FastEventEmitMessage<AllEvents, Meta>, options?: FastEventListenerArgs<Meta>): R[]
-    public emit<R = any>(): R[] {
+    public emit(): any {
+        // 清除保留事件
+        if (arguments.length === 1 && typeof (arguments[0]) === 'string') {
+            this.retainedMessages.delete(arguments[0])
+            return
+        }
         const [message, args] = parseEmitArgs<AllEvents, Meta>(arguments, this.options.meta)
         const parts = message.type.split(this._delimiter);
         if (args.retain) {

@@ -7,36 +7,38 @@ import { FastEvents } from "../../types"
 
 
 describe("types", () => {
-    type CustomMeta = { x: number; y: number; z?: number };
-    type CustomEvents = {
-        click: { x: number; y: number };
-        mousemove: boolean;
-        scroll: number;
-        focus: string;
-    };
-    type CustomContext = {
-        name: string,
-        age: number
-        address: string
-    };
-    const emitter = new FastEvent<CustomEvents, CustomMeta, CustomContext>({
-        context: {
-            name: "hello",
-            age: 18,
-            address: "beijing"
-        }
-    });
+    test("自定义事件类型和元数据类型", () => {
+        type CustomMeta = { x: number; y: number; z?: number };
+        type CustomEvents = {
+            click: { x: number; y: number };
+            mousemove: boolean;
+            scroll: number;
+            focus: string;
+        };
+        type CustomContext = {
+            name: string,
+            age: number
+            address: string
+        };
+        const emitter = new FastEvent<CustomEvents, CustomMeta, CustomContext>({
+            context: {
+                name: "hello",
+                age: 18,
+                address: "beijing"
+            }
+        });
 
-    type cases = [
-        Expect<Equal<typeof emitter.types.events, CustomEvents & FastEvents>>,
-        Expect<Equal<typeof emitter.types.meta, {
-            [x: string]: any;
-            x: number;
-            y: number;
-            z?: number | undefined;
-        }>>,
-        Expect<Equal<typeof emitter.types.context, CustomContext>>,
-    ]
+        type cases = [
+            Expect<Equal<typeof emitter.types.events, CustomEvents & FastEvents>>,
+            Expect<Equal<typeof emitter.types.meta, {
+                [x: string]: any;
+                x: number;
+                y: number;
+                z?: number | undefined;
+            }>>,
+            Expect<Equal<typeof emitter.types.context, CustomContext>>,
+        ]
+    })
 
 })
 

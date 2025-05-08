@@ -121,13 +121,19 @@ export class FastEventScope<
         this.emitter.clear(this.prefix.substring(0, this.prefix.length - 1))
     }
 
+    public emit(type: Types): void
+    public emit(type: string): void
     public emit<R = any>(type: Types, payload?: Events[Types], options?: FastEventListenerArgs<FinalMeta>): R[]
     public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? Events[Types] : any, options?: FastEventListenerArgs<FinalMeta>): R[]
     public emit<R = any>(message: FastEventEmitMessage<Events, FinalMeta>, options?: FastEventListenerArgs<FinalMeta>): R[]
     public emit<R = any, T extends string = string>(message: FastEventEmitMessage<{
         [K in T]: K extends Types ? Events[K] : any
     }, FinalMeta>, options?: FastEventListenerArgs<FinalMeta>): R[]
-    public emit<R = any>(): R[] {
+    public emit() {
+        // 清除保留事件
+        if (arguments.length === 1 && typeof (arguments[0]) === 'string') {
+            return this.emitter.emit(this._getScopeType(arguments[0])!)
+        }
         const [message, options] = parseEmitArgs(
             arguments,
             this.emitter.options.meta,
