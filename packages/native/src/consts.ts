@@ -1,4 +1,4 @@
-
+export const ClearRetainMessage = Symbol.for('ClearRetainMessage')
 
 export class FastEventError extends Error { }
 

@@ -113,7 +113,7 @@ describe("基于通配符的发布与订阅", async () => {
         const emitter = new FastEvent()
         const events: string[] = []
         const subscribers: FastEventSubscriber[] = []
-        subscribers.push(emitter.on("*/b/*/d/*/f", ({ payload, type }) => {
+        subscribers.push(emitter.on("*/b/*/d/*/f", ({ type }) => {
             events.push(type)
         }))
         emitter.emit("1/b/1/d/1/f", 1)

@@ -10,7 +10,7 @@ describe('监听器函数出错时的处理', () => {
             throw error
         })
 
-        const results = emitter.emit('test')
+        const results = emitter.emit('test', 1)
         expect(results).toHaveLength(1)
         expect(results[0]).toBe(error)
     })

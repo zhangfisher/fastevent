@@ -363,7 +363,7 @@ describe("作用域事件类型检查", () => {
         // 如果没有指定元数据时，默认使用全局元数据
         const emitter = new FastEvent<CustomEvents>()
         const scope = emitter.scope("a/b")
-        scope.events
+        scope.types.events
         scope.on("x", (message) => {
             type cases = [
                 Expect<Equal<typeof message.type, 'x'>>,
@@ -393,7 +393,7 @@ describe("作用域事件类型检查", () => {
         // const scope = emitter.scope<ScopeCustomEvents>("a/b")
         //✅ 当为scope指定事件前缀类型时，才从全局事件中推导出scope事件类型
         const scope = emitter.scope<ScopeCustomEvents, 'a/b'>("a/b")
-        scope.events
+        scope.types.events
         // 从全局事件中推导出来的
         scope.on("x", (message) => {
             type cases = [
@@ -450,11 +450,11 @@ describe("作用域事件类型检查", () => {
         const GrandsondScope = childrenScope.scope<GrandsondDScopeEvents, 'grandsond'>("grandsond")
 
         type cases = [
-            Expect<Equal<typeof rootScope.events,
+            Expect<Equal<typeof rootScope.types.events,
                 PickScopeEvents<RootEvents, "root"> & RootScopeEvents>>,
-            Expect<Equal<typeof childrenScope.events,
+            Expect<Equal<typeof childrenScope.types.events,
                 PickScopeEvents<PickScopeEvents<RootEvents, "root"> & RootScopeEvents, "children"> & ChildScopeEvents>>,
-            Expect<Equal<typeof GrandsondScope.events,
+            Expect<Equal<typeof GrandsondScope.types.events,
                 PickScopeEvents<PickScopeEvents<PickScopeEvents<RootEvents, "root"> & RootScopeEvents, "children"> & ChildScopeEvents, "grandsond"> & GrandsondDScopeEvents>>
         ]
 

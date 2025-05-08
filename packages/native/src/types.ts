@@ -124,6 +124,8 @@ export type FastEventOptions<Meta = Record<string, any>, Context = any> = {
     onBeforeExecuteListener?: (message: FastEventMessage<any, Meta>, args: FastEventListenerArgs<Meta>) => boolean | void
     // 当执行侦听器后时回调
     onAfterExecuteListener?: (message: FastEventMessage<any, Meta>, returns: any[], listeners: FastListenerNode[]) => void
+    // 当触发事件时的回调,返回false可拦截不触发事件并触发一个AbortError
+    onBeforeEmit?: (message: FastEventMessage<any, Meta>, args: FastEventListenerArgs<Meta>) => boolean
     /**
      * 全局执行器
      * allSettled: 使用Promise.allSettled()执行所有监听器
@@ -212,3 +214,8 @@ export type IFastListenerExecutor = (listeners: FastListenerMeta[], message: Fas
 export type ChangeFieldType<Record, Name extends string, Type = any> = Expand<Omit<Record, Name> & {
     [K in Name]: Type
 }>
+
+// 用当继承FastEvent时重载Options使用
+export type OverrideOptions<T> = ChangeFieldType<Required<T>, 'context', never>
+
+export type ObjectKeys<T, I = string> = { [P in keyof T]: P extends I ? P : never }[keyof T];

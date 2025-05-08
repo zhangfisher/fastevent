@@ -111,7 +111,7 @@ describe("简单发布与订阅", async () => {
         emitter.on('click', async () => 2)
         emitter.on('click', async () => { throw new Error('custom') })
 
-        const results = await Promise.allSettled(emitter.emit('click'))
+        const results = await Promise.allSettled(emitter.emit('click', 1))
         expect(results[0].status).toBe('fulfilled')
         expect((results[0] as any).value).toBe(1)
 

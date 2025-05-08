@@ -1,4 +1,4 @@
-import { UnboundError } from "./consts";
+import { ClearRetainMessage, UnboundError } from "./consts";
 import type { FastEvent } from "./event";
 import { FastListenerExecutorArgs, FastEventAnyListener, FastEventEmitMessage, FastEventListener, FastEventListenerArgs, FastEventListenOptions, FastEventMessage, FastEventSubscriber, ScopeEvents, FastEventMeta, DeepPartial, Fallback } from './types';
 import { parseEmitArgs } from "./utils/parseEmitArgs";
@@ -6,7 +6,7 @@ import { parseScopeArgs } from "./utils/parseScopeArgs";
 import { renameFn } from "./utils/renameFn";
 
 export type FastEventScopeOptions<Meta = Record<string, any>, Context = any> = {
-    meta: FastEventMeta & Meta
+    meta: FastEventScopeMeta & FastEventMeta & Meta
     context: Context
     executor?: FastListenerExecutorArgs
 }
@@ -23,7 +23,7 @@ export class FastEventScope<
     FinalMeta extends Record<string, any> = FastEventMeta & FastEventScopeMeta & Meta,
 > {
     __FastEventScope__: boolean = true
-    private _options: DeepPartial<FastEventScopeOptions<Meta, Context>> = {}
+    private _options: DeepPartial<FastEventScopeOptions<FinalMeta, Context>> = {}
     types = {
         events: undefined as unknown as Events,
         meta: undefined as unknown as FinalMeta,
@@ -31,12 +31,12 @@ export class FastEventScope<
     }
     prefix: string = ''
     emitter!: FastEvent<Events>
-    constructor(options?: DeepPartial<FastEventScopeOptions<Meta, Context>>) {
+    constructor(options?: DeepPartial<FastEventScopeOptions<FinalMeta, Context>>) {
         this._options = Object.assign({}, options) as unknown as FastEventScopeOptions<FinalMeta, Context>
     }
     get context(): Fallback<Context, typeof this> { return (this.options.context || this) as Fallback<Context, typeof this> }
     get options() { return this._options as FastEventScopeOptions<FinalMeta, Context> }
-    bind(emitter: FastEvent<any>, prefix: string, options?: DeepPartial<FastEventScopeOptions<Meta, Context>>) {
+    bind(emitter: FastEvent<any>, prefix: string, options?: DeepPartial<FastEventScopeOptions<FinalMeta, Context>>) {
         this.emitter = emitter
         this._options = Object.assign(this._options, {
             scope: prefix
@@ -121,8 +121,8 @@ export class FastEventScope<
         this.emitter.clear(this.prefix.substring(0, this.prefix.length - 1))
     }
 
-    public emit(type: Types): void
-    public emit(type: string): void
+    public emit(type: Types, directive: symbol): void
+    public emit(type: string, directive: symbol): void
     public emit<R = any>(type: Types, payload?: Events[Types], options?: FastEventListenerArgs<FinalMeta>): R[]
     public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? Events[Types] : any, options?: FastEventListenerArgs<FinalMeta>): R[]
     public emit<R = any>(message: FastEventEmitMessage<Events, FinalMeta>, options?: FastEventListenerArgs<FinalMeta>): R[]
@@ -131,7 +131,7 @@ export class FastEventScope<
     }, FinalMeta>, options?: FastEventListenerArgs<FinalMeta>): R[]
     public emit() {
         // 清除保留事件
-        if (arguments.length === 1 && typeof (arguments[0]) === 'string') {
+        if (arguments.length === 2 && typeof (arguments[0]) === 'string' && arguments[1] === ClearRetainMessage) {
             return this.emitter.emit(this._getScopeType(arguments[0])!)
         }
         const [message, options] = parseEmitArgs(

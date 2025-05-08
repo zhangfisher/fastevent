@@ -146,11 +146,11 @@ describe("FastEvent执行器测试", () => {
             scope.on("event", listener2)
 
             // 使用全局配置
-            let results = scope.emit("event")
+            let results = scope.emit("event", 0)
             expect(results).toEqual(["result1"])
 
             // 使用Scope配置
-            results = scope.emit("event")
+            results = scope.emit("event", 0)
             expect(results.length).toBe(1) // balancing执行器每次只执行一个监听器
 
             // 使用触发时指定的配置
@@ -179,7 +179,7 @@ describe("FastEvent执行器测试", () => {
             emitter.on("test", listener1)
             emitter.on("test", listener2)
 
-            const results = emitter.emit("test")
+            const results = emitter.emit("test", 0)
 
             expect(customExecutor).toHaveBeenCalled()
             expect(results).toEqual(["result1"])
@@ -248,7 +248,7 @@ describe("FastEvent执行器测试", () => {
             emitter.on("test", listener1)
             emitter.on("test", listener2)
 
-            const results = emitter.emit("test")
+            const results = emitter.emit("test", 0)
 
             expect(listener1).toHaveBeenCalledTimes(1)
             expect(listener2).not.toHaveBeenCalled()
@@ -317,7 +317,7 @@ describe("FastEvent执行器测试", () => {
             emitter.on("test", listener1)
             emitter.on("test", listener2)
 
-            const results = emitter.emit("test")
+            const results = emitter.emit("test", 0)
 
             expect(listener1).not.toHaveBeenCalled()
             expect(listener2).toHaveBeenCalledTimes(1)
@@ -339,7 +339,7 @@ describe("FastEvent执行器测试", () => {
             emitter.on("test", listener2)
             emitter.on("test", listener3)
 
-            const results = emitter.emit("test")
+            const results = emitter.emit("test", 0)
 
             // 验证只执行了一个监听器
             expect(
@@ -374,7 +374,7 @@ describe("FastEvent执行器测试", () => {
 
             // 执行足够多次以验证随机性
             for (let i = 0; i < 50; i++) {
-                const result = emitter.emit("test")[0]
+                const result = emitter.emit("test", 0)[0]
                 executionCounts[result as keyof typeof executionCounts]++
             }
 
@@ -425,7 +425,7 @@ describe("FastEvent执行器测试", () => {
 
             // 多次触发以确保错误处理正确
             for (let i = 0; i < 10; i++) {
-                const results = emitter.emit("test")
+                const results = emitter.emit("test", 0)
                 // 结果应该是错误对象或成功字符串
                 expect(results[0] === error || results[0] === "成功").toBe(true)
             }

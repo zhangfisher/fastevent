@@ -100,11 +100,14 @@ emitter.on('system/status', (message) => {
     console.log('当前状态:', message.payload.online);
 });
 // 可以清除保留的事件。
-emitter.emit('system/status')
+import { ClearRetainMessage } from 'fastevent'
+emitter.emit('system/status',ClearRetainMessage)
 
 ```
 :::warning 提示
-保留事件也叫粘性消息。
+- 保留事件也叫粘性消息。
+- `ClearRetainMessage`是一个`symbol`类型，用于清除保留的事件。
+- `emitter.retainedMessages`记录了所有保留的消息。
 :::
 
 ### 返回结果

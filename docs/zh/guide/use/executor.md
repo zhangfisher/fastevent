@@ -43,6 +43,46 @@ const results = await emitter.emitAsync('test');
 console.log(results); // ['fast']
 ```
 
+在竞争模式下，多个监听器可以同时执行，但只返回最快完成的监听器结果。
+此策略下，当第一个监听器完成时，其他监听器应该要中止执行，这是通知自动传入的`abotSignal`实现的。
+
+```typescript
+const emitter = new FastEvent({
+    executor: 'race',
+});
+
+const doSomeing =async (ms:number)=> {
+    await new Promise((resolve) => setTimeout(resolve, ms));    
+}
+
+emitter.on('test', (message,{ abortSignal }) =>{
+    return new Promise((resolve)=>{
+        abortSignal.addEventListener('abort', () => {
+            resolve();
+        });
+        doSomeing(1000).then(()=>resolve('slow'))
+    })
+});
+
+emitter.on('test', (message,{ abortSignal }) =>{
+    return new Promise((resolve)=>{
+        abortSignal.addEventListener('abort', () => {
+            resolve();
+        });
+        doSomeing(10).then(()=>resolve('fast'))
+    })
+});
+// 默认情况下，AbortController是自动创建的
+const results = await emitter.emitAsync('test');
+
+console.log(results); // ['fast']
+```
+
+:::warning 提示
+在`race`执行器内部会自动创建`AbortController`，当第一个监听器完成时，`abotSignal`将被自动`abort`。
+也可以在`emit`时传入`abortSignal`来控制执行，详见[中止执行](./abort.md)
+:::
+
 ### balance（负载均衡执行器）
 
 在多次触发事件时，平均分配执行次数给所有监听器。

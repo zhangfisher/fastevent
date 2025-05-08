@@ -26,7 +26,7 @@ import * as executors from "./executors"
 import { isFunction } from './utils/isFunction';
 import { ScopeEvents } from './types';
 import { FastListenerPipe } from './pipe';
-import { AbortError } from './consts';
+import { AbortError, ClearRetainMessage } from './consts';
 import { parseScopeArgs } from './utils/parseScopeArgs';
 
 /**
@@ -57,7 +57,7 @@ export class FastEvent<
     /** 事件监听器执行时的上下文对象 */
     private _context: Context
 
-    /** 保留的事件消息映射，用于新订阅者 */
+    /** 保留的事件消息映射，Key是事件名称，Value是保留的事件消息 */
     retainedMessages: Map<string, any> = new Map<string, any>()
 
     /** 当前注册的监听器总数 */
@@ -356,7 +356,7 @@ export class FastEvent<
      * - 如果没有提供prefix,则清除所有监听器
      * - 同时会清空保留的事件(_retainedEvents)
      * - 重置监听器对象为空
- 
+     
     * @example
      * 
      * ```ts
@@ -641,8 +641,8 @@ export class FastEvent<
      * ```
      */
     // 用于清除保留事件
-    public emit<T extends Types = Types>(type: T): void
-    public emit(type: string): void
+    public emit<T extends Types = Types>(type: T, directive: symbol): any[]
+    public emit(type: string, directive: symbol): any[]
     // 支持retain参数
     public emit<R = any, T extends Types = Types>(type: T, payload?: AllEvents[T], retain?: boolean): R[]
     public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? AllEvents[Types] : any, retain?: boolean): R[]
@@ -655,9 +655,9 @@ export class FastEvent<
     public emit<R = any>(message: FastEventEmitMessage<AllEvents, Meta>, options?: FastEventListenerArgs<Meta>): R[]
     public emit(): any {
         // 清除保留事件
-        if (arguments.length === 1 && typeof (arguments[0]) === 'string') {
+        if (arguments.length === 2 && typeof (arguments[0]) === 'string' && arguments[1] === ClearRetainMessage) {
             this.retainedMessages.delete(arguments[0])
-            return
+            return []
         }
         const [message, args] = parseEmitArgs<AllEvents, Meta>(arguments, this.options.meta)
         const parts = message.type.split(this._delimiter);
@@ -837,14 +837,14 @@ export class FastEvent<
         P extends string = string,
         M extends Record<string, any> = Record<string, any>,
         C = Context
-    >(prefix: P, options?: DeepPartial<FastEventScopeOptions<M, C>>): FastEventScope<ScopeEvents<AllEvents, P> & E, Meta & M, C>
+    >(prefix: P, options?: DeepPartial<FastEventScopeOptions<Meta & M, C>>): FastEventScope<ScopeEvents<AllEvents, P> & E, Meta & M, C>
     scope<
         E extends Record<string, any> = Record<string, any>,
         P extends string = string,
         M extends Record<string, any> = Record<string, any>,
         C = Context,
         ScopeObject extends FastEventScope<any, any, any> = FastEventScope<ScopeEvents<AllEvents, P> & E, Meta & M, C>
-    >(prefix: P, scopeObj: ScopeObject, options?: DeepPartial<FastEventScopeOptions<M, C>>): ScopeObject
+    >(prefix: P, scopeObj: ScopeObject, options?: DeepPartial<FastEventScopeOptions<Meta & M, C>>): ScopeObject
     scope<
         E extends Record<string, any> = Record<string, any>,
         P extends string = string,

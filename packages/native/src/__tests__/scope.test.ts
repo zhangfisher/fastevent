@@ -60,7 +60,7 @@ describe("scope", () => {
                 meta: { root: 1 }
             })
             const scope = emitter.scope("a/b/c", {
-                meta: { scope: 1 }
+                meta: { scope: "ddd" }
             })
 
             let receivedMeta: any

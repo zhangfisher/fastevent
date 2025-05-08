@@ -4,7 +4,8 @@ import { describe, test, expect } from "vitest"
 import type { Equal, Expect, NotAny } from '@type-challenges/utils'
 import { FastEvent } from "../../event"
 import { FastEventScope, FastEventScopeMeta, FastEventScopeOptions } from "../../scope"
-import { ChangeFieldType, FastEventMeta, FastEventOptions } from "../../types"
+import { ChangeFieldType, FastEventMeta, FastEventOptions, OverrideOptions } from "../../types"
+
 
 
 
@@ -19,7 +20,7 @@ describe("继承FastEvent类型系统", () => {
                 super(Object.assign({}, options))
             }
             get options() {
-                return super.options as unknown as Required<MyEventOptions>  //unknown as ChangeFieldType<Required<MyEventOptions>, 'context', never>
+                return super.options as OverrideOptions<MyEventOptions>
             }
         }
         const myemitter1 = new MyEvent()
@@ -42,7 +43,7 @@ describe("继承FastEvent类型系统", () => {
             ]
         })
     })
-    test("继承时重载覆盖Options", () => {
+    test("继承时提供泛型参数", () => {
         type MyScopeEvents = {
             a: number
             b: string
@@ -60,7 +61,7 @@ describe("继承FastEvent类型系统", () => {
                 super(Object.assign({}, options))
             }
             get options() {
-                return super.options as unknown as ChangeFieldType<Required<MyEventOptions<M, C>>, 'context', never>
+                return super.options as OverrideOptions<MyEventOptions<M, C>>
             }
         }
         const emitter = new MyEvent({
@@ -306,5 +307,42 @@ describe("继承FastEventScope类型系统", () => {
         })
 
     })
+    test("继承Scope类", () => {
 
+        type MyScopeEvents = {
+            a: number
+            b: string
+            c: boolean
+        }
+        interface MyScopeOptions<M, C> extends FastEventScopeOptions<M, C> {
+            count?: number
+        }
+
+        const emitter = new FastEvent({
+            meta: {
+                root: 100
+            }
+        })
+
+        class MyScope<E extends Record<string, any> = MyScopeEvents,
+            M extends Record<string, any> = Record<string, any>,
+            C = never
+        > extends FastEventScope<E, M, C> {
+            constructor(options?: Partial<MyScopeOptions<M, C>>) {
+                super(Object.assign({}, options))
+            }
+            get options() {
+                return super.options as OverrideOptions<MyScopeOptions<M, C>>
+            }
+        }
+
+        const myScope = emitter.scope('modules/my', new MyScope())
+
+        myScope.on('a', function (message) {
+            type This = typeof this   // [!code ++]
+            message.meta
+            message.type
+            message.payload
+        })
+    })
 })

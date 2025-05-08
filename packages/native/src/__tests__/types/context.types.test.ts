@@ -2,8 +2,8 @@
 import { describe, test, expect } from "vitest"
 import type { Equal, Expect, NotAny } from '@type-challenges/utils'
 import { FastEvent } from "../../event"
-import { FastEventScopeMeta } from "../../scope"
-import { FastEventMeta } from "../../types"
+import { FastEventScope, FastEventScopeMeta, FastEventScopeOptions } from "../../scope"
+import { FastEventMeta, OverrideOptions } from "../../types"
 
 describe("类型系统测试", () => {
     test("未指定上下文时应使用默认上下文类型", () => {
@@ -29,7 +29,10 @@ describe("类型系统测试", () => {
                 root: true
             }
         })
-        type Ctx = Expect<Equal<typeof emitter.options.context, { root: boolean }>>
+        type Ctx = [
+            Expect<Equal<typeof emitter.options.context, { root: boolean }>>,
+            Expect<Equal<typeof emitter.context, { root: boolean }>>
+        ]
 
         emitter.on("xxx", function (this, message) {
             type cases = [
@@ -95,6 +98,7 @@ describe("类型系统测试", () => {
             ]
         })
     })
+
 })
 
 

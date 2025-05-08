@@ -43,6 +43,7 @@ export default {
                                 { text: '执行器', link: '/zh/guide/use/executor' },
                                 { text: '错误处理', link: '/zh/guide/use/error_handle' },
                                 { text: '监听管道', link: '/zh/guide/use/pipe' },
+                                { text: '类继承', link: '/zh/guide/use/inherit' },
                                 { text: 'Typescript', link: '/zh/guide/use/typescript' },
                                 { text: '调试工具', link: '/zh/guide/use/devTools' }
                             ]
