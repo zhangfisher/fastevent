@@ -1,7 +1,9 @@
+import { FastEventSubscriber } from "../../dist";
 import { FastEvent } from "../event";
 import { FastEventListenerArgs, FastEventMessage, FastEventOptions } from "../types";
+import { BroadcastEvent } from "./consts";
 import type { FastEventBus } from "./eventbus";
-import { FastEventBusNodeMessage, NamespaceDelimiter } from "./types";
+import { FastEventBusMessage, NamespaceDelimiter } from "./types";
 
 export type FastEventBusNodeOptions<Meta = Record<string, any>, Context = any> = FastEventOptions<Meta, Context>
 
@@ -11,7 +13,8 @@ export class FastEventBusNode<
     Context = never,
     Types extends keyof Events = Exclude<keyof Events, number | symbol>
 > extends FastEvent<Events, Meta, Context> {
-    eventBus?: FastEventBus<any, any, any>;
+    eventbus?: FastEventBus<any, any, any>;
+    private _subscribers: FastEventSubscriber[] = []
     constructor(options?: FastEventBusNodeOptions<Meta, Context>) {
         super(options)
         this.options.onBeforeExecuteListener = this._onBeforeExecuteListener.bind(this)
@@ -27,18 +30,10 @@ export class FastEventBusNode<
      * @returns {boolean} false 表示取消在内部触发事件,undefined 表示继续执行
      * @private
      */
-    private _onBeforeExecuteListener(message: FastEventBusNodeMessage, args: FastEventListenerArgs) {
+    private _onBeforeExecuteListener(message: FastEventBusMessage, args: FastEventListenerArgs) {
         // 处理包括名称空间前缀的事件,即emit("<节点id>::<事件名>")
         if (message.type.includes(NamespaceDelimiter)) {
-            const [namespace, type] = message.type.split(NamespaceDelimiter)
-            const emitter = (namespace ? this.eventBus?.nodes.get(namespace) : this.eventBus!) as unknown as FastEvent
-            if (!emitter) {
-                throw new Error(`Node ${namespace} not found`);
-            } else { // 转发到全局或其他节点触发事件
-                message.type = type
-                emitter.emit(message, args)
-            }
-            return false // 取消在内部触发事件
+            return this.eventbus?.send(message)
         }
     }
 
@@ -46,26 +41,29 @@ export class FastEventBusNode<
      * 加入事件总线
      * @param eventBus 要加入的事件总线
      */
-    connect(eventBus: FastEventBus<any, any, any, any>): void {
-        this.eventBus = eventBus
-        eventBus.add(this);
+    connect(eventbus: FastEventBus): void {
+        this.eventbus = eventbus
+        this.eventbus.add(this);
+
+        // 订阅广播事件
+        this._subscribers.push(this.eventbus.on(BroadcastEvent, this._onMessage.bind(this)))
     }
     disconnect() {
-        if (!this.eventBus) {
+        if (!this.eventbus) {
             throw new Error('Node is not connected to any event bus');
         }
-        this.eventBus.remove(this.id);
+        this.eventbus.remove(this.id);
     }
     /**
      * 发送消息到指定节点
      * @param toNodeId 目标节点ID
      * @param message 要发送的消息
      */
-    send<T extends FastEventBusNodeMessage>(toNodeId: string, message: T): void {
-        if (!this.eventBus) {
+    send<T extends FastEventBusMessage>(toNodeId: string, message: T): void {
+        if (!this.eventbus) {
             throw new Error('Node is not connected to any event bus');
         }
-        const toNode = this.eventBus.nodes.get(toNodeId);
+        const toNode = this.eventbus.nodes.get(toNodeId);
         if (!toNode) {
             throw new Error(`Node ${toNodeId} not found`);
         }
@@ -77,23 +75,23 @@ export class FastEventBusNode<
      * @param message 要广播的消息
      */
     broadcast<T extends FastEventMessage>(message: T): void {
-        if (!this.eventBus) {
+        if (!this.eventbus) {
             throw new Error('Node is not connected to any event bus');
         }
         message.from = this.id
-        this.eventBus.broadcast(message);
+        this.eventbus.broadcast(message);
     }
 
     /**
      * 处理接收到的消息
      * @param message 接收到的消息
      */
-    _onMessage<T extends FastEventBusNodeMessage>(message: FastEventBusNodeMessage<T>): void {
+    _onMessage<T extends FastEventBusMessage>(message: FastEventBusMessage<T>): void {
 
     }
     /**
      * 供子类继承重载
      */
-    onMessage(message: FastEventBusNodeMessage) {
+    onMessage(message: FastEventBusMessage) {
     }
 }

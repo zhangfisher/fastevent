@@ -79,6 +79,29 @@ const emitter = new FastEvent({
 });
 ```
 
+- `onBeforeExecuteListener`返回`false`代表不执行所有监听器。
+- `onBeforeExecuteListener`也可以返回一个`数组`用来返回给`emit`。
+
+```ts
+const userEmitter = new FastEvent();
+
+userEmitter.on("login",()=>100)
+
+const emitter = new FastEvent({
+    onBeforeExecuteListener(message, args) {
+        // 以@开头的事件被转发到userEmitter
+        if(message.type.startsWith("@")){
+            return userEmitter.emit(message.type.substring(1),message.payload,args)
+        }
+    },
+});
+
+const reuslts = emitter.emit("@login")
+// results === [100]
+
+```
+
+
 ## onAfterExecuteListener
 
 在所有监听器执行完成后触发。

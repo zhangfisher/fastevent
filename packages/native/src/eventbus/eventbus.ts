@@ -43,16 +43,17 @@
  */
 
 import { FastEvent } from "../event";
-import { FastEventMessage } from '../types';
+import { FastEventListenerArgs } from '../types';
+import { BroadcastEvent, NamespaceDelimiter } from "./consts";
 import type { FastEventBusNode } from "./node";
-import { FastEventBusEvents, FastEventBusNodeMessage, FastEventBusOptions } from "./types";
+import { FastEventBusEvents, FastEventBusMessage, FastEventBusOptions } from "./types";
 
 
 export class FastEventBus<
-    Events extends Record<string, any> = Record<string, any>,
+    Events extends Record<string, any> = FastEventBusEvents,
     Meta extends Record<string, any> = Record<string, any>,
     Context = never
-> extends FastEvent<FastEventBusEvents & Events, Meta, Context> {
+> extends FastEvent<Events & FastEventBusEvents, Meta, Context> {
     nodes: Map<string, FastEventBusNode<any, any, any>>;
 
     constructor(options?: FastEventBusOptions<Meta, Context>) {
@@ -69,12 +70,7 @@ export class FastEventBus<
             throw new Error(`Node with id ${node.id} already exists`);
         }
         this.nodes.set(node.id, node);
-        node.connect(this)
-        this.emit("node:connect", node.id)
-        this.emit("sdfsdf", 1)
-
-        this.emit("xxxx", 2)
-
+        this.emit("node:connect", node.id as any)
     }
 
     /**
@@ -84,9 +80,9 @@ export class FastEventBus<
     remove(nodeId: string): void {
         const node = this.nodes.get(nodeId);
         if (node) {
-            node.eventBus = undefined;
+            node.eventbus = undefined;
             this.nodes.delete(nodeId);
-            this.emit("node:disconnect", node.id)
+            this.emit("node:disconnect", node.id as any)
         }
     }
 
@@ -94,33 +90,36 @@ export class FastEventBus<
      * 广播消息到所有节点
      * @param message 要广播的消息
      */
-    broadcast<T extends FastEventMessage>(message: T): void {
-        const busMessage: FastEventBusNodeMessage<T> = {
-            ...message,
-            from: ''
-        };
-        this.nodes.forEach(node => {
-            node._onMessage(busMessage);
-        });
+    broadcast(message: FastEventBusMessage, args?: FastEventListenerArgs) {
+        return this.emit(BroadcastEvent, message as any, args as any)
     }
 
     /**
      * 发送消息到指定节点
+     * 
      * @param toNodeId 目标节点ID
      * @param message 要发送的消息
      */
-    send<T extends FastEventMessage>(toNodeId: string, message: T): void {
-        const targetNode = this.nodes.get(toNodeId);
+    send<R = any[]>(message: FastEventBusMessage, args?: FastEventListenerArgs): R[]
+    send<R = any[]>(toNodeId: string, message: FastEventBusMessage, args?: FastEventListenerArgs): R[]
+    send() {
+        let toNodeId = typeof (arguments[0]) === 'string' ? arguments[0] : undefined;
+        const message = typeof (arguments[1]) === 'object' ? arguments[1] : arguments[0];
+        const args = typeof (arguments[0]) === 'string' ? arguments[2] : arguments[1];
+
+        const [nodeId, type] = message.type.includes(NamespaceDelimiter) ? message.type.split(NamespaceDelimiter) : [toNodeId, message.type];
+        message.type = type
+
+        const targetNode = this.nodes.get(nodeId);
         if (!targetNode) {
             throw new Error(`Node ${toNodeId} not found`);
         }
-        const busMessage: FastEventBusNodeMessage<T> = {
-            ...message,
-            from: '',
-            to: toNodeId
-        };
-        targetNode._onMessage(busMessage);
+        message.to = nodeId
+        return targetNode.emit(message, args)
     }
 
 }
 
+// const bus = new FastEventBus<{ add: number }>()
+
+// bus.on('node:connect')

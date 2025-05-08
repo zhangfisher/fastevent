@@ -671,8 +671,11 @@ export class FastEvent<
             nodes.push(node)
         })
         if (isFunction(this._options.onBeforeExecuteListener)) {
-            if (this._options.onBeforeExecuteListener.call(this, message, args) === false) {
-                throw new Error('emit ' + message.type + ' is aborted')
+            const r = this._options.onBeforeExecuteListener.call(this, message, args)
+            if (Array.isArray(r)) {
+                return r
+            } else if (r === false || r === undefined) {
+                throw new AbortError(message.type)
             }
         }
         // 执行监听器
@@ -861,4 +864,5 @@ export class FastEvent<
         scope.bind(this as any, prefix, options as FastEventScopeOptions<Meta & M, C>)
         return scope
     }
-} 
+}
+

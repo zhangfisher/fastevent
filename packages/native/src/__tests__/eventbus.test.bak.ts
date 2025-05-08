@@ -1,32 +1,41 @@
 
 import { beforeEach, describe, expect, test } from 'vitest';
-import { FastEventBus, FastEventBusNode } from '../eventbus/eventbus';
+import { FastEventBus, FastEventBusNode } from '../eventbus';
 
 describe('FastEventBus', () => {
     let eventBus: FastEventBus;
     let node1: FastEventBusNode;
     let node2: FastEventBusNode;
     let node3: FastEventBusNode;
+    let node4: FastEventBusNode;
+    let node5: FastEventBusNode;
 
     beforeEach(() => {
         eventBus = new FastEventBus();
         node1 = new FastEventBusNode({ id: 'node1' });
         node2 = new FastEventBusNode({ id: 'node2' });
         node3 = new FastEventBusNode({ id: 'node3' });
+        node4 = new FastEventBusNode({ id: 'node4' });
+        node5 = new FastEventBusNode({ id: 'node5' });
     });
 
     test('should add nodes to event bus', () => {
         eventBus.add(node1);
         eventBus.add(node2);
-        expect(node1.eventBus).toBe(eventBus);
-        expect(node2.eventBus).toBe(eventBus);
+
+
+
+        expect(node1.eventbus).toBe(eventBus);
+        expect(node2.eventbus).toBe(eventBus);
+
+        node5.on("node1::1")
     });
 
     test('should allow nodes to join event bus', () => {
         node1.connect(eventBus);
         node2.connect(eventBus);
-        expect(node1.eventBus).toBe(eventBus);
-        expect(node2.eventBus).toBe(eventBus);
+        expect(node1.eventbus).toBe(eventBus);
+        expect(node2.eventbus).toBe(eventBus);
     });
 
     test('should not allow duplicate node ids', () => {
@@ -89,7 +98,7 @@ describe('FastEventBus', () => {
         eventBus.add(node2);
 
         eventBus.remove(node1.id);
-        expect(node1.eventBus).toBeUndefined();
+        expect(node1.eventbus).toBeUndefined();
 
         // 尝试向已移除的节点发送消息
         expect(() => node2.send(node1.id, { type: 'test' })).toThrow();

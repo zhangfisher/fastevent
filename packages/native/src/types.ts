@@ -120,12 +120,10 @@ export type FastEventOptions<Meta = Record<string, any>, Context = any> = {
     onClearListeners?: () => void
     // 当侦听器函数执行出错时的回调，用于诊断时使用,可以打印错误信息
     onListenerError?: ((listener: FastEventListener, error: Error, message: FastEventMessage<any, Meta>, args: FastEventListenerArgs<Meta> | undefined) => void)
-    // 当执行侦听器前时回调,返回false代表取消执行
-    onBeforeExecuteListener?: (message: FastEventMessage<any, Meta>, args: FastEventListenerArgs<Meta>) => boolean | void
+    // 当执行侦听器前时回调,返回false代表取消执行,any[]返回给emit
+    onBeforeExecuteListener?: (message: FastEventMessage<any, Meta>, args: FastEventListenerArgs<Meta>) => boolean | void | any[]
     // 当执行侦听器后时回调
     onAfterExecuteListener?: (message: FastEventMessage<any, Meta>, returns: any[], listeners: FastListenerNode[]) => void
-    // 当触发事件时的回调,返回false可拦截不触发事件并触发一个AbortError
-    onBeforeEmit?: (message: FastEventMessage<any, Meta>, args: FastEventListenerArgs<Meta>) => boolean
     /**
      * 全局执行器
      * allSettled: 使用Promise.allSettled()执行所有监听器

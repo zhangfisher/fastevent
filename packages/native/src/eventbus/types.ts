@@ -1,14 +1,18 @@
-import { FastEventEmitMessage, FastEventOptions } from "../types"
+import { Expand, FastEventEmitMessage, FastEventOptions } from "../types"
 
-export type FastEventBusNodeMessage<T extends FastEventEmitMessage = FastEventEmitMessage> = T & {
+export type FastEventBusMessage<T extends FastEventEmitMessage = FastEventEmitMessage> = Expand<T & {
     from?: string
     to?: string
-}
+}>
 
 export type FastEventBusOptions<Meta = Record<string, any>, Context = any> = FastEventOptions<Meta, Context>
 
 export interface FastEventBusEvents {
+    'node:broadcast': string
     'node:connect': string
     'node:disconnect': string
 }
-export const NamespaceDelimiter = '::'
+
+export interface FastEventBusNodes {
+
+}
