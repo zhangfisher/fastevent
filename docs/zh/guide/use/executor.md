@@ -206,7 +206,7 @@ class FastEvent {
             // 所有监听器的执行次数都会+1
             // listener = [listener,maxCount,executedCount]
             listeners.forEach((listener) => {
-                listener[2]++; //   [!code++]
+                listener[2]++; //   [!code ++]
             });
         }
     }
@@ -219,9 +219,9 @@ class FastEvent {
 export const random = (listeners, message, args, execute) => {
     const index = Math.floor(Math.random() * listeners.length);
     // 所有监听器执行次数都会-1，以抵消后续的+1
-    listeners.forEach((listener) => listener[2]--); //   [!code++]
+    listeners.forEach((listener) => listener[2]--); //   [!code ++]
     // 只有被选中的监听器执行次数+1
-    listeners[index][2]++; //   [!code++ ]
+    listeners[index][2]++; //   [!code ++]
     return [execute(listeners[index][0], message, args)];
 };
 ```

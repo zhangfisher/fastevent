@@ -161,6 +161,43 @@ emitter.on('click', function (message) {
 // 
 ``` 
 
+## 检索类型
+
+`FastEvent`和`FastEventScope`都提供了`types`对象用于检索事件类型。
+
+```ts twoslash
+import { FastEvent } from 'fastevent';
+
+type CustomMeta = { x: number; y: number; z?: number };
+type CustomEvents = {
+    click: { x: number; y: number };
+    mousemove: boolean;
+    scroll: number;
+    focus: string;
+};
+type CustomContext = {
+    name: string,
+    age: number
+    address: string
+};
+const emitter = new FastEvent<CustomEvents, CustomMeta, CustomContext>({
+    context: {
+        name: "hello",
+        age: 18,
+        address: "beijing"
+    }
+});
+
+type EventType = typeof emitter.types.events;
+type MetaType = typeof emitter.types.meta;
+type ContextType = typeof emitter.types.context;
+
+```
+
+
+
 :::warning  提示
 `FastEventScope`的类型推断和声明与`FastEvent`基本相同。
 :::
+
+

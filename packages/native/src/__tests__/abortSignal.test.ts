@@ -119,7 +119,7 @@ describe("触发事件时传递AbortSignal参数给监听器", () => {
                 abortSignal: abortController.signal
             })
             setTimeout(() => {
-                abortController.abort()   // [!code++]
+                abortController.abort()   // [!code ++]
                 Promise.allSettled(results).then((r) => {
                     expect(r[0].status).toBe("fulfilled")
                     expect((r[0] as any).value).toBeInstanceOf(AbortError)
@@ -151,7 +151,7 @@ describe("触发事件时传递AbortSignal参数给监听器", () => {
                 abortSignal: abortController.signal
             })
             setTimeout(() => {
-                abortController.abort()   // [!code++]
+                abortController.abort()   // [!code ++]
                 Promise.allSettled(results).then((r) => {
                     expect(r[0].status).toBe("fulfilled")
                     expect((r[0] as any).value).toBe(100)
@@ -183,7 +183,7 @@ describe("触发事件时传递AbortSignal参数给监听器", () => {
                 abortSignal: abortController.signal
             })
             setTimeout(() => {
-                abortController.abort()   // [!code++]
+                abortController.abort()   // [!code ++]
                 Promise.allSettled(results).then((emitResults) => {
                     expect(emitResults.length).toBe(length)
                     emitResults.forEach((r, i) => {

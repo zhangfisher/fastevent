@@ -24,7 +24,7 @@ import 'fastevent/devtools';
 import { FastEvent } from 'fastevent';
 
 const emitter = new FastEvent({
-    debug: true, // [!code++]
+    debug: true, // [!code ++]
 });
 ```
 

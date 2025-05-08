@@ -28,7 +28,7 @@ emitter.emit("click", 1,{
     signal: abortController.signal
 })
 //
-abortController.abort()   // [!code++]
+abortController.abort()   // [!code ++]
 
 ```
 
@@ -54,7 +54,7 @@ emitter.on("click",  (message,{abortSignal}) => {
 // 创建一个 AbortController 实例
 const abortController = new AbortController()
 
-abortController.abort()   // [!code++]
+abortController.abort()   // [!code ++]
 
 
 // 传入 AbortController.signal
@@ -100,7 +100,7 @@ const results = emitter.emit("click", 1,{
 console.log(results)   // [Promise]
 
 setTimeout(()=>{
-    abortController.abort()   // [!code++]
+    abortController.abort()   // [!code ++]
 },3000)
 
 ```

@@ -7,7 +7,7 @@
     "types": "./dist/index.d.ts",
     "private": false,
     "access": "public",
-    "homepage": "https://github.com/zhangfisher/fastevent.git",
+    "homepage": "https://zhangfisher.github.io/fastevent/",
     "repository": {
         "type": "git",
         "url": "git+https://github.com/zhangfisher/fastevent.git"

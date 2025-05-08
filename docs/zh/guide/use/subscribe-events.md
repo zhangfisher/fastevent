@@ -292,7 +292,7 @@ event.emit(
     'status/update',
     { online: true },
     {
-        retain: true, // 保留事件 [!code++ ]
+        retain: true, // 保留事件 [!code ++]
     },
 );
 

@@ -206,7 +206,7 @@ class FastEvent {
             // Execution count of all listeners will be incremented
             // listener = [listener,maxCount,executedCount]
             listeners.forEach((listener) => {
-                listener[2]++; //   [!code++]
+                listener[2]++; //   [!code ++]
             });
         }
     }
@@ -219,9 +219,9 @@ Since the `random` executor only selects one listener randomly from the list to 
 export const random = (listeners, message, args, execute) => {
     const index = Math.floor(Math.random() * listeners.length);
     // Decrement all listeners' execution counts to offset subsequent increment
-    listeners.forEach((listener) => listener[2]--); //   [!code++]
+    listeners.forEach((listener) => listener[2]--); //   [!code ++]
     // Only increment the execution count of the selected listener
-    listeners[index][2]++; //   [!code++ ]
+    listeners[index][2]++; //   [!code ++]
     return [execute(listeners[index][0], message, args)];
 };
 ```

@@ -27,6 +27,7 @@ describe('onMessage测试', () => {
                 onMessageCalled = false;
                 onMessage(message: FastEventMessage) {
                     this.onMessageCalled = true;
+                    message.type
                 }
             }
 
@@ -91,4 +92,68 @@ describe('onMessage测试', () => {
         });
     });
 
+    describe('FastEventScope类', () => {
+        test('Scope类on方法未指定监听器时应调用onMessage', () => {
+            class CustomScope extends FastEventScope {
+                onMessageCalled = false;
+                onMessage(message: FastEventMessage) {
+                    expect(this).toBeInstanceOf(CustomScope)
+                    this.onMessageCalled = true;
+                }
+            }
+            const emitter = new FastEvent();
+            const scope = emitter.scope("user", new CustomScope())
+            const subscriber = scope.on('test');
+
+            scope.emit('test', { data: 'test' });
+            expect(scope.onMessageCalled).toBe(true);
+            subscriber.off();
+        });
+
+        test('Scope类once方法未指定监听器时应调用onMessage', () => {
+            class CustomScope extends FastEventScope {
+                onMessageCalled = false;
+                onMessage(message: FastEventMessage) {
+                    this.onMessageCalled = true;
+                    message.type
+                }
+            }
+
+            const emitter = new FastEvent();
+            const scope = emitter.scope("user", new CustomScope())
+            const subscriber = scope.once('test');
+
+            scope.emit('test', { data: 'test' });
+            expect(scope.onMessageCalled).toBe(true);
+            subscriber.off();
+        });
+
+        test('Scope类onAny方法未指定监听器时应调用onMessage', () => {
+
+            class CustomScope extends FastEventScope {
+                onMessageCalled = false;
+                onMessageType = '';
+                onMessage(message: FastEventMessage) {
+                    this.onMessageCalled = true;
+                    this.onMessageType = message.type;
+                }
+            }
+
+            const emitter = new FastEvent();
+            const scope = emitter.scope("user", new CustomScope())
+
+            const subscriber = scope.onAny();
+
+            scope.emit('test1', { data: 'test1' });
+            expect(scope.onMessageCalled).toBe(true);
+            expect(scope.onMessageType).toBe('test1');
+
+            scope.onMessageCalled = false;
+            scope.emit('test2', { data: 'test2' });
+            expect(scope.onMessageCalled).toBe(true);
+            expect(scope.onMessageType).toBe('test2');
+
+            subscriber.off();
+        });
+    });
 });

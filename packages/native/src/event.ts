@@ -8,13 +8,15 @@ import {
     FastEventListenOptions,
     FastEventMessage,
     FastEventAnyListener,
-    RequiredItems,
     Fallback,
     FastEventEmitMessage,
     FastEventListenerArgs,
     FastListenerMeta,
     IFastListenerExecutor,
-    FastEvents
+    FastEvents,
+    DeepPartial,
+    FastEventMeta,
+    Expand
 } from './types';
 import { parseEmitArgs } from './utils/parseEmitArgs';
 import { isPathMatched } from './utils/isPathMatched';
@@ -38,15 +40,16 @@ export class FastEvent<
     Events extends Record<string, any> = Record<string, any>,
     Meta extends Record<string, any> = Record<string, any>,
     Context = never,
+    // 以上几个泛型是快捷方式
     AllEvents extends Record<string, any> = Events & FastEvents,
-    Types extends keyof AllEvents = Exclude<keyof (AllEvents), number | symbol>
+    Types extends keyof AllEvents = Expand<Exclude<keyof (AllEvents), number | symbol>>
 > {
     __FastEvent__: boolean = true
     /** 事件监听器树结构，存储所有注册的事件监听器 */
     public listeners: FastListeners = { __listeners: [] } as unknown as FastListeners
 
     /** 事件发射器的配置选项 */
-    private _options: RequiredItems<FastEventOptions<Meta, Context>, ['meta', 'context']>
+    private _options: FastEventOptions<Meta, Context>
 
     /** 事件名称的分隔符，默认为'/' */
     private _delimiter: string = '/'
@@ -59,8 +62,12 @@ export class FastEvent<
 
     /** 当前注册的监听器总数 */
     listenerCount: number = 0
-    // @ts-ignore
-    events: Events
+    types = {
+        events: undefined as unknown as AllEvents,
+        meta: undefined as unknown as Expand<FastEventMeta & Meta & Record<string, any>>,
+        context: undefined as unknown as Expand<Fallback<Context, typeof this>>
+    }
+
     /**
      * 创建FastEvent实例
      * @param options - 事件发射器的配置选项
@@ -72,7 +79,7 @@ export class FastEvent<
      * - context: null - 监听器执行上下文
      * - ignoreErrors: true - 是否忽略监听器执行错误
      */
-    constructor(options?: FastEventOptions<Meta, Context>) {
+    constructor(options?: Partial<FastEventOptions<Meta, Context>>) {
         this._options = Object.assign({
             debug: false,
             id: Math.random().toString(36).substring(2),
@@ -80,15 +87,15 @@ export class FastEvent<
             context: null,
             ignoreErrors: true,
             meta: undefined
-        }, options) as RequiredItems<FastEventOptions<Meta, Context>, ['meta', 'context']>
+        }, options) as FastEventOptions<Meta, Context>
         this._delimiter = this._options.delimiter!
-        this._context = this._options.context!
+        this._context = this._options.context as Context
         this._enableDevTools()
     }
 
     /** 获取事件发射器的配置选项 */
     get options() { return this._options }
-    get context() { return this._context }
+    get context(): Fallback<Context, typeof this> { return (this.options.context || this) as Fallback<Context, typeof this> }
     get meta() { return this.options.meta }
     /** 获取事件发射器的唯一标识符 */
     get id() { return this._options.id! }
@@ -204,7 +211,6 @@ export class FastEvent<
     public on<T extends string>(type: T, listener: FastEventAnyListener<AllEvents, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber
     public on(type: '**', listener: FastEventAnyListener<Record<string, any>, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber
     public on(): FastEventSubscriber {
-
         const type = arguments[0] as string
         let listener = isFunction(arguments[1]) ? arguments[1] : this.onMessage.bind(this)
 
@@ -305,8 +311,8 @@ export class FastEvent<
      * 此方法供子类继承
      * 
      */
-    //  eslint-disable-next-line @typescript-eslint/no-unused-vars
-    onMessage(message: FastEventMessage) {
+    //  eslint-disable-next-line
+    onMessage(message: FastEventMessage<AllEvents, Meta>) {
 
     }
     off(listener: FastEventListener<any, any, any>): void
@@ -514,7 +520,7 @@ export class FastEvent<
             if (args && args.abortSignal && args.abortSignal.aborted) {
                 return this._onListenerError(listener, message, args, new AbortError(listener.name))
             }
-            let result = listener.call(this._context || this, message, args)
+            let result = listener.call(this.context, message, args)
             // 自动处理reject Promise
             if (result && result instanceof Promise) {
                 result = result.catch(e => { return this._onListenerError(listener, message, args, e) })
@@ -818,14 +824,14 @@ export class FastEvent<
         P extends string = string,
         M extends Record<string, any> = Record<string, any>,
         C = Context
-    >(prefix: P, options?: FastEventScopeOptions<M, C>): FastEventScope<ScopeEvents<AllEvents, P> & E, Meta & M, C>
+    >(prefix: P, options?: DeepPartial<FastEventScopeOptions<M, C>>): FastEventScope<ScopeEvents<AllEvents, P> & E, Meta & M, C>
     scope<
         E extends Record<string, any> = Record<string, any>,
         P extends string = string,
         M extends Record<string, any> = Record<string, any>,
         C = Context,
         ScopeObject extends FastEventScope<any, any, any> = FastEventScope<ScopeEvents<AllEvents, P> & E, Meta & M, C>
-    >(prefix: P, scopeObj: ScopeObject, options?: FastEventScopeOptions<M, C>): ScopeObject
+    >(prefix: P, scopeObj: ScopeObject, options?: DeepPartial<FastEventScopeOptions<M, C>>): ScopeObject
     scope<
         E extends Record<string, any> = Record<string, any>,
         P extends string = string,

@@ -58,7 +58,7 @@ emitter.on(
     {
         pipes: [
             queue({
-                size: 5 // 最多同时放置5消息 // [!code++]
+                size: 5 // 最多同时放置5消息 // [!code ++]
             })], 
     },
 );

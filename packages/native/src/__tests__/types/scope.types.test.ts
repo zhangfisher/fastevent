@@ -3,8 +3,8 @@
 import { describe, test, expect } from "vitest"
 import type { Equal, Expect, NotAny } from '@type-challenges/utils'
 import { FastEvent } from "../../event"
-import { FastEventScope, FastEventScopeMeta } from "../../scope"
-import { FastEventMeta, FastEventOptions, FastEvents, PickScopeEvents, RequiredItems } from "../../types"
+import { FastEventScope, FastEventScopeMeta, FastEventScopeOptions } from "../../scope"
+import { ChangeFieldType, FastEventMeta, FastEventOptions, FastEvents, PickScopeEvents, RequiredItems } from "../../types"
 
 declare module "../../types" {
     interface FastEventMeta {
@@ -46,7 +46,7 @@ describe("事件作用域类型测试", () => {
         }
         const scope = emitter.scope<CustomScopeEvents>("a/b/c")
 
-        type ScopeEvents = Expect<Equal<typeof scope.events, PickScopeEvents<Record<string, any> & FastEvents, string> & CustomScopeEvents>>
+        type ScopeEvents = Expect<Equal<typeof scope.types.events, PickScopeEvents<Record<string, any> & FastEvents, string> & CustomScopeEvents>>
 
         scope.on('x', (message) => {
             type cases = [
@@ -84,7 +84,7 @@ describe("作用域上下文类型系统", () => {
                 root: true
             }
         })
-        type Ctx = Expect<Equal<typeof emitter.options.context, { root: boolean }>>
+        type Ctx = Expect<Equal<typeof emitter.context, { root: boolean }>>
 
         emitter.on("xxx", function (this, message) {
             type cases = [
@@ -153,179 +153,3 @@ describe("作用域上下文类型系统", () => {
 
 })
 
-
-describe("作用域类继承类型系统", () => {
-
-    test("继承作用域类", () => {
-        type MyScopeEvents = {
-            a: number
-            b: string
-            c: boolean
-        }
-        const emitter = new FastEvent({
-            meta: {
-                root: 100
-            }
-        })
-        class MyScope extends FastEventScope<MyScopeEvents> {
-            test(value: number) {
-                this.options.meta.root = "value"
-                return 100
-
-            }
-        }
-
-        const myScope = emitter.scope('modules/my', new MyScope())
-
-        type cases = [
-            Expect<Equal<Parameters<typeof myScope.test>[0], number>>
-        ]
-
-        myScope.test(1)
-
-        myScope.on('a', (message) => {
-            message.meta.root = "1"
-            type cases = [
-                Expect<Equal<typeof message.type, 'a'>>,
-                Expect<Equal<typeof message.payload, number>>,
-                // 无法从Emitter继承推断出全局Meta
-                Expect<Equal<typeof message.meta, FastEventMeta & Record<string, any> & FastEventScopeMeta>>
-            ]
-        })
-        myScope.on('b', (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, 'b'>>,
-                Expect<Equal<typeof message.payload, string>>,
-                Expect<Equal<typeof message.meta, FastEventMeta & Record<string, any> & FastEventScopeMeta>>
-            ]
-        })
-    })
-    test("继承作用域类增加自定义元数据", () => {
-        type MyScopeEvents = {
-            a: number
-            b: string
-            c: boolean
-        }
-        const emitter = new FastEvent({
-            meta: {
-                root: 100
-            }
-        })
-
-        type Meta = Expect<Equal<typeof emitter.meta, { root: number }>>
-
-        type MyScopeMeta = {
-            x: number
-            y: string
-            z: boolean
-        }
-        class MyScope extends FastEventScope<MyScopeEvents, MyScopeMeta> {
-            test(value: number) {
-                return 100
-
-            }
-        }
-
-        // 无法从Emitter继承推断出全局Meta
-        const myScope = emitter.scope('modules/my', new MyScope())
-
-        type cases = [
-            Expect<Equal<Parameters<typeof myScope.test>[0], number>>
-        ]
-
-        myScope.test(1)
-
-        myScope.on('a', (message) => {
-            message.meta.root = "1"
-            type cases = [
-                Expect<Equal<typeof message.type, 'a'>>,
-                Expect<Equal<typeof message.payload, number>>,
-                // 无法从Emitter继承推断出全局Meta
-                Expect<Equal<typeof message.meta, MyScopeMeta & FastEventMeta & Record<string, any> & FastEventScopeMeta>>
-            ]
-        })
-        myScope.on('b', (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, 'b'>>,
-                Expect<Equal<typeof message.payload, string>>,
-                Expect<Equal<typeof message.meta, MyScopeMeta & FastEventMeta & Record<string, any> & FastEventScopeMeta>>
-            ]
-        })
-    })
-    test("嵌套Scope类自定义元数据", () => {
-        type MyScopeEvents = {
-            a: number
-            b: string
-            c: boolean
-        }
-        const emitter = new FastEvent({
-            meta: {
-                root: 100
-            }
-        })
-
-        type Meta = Expect<Equal<typeof emitter.meta, { root: number }>>
-
-        type MyScopeMeta = {
-            x: number
-            y: string
-            z: boolean
-        }
-        class MyScope extends FastEventScope<MyScopeEvents, MyScopeMeta> {
-            test(value: number) {
-                return 100
-
-            }
-        }
-
-        // 无法从Emitter继承推断出全局Meta
-        const myScope = emitter.scope('modules/my', new MyScope())
-
-        type cases = [
-            Expect<Equal<Parameters<typeof myScope.test>[0], number>>
-        ]
-
-        myScope.test(1)
-
-        myScope.on('a', (message) => {
-            message.meta.root = "1"
-            type cases = [
-                Expect<Equal<typeof message.type, 'a'>>,
-                Expect<Equal<typeof message.payload, number>>,
-                // 无法从Emitter继承推断出全局Meta
-                Expect<Equal<typeof message.meta, MyScopeMeta & FastEventMeta & Record<string, any> & FastEventScopeMeta>>
-            ]
-        })
-        myScope.on('b', (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, 'b'>>,
-                Expect<Equal<typeof message.payload, string>>,
-                Expect<Equal<typeof message.meta, MyScopeMeta & FastEventMeta & Record<string, any> & FastEventScopeMeta>>
-            ]
-        })
-    })
-    test("继承作用域类", () => {
-        type MyScopeEvents = {
-            a: number
-            b: string
-            c: boolean
-        }
-        interface MyEventOptions extends FastEventOptions {
-            count?: number
-        }
-
-        class MyEvent extends FastEvent {
-            constructor(options?: MyEventOptions) {
-                super(Object.assign({}, options))
-            }
-            get options() {
-                return super.options as unknown as RequiredItems<MyEventOptions, ['meta', 'context']>
-            }
-        }
-        const emitter = new MyEvent({
-            meta: {
-                root: 100
-            }
-        })
-    })
-})

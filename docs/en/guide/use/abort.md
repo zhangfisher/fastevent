@@ -28,7 +28,7 @@ emitter.emit("click", 1,{
     signal: abortController.signal
 })
 //
-abortController.abort()   // [!code++]
+abortController.abort()   // [!code ++]
 
 ```
 
@@ -53,7 +53,7 @@ emitter.on("click",  (message,{abortSignal}) => {
 // Create an AbortController instance
 const abortController = new AbortController()
 
-abortController.abort()   // [!code++]
+abortController.abort()   // [!code ++]
 
 
 // Pass AbortController.signal
@@ -98,7 +98,7 @@ const results = emitter.emit("click", 1,{
 console.log(results)   // [Promise]
 
 setTimeout(()=>{
-    abortController.abort()   // [!code++]
+    abortController.abort()   // [!code ++]
 },3000)
 
 ```

@@ -31,7 +31,7 @@ export type FastEventEmitMessage<
         [K in keyof Events]: {
             type: Exclude<K, number | symbol>
             payload?: Events[K]
-            meta?: FastEventMeta & M & Record<string, any>
+            meta?: Partial<FastEventMeta> & M & Record<string, any>
         }
     }[Exclude<keyof Events, number | symbol>]
 ) & FaseEventMessageExtends
@@ -102,16 +102,16 @@ export type FastEventSubscriber = {
 export type FastListeners = FastListenerNode
 
 export type FastEventOptions<Meta = Record<string, any>, Context = any> = {
-    id?: string
-    debug?: boolean
+    id: string
+    debug: boolean
     // 事件分隔符
-    delimiter?: string
+    delimiter: string
     // 侦听器函数执行上下文
-    context?: Context
+    context: Context
     // 当执行侦听器函数出错时是否忽略,默认true
-    ignoreErrors?: boolean
+    ignoreErrors: boolean
     // 额外的全局元数据，当触发事件时传递给侦听器
-    meta?: Meta
+    meta: Meta
     // 当创建新侦听器时回调
     onAddListener?: (type: string[], listener: FastEventListener) => void
     // 当移除侦听器时回调
@@ -185,17 +185,20 @@ export type Merge<T extends object, U extends object> = {
 export type RequiredItems<T extends object, Items extends string[]> = Omit<T, Items[number]> & {
     [K in Items[number] & keyof T]-?: Exclude<T[K], undefined>;
 };
-type Expand<T> = T extends infer O ? { [K in keyof O]: O[K] } : never;
+
+export type Expand<T> = T extends infer O ? { [K in keyof O]: O[K] } : never;
 
 export type OptionalItems<T, K extends keyof T> = Expand<
     Omit<T, K> & { [P in K]?: T[P] }
 >;
 
-
+export type DeepPartial<T> = {
+    [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
+}
 
 export type Fallback<T, F> =
     [T] extends [never] ? F :  // 处理never情况
-    T extends undefined ? F :  // 处理undefined情况
+    T extends undefined ? F :  // 处理undefined情况 
     T;                                // 否则返回原类型
 
 
@@ -206,3 +209,6 @@ export type IFastListenerExecutor = (listeners: FastListenerMeta[], message: Fas
 ) => Promise<any[]> | any[]
 
 
+export type ChangeFieldType<Record, Name extends string, Type = any> = Expand<Omit<Record, Name> & {
+    [K in Name]: Type
+}>

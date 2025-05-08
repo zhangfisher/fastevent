@@ -290,7 +290,7 @@ event.emit(
     'status/update',
     { online: true },
     {
-        retain: true, // Retain event [!code++ ]
+        retain: true, // Retain event [!code ++]
     },
 );
 

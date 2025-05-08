@@ -32,7 +32,7 @@ You can control whether to ignore errors using the `ignoreErrors` parameter.
 
 ```typescript
 const emitter = new FastEvent({
-    ignoreErrors: false             // [!code++]
+    ignoreErrors: false             // [!code ++]
 });
 const listener1 = () => 1)
 const listener2 = () => { throw new Error('error2')
@@ -45,7 +45,7 @@ emitter.on('test', listener3);
 try{
     emitter.emit('test','x');
 }catch(e){
-    console.log(e); // [!code++]
+    console.log(e); // [!code ++]
 }
 
 ```
