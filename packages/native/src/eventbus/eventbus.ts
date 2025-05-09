@@ -43,8 +43,8 @@
  */
 
 import { FastEvent } from "../event";
-import { Dict, Expand, FastEventListenerArgs, FastEventMessage, FastEvents } from '../types';
-import { isFastEventMessage, isString } from "../utils";
+import { Expand, FastEventListenerArgs, FastEventMessage, FastEvents } from '../types';
+import { isFastEventMessage } from "../utils";
 import { BroadcastEvent, NodeDataEvent } from "./consts";
 import type { FastEventBusNode } from "./node";
 import { FastEventBusEvents, FastEventBusMessage, FastEventBusOptions } from "./types";

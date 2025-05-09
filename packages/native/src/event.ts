@@ -410,15 +410,34 @@ export class FastEvent<
     }
 
     private _emitForLastEvent(type: string) {
-        if (this.retainedMessages.has(type)) {
-            const message = this.retainedMessages.get(type)
-            const parts = type.split(this._delimiter);
+        let messages = [] as [string[], any][]
+        if (type.includes('*')) {
+            const patterns = type.split(this._delimiter)
+            this.retainedMessages.forEach((message, type) => {
+                const parts = type.split(this._delimiter);
+                if (isPathMatched(parts, patterns)) {
+                    messages.push([parts, message])
+                }
+            })
+        } else if (this.retainedMessages.has(type)) {
+            messages.push([type.split(this._delimiter), this.retainedMessages.get(type)])
+        }
+        messages.forEach(([parts, message]) => {
             const nodes: FastListenerNode[] = []
             this._traverseToPath(this.listeners, parts, (node) => {
                 nodes.push(node)
             })
             this._executeListeners(nodes, message, {})
-        }
+        })
+        // {
+        //     const message = this.retainedMessages.get(type)
+        //     const parts = type.split(this._delimiter);
+        //     const nodes: FastListenerNode[] = []
+        //     this._traverseToPath(this.listeners, parts, (node) => {
+        //         nodes.push(node)
+        //     })
+        //     this._executeListeners(nodes, message, {})
+        // }
     }
 
     /**

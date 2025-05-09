@@ -1,5 +1,5 @@
 
-import { beforeEach, describe, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { FastEventBus, FastEventBusMessage, FastEventBusNode } from '../eventbus';
 
 
@@ -70,6 +70,36 @@ describe('FastEventBus', () => {
             expect(node4.messages[0].payload).toBe(1)
             expect(node5.messages.length).toBe(1)
             expect(node5.messages[0].payload).toBe(1)
+        })
+        test("总线广播保留消息给所有节点，后续节点也可以接收到广播消息", () => {
+            eventbus.broadcast(1, { retain: true })
+            expect(node1.messages.length).toBe(1)
+            expect(node1.messages[0].payload).toBe(1)
+            expect(node2.messages.length).toBe(1)
+            expect(node2.messages[0].payload).toBe(1)
+            expect(node3.messages.length).toBe(1)
+            expect(node3.messages[0].payload).toBe(1)
+            expect(node4.messages.length).toBe(1)
+            expect(node4.messages[0].payload).toBe(1)
+            expect(node5.messages.length).toBe(1)
+            expect(node5.messages[0].payload).toBe(1)
+            const results: FastEventBusMessage[] = []
+            const lastNode1 = new FastEventBusNode()
+            lastNode1.onMessage = vi.fn().mockImplementation((message) => {
+                results.push(message)
+            })
+            const lastNode2 = new FastEventBusNode()
+            lastNode2.onMessage = vi.fn().mockImplementation((message) => {
+                results.push(message)
+            })
+            lastNode1.connect(eventbus)
+            lastNode2.connect(eventbus)
+            expect(results.length).toBe(2)
+            expect(results[0].type).toBe(`@/data`)
+            expect(results[0].payload).toBe(1)
+
+            expect(results[1].type).toBe(`@/data`)
+            expect(results[1].payload).toBe(1)
         })
 
         test('接收总线广播接收者的返回值', () => {
