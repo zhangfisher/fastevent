@@ -1,5 +1,6 @@
 import { describe, test, expect, vi } from 'vitest'
 import { FastEvent } from '../event'
+import { AbortError } from '../consts'
 
 describe('FastEvent钩子函数测试', () => {
     test('当添加新的监听器时应该触发onAddListener', () => {
@@ -100,7 +101,7 @@ describe('FastEvent钩子函数测试', () => {
 
         emitter.on('test', listener)
 
-        expect(() => emitter.emit('test', 'payload')).toThrow('emit test is aborted')
+        expect(() => emitter.emit('test', 'payload')).toThrow(AbortError)
         expect(onBeforeExecuteListener).toHaveBeenCalledTimes(1)
         expect(onBeforeExecuteListener).toHaveBeenCalledWith(
             expect.objectContaining({

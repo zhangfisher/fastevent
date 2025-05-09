@@ -1,1 +1,4 @@
 export * from "./isFastEventScope"
+export * from "./isFastEventMessage"
+export * from "./isFunction"
+export * from "./isString"

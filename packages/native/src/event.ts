@@ -12,7 +12,6 @@ import {
     FastEventEmitMessage,
     FastEventListenerArgs,
     FastListenerMeta,
-    IFastListenerExecutor,
     FastEvents,
     DeepPartial,
     FastEventMeta,
@@ -26,8 +25,9 @@ import * as executors from "./executors"
 import { isFunction } from './utils/isFunction';
 import { ScopeEvents } from './types';
 import { FastListenerPipe } from './pipe';
-import { AbortError, ClearRetainMessage } from './consts';
+import { AbortError, FastEventDirectives } from './consts';
 import { parseScopeArgs } from './utils/parseScopeArgs';
+import { IFastListenerExecutor } from './executors';
 
 /**
  * FastEvent 事件发射器类
@@ -312,7 +312,7 @@ export class FastEvent<
      * 
      */
     //  eslint-disable-next-line
-    onMessage(message: FastEventMessage<AllEvents, Meta>) {
+    onMessage(message: FastEventMessage<AllEvents, Meta>, args: FastEventListenerArgs<Meta>) {
 
     }
     off(listener: FastEventListener<any, any, any>): void
@@ -417,7 +417,7 @@ export class FastEvent<
             this._traverseToPath(this.listeners, parts, (node) => {
                 nodes.push(node)
             })
-            this._executeListeners(nodes, message)
+            this._executeListeners(nodes, message, {})
         }
     }
 
@@ -530,11 +530,11 @@ export class FastEvent<
             return this._onListenerError(listener, message, args, e)
         }
     }
-    private _getListenerExecutor(args?: FastEventListenerArgs): IFastListenerExecutor | undefined {
+    private _getListenerExecutor(args: FastEventListenerArgs): IFastListenerExecutor | undefined {
         if (!args) return
         const executor = args.executor || this._options.executor
         if (isFunction(executor)) return executor
-        if (executor && executor in executors) return (executors as any)[executor]
+        if (executor && executor in executors) return (executors as any)[executor]()
     }
     /**
      * 触发事件并执行对应的监听器
@@ -555,7 +555,7 @@ export class FastEvent<
      * - 对于普通监听器，直接执行并收集结果
      * - 对于带次数限制的监听器(数组形式)，执行后递减次数，当次数为0时移除该监听器
      */
-    private _executeListeners(nodes: FastListenerNode[], message: FastEventMessage, args?: FastEventListenerArgs<Meta>): any[] {
+    private _executeListeners(nodes: FastListenerNode[], message: FastEventMessage, args: FastEventListenerArgs<Meta>): any[] {
         if (!nodes || nodes.length === 0) return []
 
         // 1. 遍历所有监听器任务,即需要执行的监听器函数列[]
@@ -655,7 +655,7 @@ export class FastEvent<
     public emit<R = any>(message: FastEventEmitMessage<AllEvents, Meta>, options?: FastEventListenerArgs<Meta>): R[]
     public emit(): any {
         // 清除保留事件
-        if (arguments.length === 2 && typeof (arguments[0]) === 'string' && arguments[1] === ClearRetainMessage) {
+        if (arguments.length === 2 && typeof (arguments[0]) === 'string' && arguments[1] === FastEventDirectives.clearRetain) {
             this.retainedMessages.delete(arguments[0])
             return []
         }

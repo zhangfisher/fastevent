@@ -1,4 +1,4 @@
-import { ClearRetainMessage, UnboundError } from "./consts";
+import { FastEventDirectives, UnboundError } from "./consts";
 import type { FastEvent } from "./event";
 import { FastListenerExecutorArgs, FastEventAnyListener, FastEventEmitMessage, FastEventListener, FastEventListenerArgs, FastEventListenOptions, FastEventMessage, FastEventSubscriber, ScopeEvents, FastEventMeta, DeepPartial, Fallback } from './types';
 import { parseEmitArgs } from "./utils/parseEmitArgs";
@@ -56,7 +56,7 @@ export class FastEventScope<
         const scopePrefix = this.prefix
         if (scopePrefix.length === 0) return listener
         // 如果没有指定监听器，则使用onMessage作为监听器
-        if (!listener) listener = this.onMessage.bind(this)
+        if (!listener) listener = this.onMessage.bind(this) as FastEventListener
         const scopeThis = this
         const scopeListener = renameFn(function (message: FastEventMessage, args: FastEventListenerArgs) {
             if (message.type.startsWith(scopePrefix)) {
@@ -131,7 +131,7 @@ export class FastEventScope<
     }, FinalMeta>, options?: FastEventListenerArgs<FinalMeta>): R[]
     public emit() {
         // 清除保留事件
-        if (arguments.length === 2 && typeof (arguments[0]) === 'string' && arguments[1] === ClearRetainMessage) {
+        if (arguments.length === 2 && typeof (arguments[0]) === 'string' && arguments[1] === FastEventDirectives.clearRetain) {
             return this.emitter.emit(this._getScopeType(arguments[0])!)
         }
         const [message, options] = parseEmitArgs(
@@ -235,7 +235,7 @@ export class FastEventScope<
      * @param message 
      */
     //  eslint-disable-next-line
-    onMessage(message: FastEventMessage) {
+    onMessage(message: FastEventMessage<Events, FinalMeta>, args: FastEventListenerArgs<FinalMeta>) {
 
     }
 }

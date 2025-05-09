@@ -1,5 +1,6 @@
 import { describe, test, expect, vi } from "vitest"
 import { FastEvent } from "../event"
+import { FastEventDirectives } from "../consts"
 
 
 
@@ -29,7 +30,7 @@ describe("订阅与发布retain事件", async () => {
             expect(type).toBe("x")
             expect(payload).toBe(1)
         })
-        emitter.emit("x") // 取消保留事件
+        emitter.emit("x", FastEventDirectives.clearRetain) // 取消保留事件
         // 以下事件不会触发
         const listener = vi.fn()
         emitter.on("x", listener)

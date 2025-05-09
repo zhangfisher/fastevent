@@ -1,3 +1,4 @@
+import type { IFastListenerExecutor } from "./executors/types"
 import { type FastListenerPipe } from "./pipe/types"
 
 
@@ -158,7 +159,7 @@ export type FastEventListenOptions<
     pipes?: FastListenerPipe[]
 }
 
-export type FastListenerExecutorArgs = 'default' | 'allSettled' | 'race' | 'balance' | 'first' | 'last' | 'random' | IFastListenerExecutor;
+export type FastListenerExecutorArgs = 'default' | 'parallel' | 'race' | 'balance' | 'first' | 'last' | 'random' | IFastListenerExecutor;
 
 export type FastEventListenerArgs<M = Record<string, any>> = {
     retain?: boolean;
@@ -203,12 +204,6 @@ export type Fallback<T, F> =
 
 
 
-export type IFastListenerExecutor = (listeners: FastListenerMeta[], message: FastEventMessage, args: FastEventListenerArgs | undefined,
-    // 用来执行监听器的函数，内置一些通用逻辑
-    execute: (listener: FastEventListener, message: FastEventMessage, args?: FastEventListenerArgs) => Promise<any> | any
-) => Promise<any[]> | any[]
-
-
 export type ChangeFieldType<Record, Name extends string, Type = any> = Expand<Omit<Record, Name> & {
     [K in Name]: Type
 }>
@@ -217,3 +212,90 @@ export type ChangeFieldType<Record, Name extends string, Type = any> = Expand<Om
 export type OverrideOptions<T> = ChangeFieldType<Required<T>, 'context', never>
 
 export type ObjectKeys<T, I = string> = { [P in keyof T]: P extends I ? P : never }[keyof T];
+
+
+
+/**
+ * 从类型数组中移除重复项，返回保留唯一类型的元组
+ * @template T - 输入的任意类型数组（元组）
+ * @template Result - 内部使用的累积结果数组（默认空数组）
+ * @returns {any[]} 去重后的类型元组，保留首次出现的顺序
+ * 
+ * @example
+ * type T1 = Unique<[number, string, number]>;  // [number, string]
+ * type T2 = Unique<[1, 2, 2, 3]>;              // [1, 2, 3]
+ * type T3 = Unique<['a', 'b', 'a']>;           // ['a', 'b']
+ */
+export type Unique<T extends any[], Result extends any[] = []> =
+    T extends [infer First, ...infer Rest]
+    ? First extends Result[number]
+    ? Unique<Rest, Result>
+    : Unique<Rest, [...Result, First]>
+    : Result;
+
+export type Overloads<T> = Unique<
+    T extends {
+        (...args: infer A1): infer R1;
+        (...args: infer A2): infer R2;
+        (...args: infer A3): infer R3;
+        (...args: infer A4): infer R4
+        (...args: infer A5): infer R5;
+        (...args: infer A6): infer R6
+        (...args: infer A7): infer R7;
+        (...args: infer A8): infer R8
+    } ?
+    [(...args: A1) => R1, ((...args: A2) => R2), ((...args: A3) => R3), ((...args: A4) => R4), ((...args: A5) => R5), ((...args: A6) => R6), ((...args: A7) => R7), ((...args: A8) => R8)] :
+    T extends {
+        (...args: infer A1): infer R1;
+        (...args: infer A2): infer R2;
+        (...args: infer A3): infer R3;
+        (...args: infer A4): infer R4
+        (...args: infer A5): infer R5;
+        (...args: infer A6): infer R6
+        (...args: infer A7): infer R7
+    } ?
+    [(...args: A1) => R1, ((...args: A2) => R2), ((...args: A3) => R3), ((...args: A4) => R4), ((...args: A5) => R5), ((...args: A6) => R6), ((...args: A7) => R7)] :
+    T extends {
+        (...args: infer A1): infer R1;
+        (...args: infer A2): infer R2;
+        (...args: infer A3): infer R3;
+        (...args: infer A4): infer R4
+        (...args: infer A5): infer R5;
+        (...args: infer A6): infer R6
+    } ?
+    [(...args: A1) => R1, ((...args: A2) => R2), ((...args: A3) => R3), ((...args: A4) => R4), ((...args: A5) => R5), ((...args: A6) => R6)] :
+    T extends {
+        (...args: infer A1): infer R1;
+        (...args: infer A2): infer R2;
+        (...args: infer A3): infer R3;
+        (...args: infer A4): infer R4
+        (...args: infer A5): infer R5
+    } ?
+    [(...args: A1) => R1, ((...args: A2) => R2), ((...args: A3) => R3), ((...args: A4) => R4), ((...args: A5) => R5)] :
+    T extends {
+        (...args: infer A1): infer R1;
+        (...args: infer A2): infer R2;
+        (...args: infer A3): infer R3;
+        (...args: infer A4): infer R4
+    } ?
+    [(...args: A1) => R1, ((...args: A2) => R2), ((...args: A3) => R3), ((...args: A4) => R4)] :
+    T extends {
+        (...args: infer A1): infer R1;
+        (...args: infer A2): infer R2;
+        (...args: infer A3): infer R3
+    } ?
+    [((...args: A1) => R1), ((...args: A2) => R2), ((...args: A3) => R3)] :
+    T extends {
+        (...args: infer A1): infer R1;
+        (...args: infer A2): infer R2
+    } ?
+    [((...args: A1) => R1), ((...args: A2) => R2)] :
+    T extends {
+        (...args: infer A1): infer R1
+    } ?
+    [(...args: A1) => R1] :
+    [T]
+>
+
+
+export type Dict<V = any> = Record<Exclude<string, number | symbol>, V>

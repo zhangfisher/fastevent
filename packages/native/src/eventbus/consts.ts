@@ -1,3 +1,4 @@
 
-export const NamespaceDelimiter = '::'
-export const BroadcastEvent = 'node:broadcast'
+export const NamespaceDelimiter = '@'
+export const BroadcastEvent = '@'
+export const NodeDataEvent = 'data'

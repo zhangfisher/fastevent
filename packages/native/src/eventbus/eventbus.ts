@@ -43,8 +43,9 @@
  */
 
 import { FastEvent } from "../event";
-import { FastEventListenerArgs } from '../types';
-import { BroadcastEvent, NamespaceDelimiter } from "./consts";
+import { Dict, Expand, FastEventListenerArgs, FastEventMessage, FastEvents } from '../types';
+import { isFastEventMessage, isString } from "../utils";
+import { BroadcastEvent, NodeDataEvent } from "./consts";
 import type { FastEventBusNode } from "./node";
 import { FastEventBusEvents, FastEventBusMessage, FastEventBusOptions } from "./types";
 
@@ -52,7 +53,9 @@ import { FastEventBusEvents, FastEventBusMessage, FastEventBusOptions } from "./
 export class FastEventBus<
     Events extends Record<string, any> = FastEventBusEvents,
     Meta extends Record<string, any> = Record<string, any>,
-    Context = never
+    Context = never,
+    AllEvents extends Record<string, any> = Events & FastEvents,
+    Types extends keyof AllEvents = Expand<Exclude<keyof (AllEvents), number | symbol>>
 > extends FastEvent<Events & FastEventBusEvents, Meta, Context> {
     nodes: Map<string, FastEventBusNode<any, any, any>>;
 
@@ -88,38 +91,40 @@ export class FastEventBus<
 
     /**
      * 广播消息到所有节点
+     * 
+     * 
+     * broadcast(1)  // 默认广播主题data
+     * broadcast({
+     *    type: 'connect',
+     *    payload: 100
+     * })     * 
+     * 
      * @param message 要广播的消息
      */
-    broadcast(message: FastEventBusMessage, args?: FastEventListenerArgs) {
-        return this.emit(BroadcastEvent, message as any, args as any)
+    broadcast<R = any>(payload: any, args?: FastEventListenerArgs): R[]
+    broadcast<R = any>(message: FastEventBusMessage<AllEvents, Meta>, args?: FastEventListenerArgs): R[]
+    broadcast<R = any>(): R[] {
+        const isMessage = isFastEventMessage(arguments[0])
+        const message = Object.assign({
+            payload: isMessage ? arguments[0].payload : arguments[0],
+        }, isMessage ? arguments[0] : {},
+            {
+                type: `${BroadcastEvent}${this.options.delimiter}${isMessage ? arguments[0].type : 'data'}`
+            })
+        return this.emit(message, arguments[1] as any)
     }
 
     /**
      * 发送消息到指定节点
      * 
+     * 点对点消息的事件名称为data
+     * 
      * @param toNodeId 目标节点ID
      * @param message 要发送的消息
      */
-    send<R = any[]>(message: FastEventBusMessage, args?: FastEventListenerArgs): R[]
-    send<R = any[]>(toNodeId: string, message: FastEventBusMessage, args?: FastEventListenerArgs): R[]
-    send() {
-        let toNodeId = typeof (arguments[0]) === 'string' ? arguments[0] : undefined;
-        const message = typeof (arguments[1]) === 'object' ? arguments[1] : arguments[0];
-        const args = typeof (arguments[0]) === 'string' ? arguments[2] : arguments[1];
-
-        const [nodeId, type] = message.type.includes(NamespaceDelimiter) ? message.type.split(NamespaceDelimiter) : [toNodeId, message.type];
-        message.type = type
-
-        const targetNode = this.nodes.get(nodeId);
-        if (!targetNode) {
-            throw new Error(`Node ${toNodeId} not found`);
-        }
-        message.to = nodeId
-        return targetNode.emit(message, args)
+    send<R = any>(message: FastEventBusMessage, args?: FastEventListenerArgs): R[] {
+        message.type = `${message.to}${this.options.delimiter}${NodeDataEvent}`
+        return this.emit(message as FastEventMessage, args as any)[0]
     }
 
-}
-
-// const bus = new FastEventBus<{ add: number }>()
-
-// bus.on('node:connect')
+} 

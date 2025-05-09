@@ -60,7 +60,7 @@ describe("scope", () => {
                 meta: { root: 1 }
             })
             const scope = emitter.scope("a/b/c", {
-                meta: { scope: "ddd" }
+                meta: { scope: "my" }
             })
 
             let receivedMeta: any
@@ -72,7 +72,7 @@ describe("scope", () => {
             await scope.emitAsync("x", 1, { retain: false, meta: { event: 1 } })
             expect(receivedMeta).toEqual({
                 root: 1,
-                scope: 1,
+                scope: 'my',
                 event: 1
             })
         })

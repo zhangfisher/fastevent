@@ -1,6 +1,9 @@
 import { Expand, FastEventEmitMessage, FastEventOptions } from "../types"
 
-export type FastEventBusMessage<T extends FastEventEmitMessage = FastEventEmitMessage> = Expand<T & {
+export type FastEventBusMessage<
+    Events extends Record<string, any> = Record<string, any>,
+    M = any
+> = Expand<FastEventEmitMessage<Events, M> & {
     from?: string
     to?: string
 }>
@@ -11,6 +14,9 @@ export interface FastEventBusEvents {
     'node:broadcast': string
     'node:connect': string
     'node:disconnect': string
+}
+export interface FastEventBusBroadcastEvents {
+
 }
 
 export interface FastEventBusNodes {

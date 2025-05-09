@@ -1,5 +1,5 @@
-export const ClearRetainMessage = Symbol.for('ClearRetainMessage')
-
+export const __FastEvent__ = Symbol.for('__FastEvent__')
+export const __FastEventScope__ = Symbol.for('__FastEventScope__')
 export class FastEventError extends Error {
     constructor(message?: string) {
         super(message)
@@ -13,3 +13,8 @@ export class AbortError extends FastEventError {
 
 }
 export class QueueOverflowError extends FastEventError { }
+
+
+export const FastEventDirectives = {
+    clearRetain: Symbol.for('ClearRetain')
+}
