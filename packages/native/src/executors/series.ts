@@ -38,7 +38,7 @@ export const series = (options?: SeriesExecutorOptions): IFastListenerExecutor =
         listeners.forEach(listener => listener[2]--)
         for (let i = 0; i < listeners.length; i++) {
             const item = listeners[reverse ? listeners.length - 1 - i : i]
-            const listener = item[i] as FastEventListener<any, any, any>
+            const listener = item[0] as FastEventListener<any, any, any>
             try {
                 if (isFunction(onStep) && onStep(stepResult, message, args, results) === false) {
                     break
@@ -59,7 +59,7 @@ export const series = (options?: SeriesExecutorOptions): IFastListenerExecutor =
                 } catch { }
             }
         }
-        return results
+        return [results]
     }
 
 }

@@ -559,16 +559,16 @@ export class FastEvent<
      *   - 如果配置了ignoreErrors，返回错误对象
      *   - 否则抛出错误
      */
-    private _executeListener(listener: any, message: FastEventMessage, args: FastEventListenerArgs<any> | undefined): Promise<any> | any {
+    private _executeListener(listener: FastEventListener<any, any>, message: FastEventMessage, args: FastEventListenerArgs<any> | undefined): Promise<any> | any {
         try {
             // 如果传入已经aborted的abortSignal，则直接返回
             if (args && args.abortSignal && args.abortSignal.aborted) {
                 return this._onListenerError(listener, message, args, new AbortError(listener.name))
             }
-            let result = listener.call(this.context, message, args)
+            let result = listener.call(this.context, message, args!)
             // 自动处理reject Promise
             if (result && result instanceof Promise) {
-                result = result.catch(e => { return this._onListenerError(listener, message, args, e) })
+                //result = result.catch(e => { return this._onListenerError(listener, message, args, e) })
             }
             return result
         } catch (e: any) {
@@ -615,7 +615,8 @@ export class FastEvent<
         try {
             const executeor = this._getListenerExecutor(args)
             if (executeor) {
-                return executeor(listeners.map(listener => listener[0]), message, args, this._executeListener.bind(this)) as any[]
+                const r = executeor(listeners.map(listener => listener[0]), message, args, this._executeListener.bind(this)) as any[]
+                return Array.isArray(r) ? r : [r]
             } else {
                 return listeners.map(listener => this._executeListener(listener[0][0], message, args))
             }
