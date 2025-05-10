@@ -42,6 +42,7 @@
  *     
  */
 
+import { FastEventDirectives } from "../consts";
 import { FastEvent } from "../event";
 import { Expand, FastEventListenerArgs, FastEventMessage, FastEvents } from '../types';
 import { isFastEventMessage } from "../utils";
@@ -72,8 +73,12 @@ export class FastEventBus<
         if (this.nodes.has(node.id)) {
             throw new Error(`Node with id ${node.id} already exists`);
         }
+        node.options.delimiter = this.options.delimiter
+        node.options.debug = this.options.debug
+        node.options.ignoreErrors = this.options.ignoreErrors
         this.nodes.set(node.id, node);
-        this.emit("node:connect", node.id as any)
+        this.emit(`$disconnect${this.options.delimiter}${node.id}`, FastEventDirectives.clearRetain)
+        this.emit(`$connect${this.options.delimiter}${node.id}`, node.id as any, true)
     }
 
     /**
@@ -85,7 +90,8 @@ export class FastEventBus<
         if (node) {
             node.eventbus = undefined;
             this.nodes.delete(nodeId);
-            this.emit("node:disconnect", node.id as any)
+            this.emit(`$connect${this.options.delimiter}${node.id}`, FastEventDirectives.clearRetain)
+            this.emit(`$disconnect${this.options.delimiter}${node.id}`, node.id as any, true)
         }
     }
 

@@ -1,6 +1,6 @@
 import { describe, test, expect, vi } from 'vitest'
 import { FastEvent } from '../event'
-import { AbortError } from '../consts'
+import { AbortError, CancelError } from '../consts';
 
 describe('FastEvent钩子函数测试', () => {
     test('当添加新的监听器时应该触发onAddListener', () => {
@@ -13,7 +13,55 @@ describe('FastEvent钩子函数测试', () => {
         emitter.on('test', listener)
 
         expect(onAddListener).toHaveBeenCalledTimes(1)
-        expect(onAddListener).toHaveBeenCalledWith(['test'], listener)
+        expect(onAddListener).toHaveBeenCalledWith('test', listener, {
+            "count": 0,
+            "prepend": false,
+        })
+    })
+
+    test('当添加新的监听器时onAddListener返回false取消添加', () => {
+        const onAddListener = vi.fn().mockReturnValue(false)
+        const emitter = new FastEvent({
+            onAddListener
+        })
+
+        const listener = () => { }
+        try {
+            emitter.on('test', listener)
+        } catch (e: any) {
+            expect(e).toBeInstanceOf(CancelError)
+        }
+        expect(emitter.listenerCount).toBe(0)
+    })
+    test('使用onAddListener将订阅转换到其他emitter', () => {
+
+        const listener = vi.fn()
+
+        const otherEmitter = new FastEvent()
+
+        const emitter = new FastEvent({
+            onAddListener: vi.fn().mockImplementation((type, listener, options) => {
+                return otherEmitter.on(type, listener, options)
+            })
+        })
+
+        emitter.on('test', listener)
+        expect(emitter.listenerCount).toBe(0)
+        expect(otherEmitter.listenerCount).toBe(1)
+
+        emitter.emit('test', 1)
+        otherEmitter.emit('test', 2)
+
+        expect(listener).toHaveBeenCalledTimes(1)
+        // 断言listener被调用时传入一个对象，对象中包括一个payload值=2
+        expect(listener).toHaveBeenCalledWith({
+            "meta": undefined,
+            "payload": 2,
+            "type": "test",
+        }, {
+            "executor": undefined,
+        })
+
     })
 
     test('当移除监听器时应该触发onRemoveListener', () => {

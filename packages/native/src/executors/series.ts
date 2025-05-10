@@ -34,11 +34,11 @@ export const series = (options?: SeriesExecutorOptions): IFastListenerExecutor =
     return async (listeners, message, args, execute) => {
         let results: any = undefined
         let stepResult: any = undefined
+        // 全部执行次数-1
+        listeners.forEach(listener => listener[2]--)
         for (let i = 0; i < listeners.length; i++) {
-            // 
             const item = listeners[reverse ? listeners.length - 1 - i : i]
             const listener = item[i] as FastEventListener<any, any, any>
-
             try {
                 if (isFunction(onStep) && onStep(stepResult, message, args, results) === false) {
                     break
@@ -49,6 +49,8 @@ export const series = (options?: SeriesExecutorOptions): IFastListenerExecutor =
                 } else {
                     results = stepResult
                 }
+                // 实际执行次数+1
+                item[2]++
             } catch (e: any) {
                 try {
                     if (onError!(e, message, args) === false) {

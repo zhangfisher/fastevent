@@ -20,23 +20,23 @@ constructor(options?: FastEventOptions<Meta, Context>)
     debug?: boolean
     // 事件分隔符
     delimiter?: string
-    // 侦听器函数执行上下文
+    // 监听器函数执行上下文
     context?: Context
-    // 当执行侦听器函数出错时是否忽略,默认true
+    // 当执行监听器函数出错时是否忽略,默认true
     ignoreErrors?: boolean
-    // 额外的全局元数据，当触发事件时传递给侦听器
+    // 额外的全局元数据，当触发事件时传递给监听器
     meta?: Meta
-    // 当创建新侦听器时回调
+    // 当创建新监听器时回调
     onAddListener?: (type: string[], listener: FastEventListener) => void
-    // 当移除侦听器时回调
+    // 当移除监听器时回调
     onRemoveListener?: (type: string[], listener: FastEventListener) => void
-    // 当清空侦听器时回调
+    // 当清空监听器时回调
     onClearListeners?: () => void
-    // 当侦听器函数执行出错时的回调，用于诊断时使用,可以打印错误信息
+    // 当监听器函数执行出错时的回调，用于诊断时使用,可以打印错误信息
     onListenerError?: ((type: string, error: Error) => void)
-    // 当执行侦听器前时回调,返回false代表取消执行
+    // 当执行监听器前时回调,返回false代表取消执行
     onBeforeExecuteListener?: (message: FastEventMessage<any, Meta>, args: FastEventListenerArgs<Meta>) => boolean | void
-    // 当执行侦听器后时回调
+    // 当执行监听器后时回调
     onAfterExecuteListener?: (message: FastEventMessage<any, Meta>, returns: any[], listeners: FastListenerNode[]) => void
     //全局执行器
     executor?: FastListenerExecutorArgs
@@ -69,14 +69,14 @@ constructor(options?: FastEventOptions<Meta, Context>)
 -   **类型：**`any`
 -   **默认值：**`this`
 
-可选，侦听器函数执行上下文,默认是`FastEvent`实例。
+可选，监听器函数执行上下文,默认是`FastEvent`实例。
 
 ### ignoreErrors
 
 -   **类型：**`boolean`
 -   **默认值：**`true`
 
-可选，当执行侦听器函数出错时是否忽略错误，默认`true`。即捕获错误并返回错误对象，而不是触发错误。
+可选，当执行监听器函数出错时是否忽略错误，默认`true`。即捕获错误并返回错误对象，而不是触发错误。
 
 ### meta
 
@@ -90,49 +90,49 @@ constructor(options?: FastEventOptions<Meta, Context>)
 -   **类型：**`(type: string[], listener: FastEventListener) => void`
 -   **默认值：**`undefined`
 
-可选，当创建新侦听器时回调。
+可选，当创建新监听器时回调。
 
 ### onRemoveListener
 
 -   **类型：**`(type: string[], listener: FastEventListener) => void`
 -   **默认值：**`undefined`
 
-可选，当移除侦听器时回调。
+可选，当移除监听器时回调。
 
 ### onClearListeners
 
 -   **类型：**`() => void`
 -   **默认值：**`undefined`
 
-可选，当清空侦听器时回调。
+可选，当清空监听器时回调。
 
 ### onListenerError
 
 -   **类型：**`(type: string, error: Error) => void`
 -   **默认值：**`undefined`
 
-可选，当执行侦听器函数出错时的回调，用于诊断时使用,可以打印错误信息。
+可选，当执行监听器函数出错时的回调，用于诊断时使用,可以打印错误信息。
 
 ### onBeforeExecuteListener
 
 -   **类型：**`(message: FastEventMessage<any, Meta>, args: FastEventListenerArgs<Meta>) => boolean | void`
 -   **默认值：**`undefined`
 
-可选，当执行侦听器前时回调,返回 false 代表取消执行。
+可选，当执行监听器前时回调,返回 false 代表取消执行。
 
 ### onAfterExecuteListener
 
 -   **类型：**`(message: FastEventMessage<any, Meta>, returns: any[], listeners: FastListenerNode[]) => void`
 -   **默认值：**`undefined`
 
-可选，当执行侦听器后时回调。
+可选，当执行监听器后时回调。
 
 ### executor
 
 -   **类型：**`FastListenerExecutorArgs`
 -   **默认值：**`undefined`
 
-可选，全局执行器，用于自定义如何执行侦听器函数。
+可选，全局执行器，用于自定义如何执行监听器函数。
 
 ## 泛型参数
 
@@ -155,7 +155,7 @@ class FastEvent<
 
 ### Context
 
-侦听器函数执行上下文类型。
+监听器函数执行上下文类型。
 
 ### Types
 

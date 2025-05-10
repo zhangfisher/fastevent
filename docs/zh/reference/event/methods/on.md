@@ -49,12 +49,12 @@ on(
  
 ```ts
 export type FastEventListenOptions = {
-    // 侦听执行次数，当为1时为单次侦听，为0时为永久侦听，其他值为执行次数,每执行一次减一，减到0时移除侦听器
+    // 侦听执行次数，当为1时为单次侦听，为0时为永久侦听，其他值为执行次数,每执行一次减一，减到0时移除监听器
     count?: number
-    // 将侦听器添加到侦听器列表的头部
+    // 将监听器添加到监听器列表的头部
     prepend?: boolean
     filter?: (message: FastEventMessage<Events, Meta>, args: FastEventListenerArgs<Meta>) => boolean
-    // 当执行侦听器前，如果此函数返回true则自动注销监听
+    // 当执行监听器前，如果此函数返回true则自动注销监听
     off?: (message: FastEventMessage<Events, Meta>, args: FastEventListenerArgs<Meta>) => boolean
     // 对监听器函数进行包装装饰，返回包装后的函数
     pipes?: FastListenerPipe[]

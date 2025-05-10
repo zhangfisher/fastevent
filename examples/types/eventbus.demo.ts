@@ -6,14 +6,14 @@ const bus = new FastEventBus<{
 }>()
 
 // ✅✅✅ 正确 ✅✅✅
-bus.emit('node:connect', "dd")
-bus.emit('node:disconnect', "dd")
+bus.emit('$connect', "dd")
+bus.emit('$disconnect', "dd")
 bus.emit({
-    type: 'node:connect',
+    type: '$connect',
     payload: 'done'
 })
 bus.emit({
-    type: 'node:disconnect',
+    type: '$disconnect',
     payload: 'done'
 })
 bus.emit('join', 'done')
@@ -25,15 +25,15 @@ bus.emit('11111')
 bus.emit("x", 1)
 
 // ❌❌❌ 错误 ❌❌❌
-bus.emit('node:connect', 1)
-bus.emit('node:disconnect', 1)
+bus.emit('$connect', 1)
+bus.emit('$disconnect', 1)
 bus.emit('join', 1)
 bus.emit({
-    type: 'node:connect',
+    type: '$connect',
     payload: 1
 })
 bus.emit({
-    type: 'node:disconnect',
+    type: '$disconnect',
     payload: 1
 })
 bus.emit({

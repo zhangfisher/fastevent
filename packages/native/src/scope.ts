@@ -9,6 +9,8 @@ export type FastEventScopeOptions<Meta = Record<string, any>, Context = any> = {
     meta: FastEventScopeMeta & FastEventMeta & Meta
     context: Context
     executor?: FastListenerExecutorArgs
+    // 默认监听器，优先级高类方法onMessage
+    onMessage?: FastEventListener
 }
 
 export type FastEventScopeMeta = {
@@ -56,7 +58,7 @@ export class FastEventScope<
         const scopePrefix = this.prefix
         if (scopePrefix.length === 0) return listener
         // 如果没有指定监听器，则使用onMessage作为监听器
-        if (!listener) listener = this.onMessage.bind(this) as FastEventListener
+        if (!listener) listener = (this._options.onMessage || this.onMessage).bind(this) as FastEventListener
         const scopeThis = this
         const scopeListener = renameFn(function (message: FastEventMessage, args: FastEventListenerArgs) {
             if (message.type.startsWith(scopePrefix)) {

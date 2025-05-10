@@ -25,9 +25,11 @@ import * as executors from "./executors"
 import { isFunction } from './utils/isFunction';
 import { ScopeEvents } from './types';
 import { FastListenerPipe } from './pipe';
-import { AbortError, FastEventDirectives } from './consts';
+import { AbortError, CancelError, FastEventDirectives } from './consts';
 import { parseScopeArgs } from './utils/parseScopeArgs';
 import { IFastListenerExecutor } from './executors';
+import { expandEmitResults } from './utils/expandEmitResults';
+import { isSubsctiber } from './utils/isSubsctiber';
 
 /**
  * FastEvent 事件发射器类
@@ -86,7 +88,8 @@ export class FastEvent<
             delimiter: '/',
             context: null,
             ignoreErrors: true,
-            meta: undefined
+            meta: undefined,
+            expandEmitResults: true
         }, options) as FastEventOptions<Meta, Context>
         this._delimiter = this._options.delimiter!
         this._context = this._options.context as Context
@@ -99,20 +102,31 @@ export class FastEvent<
     get meta() { return this.options.meta }
     /** 获取事件发射器的唯一标识符 */
     get id() { return this._options.id! }
-    private _addListener(parts: string[], listener: FastEventListener<any, any>, options: Required<FastEventListenOptions>): FastListenerNode | undefined {
+    /**
+     * 添加事件监听器到事件树中
+     * @param parts - 事件路径数组
+     * @param listener - 事件监听器函数
+     * @param options - 监听器配置选项
+     * @param options.count - 监听器触发次数限制
+     * @param options.prepend - 是否将监听器添加到监听器列表开头
+     * @returns [节点, 监听器索引] - 返回监听器所在节点和在节点监听器列表中的索引
+     * @private
+     */
+    private _addListener(parts: string[], listener: FastEventListener<any, any>, options: Required<FastEventListenOptions>): [FastListenerNode | undefined, number] {
         const { count, prepend } = options
-        return this._forEachNodes(parts, (node) => {
-            const newListener = [listener, count, 0] as unknown as FastListenerMeta// count > 0 ? [listener, count] : listener as any
+        let index: number = 0
+        const node = this._forEachNodes(parts, (node) => {
+            const newListener = [listener, count, 0] as unknown as FastListenerMeta
             if (prepend) {
                 node.__listeners.splice(0, 0, newListener)
+                index = 0
             } else {
                 node.__listeners.push(newListener)
+                index = node.__listeners.length - 1
             }
             this.listenerCount++
-            if (isFunction(this._options.onAddListener)) {
-                this._options.onAddListener(parts, listener)
-            }
         })
+        return [node, index]
     }
     private _enableDevTools() {
         if (this.options.debug) {
@@ -122,7 +136,7 @@ export class FastEvent<
     }
     /**
      * 
-     * 根据parts路径遍历侦听器树，并在最后的节点上执行回调函数
+     * 根据parts路径遍历监听器树，并在最后的节点上执行回调函数
      * 
      * @param parts 
      * @param callback 
@@ -202,7 +216,6 @@ export class FastEvent<
      * emitter.on('event', handler, { count: 3 });
      * ```
      */
-
     public on<T extends Types = Types>(type: T, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber
     public on<T extends string>(type: T, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber
     public on(type: '**', options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber
@@ -212,7 +225,7 @@ export class FastEvent<
     public on(type: '**', listener: FastEventAnyListener<Record<string, any>, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber
     public on(): FastEventSubscriber {
         const type = arguments[0] as string
-        let listener = isFunction(arguments[1]) ? arguments[1] : this.onMessage.bind(this)
+        let listener = isFunction(arguments[1]) ? arguments[1] : (this._options.onMessage || this.onMessage).bind(this)
 
         const options = Object.assign({
             count: 0,
@@ -220,6 +233,16 @@ export class FastEvent<
         }, isFunction(arguments[1]) ? arguments[2] : arguments[1]) as Required<FastEventListenOptions>
 
         if (type.length === 0) throw new Error('event type cannot be empty')
+
+        //
+        if (isFunction(this._options.onAddListener)) {
+            const r = this._options.onAddListener(type, listener, options)
+            if (r === false) {
+                throw new CancelError()
+            } else if (isSubsctiber(r)) {
+                return r
+            }
+        }
 
         const parts = type.split(this._delimiter);
 
@@ -244,10 +267,10 @@ export class FastEvent<
             }, listener.name)
         }
 
-        const node = this._addListener(parts, listener, options)
+        const [node, index] = this._addListener(parts, listener, options)
         const off = () => node && this._removeListener(node, parts, listener)
-        // Retain不支持通配符
-        if (node && !type.includes('*')) this._emitForLastEvent(type)
+        // 触发监听器保留消息
+        this._emitRetainMessage(type, node, index)
 
         return { off, listener }
     }
@@ -334,7 +357,7 @@ export class FastEvent<
                     node.__listeners = []
                 }
             })
-        } else { // 仅删除指定的侦听器
+        } else { // 仅删除指定的监听器
             const entryParts: string[] = hasWildcard ? [] : parts
             this._traverseListeners(this.listeners, entryParts, (path, node) => {
                 if (listener !== undefined || (hasWildcard && isPathMatched(path, parts))) {
@@ -409,35 +432,39 @@ export class FastEvent<
         this._removeRetainedEvents(prefix)
     }
 
-    private _emitForLastEvent(type: string) {
-        let messages = [] as [string[], any][]
+    /**
+     * 发送最后一次事件的消息给对应的监听器
+     * 
+     * @param type - 事件类型,支持通配符(*)匹配
+     * @private
+     * 
+     * 处理流程:
+     * 1. 如果事件类型包含通配符,则遍历所有保留的消息,匹配符合模式的事件
+     * 2. 如果是普通事件类型,则直接获取对应的保留消息
+     * 3. 遍历匹配到的消息,查找对应路径的监听器节点
+     * 4. 执行所有匹配到的监听器
+     */
+    private _emitRetainMessage(type: string, listenerNode: FastListenerNode | undefined, index: number) {
+        let messages = [] as FastEventMessage[]
         if (type.includes('*')) {
+            // 找出所有保留的消息
             const patterns = type.split(this._delimiter)
             this.retainedMessages.forEach((message, type) => {
                 const parts = type.split(this._delimiter);
                 if (isPathMatched(parts, patterns)) {
-                    messages.push([parts, message])
+                    messages.push(message)
                 }
             })
         } else if (this.retainedMessages.has(type)) {
-            messages.push([type.split(this._delimiter), this.retainedMessages.get(type)])
+            messages.push(this.retainedMessages.get(type))
         }
-        messages.forEach(([parts, message]) => {
-            const nodes: FastListenerNode[] = []
-            this._traverseToPath(this.listeners, parts, (node) => {
-                nodes.push(node)
+        if (listenerNode) {
+            messages.forEach((message) => {
+                this._executeListeners([listenerNode], message, {}, (listenerMeta) => {
+                    return listenerMeta[0] === listenerNode.__listeners[index][0]
+                })
             })
-            this._executeListeners(nodes, message, {})
-        })
-        // {
-        //     const message = this.retainedMessages.get(type)
-        //     const parts = type.split(this._delimiter);
-        //     const nodes: FastListenerNode[] = []
-        //     this._traverseToPath(this.listeners, parts, (node) => {
-        //         nodes.push(node)
-        //     })
-        //     this._executeListeners(nodes, message, {})
-        // }
+        }
     }
 
     /**
@@ -514,7 +541,6 @@ export class FastEvent<
         } else {
             throw e
         }
-
     }
     /**
      * 执行单个监听器函数
@@ -556,30 +582,34 @@ export class FastEvent<
         if (executor && executor in executors) return (executors as any)[executor]()
     }
     /**
-     * 触发事件并执行对应的监听器
-     * @param type - 事件类型字符串或包含事件信息的对象
-     * @param payload - 事件携带的数据负载
-        return
-    }
-    /**
-     * 执行监听器节点中的所有监听函数
-     * @param node - FastListenerNode类型的监听器节点
-     * @param payload - 事件携带的数据
-     * @param type - 事件类型
-     * @returns 返回所有监听函数的执行结果数组
+     * 执行监听器节点列表中的所有监听器函数
+     * @param nodes 监听器节点列表
+     * @param message 事件消息对象
+     * @param args 监听器参数
+     * @param args 监听器参数
+     * @returns 所有监听器函数的执行结果数组
      * @private
      * 
-     * @description
-     * 遍历执行节点中的所有监听函数:
-     * - 对于普通监听器，直接执行并收集结果
-     * - 对于带次数限制的监听器(数组形式)，执行后递减次数，当次数为0时移除该监听器
+     * 执行流程:
+     * 1. 将所有节点中的监听器函数展平为一维数组
+     * 2. 通过执行器执行所有监听器函数
+     * 3. 更新监听器的执行次数,并移除达到执行次数限制的监听器
      */
-    private _executeListeners(nodes: FastListenerNode[], message: FastEventMessage, args: FastEventListenerArgs<Meta>): any[] {
+    private _executeListeners(
+        nodes: FastListenerNode[],
+        message: FastEventMessage,
+        args: FastEventListenerArgs<Meta>,
+        filter?: (listener: FastListenerMeta, node: FastListenerNode) => boolean
+    ): any[] {
         if (!nodes || nodes.length === 0) return []
-
-        // 1. 遍历所有监听器任务,即需要执行的监听器函数列[]
+        // 1. 遍历所有监听器任务,即需要执行的监听器函数[]
         const listeners = nodes.reduce<[FastListenerMeta, number, FastListenerMeta[]][]>((result, node) => {
-            return result.concat(node.__listeners.map((listener, i) => [listener, i, node.__listeners] as [FastListenerMeta, number, FastListenerMeta[]]));
+            return result.concat(node.__listeners
+                .filter((listener) => {
+                    if (!isFunction(filter)) return true
+                    return filter(listener, node)
+                })
+                .map((listener, i) => [listener, i, node.__listeners] as [FastListenerMeta, number, FastListenerMeta[]]));
         }, []);
 
         try {
@@ -693,7 +723,7 @@ export class FastEvent<
             const r = this._options.onBeforeExecuteListener.call(this, message, args)
             if (Array.isArray(r)) {
                 return r
-            } else if (r === false || r === undefined) {
+            } else if (r === false) {
                 throw new AbortError(message.type)
             }
         }
@@ -703,7 +733,10 @@ export class FastEvent<
         if (isFunction(this._options.onAfterExecuteListener)) {
             this._options.onAfterExecuteListener.call(this, message, results, nodes)
         }
-
+        // 将results内部所有expandable的项展开，见utils\expandable.ts说明
+        if (this._options.expandEmitResults) {
+            expandEmitResults(results)
+        }
         return results
     }
     /**

@@ -29,7 +29,7 @@ type FastEventScopeOptions<Meta, Context> = {
 -   **类型：**`any`
 -   **默认值：**`this`
 
-可选，侦听器函数执行上下文,默认是`FastEvent`实例。
+可选，监听器函数执行上下文,默认是`FastEvent`实例。
 
 ### executor
 

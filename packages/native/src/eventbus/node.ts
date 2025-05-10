@@ -1,11 +1,17 @@
 import { FastEvent } from "../event";
-import { FastEventListenerArgs, FastEventSubscriber, FastEventOptions, DeepPartial } from '../types';
+import { FastEventListenerArgs, FastEventSubscriber, FastEventOptions, DeepPartial, FastEventListener, FastEventListenOptions } from '../types';
+import { expandable } from "../utils/expandable";
 import { isFastEventMessage } from "../utils/isFastEventMessage";
 import { BroadcastEvent, NamespaceDelimiter } from "./consts";
 import type { FastEventBus } from "./eventbus";
 import { FastEventBusMessage, FastEventBusNodes } from "./types";
 
-export type FastEventBusNodeOptions<Meta = Record<string, any>, Context = any> = FastEventOptions<Meta, Context>
+export type FastEventBusNodeOptions<
+    Meta = Record<string, any>,
+    Context = any
+> = FastEventOptions<Meta, Context> & {
+
+}
 
 export class FastEventBusNode<
     Events extends Record<string, any> = Record<string, any>,
@@ -19,11 +25,11 @@ export class FastEventBusNode<
         super(options as any)
         // 用于触发消息到其他节点
         this.options.onBeforeExecuteListener = this._onBeforeExecuteListener.bind(this)
+        this.options.onAddListener = this._onAddListener.bind(this)
+        // 订阅发送给自己的消息
+        this._subscribers.push(this.on('data'))
     }
-
     /**
-     * 
-     * 
      * 
      * 如果事件名称带有名称空间分隔符::，则说明该触发的消息是要转发到其他节点，
      * 由eventbus进行转发
@@ -48,7 +54,41 @@ export class FastEventBusNode<
             return this.eventbus!.emit(message, args)
         }
     }
-
+    private _onAddListener(type: string, listener: FastEventListener, options: FastEventListenOptions) {
+        // 以::开头代表在其他节点订阅事件
+        if (type.includes(NamespaceDelimiter)) {
+            const [nodeId, eventName] = type.split(NamespaceDelimiter)
+            if (nodeId === this.id) {
+                // 如果是当前节点的事件，则直接监听
+                return
+            }
+            // 订阅其他节点的事件，可以直接在eventbus.nodes.get(id)获取其他节点实例，然后进行订阅
+            // 但是这样会存在一个问题，目标节点必须是存在的，否则不会成功。
+            // 设计目标是支持节点延迟connect时也可以订阅，并且也可以正常取消 
+            // 解决方案：
+            // 前提：由于每个节点连接时均会触发node:connect/<node.id>，并且retain=true
+            //   - 无论节点是否已经注册均返回once($connect/<node.id>) 
+            //    如果节点已经注册，则马上会得到了执行监听器，在监听器中就可以得到目标节点实例，然后注册即可
+            //    如果节点还没有注册，订阅者也可以通过取消once来取消订阅。
+            //  所以可以监听此消息，如果节点已连接则马上就可以在目标节点上注册表监听器
+            //   如果目标节点还没有注册也可以注销
+            let targetSubscriber: FastEventSubscriber | undefined
+            const subscriber = this.eventbus!.on(`$connect${this.options.delimiter}*`, (message) => {
+                if (message.payload === nodeId) {
+                    const targetNode = this.eventbus!.nodes.get(nodeId)
+                    if (targetNode) {
+                        targetSubscriber = targetNode.on(eventName, listener, options)
+                    }
+                    subscriber.off()
+                }
+            })
+            // 动态切换订阅
+            return {
+                off: () => targetSubscriber ? targetSubscriber.off() : subscriber.off(),
+                listener: targetSubscriber ? targetSubscriber.listener : subscriber.listener
+            }
+        }
+    }
     /**
      * 加入事件总线
      * @param eventBus 要加入的事件总线
@@ -64,12 +104,11 @@ export class FastEventBusNode<
     }
     disconnect() {
         this.eventbus?.remove(this.id);
+        this._subscribers.forEach(subscriber => subscriber.off())
     }
     /**
-     * 为当前节点订阅消息
      * 
-     * 创建一个订阅,监听发送给当前节点的所有事件。
-     * 使用节点ID作为前缀过滤消息,并在处理消息时移除该前缀。
+     * 订阅来自其他节点的消息
      * 
      * 在Eventbus中的所有以`node::<节点id>/<事件>`的事件均会被转发到当前节点
      * 
@@ -81,7 +120,7 @@ export class FastEventBusNode<
         this._subscribers.push(this.eventbus!.on(`${prefix}**`, (message, args) => {
             // @ts-ignore
             message.type = message.type.substring(prefix.length)
-            return this.onMessage.call(this, message, args)
+            return expandable(this.emit(message, args))
         }))
     }
     /**

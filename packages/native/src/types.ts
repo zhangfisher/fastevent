@@ -69,7 +69,7 @@ export type FastListenerNode = {
 export type FastEventSubscriber = {
     off: () => void
     /**
-     * 为什么要有一个listener引用? 主要用于移除侦听器时使用
+     * 为什么要有一个listener引用? 主要用于移除监听器时使用
      * 
      *  - 正常情况下
      *  const subscriber = emitter.on('event', listener)
@@ -85,11 +85,11 @@ export type FastEventSubscriber = {
      *  subscriber.off()        可以正常生效
      *  scope.off('event', listener)    // 无法生效
      *  scope.off(listener) // 无法生效
-     *  因为在scope中，为了让侦听器可以处理scope的逻辑，对listener进行了包装，
-     *  因此在事件注册表中登记的不是listener，而是经过包装的侦听器
+     *  因为在scope中，为了让监听器可以处理scope的逻辑，对listener进行了包装，
+     *  因此在事件注册表中登记的不是listener，而是经过包装的监听器
      *  subscriber.off()        可以正常生效
      *  如果要使用scope.off或emitter.off
-     *  需要使用subscriber.listener， subscriber.listener记录了原始的侦听器引用
+     *  需要使用subscriber.listener， subscriber.listener记录了原始的监听器引用
      *   subscriber.listener===listener
      *  
      *  scope.off('event', subscriber.listener)    // 生效
@@ -107,32 +107,36 @@ export type FastEventOptions<Meta = Record<string, any>, Context = any> = {
     debug: boolean
     // 事件分隔符
     delimiter: string
-    // 侦听器函数执行上下文
+    // 监听器函数执行上下文
     context: Context
-    // 当执行侦听器函数出错时是否忽略,默认true
+    // 当执行监听器函数出错时是否忽略,默认true
     ignoreErrors: boolean
-    // 额外的全局元数据，当触发事件时传递给侦听器
+    // 额外的全局元数据，当触发事件时传递给监听器
     meta: Meta
-    // 当创建新侦听器时回调
-    onAddListener?: (type: string[], listener: FastEventListener) => void
-    // 当移除侦听器时回调
+    // 当创建新监听器时回调,返回false中止添加监听器
+    onAddListener?: (type: string, listener: FastEventListener, options: FastEventListenOptions<Record<string, any>, Meta>) => boolean | FastEventSubscriber | void
+    // 当移除监听器时回调
     onRemoveListener?: (type: string[], listener: FastEventListener) => void
-    // 当清空侦听器时回调
+    // 当清空监听器时回调
     onClearListeners?: () => void
-    // 当侦听器函数执行出错时的回调，用于诊断时使用,可以打印错误信息
+    // 当监听器函数执行出错时的回调，用于诊断时使用,可以打印错误信息
     onListenerError?: ((listener: FastEventListener, error: Error, message: FastEventMessage<any, Meta>, args: FastEventListenerArgs<Meta> | undefined) => void)
-    // 当执行侦听器前时回调,返回false代表取消执行,any[]返回给emit
+    // 当执行监听器前时回调,返回false代表取消执行,any[]返回给emit
     onBeforeExecuteListener?: (message: FastEventMessage<any, Meta>, args: FastEventListenerArgs<Meta>) => boolean | void | any[]
-    // 当执行侦听器后时回调
+    // 当执行监听器后时回调
     onAfterExecuteListener?: (message: FastEventMessage<any, Meta>, returns: any[], listeners: FastListenerNode[]) => void
     /**
      * 全局执行器
      * allSettled: 使用Promise.allSettled()执行所有监听器
      * race: 使用Promise.race()执行所有监听器，只有第一个执行完成就返回,其他监听器执行结果会被忽略
-     * balance: 尽可能平均执行各个侦听器
-     * sequence: 按照侦听器添加顺序依次执行
+     * balance: 尽可能平均执行各个监听器
+     * sequence: 按照监听器添加顺序依次执行
      */
     executor?: FastListenerExecutorArgs
+    // 默认监听器，优先级高类方法onMessage
+    onMessage?: FastEventListener
+    // 是否展开emit返回值,默认为false
+    expandEmitResults?: boolean
 }
 
 export interface FastEvents {
@@ -148,12 +152,12 @@ export type FastEventListenOptions<
     Events extends Record<string, any> = Record<string, any>,
     Meta = any
 > = {
-    // 侦听执行次数，当为1时为单次侦听，为0时为永久侦听，其他值为执行次数,每执行一次减一，减到0时移除侦听器
+    // 侦听执行次数，当为1时为单次侦听，为0时为永久侦听，其他值为执行次数,每执行一次减一，减到0时移除监听器
     count?: number
-    // 将侦听器添加到侦听器列表的头部
+    // 将监听器添加到监听器列表的头部
     prepend?: boolean
     filter?: (message: FastEventMessage<Events, Meta>, args: FastEventListenerArgs<Meta>) => boolean
-    // 当执行侦听器前，如果此函数返回true则自动注销监听
+    // 当执行监听器前，如果此函数返回true则自动注销监听
     off?: (message: FastEventMessage<Events, Meta>, args: FastEventListenerArgs<Meta>) => boolean
     // 对监听器函数进行包装装饰，返回包装后的函数
     pipes?: FastListenerPipe[]
@@ -169,8 +173,8 @@ export type FastEventListenerArgs<M = Record<string, any>> = {
      * 
      * allSettled: 使用Promise.allSettled()执行所有监听器
      * race: 使用Promise.race()执行所有监听器，只有第一个执行完成就返回,其他监听器执行结果会被忽略
-     * balance: 尽可能平均执行各个侦听器
-     * sequence: 按照侦听器添加顺序依次执行
+     * balance: 尽可能平均执行各个监听器
+     * sequence: 按照监听器添加顺序依次执行
      */
     executor?: FastListenerExecutorArgs
 }

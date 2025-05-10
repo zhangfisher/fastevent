@@ -11,9 +11,8 @@ export type FastEventBusMessage<
 export type FastEventBusOptions<Meta = Record<string, any>, Context = any> = FastEventOptions<Meta, Context>
 
 export interface FastEventBusEvents {
-    'node:broadcast': string
-    'node:connect': string
-    'node:disconnect': string
+    '$connect': string
+    '$disconnect': string
 }
 export interface FastEventBusBroadcastEvents {
 

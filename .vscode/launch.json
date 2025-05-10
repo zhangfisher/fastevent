@@ -5,16 +5,19 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "ts-node",
             "type": "node",
             "request": "launch",
-            "name": "Benchmark",
-            "skipFiles": [
-                "<node_internals>/**"
+            "args": [
+                "${relativeFile}"
             ],
-            "program": "${workspaceFolder}\\src\\__benchmarks__\\index.js",
-            "outFiles": [
-                "${workspaceFolder}/**/*.js"
-            ]
+            "runtimeArgs": [
+                "-r",
+                "ts-node/register"
+            ],
+            "cwd": "${workspaceRoot}",
+            "protocol": "inspector",
+            "internalConsoleOptions": "openOnSessionStart"
         }
     ]
 }
