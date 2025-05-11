@@ -116,11 +116,11 @@ export type FastEventOptions<Meta = Record<string, any>, Context = any> = {
     // 当创建新监听器时回调,返回false中止添加监听器
     onAddListener?: (type: string, listener: FastEventListener, options: FastEventListenOptions<Record<string, any>, Meta>) => boolean | FastEventSubscriber | void
     // 当移除监听器时回调
-    onRemoveListener?: (type: string[], listener: FastEventListener) => void
+    onRemoveListener?: (type: string, listener: FastEventListener) => void
     // 当清空监听器时回调
     onClearListeners?: () => void
     // 当监听器函数执行出错时的回调，用于诊断时使用,可以打印错误信息
-    onListenerError?: ((listener: FastEventListener, error: Error, message: FastEventMessage<any, Meta>, args: FastEventListenerArgs<Meta> | undefined) => void)
+    onListenerError?: ((error: Error, listener: FastEventListener, message: FastEventMessage<any, Meta>, args: FastEventListenerArgs<Meta> | undefined) => void)
     // 当执行监听器前时回调,返回false代表取消执行,any[]返回给emit
     onBeforeExecuteListener?: (message: FastEventMessage<any, Meta>, args: FastEventListenerArgs<Meta>) => boolean | void | any[]
     // 当执行监听器后时回调

@@ -35,6 +35,7 @@ describe('FastEvent钩子函数测试', () => {
     })
     test('使用onAddListener将订阅转换到其他emitter', () => {
 
+
         const listener = vi.fn()
 
         const otherEmitter = new FastEvent()
@@ -75,7 +76,7 @@ describe('FastEvent钩子函数测试', () => {
         subscriber.off()
 
         expect(onRemoveListener).toHaveBeenCalledTimes(1)
-        expect(onRemoveListener).toHaveBeenCalledWith(['test'], listener)
+        expect(onRemoveListener).toHaveBeenCalledWith('test', listener)
     })
 
     test('当清空所有监听器时应该触发onClearListeners', () => {
@@ -106,7 +107,7 @@ describe('FastEvent钩子函数测试', () => {
         emitter.emit('test')
 
         expect(onListenerError).toHaveBeenCalledTimes(1)
-        expect(onListenerError).toHaveBeenCalledWith(listener, error, {
+        expect(onListenerError).toHaveBeenCalledWith(error, listener, {
             "meta": undefined,
             "payload": undefined,
             "type": "test",
@@ -175,8 +176,11 @@ describe('FastEvent钩子函数测试', () => {
         const subscriber = emitter.on('a/b/c', listener)
         subscriber.off()
 
-        expect(onAddListener).toHaveBeenCalledWith(['a', 'b', 'c'], listener)
-        expect(onRemoveListener).toHaveBeenCalledWith(['a', 'b', 'c'], listener)
+        expect(onAddListener).toHaveBeenCalledWith('a/b/c', listener, {
+            "count": 0,
+            "prepend": false,
+        })
+        expect(onRemoveListener).toHaveBeenCalledWith('a/b/c', listener)
     })
 
     test('使用通配符的事件路径应该正确传递给钩子函数', () => {
@@ -188,7 +192,10 @@ describe('FastEvent钩子函数测试', () => {
         const listener = () => { }
         emitter.on('a/*/c', listener)
 
-        expect(onAddListener).toHaveBeenCalledWith(['a', '*', 'c'], listener)
+        expect(onAddListener).toHaveBeenCalledWith('a/*/c', listener, {
+            "count": 0,
+            "prepend": false,
+        },)
     })
 
     test('当监听器抛出错误且ignoreErrors为false时应该抛出错误', () => {
@@ -205,7 +212,7 @@ describe('FastEvent钩子函数测试', () => {
         emitter.on('test', listener)
 
         expect(() => emitter.emit('test')).toThrow(error)
-        expect(onListenerError).toHaveBeenCalledWith(listener, error, {
+        expect(onListenerError).toHaveBeenCalledWith(error, listener, {
             "meta": undefined,
             "payload": undefined,
             "type": "test",

@@ -85,7 +85,7 @@ describe("Series执行器测试", () => {
         expect(results.length).toBe(1)
         expect(results[0]).toBe(55)
     })
-    test("串行执行监听器时出错时默认跳过出错继续执行后续监听器", async () => {
+    test("串行执行监听器时出错时: 默认跳过继续执行后续监听器", async () => {
         const emitter = new FastEvent()
         const messages: FastEventMessage[] = []
         const listeners = Array.from({ length: 10 }).map(() => {
@@ -104,6 +104,75 @@ describe("Series执行器测试", () => {
             executor: series()
         })
         expect(results.length).toBe(1)
+        expect(results[0]).toBe(10)
+    })
+
+    test("串行执行监听器时出错时: skip跳过继续执行后续监听器", async () => {
+        const emitter = new FastEvent()
+        const messages: FastEventMessage[] = []
+        const listeners = Array.from({ length: 10 }).map(() => {
+            return async (message: FastEventMessage) => {
+                messages.push(message)
+                if (messages.length === 5) {
+                    throw new Error("test")
+                }
+                return messages.length
+            }
+        })
+        listeners.forEach(listener => {
+            emitter.on("test", listener)
+        })
+        const results = await emitter.emitAsync<number>("test", 1, {
+            executor: series({
+                onError: () => 'skip'
+            })
+        })
+        expect(results.length).toBe(1)
+        expect(results[0]).toBe(10)
+    })
+    test("串行执行监听器时出错时: abort中止执行后续监听器", async () => {
+        const emitter = new FastEvent()
+        const messages: FastEventMessage[] = []
+        const listeners = Array.from({ length: 10 }).map(() => {
+            return async (message: FastEventMessage) => {
+                messages.push(message)
+                if (messages.length === 5) {
+                    throw new Error("test")
+                }
+                return messages.length
+            }
+        })
+        listeners.forEach(listener => {
+            emitter.on("test", listener)
+        })
+        const results = await emitter.emitAsync<number>("test", 1, {
+            executor: series({
+                onError: 'abort'
+            })
+        })
+        expect(results.length).toBe(1)
         expect(results[0]).toBe(4)
+    })
+    test("串行执行监听器时onStep控制是否继续执行", async () => {
+        const emitter = new FastEvent()
+        const messages: FastEventMessage[] = []
+        const listeners = Array.from({ length: 10 }).map(() => {
+            return async (message: FastEventMessage) => {
+                messages.push(message)
+                return messages.length
+            }
+        })
+        listeners.forEach(listener => {
+            emitter.on("test", listener)
+        })
+        const results = await emitter.emitAsync<number>("test", 1, {
+            executor: series({
+                onNext: (index: number) => {
+                    return index <= 5
+                }
+            })
+        })
+        expect(results.length).toBe(1)
+        expect(results[0]).toBe(5)
     })
 })

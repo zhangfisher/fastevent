@@ -30,6 +30,7 @@ import { parseScopeArgs } from './utils/parseScopeArgs';
 import { IFastListenerExecutor } from './executors';
 import { expandEmitResults } from './utils/expandEmitResults';
 import { isSubsctiber } from './utils/isSubsctiber';
+import { tryReturnError } from './utils/tryReturnError';
 
 /**
  * FastEvent 事件发射器类
@@ -179,7 +180,7 @@ export class FastEvent<
             if (isRemove) {
                 this.listenerCount--
                 if (isFunction(this._options.onRemoveListener)) {
-                    this._options.onRemoveListener(path, listener)
+                    this._options.onRemoveListener(path.join(this._delimiter), listener)
                 }
             }
             return isRemove
@@ -534,7 +535,7 @@ export class FastEvent<
             e._emitter = `${listener.name || 'anonymous'}:${message.type}`
         }
         if (isFunction(this._options.onListenerError)) {
-            try { this._options.onListenerError.call(this, listener, e, message, args) } catch { }
+            try { this._options.onListenerError.call(this, e, listener, message, args) } catch { }
         }
         if (this._options.ignoreErrors) {
             return e
@@ -546,6 +547,8 @@ export class FastEvent<
      * 执行单个监听器函数
      * @param listener - 要执行的监听器函数或包装过的监听器对象
      * @param message - 事件消息对象，包含type、payload和meta
+     * @param args - 监听器参数
+     * @param catchErrors - 是否捕获并处理执行过程中的错误
      * @returns 监听器的执行结果或错误对象（如果配置了ignoreErrors）
      * @private
      * 
@@ -559,7 +562,7 @@ export class FastEvent<
      *   - 如果配置了ignoreErrors，返回错误对象
      *   - 否则抛出错误
      */
-    private _executeListener(listener: FastEventListener<any, any>, message: FastEventMessage, args: FastEventListenerArgs<any> | undefined): Promise<any> | any {
+    private _executeListener(listener: FastEventListener<any, any>, message: FastEventMessage, args: FastEventListenerArgs<any> | undefined, catchErrors: boolean = false): Promise<any> | any {
         try {
             // 如果传入已经aborted的abortSignal，则直接返回
             if (args && args.abortSignal && args.abortSignal.aborted) {
@@ -567,8 +570,8 @@ export class FastEvent<
             }
             let result = listener.call(this.context, message, args!)
             // 自动处理reject Promise
-            if (result && result instanceof Promise) {
-                result.catch(e => { return this._onListenerError(listener, message, args, e) })
+            if (catchErrors && result && result instanceof Promise) {
+                result = tryReturnError(result, e => this._onListenerError(listener, message, args, e))
             }
             return result
         } catch (e: any) {
@@ -618,7 +621,7 @@ export class FastEvent<
                 const r = executeor(listeners.map(listener => listener[0]), message, args, this._executeListener.bind(this)) as any[]
                 return Array.isArray(r) ? r : [r]
             } else {
-                return listeners.map(listener => this._executeListener(listener[0][0], message, args))
+                return listeners.map(listener => this._executeListener(listener[0][0], message, args, true))
             }
         } finally {
             // 由于可能涉及到删除修改__listeners，所以需要倒序， 从后往前删除
