@@ -1,11 +1,12 @@
 import { describe, test, expect, vi } from "vitest"
 import { FastEvent } from "../../event"
+import { first } from "../../executors/first"
 
 describe("First执行器测试", () => {
 
     test("first执行器应该只执行第一个监听器", () => {
         const emitter = new FastEvent({
-            executor: 'first'
+            executor: first()
         })
 
         const listener1 = vi.fn(() => "第一个")
@@ -26,7 +27,7 @@ describe("First执行器测试", () => {
 
     test("first执行器在异步场景下应该只执行第一个监听器", async () => {
         const emitter = new FastEvent({
-            executor: 'first'
+            executor: first()
         })
 
         const listener1 = vi.fn(async () => {
@@ -50,7 +51,7 @@ describe("First执行器测试", () => {
 
     test("first执行器应该正确处理第一个监听器抛出的错误", async () => {
         const emitter = new FastEvent({
-            executor: 'first',
+            executor: first(),
             ignoreErrors: true
         })
 

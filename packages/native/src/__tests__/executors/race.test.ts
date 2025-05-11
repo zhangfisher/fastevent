@@ -1,12 +1,13 @@
 import { describe, test, expect, vi } from "vitest"
 import { FastEvent } from "../../event"
+import { race } from "../../executors/race"
 
 describe("Race执行器测试", () => {
 
 
     test("使用全局race执行器时应该只返回最快的结果", async () => {
         const emitter = new FastEvent({
-            executor: 'race'
+            executor: race()
         })
 
         const listener1 = vi.fn(async () => {

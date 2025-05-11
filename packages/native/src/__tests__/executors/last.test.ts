@@ -1,11 +1,12 @@
 import { describe, test, expect, vi } from "vitest"
 import { FastEvent } from "../../event"
+import { last } from "../../executors/last"
 
 describe("Last执行器测试", () => {
 
     test("last执行器应该只执行最后一个监听器", () => {
         const emitter = new FastEvent({
-            executor: 'last'
+            executor: last()
         })
 
         const listener1 = vi.fn(() => "第一个")
@@ -26,7 +27,7 @@ describe("Last执行器测试", () => {
 
     test("last执行器在异步场景下应该只执行最后一个监听器", async () => {
         const emitter = new FastEvent({
-            executor: 'last'
+            executor: last()
         })
 
         const listener1 = vi.fn(async () => {
@@ -50,7 +51,7 @@ describe("Last执行器测试", () => {
 
     test("last执行器应该正确处理最后一个监听器抛出的错误", async () => {
         const emitter = new FastEvent({
-            executor: 'last',
+            executor: last(),
             ignoreErrors: true
         })
 

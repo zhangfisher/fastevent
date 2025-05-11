@@ -1,5 +1,5 @@
 import { FastListenerMeta } from "../types"
-import { IFastListenerExecutor } from "./types"
+import { FastListenerExecutor } from "./types"
 
 /**
  * 竞态执行器 - 同时执行多个监听器,只返回最快完成的结果
@@ -16,7 +16,7 @@ import { IFastListenerExecutor } from "./types"
  * - 如果没有提供中止信号,会自动创建一个
  * - 胜出的监听器计数会被恢复
  */
-export const race = (): IFastListenerExecutor => {
+export const race = (): FastListenerExecutor => {
     return (listeners, message, args, execute) => {
         let winner: FastListenerMeta | undefined
         let abortController: AbortController | undefined

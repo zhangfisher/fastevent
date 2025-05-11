@@ -18,6 +18,21 @@
             "import": "./dist/index.mjs",
             "require": "./dist/index.js"
         },
+        "./executors": {
+            "types": "./dist/executors/index.d.ts",
+            "import": "./dist/executors/index.mjs",
+            "require": "./dist/executors/index.js"
+        },
+        "./pipes": {
+            "types": "./dist/pipes/index.d.ts",
+            "import": "./dist/pipes/index.mjs",
+            "require": "./dist/pipes/index.js"
+        },
+        "./eventbus": {
+            "types": "./dist/eventbus/index.d.ts",
+            "import": "./dist/eventbus/index.mjs",
+            "require": "./dist/eventbus/index.js"
+        },
         "./devtools": {
             "types": "./devTools.d.ts",
             "import": "./devTools.mjs",

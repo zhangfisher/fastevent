@@ -1,6 +1,6 @@
 import { describe, expect, vi, beforeEach, afterEach, test } from "vitest"
 import { FastEvent } from "../../event"
-import { queue } from "../../pipe/queue"
+import { queue } from "../../pipes/queue"
 import { QueueOverflowError } from "../../consts"
 
 describe("监听器Pipe操作: Queue", () => {

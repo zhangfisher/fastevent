@@ -1,7 +1,10 @@
-import { IFastListenerExecutor } from "./types"
+import { FastListenerExecutor } from "./types"
 
-export const parallel = (): IFastListenerExecutor => {
+/**
+ *  
+ */
+export const parallel = (): FastListenerExecutor => {
     return (listeners, message, args, execute) => {
-        return Promise.allSettled(listeners.map(listener => execute(listener[0], message, args)))
+        return listeners.map(listener => execute(listener[0], message, args, true))
     }
 }

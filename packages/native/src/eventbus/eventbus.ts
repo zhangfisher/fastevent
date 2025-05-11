@@ -44,7 +44,7 @@
 
 import { FastEventDirectives } from "../consts";
 import { FastEvent } from "../event";
-import { Expand, FastEventListenerArgs, FastEventMessage, FastEvents } from '../types';
+import { FastEventListenerArgs, FastEventMessage, FastEvents } from '../types';
 import { isFastEventMessage } from "../utils";
 import { BroadcastEvent, NodeDataEvent } from "./consts";
 import type { FastEventBusNode } from "./node";
@@ -56,7 +56,6 @@ export class FastEventBus<
     Meta extends Record<string, any> = Record<string, any>,
     Context = never,
     AllEvents extends Record<string, any> = Events & FastEvents,
-    Types extends keyof AllEvents = Expand<Exclude<keyof (AllEvents), number | symbol>>
 > extends FastEvent<Events & FastEventBusEvents, Meta, Context> {
     nodes: Map<string, FastEventBusNode<any, any, any>>;
 

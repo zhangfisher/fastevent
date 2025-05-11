@@ -1,4 +1,4 @@
-import { IFastListenerExecutor } from "./types"
+import { FastListenerExecutor } from "./types"
 
 /**
  * 执行第一个监听器的执行器函数
@@ -9,7 +9,7 @@ import { IFastListenerExecutor } from "./types"
  * @param execute - 执行监听器的函数
  * @returns 返回一个数组，包含第一个监听器的执行结果
  */
-export const first = (): IFastListenerExecutor => {
+export const first = (): FastListenerExecutor => {
     return (listeners, message, args, execute) => {
         listeners.forEach(listener => listener[2]--)
         listeners[0][2]++

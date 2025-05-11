@@ -1,6 +1,6 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { FastEvent } from '../../event'
-import { memorize } from '../../pipe/memorize'
+import { memorize } from '../../pipes/memorize'
 
 describe('memorize pipe', () => {
     let emitter: FastEvent

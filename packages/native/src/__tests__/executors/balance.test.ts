@@ -1,12 +1,13 @@
 import { describe, test, expect, vi } from "vitest"
 import { FastEvent } from "../../event"
+import { balance } from "../../executors/balance"
 
 describe("Balance执行器测试", () => {
 
 
     test("使用全局balancing执行器时应该平均分配执行次数", () => {
         const emitter = new FastEvent({
-            executor: 'balance'
+            executor: balance()
         })
 
         const listener1 = vi.fn(() => "result1")

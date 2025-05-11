@@ -21,13 +21,12 @@ import { parseEmitArgs } from './utils/parseEmitArgs';
 import { isPathMatched } from './utils/isPathMatched';
 import { removeItem } from './utils/removeItem';
 import { renameFn } from './utils/renameFn';
-import * as executors from "./executors"
 import { isFunction } from './utils/isFunction';
 import { ScopeEvents } from './types';
-import { FastListenerPipe } from './pipe';
+import { FastListenerPipe } from './pipes';
 import { AbortError, CancelError, FastEventDirectives } from './consts';
 import { parseScopeArgs } from './utils/parseScopeArgs';
-import { IFastListenerExecutor } from './executors';
+import { FastListenerExecutor } from './executors';
 import { expandEmitResults } from './utils/expandEmitResults';
 import { isSubsctiber } from './utils/isSubsctiber';
 import { tryReturnError } from './utils/tryReturnError';
@@ -578,11 +577,10 @@ export class FastEvent<
             return this._onListenerError(listener, message, args, e)
         }
     }
-    private _getListenerExecutor(args: FastEventListenerArgs): IFastListenerExecutor | undefined {
+    private _getListenerExecutor(args: FastEventListenerArgs): FastListenerExecutor | undefined {
         if (!args) return
         const executor = args.executor || this._options.executor
         if (isFunction(executor)) return executor
-        if (executor && executor in executors) return (executors as any)[executor]()
     }
     /**
      * 执行监听器节点列表中的所有监听器函数

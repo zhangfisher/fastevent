@@ -1,9 +1,10 @@
 import { describe, test, expect, vi } from "vitest"
 import { FastEvent } from "../../event"
+import { random } from "../../executors/random"
 describe("Random执行器测试", () => {
     test("random执行器应该只执行一个随机的监听器", () => {
         const emitter = new FastEvent({
-            executor: 'random'
+            executor: random()
         })
 
         const listener1 = vi.fn(() => "监听器1")
@@ -29,7 +30,7 @@ describe("Random执行器测试", () => {
 
     test("random执行器在多次触发时应该随机选择不同的监听器", () => {
         const emitter = new FastEvent({
-            executor: 'random'
+            executor: random()
         })
 
         const listener1 = vi.fn(() => "监听器1")
@@ -59,7 +60,7 @@ describe("Random执行器测试", () => {
 
     test("random执行器在异步场景下应该正确工作", async () => {
         const emitter = new FastEvent({
-            executor: 'random'
+            executor: random()
         })
 
         const listener1 = vi.fn(async () => {
@@ -85,7 +86,7 @@ describe("Random执行器测试", () => {
 
     test("random执行器应该正确处理监听器抛出的错误", () => {
         const emitter = new FastEvent({
-            executor: 'random',
+            executor: random(),
             ignoreErrors: true
         })
 

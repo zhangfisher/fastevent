@@ -1,4 +1,4 @@
-import { IFastListenerExecutor } from "./types"
+import { FastListenerExecutor } from "./types"
 
 /**
  * 随机执行器 - 从监听器列表中随机选择一个监听器执行
@@ -14,7 +14,7 @@ import { IFastListenerExecutor } from "./types"
  * - 所有监听器的执行次数计数减1
  * - 被选中执行的监听器执行次数加1
  */
-export const random = (): IFastListenerExecutor => {
+export const random = (): FastListenerExecutor => {
     return (listeners, message, args, execute) => {
         const index = Math.floor(Math.random() * listeners.length)
         listeners.forEach(listener => listener[2]--)

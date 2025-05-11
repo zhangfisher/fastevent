@@ -1,4 +1,4 @@
-import { IFastListenerExecutor } from "./types"
+import { FastListenerExecutor } from "./types"
 
 /**
  * 负载均衡执行器，用于在多个监听器中选择执行次数最少的进行调用
@@ -13,7 +13,7 @@ import { IFastListenerExecutor } from "./types"
  * 2. 由于监听器执行后会自动+1,因此先对所有监听器执行次数-1,以抵消后续的+1
  * 3. 只执行选中的监听器,其他监听器不执行
  */
-export const balance = (): IFastListenerExecutor => {
+export const balance = (): FastListenerExecutor => {
     return (listeners, message, args, execute) => {
         // 找出listeners里面所有执行器的执行次数最少的项
         let count: number

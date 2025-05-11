@@ -1,6 +1,6 @@
 import { FastEventMessage } from "../types"
 import { series, SeriesExecutorOptions } from "./series"
-import { IFastListenerExecutor } from "./types"
+import { FastListenerExecutor } from "./types"
 
 export type WaterfallExecutorOptions = Omit<SeriesExecutorOptions, 'onError' | 'onReturns' | 'onStep'>
 
@@ -16,12 +16,12 @@ export type WaterfallExecutorOptions = Omit<SeriesExecutorOptions, 'onError' | '
  * - 当任一监听器执行出错时，会中断后续监听器的执行
  * - 每个监听器的执行结果会作为下一个监听器的 payload 参数
  */
-export const waterfall = (options?: WaterfallExecutorOptions): IFastListenerExecutor => {
+export const waterfall = (options?: WaterfallExecutorOptions): FastListenerExecutor => {
     return series(Object.assign({}, options, {
         // 出错时不再执行后续的监听器
-        onError: () => false,
+        onError: 'abort',
         // 将结果作为payload传给下一个监听器
-        onStep: (previous: any, message: FastEventMessage) => {
+        onNext: (index: number, previous: any, message: FastEventMessage) => {
             message.payload = previous
         }
     }) as unknown as SeriesExecutorOptions)

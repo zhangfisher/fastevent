@@ -45,18 +45,18 @@ export class FlexEventDevTools {
     add(instance: FastEvent) {
         this.fastEvents.set(instance.id, instance)
 
-        instance.options.onAddListener = (type: string[], listener: any) => {
+        instance.options.onAddListener = (type: string, listener: any) => {
             this.reduxStore.dispatch({
                 type: "__ADD_LISTENER__",
-                event: type.join("/"),
+                event: type,
                 listener: listener.name || 'anonymous',
                 emitter: instance.id
             })
         }
-        instance.options.onRemoveListener = (type: string[], listener: any) => {
+        instance.options.onRemoveListener = (type: string, listener: any) => {
             this.reduxStore.dispatch({
                 type: "__REMOVE_LISTENER__",
-                event: type.join("/"),
+                event: type,
                 listener: listener.name || 'anonymous',
                 emitter: instance.id
             })

@@ -1,16 +1,17 @@
 import { describe, test, expect, vi } from "vitest"
 import { FastEvent } from "../../event"
 import { FastEventListenerArgs } from "../../types"
+import { race } from "../../executors/race"
+import { balance } from "../../executors/balance"
+import { parallel } from "../../executors/parallel"
 
 describe("FastEvent执行器测试", () => {
 
     test("Scope的执行器配置应该覆盖全局配置", async () => {
-        const emitter = new FastEvent({
-            executor: 'default'
-        })
+        const emitter = new FastEvent()
 
         const scope = emitter.scope("test", {
-            executor: 'race'
+            executor: race()
         })
 
         const listener1 = vi.fn(async () => {
@@ -31,12 +32,10 @@ describe("FastEvent执行器测试", () => {
     })
 
     test("触发事件时指定的执行器应该优先于全局和Scope配置", async () => {
-        const emitter = new FastEvent({
-            executor: 'default'
-        })
+        const emitter = new FastEvent()
 
         const scope = emitter.scope("test", {
-            executor: 'balance'
+            executor: balance()
         })
 
         const listener1 = vi.fn(async () => {
@@ -52,7 +51,7 @@ describe("FastEvent执行器测试", () => {
         scope.on("event", listener2)
 
         const options: FastEventListenerArgs = {
-            executor: 'race'
+            executor: race()
         }
 
         const results = await scope.emitAsync("event", undefined, options)
@@ -60,12 +59,10 @@ describe("FastEvent执行器测试", () => {
         expect(results).toEqual(["fast"])
     })
     test("执行器优先级应该为: 触发时指定 > Scope配置 > 全局配置", async () => {
-        const emitter = new FastEvent({
-            executor: 'default'  // 最低优先级
-        })
+        const emitter = new FastEvent()
 
         const scope = emitter.scope("test", {
-            executor: 'balance'  // 中等优先级
+            executor: balance()
         })
 
         const listener1 = vi.fn(() => "result1")
@@ -84,7 +81,7 @@ describe("FastEvent执行器测试", () => {
 
         // 使用触发时指定的配置
         const options: FastEventListenerArgs = {
-            executor: 'default'
+            executor: parallel()
         }
         results = scope.emit("event", undefined, options)
         expect(results).toEqual(["result1", "result2"])

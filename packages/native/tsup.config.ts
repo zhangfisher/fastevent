@@ -14,7 +14,47 @@ export default defineConfig([
         clean: true,
         treeshake: true,
         minify: true
-    }, {
+    },
+    {
+        entry: [
+            'src/executors/index.ts'
+        ],
+        outDir: 'dist/executors',
+        format: ['esm', 'cjs'],
+        dts: true,
+        splitting: true,
+        sourcemap: true,
+        clean: true,
+        treeshake: true,
+        minify: true
+    },
+    {
+        entry: [
+            'src/pipes/index.ts'
+        ],
+        outDir: 'dist/pipes',
+        format: ['esm', 'cjs'],
+        dts: true,
+        splitting: true,
+        sourcemap: true,
+        clean: true,
+        treeshake: true,
+        minify: true
+    },
+    {
+        entry: [
+            'src/eventbus/index.ts'
+        ],
+        outDir: 'dist/eventbus',
+        format: ['esm', 'cjs'],
+        dts: true,
+        splitting: true,
+        sourcemap: true,
+        clean: true,
+        treeshake: true,
+        minify: true
+    },
+    {
         entry: [
             'src/devTools.ts'
         ],
@@ -27,5 +67,5 @@ export default defineConfig([
         treeshake: true,
         minify: true,
         tsconfig: "./tsconfig.devtool.json"
-    }]
-)
+    }
+])

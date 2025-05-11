@@ -1,7 +1,7 @@
 import { FastEventListener, FastEventListenerArgs, FastEventMessage } from "../types"
 import { isString } from "../utils"
 import { isFunction } from "../utils/isFunction"
-import { IFastListenerExecutor } from "./types"
+import { FastListenerExecutor } from "./types"
 
 
 export type SeriesExecutorOptions = {
@@ -25,7 +25,7 @@ export type SeriesExecutorOptions = {
     onError?: 'skip' | 'abort' | 'error' | ((e: any, message: FastEventMessage, args: FastEventListenerArgs) => void | 'skip' | 'abort' | 'error')
 }
 
-export const series = (options?: SeriesExecutorOptions): IFastListenerExecutor => {
+export const series = (options?: SeriesExecutorOptions): FastListenerExecutor => {
     const { reverse, onNext, onReturns, onError } = Object.assign({
         reverse: false,
         onError: () => { },

@@ -1,6 +1,7 @@
 import { FastEventDirectives, UnboundError } from "./consts";
 import type { FastEvent } from "./event";
-import { FastListenerExecutorArgs, FastEventAnyListener, FastEventEmitMessage, FastEventListener, FastEventListenerArgs, FastEventListenOptions, FastEventMessage, FastEventSubscriber, ScopeEvents, FastEventMeta, DeepPartial, Fallback } from './types';
+import { FastListenerExecutor } from "./executors/types";
+import { FastEventAnyListener, FastEventEmitMessage, FastEventListener, FastEventListenerArgs, FastEventListenOptions, FastEventMessage, FastEventSubscriber, ScopeEvents, FastEventMeta, DeepPartial, Fallback } from './types';
 import { parseEmitArgs } from "./utils/parseEmitArgs";
 import { parseScopeArgs } from "./utils/parseScopeArgs";
 import { renameFn } from "./utils/renameFn";
@@ -8,7 +9,7 @@ import { renameFn } from "./utils/renameFn";
 export type FastEventScopeOptions<Meta = Record<string, any>, Context = any> = {
     meta: FastEventScopeMeta & FastEventMeta & Meta
     context: Context
-    executor?: FastListenerExecutorArgs
+    executor?: FastListenerExecutor
     // 默认监听器，优先级高类方法onMessage
     onMessage?: FastEventListener
 }

@@ -1,4 +1,4 @@
-import { IFastListenerExecutor } from "./types"
+import { FastListenerExecutor } from "./types"
 
 /**
  * 执行监听器列表中的最后一个监听器
@@ -8,7 +8,7 @@ import { IFastListenerExecutor } from "./types"
  * @param execute - 执行器函数
  * @returns 返回包含最后一个监听器执行结果的数组
  */
-export const last = (): IFastListenerExecutor => {
+export const last = (): FastListenerExecutor => {
     return (listeners, message, args, execute) => {
         listeners.forEach(listener => listener[2]--)
         listeners[listeners.length - 1][2]++
