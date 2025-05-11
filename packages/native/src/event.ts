@@ -568,7 +568,7 @@ export class FastEvent<
             let result = listener.call(this.context, message, args!)
             // 自动处理reject Promise
             if (result && result instanceof Promise) {
-                //result = result.catch(e => { return this._onListenerError(listener, message, args, e) })
+                result.catch(e => { return this._onListenerError(listener, message, args, e) })
             }
             return result
         } catch (e: any) {

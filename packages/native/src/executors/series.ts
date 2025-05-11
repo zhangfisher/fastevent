@@ -16,12 +16,12 @@ export type SeriesExecutorOptions = {
      *    }
      * })
      */
-    onReturns?: (<R, V>(results: R, cur: V) => R)
+    onReturns?: (results: any, cur: any) => any
     // 当调用下一个监听器前执行,返回false或触发错误均不再执行后续的监听器
     // 可以在此修改message
     onStep?: (previous: any, message: FastEventMessage, args: FastEventListenerArgs, results: any) => boolean
     // 当执行监听器出错时的回调，返回false中止后续执行
-    onError?: (e: any, message: FastEventMessage, args: FastEventListenerArgs) => boolean
+    onError?: (e: any, message: FastEventMessage, args: FastEventListenerArgs) => void | 'skip' | 'abort'
 }
 
 export const series = (options?: SeriesExecutorOptions): IFastListenerExecutor => {
@@ -53,13 +53,16 @@ export const series = (options?: SeriesExecutorOptions): IFastListenerExecutor =
                 item[2]++
             } catch (e: any) {
                 try {
-                    if (onError!(e, message, args) === false) {
+                    const handle = onError!(e, message, args)
+                    if (handle === 'skip') {
+                        continue
+                    } else if (handle === 'abort') {
                         break
                     }
                 } catch { }
             }
         }
-        return [results]
+        return results
     }
 
 }
