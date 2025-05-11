@@ -6,4 +6,4 @@ export type FastListenerExecutor = (listeners: FastListenerMeta[], message: Fast
     execute: (listener: FastEventListener, message: FastEventMessage, args: FastEventListenerArgs, catchErrors?: boolean) => Promise<any> | any
 ) => Promise<any[]> | any[]
 
-export type IFastListenerExecutorBuilder<T extends Record<string, any>> = (options?: T) => FastListenerExecutor
+export type FastListenerExecutorBuilder<T extends Record<string, any>> = (options?: T) => FastListenerExecutor
