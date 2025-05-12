@@ -8,25 +8,37 @@ import { Overloads } from "../../types"
 
 describe("eventbus类型系统测试", () => {
 
-    test("点对点发送消息", () => {
-        const eventbus = new FastEventBus()
+    type CustomBusEvents = {
+        x: string
+        y: number
+        z: boolean
+    }
+    type CustomNodeEvents = {
+        a: string
+        b: number
+        c: boolean
+    }
 
-        type SendTypes = Overloads<typeof eventbus.send>
-
-
+    test("broadcast类型", () => {
+        const eventbus = new FastEventBus<CustomBusEvents>()
+        eventbus.broadcast({
+            type: 'x',
+            payload: '1111'
+        })
+        // eventbus.broadcast('data', 1)
+        // eventbus.broadcast('y', 2222)
+        // eventbus.broadcast('z', 1)
 
         type cases = [
 
         ]
     })
     test("eventbus.on", () => {
-        const eventbus = new FastEventBus()
+        const eventbus = new FastEventBus<CustomBusEvents>()
 
-        type OnTypes = Overloads<typeof eventbus.on>
-        type d = Parameters<OnTypes[0]>[0]
-
-
-
+        eventbus.on('x', (message) => {
+            message
+        })
         type cases = [
 
         ]

@@ -177,31 +177,6 @@ waitForLogin();
 events.emit('user/login', { id: 1, name: 'Alice' });
 ```
 
-## 事件类型定义
-
-`FastEvent`提供完整的`TypeScript`类型支持。
-
-```typescript
-// 定义具有不同载荷类型的事件
-interface ComplexEvents {
-    'data/number': number;
-    'data/string': string;
-    'data/object': { value: any };
-}
-
-const events = new FastEvent<ComplexEvents>();
-
-// TypeScript 确保每个事件的类型安全
-events.on('data/number', (message) => {
-    const sum = message.payload + 1; // payload 的类型为 number
-});
-
-// 所有的事件发送都会进行类型检查
-events.emit('data/number', 42);
-events.emit('data/string', 'hello');
-events.emit('data/object', { value: true });
-```
-
 ## 事件钩子
 
 `FastEvent`提供了多个钩子函数，用于在事件发射器生命周期的不同阶段进行操作。
@@ -273,6 +248,11 @@ events.on('task/start', async () => {
 
 // 两个监听器会并行执行,返回最快的结果
 await events.emitAsync('task/start');
+
+// 也可以在事件发射器上单独设置执行器：
+await events.emitAsync('task/start', 100, {
+    executor: race(),
+});
 ```
 
 **内置支持**:
@@ -294,10 +274,10 @@ await events.emitAsync('task/start');
 监听管道用于对在订阅事件时对监听函数进行包装，以实现各种常见的高级功能。
 
 ```typescript
-import { queue } from 'fastevent';
+import { queue } from 'fastevent/pipes';
 const events = new FastEvent();
 
-// 排队监听器，队列默认大小为10
+//排队处理消息
 events.on(
     'data/update',
     (data) => {
@@ -319,6 +299,41 @@ events.on(
 | `timeout`  | 超时监听器                                     |
 | `retry`    | 重试监听器，用于控制监听器执行失败后重试       |
 | `memorize` | 缓存监听器，对监听器执行结果缓存               |
+
+## 转发发布与订阅
+
+`FastEvent`可以非常优雅的方式将发布和订阅转发到另外一个`FastEvent`实例。
+
+```ts
+const otherEmitter = new FastEvent();
+const emitter = new FastEvent({
+    onAddListener: (type, listener, options) => {
+        // 订阅转发规则：当事件名称以`@/`开头时，将订阅转发到另外一个`FastEvent`实例
+        if (type.startsWith('@/')) {
+            return otherEmitter.on(type.substring(2), listener, options);
+        }
+    },
+    onBeforeExecuteListener: (message, args) => {
+        // 事件转发规则：当事件名称以`@/`开头时，就发布到其他`FastEvent`实例
+        if (message.type.startsWith('@/')) {
+            message.type = message.type.substring(2);
+            return otherEmitter.emit(message, args);
+        }
+    },
+});
+const events: any[] = [];
+otherEmitter.on('data', ({ payload }) => {
+    events.push(payload);
+});
+// 订阅otherEmitter的data事件
+emitter.on('@/data', ({ payload }) => {
+    expect(payload).toBe(1);
+    events.push(payload);
+});
+// 将data事件发布到otherEmitter
+const subscriber = emitter.emit('@/data', 1);
+subscriber.off();
+```
 
 ## 元数据(Meta)
 
@@ -357,3 +372,38 @@ userScope.on('login', (message) => {
     console.log('元数据:', message.meta);
 });
 ```
+
+## 事件类型定义
+
+`FastEvent`具备完整的`TypeScript`类型支持。
+
+```typescript
+// 定义具有不同载荷类型的事件
+interface ComplexEvents {
+    'data/number': number;
+    'data/string': string;
+    'data/object': { value: any };
+}
+
+const events = new FastEvent<ComplexEvents>();
+
+// TypeScript 确保每个事件的类型安全
+events.on('data/number', (message) => {
+    const sum = message.payload + 1; // payload 的类型为 number
+});
+
+// 所有的事件发送都会进行类型检查
+events.emit('data/number', 42);
+events.emit('data/string', 'hello');
+events.emit('data/object', { value: true });
+```
+
+## 单元测试
+
+`FastEvent`经过充分的单元测试，累计单元测试用例超过`280+`，测试覆盖率`99%+`。
+
+## License
+
+MIT
+
+更多详细的文档见[WebSite](https://zhangfisher.github.io/fastevent/)

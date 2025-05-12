@@ -5,6 +5,7 @@ import share from './share'
 
 export default defineConfig({
     ...share,
+    base: '/fastevent/',
     locales: {
         // @ts-ignore
         root: { label: '简体中文', ...zh },

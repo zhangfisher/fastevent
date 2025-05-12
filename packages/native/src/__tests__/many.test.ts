@@ -2,7 +2,7 @@ import { describe, test, expect } from "vitest"
 import { FastEvent } from "../event"
 
 describe("指定次数事件的发布与订阅", async () => {
-    test("简单发布只订阅一次事件", () => {
+    test("简单发布只订阅2次事件", () => {
         const emitter = new FastEvent()
         const events: string[] = []
         emitter.on("x", ({ payload, type }) => {
@@ -18,5 +18,4 @@ describe("指定次数事件的发布与订阅", async () => {
         expect(events).toEqual(["x", "x"])
 
     })
-
 })

@@ -44,7 +44,7 @@
 
 import { FastEventDirectives } from "../consts";
 import { FastEvent } from "../event";
-import { FastEventListenerArgs, FastEventMessage, FastEvents } from '../types';
+import { Expand, FastEventListenerArgs, FastEventMessage } from '../types';
 import { isFastEventMessage } from "../utils";
 import { BroadcastEvent, NodeDataEvent } from "./consts";
 import type { FastEventBusNode } from "./node";
@@ -55,7 +55,8 @@ export class FastEventBus<
     Events extends Record<string, any> = FastEventBusEvents,
     Meta extends Record<string, any> = Record<string, any>,
     Context = never,
-    AllEvents extends Record<string, any> = Events & FastEvents,
+    AllEvents extends Record<string, any> = Exclude<Expand<Events & FastEventBusEvents>, number | symbol>,
+    Types extends keyof AllEvents = Expand<Exclude<keyof (AllEvents), number | symbol>>
 > extends FastEvent<Events & FastEventBusEvents, Meta, Context> {
     nodes: Map<string, FastEventBusNode<any, any, any>>;
 
@@ -68,16 +69,18 @@ export class FastEventBus<
      * 添加节点到事件总线
      * @param node 要添加的节点
      */
-    add(node: FastEventBusNode<any, any, any, any>): void {
-        if (this.nodes.has(node.id)) {
-            throw new Error(`Node with id ${node.id} already exists`);
-        }
-        node.options.delimiter = this.options.delimiter
-        node.options.debug = this.options.debug
-        node.options.ignoreErrors = this.options.ignoreErrors
-        this.nodes.set(node.id, node);
-        this.emit(`$disconnect${this.options.delimiter}${node.id}`, FastEventDirectives.clearRetain)
-        this.emit(`$connect${this.options.delimiter}${node.id}`, node.id as any, true)
+    add(...nodes: FastEventBusNode<any, any, any, any>[]): void {
+        nodes.forEach(node => {
+            if (this.nodes.has(node.id)) {
+                throw new Error(`Node with id ${node.id} already exists`);
+            }
+            node.options.delimiter = this.options.delimiter
+            node.options.debug = this.options.debug
+            node.options.ignoreErrors = this.options.ignoreErrors
+            this.nodes.set(node.id, node);
+            this.emit(`$disconnect${this.options.delimiter}${node.id}`, FastEventDirectives.clearRetain)
+            this.emit(`$connect${this.options.delimiter}${node.id}`, node.id as any, true)
+        })
     }
 
     /**
@@ -97,7 +100,6 @@ export class FastEventBus<
     /**
      * 广播消息到所有节点
      * 
-     * 
      * broadcast(1)  // 默认广播主题data
      * broadcast({
      *    type: 'connect',
@@ -106,8 +108,10 @@ export class FastEventBus<
      * 
      * @param message 要广播的消息
      */
-    broadcast<R = any>(payload: any, args?: FastEventListenerArgs): R[]
-    broadcast<R = any>(message: FastEventBusMessage<AllEvents, Meta>, args?: FastEventListenerArgs): R[]
+    broadcast<R = any, T extends Types = Types>(message: FastEventBusMessage<{ [K in T]: AllEvents[T] }, Meta>, args?: FastEventListenerArgs): R[]
+    broadcast<R = any, T extends string = string>(message: FastEventBusMessage<{ [K in T]: K extends Types ? AllEvents[K] : any }, Meta>, args?: FastEventListenerArgs): R[]
+    broadcast<R = any, T extends Types = Types>(type: T, payload: AllEvents[T], args?: FastEventListenerArgs): R[]
+    broadcast<R = any, T extends string = string>(type: T, payload?: T extends Types ? AllEvents[Types] : any, options?: FastEventListenerArgs<Meta>): R[]
     broadcast<R = any>(): R[] {
         const isMessage = isFastEventMessage(arguments[0])
         const message = Object.assign({

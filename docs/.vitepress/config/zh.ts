@@ -40,11 +40,40 @@ export default {
                                 { text: '元数据', link: '/zh/guide/use/metadata' },
                                 { text: '上下文', link: '/zh/guide/use/context' },
                                 { text: '事件钩子', link: '/zh/guide/use/hooks' },
-                                { text: '执行器', link: '/zh/guide/use/executor' },
+                                {
+                                    text: '执行器',
+                                    link: '/zh/guide/use/executors',
+                                    collapsed: true,
+                                    items: [
+                                        { text: 'parallel', link: '/zh/guide/use/executors/parallel' },
+                                        { text: 'race', link: '/zh/guide/use/executors/race' },
+                                        { text: 'balance', link: '/zh/guide/use/executors/balance' },
+                                        { text: 'series', link: '/zh/guide/use/executors/series' },
+                                        { text: 'waterfall', link: '/zh/guide/use/executors/waterfall' },
+                                        { text: 'random', link: '/zh/guide/use/executors/random' },
+                                        { text: 'first', link: '/zh/guide/use/executors/first' },
+                                        { text: 'last', link: '/zh/guide/use/executors/last' },
+                                    ]
+
+                                },
+                                {
+                                    text: '监听管道',
+                                    link: '/zh/guide/use/pipes',
+                                    collapsed: true,
+                                    items: [
+                                        { text: 'timeout', link: '/zh/guide/use/pipes/timeout' },
+                                        { text: 'retry', link: '/zh/guide/use/pipes/retry' },
+                                        { text: 'queue', link: '/zh/guide/use/pipes/queue' },
+                                        { text: 'memorize', link: '/zh/guide/use/pipes/memorize' },
+                                        { text: 'throttle', link: '/zh/guide/use/pipes/throttle' },
+                                        { text: 'debounce', link: '/zh/guide/use/pipes/debounce' }
+                                    ]
+                                },
                                 { text: '错误处理', link: '/zh/guide/use/error_handle' },
-                                { text: '监听管道', link: '/zh/guide/use/pipe' },
+                                { text: '转发订阅', link: '/zh/guide/use/forward' },
                                 { text: '类继承', link: '/zh/guide/use/inherit' },
                                 { text: 'Typescript', link: '/zh/guide/use/typescript' },
+                                { text: '事件总线', link: '/zh/guide/use/eventbus' },
                                 { text: '调试工具', link: '/zh/guide/use/devTools' }
                             ]
                         },

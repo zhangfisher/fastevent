@@ -34,17 +34,45 @@ export default {
                             items: [
                                 { text: 'Trigger', link: '/en/guide/use/event-trigger' },
                                 { text: 'Subscribe', link: '/en/guide/use/subscribe-events' },
-                                { text: 'off Events', link: '/en/guide/use/off-events' },
+                                { text: 'Unsubscribe', link: '/en/guide/use/off-events' },
                                 { text: 'Scope', link: '/en/guide/use/scopes' },
                                 { text: 'WaitFor', link: '/en/guide/use/waitfor' },
-                                { text: 'Abort', link: '/zh/guide/use/abort' },
+                                { text: 'Abort', link: '/en/guide/use/abort' },
                                 { text: 'Metadata', link: '/en/guide/use/metadata' },
                                 { text: 'Context', link: '/en/guide/use/context' },
                                 { text: 'Hooks', link: '/en/guide/use/hooks' },
-                                { text: 'Executor', link: '/en/guide/use/executor' },
+                                {
+                                    text: 'Executor',
+                                    link: '/en/guide/use/executors',
+                                    collapsed: true,
+                                    items: [
+                                        { text: 'parallel', link: '/en/guide/use/executors/parallel' },
+                                        { text: 'race', link: '/en/guide/use/executors/race' },
+                                        { text: 'balance', link: '/en/guide/use/executors/balance' },
+                                        { text: 'series', link: '/en/guide/use/executors/series' },
+                                        { text: 'waterfall', link: '/en/guide/use/executors/waterfall' },
+                                        { text: 'random', link: '/en/guide/use/executors/random' },
+                                        { text: 'first', link: '/en/guide/use/executors/first' },
+                                        { text: 'last', link: '/en/guide/use/executors/last' },
+                                    ]
+                                },
+                                {
+                                    text: 'Pipe',
+                                    link: '/en/guide/use/pipes',
+                                    collapsed: true,
+                                    items: [
+                                        { text: 'timeout', link: '/en/guide/use/pipes/timeout' },
+                                        { text: 'retry', link: '/en/guide/use/pipes/retry' },
+                                        { text: 'queue', link: '/en/guide/use/pipes/queue' },
+                                        { text: 'memorize', link: '/en/guide/use/pipes/memorize' },
+                                        { text: 'throttle', link: '/en/guide/use/pipes/throttle' },
+                                        { text: 'debounce', link: '/en/guide/use/pipes/debounce' }
+                                    ]
+                                },
+                                { text: 'Forward', link: '/en/guide/use/forward' },
                                 { text: 'Error', link: '/en/guide/use/error_handle' },
-                                { text: 'Pipe', link: '/en/guide/use/pipe' },
                                 { text: 'Typescript', link: '/en/guide/use/typescript' },
+                                { text: 'Eventbus', link: '/en/guide/use/eventbus' },
                                 { text: 'DevTools', link: '/en/guide/use/devTools' }
                             ]
                         },

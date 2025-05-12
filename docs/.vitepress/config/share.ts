@@ -1,9 +1,9 @@
 import { transformerTwoslash } from '@shikijs/vitepress-twoslash'
 
 export default {
-    base: '/fastevent/',
     title: 'FastEvent',
     description: '轻量级的事件订阅发布库',
+    base: '/fastevent/',
     vue: {
         template: {
             compilerOptions: {

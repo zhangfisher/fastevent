@@ -2,7 +2,7 @@
 
 [WebSite](https://zhangfisher.github.io/fastevent/)
 
-FastEvent is a powerful `TypeScript` event management library that provides flexible event subscription and publishing mechanisms, supporting features like event wildcards, scoping, and asynchronous events.
+`FastEvent` is a well-designed, powerful, type-safe, and thoroughly tested event emitter that provides robust event subscription and publishing mechanisms, suitable for both `nodejs/browser` environments.
 
 # Installation
 
@@ -13,48 +13,20 @@ pnpm add fastevent
 bun add fastevent
 ```
 
-# Quick Start
+# Guide
+
+## Event Publishing and Subscription
+
+`FastEvent` provides complete event emission and subscription functionality, with an `API` design inspired by `eventemitter2`.
 
 ```typescript
 import { FastEvent } from 'fastevent';
-
-// Create event instance
 const events = new FastEvent();
 
-// Subscribe to event
-events.on('user/login', (message) => {
-    console.log('User login:', message.payload);
-    console.log('Event type:', message.type);
-    console.log('Metadata:', message.meta);
-});
+// Basic event publishing
+const results = events.emit('user/login', { id: 1 });
 
-// Publish event - Method 1: Parameters
-events.emit('user/login', { id: 1, name: 'Alice' });
-
-// Publish event - Method 2: Message object
-events.emit({
-    type: 'user/login',
-    payload: { id: 1, name: 'Alice' },
-    meta: { timestamp: Date.now() },
-});
-```
-
-# Guide
-
-## Event Emission and Listening
-
-FastEvent provides complete event emission and subscription API:
-
-```typescript
-const events = new FastEvent();
-
-// Basic event emission
-events.emit('user/login', { id: 1, name: 'Zhang' });
-
-// Event emission with metadata and retention
-events.emit('config/theme', { dark: true }, true, { timestamp: Date.now() });
-
-// Async event emission
+// Asynchronous event emission
 const results = await events.emitAsync('data/process', { items: [...] });
 
 // Event subscription
@@ -63,12 +35,12 @@ events.on('user/login', (message) => {
 });
 
 // One-time listener
-events.once('startup', () => console.log('Application started'));
+events.once('startup', () => console.log('Application has started'));
 
-// Listening with options
+// Listener with options
 events.on('data/update', handler, {
     count: 3,       // Maximum trigger count
-    prepend: true,  // Add to beginning of queue
+    prepend: true,  // Add to the beginning of the queue
     filter: (msg) => msg.payload.important // Only process important updates
 });
 
@@ -78,120 +50,120 @@ events.onAny((message) => {
 });
 ```
 
-## Event Retention
+## Event Messages
 
-Retain the last event value for late subscribers:
+Listener functions receive a `Message` object that contains the following properties:
+
+```ts
+events.on('user/login', (message) => {
+    // {
+    //     type: 'user/login', // Event name
+    //     payload: { id: 1 }, // Event data
+    //     meta: {...}         // Event metadata
+    // }
+});
+```
+
+## Retained Events
+
+Retain the last event data, so subsequent subscribers can immediately receive the event value upon subscription:
 
 ```typescript
 const events = new FastEvent();
 
-// Emit and retain event
+// Publish and retain event
 events.emit('config/theme', { dark: true }, true);
+// Equivalent to
+events.emit('config/theme', { dark: true }, { retain: true });
 
-// Late subscribers immediately receive retained value
+// Subsequent subscribers immediately receive the retained value
 events.on('config/theme', (message) => {
     console.log('Theme:', message.payload); // Immediately outputs: { dark: true }
 });
 ```
 
-## Event Wildcards
+## Hierarchical Event Publishing
 
-FastEvent supports two types of wildcards:
+`FastEvent` supports hierarchical event publishing and subscription.
 
--   `*`: Matches single path level
--   `**`: Matches multiple path levels
+-   The default event hierarchy delimiter is `/`, which can be modified via `options.delimiter`
+-   Two types of wildcards are supported when subscribing to events: `*` matches a single path level, `**` matches multiple path levels (only used at the end of event names)
 
 ```typescript
 const events = new FastEvent();
 
-// Matches user/*/login
+// Match user/*/login
 events.on('user/*/login', (message) => {
     console.log('Any user type login:', message.payload);
 });
 
-// Matches all events under user
+// Match all events under user
 events.on('user/**', (message) => {
     console.log('All user-related events:', message.payload);
 });
 
 // Trigger events
 events.emit('user/admin/login', { id: 1 }); // Both handlers will be called
-events.emit('user/admin/profile/update', { name: 'New' }); // Only ** handler will be called
+events.emit('user/admin/profile/update', { name: 'New' }); // Only the ** handler will be called
 ```
 
 ## Removing Listeners
 
-FastEvent provides multiple ways to remove listeners:
+`FastEvent` provides multiple ways to remove listeners:
 
 ```typescript
-// Remove specific listener
+// Return a subscriber object to remove the listener, recommended approach
+const subscriber = events.on('user/login', handler);
+subscriber.off();
+
+// Remove a specific listener
 events.off(listener);
-
-// Remove all listeners for an event
+// Remove all listeners for a specific event
 events.off('user/login');
-
-// Remove specific listener for an event
+// Remove a specific listener for a specific event
 events.off('user/login', listener);
-
-// Remove listeners with wildcard pattern
+// Remove listeners using wildcard patterns
 events.off('user/*');
-
 // Remove all listeners
 events.offAll();
-
-// Remove all listeners under a prefix
+// Remove all listeners under a specific prefix
 events.offAll('user');
 ```
 
-## Event Scoping
+## Event Scopes
 
-Scopes allow you to handle events within specific namespaces.
+Scopes allow you to handle events within a specific namespace.
 
-Note: Scopes share the same listener table with the parent emitter:
+**Note** that scopes share the same listener table with the parent event emitter:
 
 ```typescript
 const events = new FastEvent();
 
-// Create user-related scope
+// Create a user-related scope
 const userScope = events.scope('user');
 
-// These two are equivalent:
+// The following two approaches are equivalent:
 userScope.on('login', handler);
 events.on('user/login', handler);
 
-// These two are also equivalent:
+// The following two approaches are also equivalent:
 userScope.emit('login', data);
 events.emit('user/login', data);
 
-// Clear all listeners in scope
+// Clear all listeners in the scope
 userScope.offAll(); // Equivalent to events.offAll('user')
 ```
 
-## One-time Events
+## Waiting for Events
 
-Use `once` to subscribe to events that trigger only once:
-
-```typescript
-const events = new FastEvent();
-
-events.once('startup', () => {
-    console.log('Application started');
-});
-
-// Equivalent to:
-events.on('startup', handler, { count: 1 });
-```
-
-## Event Waiting
-
-Use `waitFor` to wait for specific events:
+Use `waitFor` to wait for a specific event to occur, with timeout support.
 
 ```typescript
 const events = new FastEvent();
 
 async function waitForLogin() {
     try {
-        // Wait for login event with 5 second timeout
+        // Wait for login event with a 5-second timeout
         const userData = await events.waitFor('user/login', 5000);
         console.log('User logged in:', userData);
     } catch (error) {
@@ -200,51 +172,168 @@ async function waitForLogin() {
 }
 
 waitForLogin();
-// Later trigger login event
+// Later trigger the login event
 events.emit('user/login', { id: 1, name: 'Alice' });
 ```
 
-## Multi-level Events and Wildcards
+## Event Hooks
 
-FastEvent supports hierarchical event structures and powerful wildcard matching:
-
-1. Single-level wildcard (`*`): Matches single level in event path
-2. Multi-level wildcard (`**`): Matches zero or more levels, must be at end of path pattern
+`FastEvent` provides multiple hook functions for operations at different stages of the event emitter lifecycle.
 
 ```typescript
-// Match all user-related events
-events.on('user/*', (message) => {
-    console.log('User event:', message.type);
-    // Matches: user/login, user/update, etc.
-});
+const otherEvents = new FastEvent();
+const events = new FastEvent({
+    // Called when a new listener is added
+    onAddListener: (type, listener, options) => {
+        console.log('Added new listener:', type);
+        // Return false to prevent the listener from being added
+        return false;
+        // Can directly return a FastEventSubscriber
+        // For example: transfer events starting with `@` to another FastEvent
+        if (type.startsWith('@')) {
+            return otherEvents.on(type, listener, options);
+        }
+    },
+    // Called when a listener is removed
+    onRemoveListener: (type, listener) => {
+        console.log('Removed listener:', type);
+    },
+    // Called when listeners are cleared
+    onClearListeners: () => {
+        console.log('All listeners cleared');
+    },
+    // Called when a listener throws an error
+    onListenerError: (error, listener, message, args) => {
+        console.error(`Error in listener for event ${message.type}:`, error);
+    },
+    // Called before a listener executes
+    onBeforeExecuteListener: (message, args) => {
+        console.log('Before executing event listener');
+        // Return false to prevent listener execution
+        return false;
 
-// Match all API events
-events.on('api/**', (message) => {
-    console.log('API event:', message.type, message.payload);
-    // Matches: api/get, api/users/create, api/posts/123/comments/add, etc.
+        // Forward events to another FastEvent
+        // For example: forward events starting with `@` to another FastEvent
+        if (type.startsWith('@')) {
+            return otherEvents.emit(message.type);
+        }
+    },
+    // Called after a listener executes
+    onAfterExecuteListener: (message, returns, listeners) => {
+        console.log('After executing event listener');
+        // Can intercept and modify return values here
+    },
 });
 ```
 
-## Global Event Listening
+## Executors
 
-Use `onAny` to listen to all events:
+By default, all listeners are executed in parallel when an event is triggered.
+
+`FastEvent` provides powerful listener execution mechanisms that allow developers to control how listeners are executed.
 
 ```typescript
-const events = new FastEvent();
-
-events.onAny((message) => {
-    console.log(`Event ${message.type} triggered:`, message.payload);
+import { race } from 'fastevent/executors';
+const events = new FastEvent({
+    executor: race(),
 });
 
-// Can also use prepend option
-events.onAny(handler, { prepend: true });
+events.on('task/start', async () => {
+    /* Time-consuming operation 1 */
+});
+events.on('task/start', async () => {
+    /* Time-consuming operation 2 */
+});
+
+// The two listeners will execute in parallel, returning the fastest result
+await events.emitAsync('task/start');
+```
+
+**Built-in Support**:
+
+| Executor                                  | Description                                                               |
+| ----------------------------------------- | ------------------------------------------------------------------------- |
+| `parallel`                                | Default, concurrent execution                                             |
+| `race`                                    | Parallel executor, uses `Promise.race` for parallel execution             |
+| `balance`                                 | Evenly distributed executor                                               |
+| `first`                                   | Execute only the first listener                                           |
+| `last`                                    | Execute only the last listener                                            |
+| `random`                                  | Randomly select a listener                                                |
+| `series`                                  | Serial executor, execute listeners in sequence and return the last result |
+| `waterfall`                               | Execute listeners in sequence and return the last result, abort on error  |
+| `(listeners,message,args,execute)=>any[]` | Custom executor                                                           |
+
+## Listener Pipes
+
+Listener pipes are used to wrap listener functions during event subscription to implement various common advanced features.
+
+```typescript
+import { queue } from 'fastevent/pipes';
+const events = new FastEvent();
+
+// default queue size is 10
+events.on(
+    'data/update',
+    (data) => {
+        console.log('Processing data:', data);
+    },
+    {
+        pipes: [queue({ size: 10 })],
+    },
+);
+```
+
+**Built-in Support:**
+
+| Pipe       | Description                                                                      |
+| ---------- | -------------------------------------------------------------------------------- |
+| `queue`    | Queue listener, process messages in queue, supports priority and timeout control |
+| `throttle` | Throttle listener                                                                |
+| `debounce` | Debounce listener                                                                |
+| `timeout`  | Timeout listener                                                                 |
+| `retry`    | Retry listener, for controlling retries after listener execution failure         |
+| `memorize` | Cache listener, cache listener execution results                                 |
+
+## Forwarding Publishing and Subscription
+
+`FastEvent` can elegantly forward publishing and subscription to another `FastEvent` instance.
+
+```ts
+const otherEmitter = new FastEvent();
+const emitter = new FastEvent({
+    onAddListener: (type, listener, options) => {
+        // Subscription forwarding rule: when event name starts with `@/`, forward subscription to another `FastEvent` instance
+        if (type.startsWith('@/')) {
+            return otherEmitter.on(type.substring(2), listener, options);
+        }
+    },
+    onBeforeExecuteListener: (message, args) => {
+        // Event forwarding rule: when event name starts with `@/`, publish to another `FastEvent` instance
+        if (message.type.startsWith('@/')) {
+            message.type = message.type.substring(2);
+            return otherEmitter.emit(message, args);
+        }
+    },
+});
+const events: any[] = [];
+otherEmitter.on('data', ({ payload }) => {
+    events.push(payload);
+});
+// Subscribe to otherEmitter's data event
+emitter.on('@/data', ({ payload }) => {
+    expect(payload).toBe(1);
+    events.push(payload);
+});
+// Publish data event to otherEmitter
+const subscriber = emitter.emit('@/data', 1);
+subscriber.off();
 ```
 
 ## Metadata (Meta)
 
-Metadata provides additional context information for events.
+Metadata is a mechanism for providing additional contextual information for events.
 
-You can set metadata at different levels: global, scope-level, or event-specific.
+You can set metadata at different levels: global, scope level, or event-specific level.
 
 ```typescript
 const events = new FastEvent({
@@ -256,29 +345,31 @@ const events = new FastEvent({
 
 events.on('user/login', (message) => {
     console.log('Event data:', message.payload);
-    console.log('Metadata:', message.meta); // Contains type, version and environment
+    console.log('Metadata:', message.meta); // Includes type, version, and environment
 });
 
 // Using scope-level metadata
 const userScope = events.scope('user', {
     meta: { domain: 'user' },
 });
-// Add specific metadata when publishing event
+// Add specific metadata when publishing events
 userScope.emit(
     'login',
-    { userId: '123' }, // Event data
-    false, // Don't retain
-    { timestamp: Date.now() }, // Event-specific metadata
+    { userId: '123' },
+    {
+        meta: { timestamp: Date.now() }, // Event-specific metadata
+    },
 );
 
-// Listener receives merged metadata
+// Listeners receive merged metadata
 userScope.on('login', (message) => {
     console.log('Metadata:', message.meta);
-    // { type: 'user/login', app: 'MyApp', domain: 'user', timestamp: ... }
 });
 ```
 
 ## Event Type Definitions
+
+`FastEvent` has complete `TypeScript` type support.
 
 ```typescript
 // Define events with different payload types
@@ -292,113 +383,21 @@ const events = new FastEvent<ComplexEvents>();
 
 // TypeScript ensures type safety for each event
 events.on('data/number', (message) => {
-    const sum = message.payload + 1; // payload is typed as number
+    const sum = message.payload + 1; // payload type is number
 });
 
-// All event emissions are type checked
+// All event emissions are type-checked
 events.emit('data/number', 42);
 events.emit('data/string', 'hello');
 events.emit('data/object', { value: true });
 ```
 
-## Event Hooks
+## Unit Testing
 
-FastEvent provides several hooks for monitoring and debugging the event system:
+`FastEvent` has been thoroughly unit tested, with over `280+` cumulative test cases and `99%+` test coverage.
 
-```typescript
-const events = new FastEvent({
-    // Called when adding new listener
-    onAddListener: (path: string[], listener: Function) => {
-        console.log('New listener added:', path.join('/'));
-    },
+## License
 
-    // Called when removing listener
-    onRemoveListener: (path: string[], listener: Function) => {
-        console.log('Listener removed:', path.join('/'));
-    },
+MIT
 
-    // Called when clearing listeners
-    onClearListeners: () => {
-        console.log('All listeners cleared');
-    },
-
-    // Called when listener throws error
-    onListenerError: (type: string, error: Error) => {
-        console.error(`Listener error for event ${type}:`, error);
-    },
-    // Called before executing listener
-    onBeforeExecuteListener: (message, returns, listeners) => {
-        console.log('Before executing listener');
-        return true / false;
-    },
-
-    // Called after executing listener
-    onAfterExecuteListener: (message, returns, listeners) => {
-        console.log('After executing listener');
-    },
-});
-```
-
-## Executors
-
-Executors control how listeners are executed after triggering an event, default is `default` parallel executor.
-
-```typescript
-const events = new FastEvent({
-    executor: 'race',
-});
-
-events.on('task/start', async () => {
-    /* Time-consuming operation1 */
-});
-events.on('task/start', async () => {
-    /* Time-consuming operation2 */
-});
-
-// Two listeners execute in parallel, return fastest result
-await events.emitAsync('task/start');
-```
-
-Built-in support:
-
-| Executor                | Description                                  |
-| ----------------------- | -------------------------------------------- |
-| `default`               | Default executor, executes sequentially      |
-| `allSettled`            | Parallel executor using `Promise.allSettled` |
-| `race`                  | Parallel executor using `Promise.race`       |
-| `balance`               | Balanced executor                            |
-| `first`                 | Only first registered listener executes      |
-| `last`                  | Only last registered listener executes       |
-| `random`                | Randomly executes listeners                  |
-| `IFastListenerExecutor` | Custom executor                              |
-
-## Listener Pipes
-
-Listener pipes wrap listener functions when subscribing to events to implement various advanced features.
-
-```typescript
-import { queue } from 'fastevent';
-const events = new FastEvent();
-
-// Queued listener with default queue size of 10
-events.on(
-    'data/update',
-    (data) => {
-        console.log('Processing data:', data);
-    },
-    {
-        pipes: [queue({ size: 10 })],
-    },
-);
-```
-
-Built-in support:
-
-| Pipe       | Description                                                                    |
-| ---------- | ------------------------------------------------------------------------------ |
-| `queue`    | Queued listener for controlling execution order, supports priority and timeout |
-| `throttle` | Throttle listener for controlling execution frequency                          |
-| `debounce` | Debounce listener for controlling execution frequency                          |
-| `timeout`  | Timeout listener for controlling execution timeout                             |
-| `retry`    | Retry listener for retrying after execution failure                            |
-| `memorize` | Cache listener for caching execution results                                   |
+For more detailed documentation, see [WebSite](https://zhangfisher.github.io/fastevent/)

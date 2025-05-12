@@ -9,10 +9,10 @@ describe("Series执行器测试", () => {
     test("依次执行所有同步监听器返回最后一个监听器的结果", async () => {
         const emitter = new FastEvent()
         const messages: FastEventMessage[] = []
-        const listeners = Array.from({ length: 10 }).map(() => {
+        const listeners = Array.from({ length: 10 }).map((_, i) => {
             return (message: FastEventMessage) => {
                 messages.push(message)
-                return messages.length
+                return ++i
             }
         })
         listeners.forEach(listener => {
@@ -22,6 +22,27 @@ describe("Series执行器测试", () => {
         const r = await Promise.all(results)
         expect(r.length).toBe(1)
         expect(r[0]).toBe(10)
+    })
+    test("逆序执行所有同步监听器返回最后一个监听器的结果", async () => {
+        const emitter = new FastEvent()
+        const messages: FastEventMessage[] = []
+        const listeners = Array.from({ length: 10 }).map((_, i) => {
+            return (message: FastEventMessage) => {
+                messages.push(message)
+                return ++i
+            }
+        })
+        listeners.forEach(listener => {
+            emitter.on("test", listener)
+        })
+        const results = emitter.emit<number>("test", 1, {
+            executor: series({
+                reverse: true
+            })
+        })
+        const r = await Promise.all(results)
+        expect(r.length).toBe(1)
+        expect(r[0]).toBe(1)
     })
     test("依次执行所有监听器返回最后一个监听器的结果", async () => {
         const emitter = new FastEvent()
@@ -153,7 +174,7 @@ describe("Series执行器测试", () => {
         expect(results.length).toBe(1)
         expect(results[0]).toBe(4)
     })
-    test("串行执行监听器时onStep控制是否继续执行", async () => {
+    test("串行执行监听器时onNext控制是否继续执行", async () => {
         const emitter = new FastEvent()
         const messages: FastEventMessage[] = []
         const listeners = Array.from({ length: 10 }).map(() => {

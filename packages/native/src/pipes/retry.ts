@@ -3,7 +3,7 @@ import { isFunction } from "../utils/isFunction"
 import { FastListenerPipe } from "./types"
 
 export interface RetryListenerPipeOptions {
-    interval?: number // 重试间隔，默认1000ms
+    interval?: number | ((retryCount: number) => number) // 重试间隔，默认1000ms
     drop?: (message: FastEventMessage, error: Error) => void // 所有重试失败后的回调
 }
 
@@ -28,7 +28,7 @@ export const retry = (count: number, options?: RetryListenerPipeOptions): FastLi
                     if (retries < count) {
                         // 等待interval后重试
                         await new Promise(resolve => {
-                            setTimeout(resolve, interval)
+                            setTimeout(resolve, isFunction(interval) ? interval(retries) : interval)
                         })
                         retries++
                     } else {

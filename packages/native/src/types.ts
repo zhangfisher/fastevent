@@ -23,7 +23,7 @@ export type FastEventMessage<
     }[Exclude<keyof Events, number | symbol>]
 ) & FaseEventMessageExtends
 
-// 用于emit方法可使用
+// 用于emit方法使用
 export type FastEventEmitMessage<
     Events extends Record<string, any> = Record<string, any>,
     M = any
