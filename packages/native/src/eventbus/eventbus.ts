@@ -45,10 +45,10 @@
 import { FastEventDirectives } from "../consts";
 import { FastEvent } from "../event";
 import { Expand, FastEventListenerArgs, FastEventMessage } from '../types';
-import { isFastEventMessage } from "../utils";
-import { BroadcastEvent, NodeDataEvent } from "./consts";
+import { NodeDataEvent } from "./consts";
 import type { FastEventBusNode } from "./node";
 import { FastEventBusEvents, FastEventBusMessage, FastEventBusOptions } from "./types";
+import { parseBroadcaseArgs } from "./utils";
 
 
 export class FastEventBus<
@@ -110,17 +110,11 @@ export class FastEventBus<
      */
     broadcast<R = any, T extends Types = Types>(message: FastEventBusMessage<{ [K in T]: AllEvents[T] }, Meta>, args?: FastEventListenerArgs): R[]
     broadcast<R = any, T extends string = string>(message: FastEventBusMessage<{ [K in T]: K extends Types ? AllEvents[K] : any }, Meta>, args?: FastEventListenerArgs): R[]
-    broadcast<R = any, T extends Types = Types>(type: T, payload: AllEvents[T], args?: FastEventListenerArgs): R[]
     broadcast<R = any, T extends string = string>(type: T, payload?: T extends Types ? AllEvents[Types] : any, options?: FastEventListenerArgs<Meta>): R[]
+    broadcast<R = any, T extends Types = Types>(type: T, payload: AllEvents[T], args?: FastEventListenerArgs): R[]
     broadcast<R = any>(): R[] {
-        const isMessage = isFastEventMessage(arguments[0])
-        const message = Object.assign({
-            payload: isMessage ? arguments[0].payload : arguments[0],
-        }, isMessage ? arguments[0] : {},
-            {
-                type: `${BroadcastEvent}${this.options.delimiter}${isMessage ? arguments[0].type : 'data'}`
-            })
-        return this.emit(message, arguments[1] as any)
+        const [message, args] = parseBroadcaseArgs(arguments, this.options.delimiter)
+        return this.emit(message, args as any)
     }
 
     /**

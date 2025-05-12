@@ -25,20 +25,23 @@ describe("eventbus类型系统测试", () => {
             type: 'x',
             payload: '1111'
         })
-        // eventbus.broadcast('data', 1)
-        // eventbus.broadcast('y', 2222)
-        // eventbus.broadcast('z', 1)
+        eventbus.broadcast({
+            type: 'xx',
+            payload: '1111'
+        })
+        eventbus.broadcast('data', 1)
+        eventbus.broadcast('x', 2222)
+        eventbus.broadcast('y', 2222)
+        eventbus.broadcast('z', 1)
+        eventbus.broadcast('x', 1)
 
         type cases = [
-
         ]
     })
-    test("eventbus.on", () => {
+    test("eventbus.send", () => {
         const eventbus = new FastEventBus<CustomBusEvents>()
 
-        eventbus.on('x', (message) => {
-            message
-        })
+        // eventbus.send("sss", sss)
         type cases = [
 
         ]

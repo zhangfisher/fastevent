@@ -711,6 +711,10 @@ export class FastEvent<
             return []
         }
         const [message, args] = parseEmitArgs<AllEvents, Meta>(arguments, this.options.meta)
+
+        if (isFunction(args.parseArgs)) {
+            args.parseArgs(message, args)
+        }
         const parts = message.type.split(this._delimiter);
         if (args.retain) {
             this.retainedMessages.set(message.type, message)

@@ -172,6 +172,10 @@ export type FastEventListenerArgs<M = Record<string, any>> = {
      * sequence: 按照监听器添加顺序依次执行
      */
     executor?: FastListenerExecutor
+    /**
+     * 当emit参数解析完成后的回调，用于修改emit参数
+     */
+    parseArgs?: (message: FastEventMessage, args: FastEventListenerArgs) => void
 }
 
 export type Merge<T extends object, U extends object> = {

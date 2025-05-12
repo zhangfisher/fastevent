@@ -13,9 +13,7 @@ export type FastEventBusOptions<Meta = Record<string, any>, Context = any> = Fas
 export interface FastEventBusEvents {
     '$connect': string
     '$disconnect': string
-}
-export interface FastEventBusBroadcastEvents {
-
+    data: any
 }
 
 export interface FastEventBusNodes {

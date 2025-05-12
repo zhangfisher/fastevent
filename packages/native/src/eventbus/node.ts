@@ -5,6 +5,7 @@ import { isFastEventMessage } from "../utils/isFastEventMessage";
 import { BroadcastEvent, NamespaceDelimiter } from "./consts";
 import type { FastEventBus } from "./eventbus";
 import { FastEventBusMessage, FastEventBusNodes } from "./types";
+import { parseBroadcaseArgs } from "./utils";
 
 export type FastEventBusNodeOptions<
     Meta = Record<string, any>,
@@ -152,18 +153,13 @@ export class FastEventBusNode<
      * 
      * @param message 要广播的消息
      */
-    broadcast<R = any>(payload: any, args?: FastEventListenerArgs): R[]
     broadcast<R = any>(message: FastEventBusMessage, args?: FastEventListenerArgs): R[]
+    broadcast<R = any>(type: string, payload: any, options?: FastEventListenerArgs<Meta>): R[]
     broadcast<R = any>(): R[] {
         this._assertConnected()
-        const isMessage = isFastEventMessage(arguments[0])
-        const message: FastEventBusMessage = Object.assign({
-            type: isMessage ? arguments[0].type : 'data',
-            from: this.id,
-        }, isMessage ? arguments[0] : {
-            payload: arguments[0]
-        })
-        return this.eventbus!.broadcast(message, arguments[1])
+        const [message, args] = parseBroadcaseArgs(arguments, this.options.delimiter)
+        message.from = this.id
+        return this.eventbus!.broadcast(message, args)
     }
 
     /**

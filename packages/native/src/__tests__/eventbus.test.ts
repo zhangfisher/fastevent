@@ -93,7 +93,7 @@ describe('FastEventBus', () => {
 
     describe('广播消息', () => {
         test("总线广播消息给所有节点", () => {
-            eventbus.broadcast(1)
+            eventbus.broadcast('data', 1)
             expect(node1.messages.length).toBe(1)
             expect(node1.messages[0].payload).toBe(1)
             expect(node2.messages.length).toBe(1)
@@ -106,7 +106,7 @@ describe('FastEventBus', () => {
             expect(node5.messages[0].payload).toBe(1)
         })
         test("总线广播保留消息给所有节点，后续节点也可以接收到广播消息", () => {
-            eventbus.broadcast(1, { retain: true })
+            eventbus.broadcast('data', 1, { retain: true })
             const results: FastEventBusMessage[] = []
             const lastNode1 = new FastEventBusNode()
             lastNode1.onMessage = vi.fn().mockImplementation((message) => {
@@ -127,7 +127,7 @@ describe('FastEventBus', () => {
         })
 
         test('接收总线广播接收者的返回值', () => {
-            expect(eventbus.broadcast(1)).toEqual([1, 1, 1, 1, 1])
+            expect(eventbus.broadcast('data', 1)).toEqual([1, 1, 1, 1, 1])
         });
 
         test("广播消息指定类型的消息", () => {
@@ -145,7 +145,7 @@ describe('FastEventBus', () => {
         })
 
         test("在节点中发起广播消息给所有节点", () => {
-            node1.broadcast(1)
+            node1.broadcast('data', 1)
             expect(node1.messages.length).toBe(1)
             expect(node1.messages[0].payload).toBe(1)
             expect(node1.messages[0].from).toBe('node1')
