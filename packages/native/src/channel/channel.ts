@@ -28,10 +28,7 @@ const listener = *(channel)=> {
             const data = yield channel.pop()
         }
         
-        
-        
         // 等待断开连接事件
-
         const [disconnMsg] = yield channel.take('close')
         yield channel.sleep(1000)
     
@@ -54,12 +51,11 @@ class Channel extends FastEventScope{
 
     }
     onStop(){
-    }
 
-    
+    }    
 }
 
-channel.state({
+channel.states({
     Initial: ()=>{},
     Connecting,
     Connected,
@@ -91,7 +87,7 @@ emitter.on("data",*(channel)=>{
     
 */
 
-import { FastEventScope, FastEventScopeOptions } from "./scope";
+import { FastEventScope, FastEventScopeOptions } from "../scope";
 
 export type FastEventChannelOptions<
     Meta = Record<string, any>,
