@@ -13,9 +13,13 @@ export type FastEventBusOptions<Meta = Record<string, any>, Context = any> = Fas
 export interface FastEventBusEvents {
     '$connect': string
     '$disconnect': string
-    data: any
+    'data': any               // 默认广播事件
 }
+
+export type FastEventBusEventTypes = keyof FastEventBusEvents
+
 
 export interface FastEventBusNodes {
 
 }
+export type FastEventBusNodeIds = keyof FastEventBusNodes

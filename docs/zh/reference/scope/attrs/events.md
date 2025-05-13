@@ -1,4 +1,4 @@
-# events
+# types
 
 专门用于获取`scope`所有事件类型。
 
@@ -9,8 +9,9 @@ const scope = emitter.scope<{
     click:{x: number, y: number},
     context: boolean
 }>('user')
-console.log(scope.events) // undefined
-type Events = typeof scope.events
+console.log(scope.types) // undefined
+type Types = typeof scope.types
+type Events = typeof scope.types.events
 //   ^?
 // 
 // 

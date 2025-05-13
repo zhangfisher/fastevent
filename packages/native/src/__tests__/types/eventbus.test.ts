@@ -1,11 +1,19 @@
 /* eslint-disable no-unused-vars */
 import { describe, test, expect } from "vitest"
 import type { Equal, Expect, NotAny } from '@type-challenges/utils'
-import { FastEvent } from "../../event"
-import { FastEventScopeMeta } from "../../scope"
-import { FastEventBus } from "../../eventbus"
-import { Overloads } from "../../types"
+import { FastEventBus, FastEventBusNode } from "../../eventbus"
 
+declare module '../../eventbus/types' {
+    interface FastEventBusEvents {
+        submit: string
+        click: number
+    }
+
+    interface FastEventBusNodes {
+        auth: any
+        user: any
+    }
+}
 describe("eventbus类型系统测试", () => {
 
     type CustomBusEvents = {
@@ -18,6 +26,7 @@ describe("eventbus类型系统测试", () => {
         b: number
         c: boolean
     }
+
 
     test("broadcast类型", () => {
         const eventbus = new FastEventBus<CustomBusEvents>()
@@ -38,12 +47,27 @@ describe("eventbus类型系统测试", () => {
         type cases = [
         ]
     })
-    test("eventbus.send", () => {
+    test("node.broadcast", () => {
         const eventbus = new FastEventBus<CustomBusEvents>()
-
-        // eventbus.send("sss", sss)
-        type cases = [
-
-        ]
+        const node = new FastEventBusNode()
+        node.connect(eventbus)
+        node.broadcast({
+            type: 'submit',
+            payload: '1'
+        })
+        node.broadcast({
+            type: 'submitx',
+            payload: 1
+        })
+        node.broadcast('submit2', 1)
+        node.broadcast('submit', '1')
+    })
+    test("node.send", () => {
+        const eventbus = new FastEventBus<CustomBusEvents>()
+        const node = new FastEventBusNode<CustomNodeEvents>()
+        node.connect(eventbus)
+        node.send('auth', 1)
+        node.send('user', 1)
+        node.emit("c")
     })
 })

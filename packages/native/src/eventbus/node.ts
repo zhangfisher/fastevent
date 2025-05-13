@@ -1,10 +1,9 @@
 import { FastEvent } from "../event";
 import { FastEventListenerArgs, FastEventSubscriber, FastEventOptions, DeepPartial, FastEventListener, FastEventListenOptions } from '../types';
 import { expandable } from "../utils/expandable";
-import { isFastEventMessage } from "../utils/isFastEventMessage";
 import { BroadcastEvent, NamespaceDelimiter } from "./consts";
 import type { FastEventBus } from "./eventbus";
-import { FastEventBusMessage, FastEventBusNodes } from "./types";
+import { FastEventBusEvents, FastEventBusEventTypes, FastEventBusMessage, FastEventBusNodeIds } from "./types";
 import { parseBroadcaseArgs } from "./utils";
 
 export type FastEventBusNodeOptions<
@@ -17,8 +16,7 @@ export type FastEventBusNodeOptions<
 export class FastEventBusNode<
     Events extends Record<string, any> = Record<string, any>,
     Meta extends Record<string, any> = Record<string, any>,
-    Context = never,
-    Types extends keyof Events = Exclude<keyof Events, number | symbol>
+    Context = never
 > extends FastEvent<Events, Meta, Context> {
     eventbus?: FastEventBus<any, any, any>;
     private _subscribers: FastEventSubscriber[] = []
@@ -94,7 +92,7 @@ export class FastEventBusNode<
      * 加入事件总线
      * @param eventBus 要加入的事件总线
      */
-    connect(eventbus: FastEventBus): void {
+    connect(eventbus: FastEventBus<any>): void {
         this.eventbus = eventbus
         this.eventbus.add(this);
         // 订阅广播事件，以便能接收到广播消息
@@ -129,7 +127,8 @@ export class FastEventBusNode<
      * @param toNodeId 目标节点ID
      * @param message 要发送的消息
      */
-    send<R = any>(toNodeId: FastEventBusNodes, payload: any, args?: FastEventListenerArgs): R[]
+    send<R = any, T extends FastEventBusNodeIds = FastEventBusNodeIds>(toNodeId: T, payload: any, args?: FastEventListenerArgs): R[]
+    send<R = any, T extends string = string>(toNodeId: T, payload: any, args?: FastEventListenerArgs): R[]
     send<R = any>(toNodeId: string, payload: any, args?: FastEventListenerArgs): R[] {
         this._assertConnected()
         const message: FastEventBusMessage = {
@@ -153,8 +152,10 @@ export class FastEventBusNode<
      * 
      * @param message 要广播的消息
      */
-    broadcast<R = any>(message: FastEventBusMessage, args?: FastEventListenerArgs): R[]
-    broadcast<R = any>(type: string, payload: any, options?: FastEventListenerArgs<Meta>): R[]
+    broadcast<R = any, T extends FastEventBusEventTypes = FastEventBusEventTypes>(message: FastEventBusMessage<{ [K in T]: K extends FastEventBusEventTypes ? FastEventBusEvents[K] : any }>, args?: FastEventListenerArgs): R[]
+    broadcast<R = any, T extends string = string>(message: FastEventBusMessage<{ [K in T]: K extends FastEventBusEventTypes ? FastEventBusEvents[K] : any }, Meta>, args?: FastEventListenerArgs): R[]
+    broadcast<R = any, T extends FastEventBusEventTypes = FastEventBusEventTypes>(type: T, payload: FastEventBusEvents[T], options?: FastEventListenerArgs<Meta>): R[]
+    broadcast<R = any, T extends string = string>(type: T, payload: T extends FastEventBusEventTypes ? FastEventBusEvents[T] : any, options?: FastEventListenerArgs<Meta>): R[]
     broadcast<R = any>(): R[] {
         this._assertConnected()
         const [message, args] = parseBroadcaseArgs(arguments, this.options.delimiter)

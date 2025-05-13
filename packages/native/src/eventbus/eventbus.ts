@@ -69,7 +69,7 @@ export class FastEventBus<
      * 添加节点到事件总线
      * @param node 要添加的节点
      */
-    add(...nodes: FastEventBusNode<any, any, any, any>[]): void {
+    add(...nodes: FastEventBusNode<any, any, any>[]): void {
         nodes.forEach(node => {
             if (this.nodes.has(node.id)) {
                 throw new Error(`Node with id ${node.id} already exists`);

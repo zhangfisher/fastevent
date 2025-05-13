@@ -139,7 +139,7 @@ eventbus.add(node)//[!code ++]
 
 ### 广播消息
 
-每个`Node`实例均可以接收和发送广播消息。
+每个`Node`实例均可以接收和发送广播消息。 
 
 ```ts
 import { FastEventBus,FastEventBusNode } from 'fastevent/eventbus';
@@ -147,15 +147,14 @@ import { FastEventBus,FastEventBusNode } from 'fastevent/eventbus';
 const eventbus = new FastEventBus()
 
 // 广播消息，所有节点均可以接收
-eventbus.broadcast('message')
+eventbus.broadcast('data','message')
 // 广播消息，保留消息,所有后续加入的节点均可以接收到
-eventbus.broadcast('message',{retain:true})
+eventbus.broadcast('data','message',{ retain:true })
 // 广播消息，
 eventbus.broadcast({
-    type:'xxx',
-    payload:100
+    type: 'data',
+    payload: 100
 })
-
 ```
 
 - 节点不需要订阅，在连接后就可以在`onMessage`接收广播消息。
@@ -170,12 +169,13 @@ eventbus.broadcast({
 import { FastEventBus,FastEventBusNode } from 'fastevent/eventbus'; 
 
 const eventbus = new FastEventBus()
-const node1 = new FastEventBusNode({id:'node1',onMessage:(message,args)=>{
+const node1 = new FastEventBusNode({id:'node1'},onMessage:(message,args)=>{
     // 在此接收对点对点和广播消息
 });
 const node2 = new FastEventBusNode({id:'node2'},onMessage:(message,args)=>{
     // 在此接收对点对点和广播消息
 });
+
 eventbus.add(node1,node2)
 
 // 向node2节点发送消息
