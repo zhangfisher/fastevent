@@ -29,7 +29,7 @@ const listener = *(channel)=> {
         }
         
         // 等待断开连接事件
-        const [disconnMsg] = yield channel.take('close')
+        const [disconnMsg] = yield channel.wait('close')
         yield channel.sleep(1000)
     
         yield channel.put({ type: 'open', data: connMsg.data})
@@ -55,6 +55,10 @@ class Channel extends FastEventScope{
     }    
 }
 
+const channel = new Channel<{
+    
+}>()
+
 channel.states({
     Initial: ()=>{},
     Connecting,
@@ -76,7 +80,7 @@ channel.emit("data", 1)
 channel.emit("data", 2)
 channel.emit("data", 3) 
 
-emitter.on("data",*(channel)=>{
+channel.on("data",*(channel)=>{
     for(let i=0;i<10;i++){
         const data = yield channel.pop()
         yield channel.run(handleData(data))
