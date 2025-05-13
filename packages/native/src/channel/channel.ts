@@ -44,11 +44,11 @@ class Channel extends FastEventScope{
     socket
     buffer:any[]
     onStart(){
-        this.socket = new WebSocket('ws://localhost:8888');
-        this.socket.onopen = (event) =>  channel.emit("open", event,true)
+        this.socket           = new WebSocket('ws://localhost:8888');
+        this.socket.onopen    = (event) =>  channel.emit("open", event,true)
         this.socket.onmessage = (event) => channel.emit("data", event.data)
-        this.socket.onclose = (event) => channel.emit("close", event,true)
-        this.socket.onerror = (err) => channel.emit("error",err)
+        this.socket.onclose   = (event) => channel.emit("close", event,true)
+        this.socket.onerror   = (err) => channel.emit("error",err)
     }
     onNext(){
 
@@ -59,6 +59,14 @@ class Channel extends FastEventScope{
     
 }
 
+channel.state({
+    Initial: ()=>{},
+    Connecting,
+    Connected,
+    Disconnecting,
+    Disconnected,
+    Error
+})
 
 //
 channel.action('open',(message)=>{

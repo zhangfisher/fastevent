@@ -14,7 +14,7 @@ emitter.on('eventName', listener, {
 })
 ```
 
-多个`pipe`会按照数组顺序依次处理，形成处理链。等效于``pip23(pipe2(pipe1(listener)))....`
+多个`pipe`会按照数组顺序依次处理，形成处理链。等效于`pipe3(pipe2(pipe1(listener)))....`
 
 以下是一个简单的使用`pipe`的示例，展示如何为 API 请求添加超时和重试功能
 

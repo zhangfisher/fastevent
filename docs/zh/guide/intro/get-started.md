@@ -256,6 +256,12 @@ await events.emitAsync('task/start', 100, {
 | `waterfall`                               | 依次执行监听器并返回最后一个结果,出错时中断  |
 | `(listeners,message,args,execute)=>any[]` | 自定义执行器                                 |
 
+:::warning 提示
+执行器需要从`fastevent/executors`中导入。
+
+如：`import { race } from 'fastevent/executors`。
+:::
+
 ## 监听管道
 
 监听管道用于对在订阅事件时对监听函数进行包装，以实现各种常见的高级功能。
@@ -276,22 +282,32 @@ events.on(
 );
 ```
 
+允许支持使用多个监听管道,如`pipes:[queue(),retry(),timeout()]`，相当于`timeout(retry(queue(listener)))`。
+
 **内置支持:**
 
 | 管道       | 描述                                           |
 | ---------- | ---------------------------------------------- |
-| `queue`    | 队列监听器，排队处理消息，支持优先级和超时控制 |
-| `throttle` | 节流监听器                                     |
-| `debounce` | 防抖监听器                                     |
-| `timeout`  | 超时监听器                                     |
-| `retry`    | 重试监听器，用于控制监听器执行失败后重试       |
-| `memorize` | 缓存监听器，对监听器执行结果缓存               |
+| `queue`    | 队列监听管道，排队处理消息，支持优先级和超时控制 |
+| `throttle` | 节流监听管道                                     |
+| `debounce` | 防抖监听管道                                 |
+| `timeout`  | 超时监听管道                                     |
+| `retry`    | 重试监听管道，用于控制监听器执行失败后重试       |
+| `memorize` | 缓存监听管道，对监听器执行结果缓存               | 
+| `(listener: FastEventListener) => FastEventListener` | 自定义监听管道              |
+
+:::warning 提示
+监听管道需要从`fastevent/pipes`中导入。
+
+如：`import { queue } from 'fastevent/pipes`。
+:::
 
 ## 转发发布与订阅
 
 `FastEvent`可以非常优雅的方式将发布和订阅转发到另外一个`FastEvent`实例。
 
 ```ts
+import { expandable } from "fastevent"
 const otherEmitter = new FastEvent();
 const emitter = new FastEvent({
     onAddListener: (type, listener, options) => {
@@ -304,7 +320,7 @@ const emitter = new FastEvent({
         // 事件转发规则：当事件名称以`@/`开头时，就发布到其他`FastEvent`实例
         if (message.type.startsWith('@/')) {
             message.type = message.type.substring(2);
-            return otherEmitter.emit(message, args);
+            return expandable(otherEmitter.emit(message, args)); // [!code ++]
         }
     },
 });
@@ -313,13 +329,13 @@ otherEmitter.on('data', ({ payload }) => {
     events.push(payload);
 });
 // 订阅otherEmitter的data事件
-emitter.on('@/data', ({ payload }) => {
+const subscriber = emitter.on('@/data', ({ payload }) => {
     expect(payload).toBe(1);
     events.push(payload);
 });
+subscriber.off()
 // 将data事件发布到otherEmitter
-const subscriber = emitter.emit('@/data', 1);
-subscriber.off();
+emitter.emit('@/data', 1);
 ```
 
 ## 元数据(Meta)
