@@ -221,9 +221,9 @@ const events = new FastEvent({
 `FastEvent`提供强大的监听器执行机制，允许开发者控制如何执行监听器。
 
 ```typescript
-import { race } from 'fastevent/executors';
+import { race } from 'fastevent/executors';// [!code ++]
 const events = new FastEvent({
-    executor: race(),
+    executor: race(),// [!code ++]
 });
 
 events.on('task/start', async () => {
@@ -238,7 +238,7 @@ await events.emitAsync('task/start');
 
 // 也可以在事件发射器上单独设置执行器：
 await events.emitAsync('task/start', 100, {
-    executor: race(),
+    executor: race() // [!code ++]
 });
 ```
 
@@ -267,7 +267,7 @@ await events.emitAsync('task/start', 100, {
 监听管道用于对在订阅事件时对监听函数进行包装，以实现各种常见的高级功能。
 
 ```typescript
-import { queue } from 'fastevent/pipes';
+import { queue } from 'fastevent/pipes';// [!code ++]
 const events = new FastEvent();
 
 //排队处理消息
@@ -277,7 +277,7 @@ events.on(
         console.log('处理数据:', data);
     },
     {
-        pipes: [queue({ size: 10 })],
+        pipes: [queue({ size: 10 })],// [!code ++]
     },
 );
 ```
