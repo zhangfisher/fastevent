@@ -98,7 +98,7 @@ emit<R = any>(
 | `options.retain`      | `boolean`                  | 是否保留消息，如果为`true`，则最后一条消息被保留,详见[保留消息](../../../guide/use/retain-messages.md) |
 | `options.meta`        | `Record<string, any>`      | 事件元数据，用于传递给监听器                                                                           |
 | `options.abortSignal` | `AbortSignal`              | 用于传递给监听器函数,详见[中止监听器](../../../guide/use/abort.md)                                     |
-| `options.executor`    | `FastListenerExecutorArgs` | 用于控制监听器执行行为,详见[执行器](../../../guide/use/executor.md)                                    |
+| `options.executor`    | `FastListenerExecutorArgs` | 用于控制监听器执行行为,详见[执行器](../../../guide/use/executors/index)                                    |
 
 ## 返回值
 

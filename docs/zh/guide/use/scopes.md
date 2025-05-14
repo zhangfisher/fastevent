@@ -133,7 +133,7 @@ const scope = emitter.scope('user', {
 });
 ```
 
-关于执行器的信息请参考[执行器](./executor.md)
+关于执行器的信息请参考[执行器](./executors/index)
 
 ### 类型安全
 

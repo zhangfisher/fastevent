@@ -334,4 +334,4 @@ export type FastEventListenerArgs<M = Record<string, any>> = {
 | `retain`      | `boolean`                  | 是否保留消息，如果为`true`，则最后一条消息被保留,详见[保留消息](./retain-messages.md) |
 | `meta`        | `Record<string, any>`      | 事件元数据，用于传递给监听器                                                          |
 | `abortSignal` | `AbortSignal`              | 用于传递给监听器函数,详见[中止监听器](./abort.md)                                     |
-| `executor`    | `FastListenerExecutorArgs` | 用于控制监听器执行行为,详见[执行器](./executor.md)                                    |
+| `executor`    | `FastListenerExecutorArgs` | 用于控制监听器执行行为,详见[执行器](./executors/index)                                    |

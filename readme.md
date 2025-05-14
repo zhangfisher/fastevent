@@ -299,6 +299,7 @@ events.on(
 `FastEvent` can elegantly forward publishing and subscription to another `FastEvent` instance.
 
 ```ts
+import { expandable } from 'fastevent';
 const otherEmitter = new FastEvent();
 const emitter = new FastEvent({
     onAddListener: (type, listener, options) => {
@@ -311,7 +312,7 @@ const emitter = new FastEvent({
         // Event forwarding rule: when event name starts with `@/`, publish to another `FastEvent` instance
         if (message.type.startsWith('@/')) {
             message.type = message.type.substring(2);
-            return otherEmitter.emit(message, args);
+            return expandable(otherEmitter.emit(message, args));
         }
     },
 });
