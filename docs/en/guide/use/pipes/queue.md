@@ -31,7 +31,7 @@ emitter.on(
 | `overflow` | `'slide' \| 'drop' \| 'throw' \| 'expand'` | `'slide'` | Strategy when queue is full |
 | `expandOverflow` | `'slide' \| 'drop' \| 'throw'` | `'slide'` | Expansion strategy (used when `overflow=expand`) |
 | `maxExpandSize` | `number` | `100` | Maximum expansion size |
-| `onEnter` | `(newMsg, queuedMsgs) => void` |  | Callback function when a new message enters the queue |
+| `onPush` | `(newMsg, queuedMsgs) => void` |  | Callback function when a new message enters the queue |
 | `onDrop` | `(msg) => void` |  | Callback function when a new message is dropped |
 | `lifetime` | `number` | | Specifies the maximum time (in milliseconds) a message is kept in the queue, after which it will be discarded. |
 
@@ -51,16 +51,16 @@ If the queue has already reached `maxExpandSize`, the strategy specified by `exp
 
 ## Queue Entry Callback
 
-The `onEnter` parameter specifies a callback function when a new message enters the queue.
+The `onPush` parameter specifies a callback function when a new message enters the queue.
 
-`onEnter` parameters:
+`onPush` parameters:
 
 | Parameter | Type | Description |
 | --- | --- | --- |
 | `newMsg` | `any` | New message |
 | `queuedMsgs` | `any[]` | Messages in the queue |
 
-The `onEnter` callback can process the message queue when a new message enters.
+The `onPush` callback can process the message queue when a new message enters.
 
 Here's an example of **processing messages by priority**:
 
@@ -73,7 +73,7 @@ emitter.on("test", async (msg) => {
 }, {
     pipes: [queue({
         size: 5,
-        onEnter: (newMsg, queuedMsgs) => {
+        onPush: (newMsg, queuedMsgs) => {
             // Sort by priority, higher priority (larger number) comes first
             const insertIndex = queuedMsgs.findIndex(
                 msg => (msg[0].meta.priority ?? 0) < (newMsg.meta.priority ?? 0)
@@ -106,7 +106,7 @@ return new Promise<void>(resolve => {
 ```
 
 :::warning Note
-The `onEnter` callback is generally used to reprocess the queue, such as sorting, grouping, etc.
+The `onPush` callback is generally used to reprocess the queue, such as sorting, grouping, etc.
 :::
 
 ## Discarding Messages

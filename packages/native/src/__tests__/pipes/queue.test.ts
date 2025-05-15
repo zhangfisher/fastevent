@@ -191,8 +191,8 @@ describe("监听器Pipe操作: Queue", () => {
 
     })
 
-    describe("Queue with options.onEnter", () => {
-        test("应该根据消息优先级顺序处理", () => {
+    describe("Queue with hooks", () => {
+        test("通过onPush实现消息按优先级顺序处理", () => {
             const results: number[] = []
             let first: boolean = true
             emitter.on("test", async (msg) => {
@@ -202,7 +202,7 @@ describe("监听器Pipe操作: Queue", () => {
             }, {
                 pipes: [queue({
                     size: 5,
-                    onEnter: (newMsg, queuedMsgs) => {
+                    onPush: (newMsg, queuedMsgs) => {
                         // 根据priority排序，高优先级（数字大）的排在前面
                         const insertIndex = queuedMsgs.findIndex(
                             msg => (msg[0].meta.priority ?? 0) < (newMsg.meta.priority ?? 0)
@@ -210,6 +210,51 @@ describe("监听器Pipe操作: Queue", () => {
                         queuedMsgs.splice(insertIndex, 0, [newMsg, 0])
                     }
                 })]
+            })
+
+            // 发送不同优先级的消息
+            const promises = [
+                ...emitter.emit("test", 1, { meta: { priority: 1 } }),   //  
+                ...emitter.emit("test", 2, { meta: { priority: 1 } }),   //  低
+                ...emitter.emit("test", 3, { meta: { priority: 3 } }),   //  
+                ...emitter.emit("test", 4, { meta: { priority: 2 } }),   //  
+                ...emitter.emit("test", 5, { meta: { priority: 5 } }),   //  
+                ...emitter.emit("test", 6, { meta: { priority: 4 } }),   //  高
+            ]
+
+            return new Promise<void>(resolve => {
+                vi.runAllTimersAsync()
+                Promise.all(promises).then(() => {
+                    // 验证消息按优先级顺序处理： 
+                    // 第1条消息因为还没有入列，所以先得到处理
+                    expect(results).toEqual([1, 5, 6, 3, 4, 2])
+                }).finally(() => {
+                    resolve()
+                })
+            })
+        })
+        test("通过onPop实现根据消息优先级顺序处理", () => {
+            const results: number[] = []
+            let first: boolean = true
+            emitter.on("test", async (msg) => {
+                await delay(first ? 500 : 10)  // 每个消息处理时间相同
+                first = false
+                results.push(msg.payload)
+            }, {
+                pipes: [queue({
+                    size: 5,
+                    onPop: (queuedMsgs, hasNew) => {
+                        // 自上次pop之后是否有新消息 ，如果有则按优先级重新排序
+                        if (hasNew) {
+                            const sortedMsgs = queuedMsgs.sort(([msg1], [msg2]) => {
+                                return (msg2.meta.priority ?? 0) - (msg1.meta.priority ?? 0)
+                            })
+                            queuedMsgs.splice(0, queuedMsgs.length, ...sortedMsgs)
+                        }
+                        return queuedMsgs.shift()
+                    }
+                })
+                ]
             })
 
             // 发送不同优先级的消息
