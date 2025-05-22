@@ -2,6 +2,7 @@
 import { describe, test, expect } from "vitest"
 import { FastEvent } from "../event"
 import { FastEventListener } from '../types';
+import { FastEventScope } from "../scope";
 
 
 describe("scope", () => {
@@ -390,6 +391,26 @@ describe("scope", () => {
         expect(receiveMeta).toEqual({ root: 1, c: 1, e: 1 })
         fScope.emit("f", 1)
         expect(receiveMeta).toEqual({ root: 1, c: 1, f: 1 })
+
+    })
+    test('创建后绑定scope', async () => {
+
+        const emitter = new FastEvent()
+
+        const scope = new FastEventScope()
+
+        emitter.scope("a/b/c", scope)
+        const events: string[] = []
+        scope.on("x", ({ type }) => {
+            events.push(type)
+        })
+        emitter.onAny(({ type }) => {
+            events.push(type)
+        })
+        scope.emit("x", 1)
+        expect(events).toEqual([
+            "a/b/c/x", "x"
+        ])
 
     })
 })
