@@ -30,7 +30,8 @@ export class FastEventScope<
     types = {
         events: undefined as unknown as Events,
         meta: undefined as unknown as FinalMeta,
-        context: undefined as unknown as Fallback<Context, typeof this>
+        context: undefined as unknown as Fallback<Context, typeof this>,
+        message: undefined as unknown as FastEventMessage<Events, FinalMeta>
     }
     prefix: string = ''
     emitter!: FastEvent<Events>

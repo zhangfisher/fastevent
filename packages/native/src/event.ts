@@ -16,7 +16,8 @@ import {
     DeepPartial,
     FastEventMeta,
     Expand,
-    Dict
+    Dict,
+    OptionalItems
 } from './types';
 import { parseEmitArgs } from './utils/parseEmitArgs';
 import { isPathMatched } from './utils/isPathMatched';
@@ -68,7 +69,8 @@ export class FastEvent<
     types = {
         events: undefined as unknown as AllEvents,
         meta: undefined as unknown as Expand<FastEventMeta & Meta & Record<string, any>>,
-        context: undefined as unknown as Expand<Fallback<Context, typeof this>>
+        context: undefined as unknown as Expand<Fallback<Context, typeof this>>,
+        message: undefined as unknown as FastEventMessage<AllEvents, Expand<FastEventMeta & Meta & Record<string, any>>>
     }
 
     /**

@@ -4,7 +4,7 @@ import { describe, test, expect } from "vitest"
 import type { Equal, Expect, NotAny } from '@type-challenges/utils'
 import { FastEvent } from "../../event"
 import { FastEventScope, FastEventScopeMeta, FastEventScopeOptions } from "../../scope"
-import { ChangeFieldType, FastEventMeta, FastEventOptions, FastEvents, PickScopeEvents, RequiredItems } from "../../types"
+import { ChangeFieldType, FastEventMeta, FastEventOptions, FastEvents, FastMessage, PickScopeEvents, RequiredItems } from "../../types"
 
 declare module "../../types" {
     interface FastEventMeta {
@@ -36,6 +36,7 @@ describe("事件作用域类型测试", () => {
                 Expect<Equal<typeof message.meta.x, number>>,
             ]
         })
+
 
 
     })

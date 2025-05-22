@@ -10,6 +10,13 @@ export interface FaseEventMessageExtends {
 export interface FastEventMeta {
 
 }
+
+export type FastMessage<P = any> = {
+    type: string
+    payload: P
+    meta?: Record<string, any>
+}
+
 export type FastEventMessage<
     Events extends Record<string, any> = Record<string, any>,
     M = any

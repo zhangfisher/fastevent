@@ -64,6 +64,66 @@ declare module 'fastevent' {
 }
 ```
 
+
+## 消息类型
+
+`FastEvent`监听器接收到的是`FastEventMessage`类型，该类型具有类型推断能力。
+
+
+```ts twoslash
+import { FastEvent } from 'fastevent';
+
+type CustomEvents = {
+    click: { x: number; y: number };
+    mousemove: boolean;
+    scroll: number;
+    focus: string;
+};
+const emitter = new FastEvent<CustomEvents>();
+
+emitter.on('click', (message) => {
+    type MessageType = typeof message;
+    message.type; // 'click'
+    message.payload; // { x: number; y: number }
+});
+
+```
+
+`FastEvent`还额外提供了一个`FastMessage`类型用于不需要类型约束的场景。
+
+```ts twoslash
+import { FastEvent,FastMessage } from 'fastevent';
+
+type CustomEvents = {
+    click: { x: number; y: number };
+    mousemove: boolean;
+    scroll: number;
+    focus: string;
+};
+const emitter = new FastEvent<CustomEvents>(); 
+
+// 构建类型推断和约束的消息
+type MessageType = typeof emitter.types.message
+const typedMessage:MessageType = {
+    type:"click",
+    payload: {
+        x:100,
+        y:100
+    }
+}
+// 构建通用的消息
+const message:FastMessage = {
+    type:"click",
+    payload: 100
+}
+emitter.emit(message)
+
+emitter.on('click', (message) => {
+
+})
+
+```
+
 ## 元数据类型
 
 **`FastEvent`可以能自动推断全局元数据类型。**
@@ -191,6 +251,7 @@ const emitter = new FastEvent<CustomEvents, CustomMeta, CustomContext>({
 type EventType = typeof emitter.types.events;
 type MetaType = typeof emitter.types.meta;
 type ContextType = typeof emitter.types.context;
+type MessageType = typeof emitter.types.message;
 
 ```
 
