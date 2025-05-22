@@ -17,6 +17,29 @@ describe("FastEvent元数据类型检查", () => {
         b: string
         c: boolean
     }
+    test("未指定元数据类型", () => {
+        const emitter = new FastEvent()
+        type cases = [
+            Expect<Equal<typeof emitter.options.meta, Record<string, any>>>
+        ]
+        emitter.on("x", (message) => {
+            type cases = [
+                Expect<Equal<typeof message.meta, FastEventMeta & Record<string, any>>>
+            ]
+        })
+        emitter.once("x", (message) => {
+            type cases = [
+                Expect<Equal<typeof message.meta, FastEventMeta & Record<string, any>>>
+            ]
+        })
+
+        emitter.onAny((message) => {
+            type cases = [
+                Expect<Equal<typeof message.meta, FastEventMeta & Record<string, any>>>
+            ]
+        })
+    })
+
     test("全局元数据类型", () => {
         const emitter = new FastEvent<CustomEvents, CustomMeta>()
         type cases = [

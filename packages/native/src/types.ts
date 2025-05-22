@@ -32,7 +32,7 @@ export type FastEventEmitMessage<
         [K in keyof Events]: {
             type: Exclude<K, number | symbol>
             payload?: Events[K]
-            meta?: Partial<FastEventMeta> & M & Record<string, any>
+            meta?: DeepPartial<FastEventMeta & M & Record<string, any>>
         }
     }[Exclude<keyof Events, number | symbol>]
 ) & FaseEventMessageExtends
@@ -162,7 +162,7 @@ export type FastEventListenOptions<
 
 export type FastEventListenerArgs<M = Record<string, any>> = {
     retain?: boolean;
-    meta?: Partial<M> & Record<string, any>;
+    meta?: DeepPartial<M> & Record<string, any>;
     abortSignal?: AbortSignal;               // 用于传递给监听器函数
     /**
      * 
