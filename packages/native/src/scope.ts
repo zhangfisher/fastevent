@@ -1,7 +1,7 @@
 import { FastEventDirectives, UnboundError } from "./consts";
 import type { FastEvent } from "./event";
 import { FastListenerExecutor } from "./executors/types";
-import { FastEventAnyListener, FastEventEmitMessage, FastEventListener, FastEventListenerArgs, FastEventListenOptions, TypedFastEventMessage, FastEventSubscriber, ScopeEvents, FastEventMeta, DeepPartial, Fallback, Dict, TypedFastEventMessageOptional } from './types';
+import { TypedFastEventAnyListener, FastEventEmitMessage, TypedFastEventListener, FastEventListenerArgs, FastEventListenOptions, TypedFastEventMessage, FastEventSubscriber, ScopeEvents, FastEventMeta, DeepPartial, Fallback, Dict, TypedFastEventMessageOptional, FastEventListeners } from './types';
 import { parseEmitArgs } from "./utils/parseEmitArgs";
 import { parseScopeArgs } from "./utils/parseScopeArgs";
 import { renameFn } from "./utils/renameFn";
@@ -11,7 +11,7 @@ export type FastEventScopeOptions<Meta = Record<string, any>, Context = never> =
     context: Context
     executor?: FastListenerExecutor
     // 默认监听器，优先级高类方法onMessage
-    onMessage?: FastEventListener
+    onMessage?: TypedFastEventListener
 }
 
 export type FastEventScopeMeta = {
@@ -31,7 +31,8 @@ export class FastEventScope<
         events: undefined as unknown as Events,
         meta: undefined as unknown as FinalMeta,
         context: undefined as unknown as Fallback<Context, typeof this>,
-        message: undefined as unknown as TypedFastEventMessageOptional<Events, FinalMeta>
+        message: undefined as unknown as TypedFastEventMessageOptional<Events, FinalMeta>,
+        listeners: undefined as unknown as FastEventListeners<Events, FinalMeta>
     }
     prefix: string = ''
     emitter!: FastEvent<Events>
@@ -67,11 +68,11 @@ export class FastEventScope<
      * @returns 包装后的作用域监听器
      * @private
      */
-    private _getScopeListener(listener: FastEventListener): FastEventListener {
+    private _getScopeListener(listener: TypedFastEventListener): TypedFastEventListener {
         const scopePrefix = this.prefix
         if (scopePrefix.length === 0) return listener
         // 如果没有指定监听器，则使用onMessage作为监听器
-        if (!listener) listener = (this._options.onMessage || this.onMessage).bind(this) as FastEventListener
+        if (!listener) listener = (this._options.onMessage || this.onMessage).bind(this) as TypedFastEventListener
         const scopeThis = this
         const scopeListener = renameFn(function (message: TypedFastEventMessage, args: FastEventListenerArgs) {
             if (message.type.startsWith(scopePrefix)) {
@@ -93,9 +94,9 @@ export class FastEventScope<
     public on<T extends string>(type: T, options?: FastEventListenOptions<Events, FinalMeta>): FastEventSubscriber
     public on(type: '**', options?: FastEventListenOptions<Events, FinalMeta>): FastEventSubscriber
     // 传入监听器
-    public on<T extends Types = Types>(type: T, listener: FastEventListener<Exclude<T, number | symbol>, Events[T], FinalMeta, Fallback<Context, typeof this>>, options?: FastEventListenOptions): FastEventSubscriber
-    public on<T extends string>(type: T, listener: FastEventListener<string, any, FinalMeta, Fallback<Context, typeof this>>, options?: FastEventListenOptions): FastEventSubscriber
-    public on(type: '**', listener: FastEventAnyListener<Events, FinalMeta, Fallback<Context, typeof this>>, options?: FastEventListenOptions): FastEventSubscriber
+    public on<T extends Types = Types>(type: T, listener: TypedFastEventListener<Exclude<T, number | symbol>, Events[T], FinalMeta, Fallback<Context, typeof this>>, options?: FastEventListenOptions): FastEventSubscriber
+    public on<T extends string>(type: T, listener: TypedFastEventListener<string, any, FinalMeta, Fallback<Context, typeof this>>, options?: FastEventListenOptions): FastEventSubscriber
+    public on(type: '**', listener: TypedFastEventAnyListener<Events, FinalMeta, Fallback<Context, typeof this>>, options?: FastEventListenOptions): FastEventSubscriber
     public on(): FastEventSubscriber {
         if (!this.emitter) throw new UnboundError()
         const args = [...arguments] as [any, any, any]
@@ -106,20 +107,20 @@ export class FastEventScope<
     public once<T extends Types = Types>(type: T, options?: FastEventListenOptions<Events, FinalMeta>): FastEventSubscriber
     public once<T extends string>(type: T, options?: FastEventListenOptions<Events, FinalMeta>): FastEventSubscriber
 
-    public once<T extends Types = Types>(type: T, listener: FastEventListener<Exclude<T, number | symbol>, Events[T], FinalMeta, Fallback<Context, typeof this>>, options?: FastEventListenOptions): FastEventSubscriber
-    public once<T extends string>(type: T, listener: FastEventListener<string, any, FinalMeta, Fallback<Context, typeof this>>, options?: FastEventListenOptions): FastEventSubscriber
+    public once<T extends Types = Types>(type: T, listener: TypedFastEventListener<Exclude<T, number | symbol>, Events[T], FinalMeta, Fallback<Context, typeof this>>, options?: FastEventListenOptions): FastEventSubscriber
+    public once<T extends string>(type: T, listener: TypedFastEventListener<string, any, FinalMeta, Fallback<Context, typeof this>>, options?: FastEventListenOptions): FastEventSubscriber
     public once(): FastEventSubscriber {
         return this.on(arguments[0], arguments[1], Object.assign({}, arguments[2], { count: 1 }))
     }
 
     onAny(options?: Pick<FastEventListenOptions, 'prepend'>): FastEventSubscriber
-    onAny<P = any>(listener: FastEventAnyListener<{ [K: string]: P }, FinalMeta, Fallback<Context, typeof this>>, options?: Pick<FastEventListenOptions, 'prepend'>): FastEventSubscriber
+    onAny<P = any>(listener: TypedFastEventAnyListener<{ [K: string]: P }, FinalMeta, Fallback<Context, typeof this>>, options?: Pick<FastEventListenOptions, 'prepend'>): FastEventSubscriber
     onAny(): FastEventSubscriber {
         return this.on('**' as any, ...arguments as any)
     }
-    off(listener: FastEventListener<any, any, any>): void
-    off(type: string, listener: FastEventListener<any, any, any>): void
-    off(type: Types, listener: FastEventListener<any, any, any>): void
+    off(listener: TypedFastEventListener<any, any, any>): void
+    off(type: string, listener: TypedFastEventListener<any, any, any>): void
+    off(type: Types, listener: TypedFastEventListener<any, any, any>): void
     off(type: string): void
     off(type: Types): void
     off() {

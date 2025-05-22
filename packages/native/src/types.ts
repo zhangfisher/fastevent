@@ -11,10 +11,10 @@ export interface FastEventMessageExtends {
 
 }
 
-export type FastEventMessage = {
-    type: string
-    payload: any
-    meta?: Record<string, any>
+export type FastEventMessage<P = any, M extends Record<string, any> = Record<string, any>, T extends string = string> = {
+    type: T
+    payload: P
+    meta?: M & Partial<FastEventMeta>
 }
 
 
@@ -63,8 +63,9 @@ export type FastEventEmitMessage<
 ) & DeepPartial<FastEventMessageExtends>
 
 
+
 // 只针对指定类型
-export type FastEventListener<
+export type TypedFastEventListener<
     T extends string = string,
     P = any,
     M = any,
@@ -74,16 +75,34 @@ export type FastEventListener<
 }, M>, args: FastEventListenerArgs<M>) => any | Promise<any>
 
 // 任意事件类型
-export type FastEventAnyListener<
+export type TypedFastEventAnyListener<
     Events extends Record<string, any> = Record<string, any>,
     Meta = never,
     Context = any
 > = (this: Context, message: TypedFastEventMessage<Events, Meta>, args: FastEventListenerArgs<Meta>) => any | Promise<any>
 
+export type FastEventListeners<
+    Events extends Record<string, any> = Record<string, any>,
+    M = any,
+    C = any
+> = (
+        {
+            [K in keyof Events]: TypedFastEventListener<Exclude<K, number | symbol>, Events[K], M, C>
+        }
+    )
+
+
+export type FastEventListener<
+    P = any,
+    M extends Record<string, any> = Record<string, any>,
+    T extends string = string
+> = (message: FastEventMessage<P, M, T>, args: FastEventListenerArgs<M>) => any | Promise<any>
+
+
 /**
  * [监听器函数引用，需要执行多少次，实际执行的次数(用于负载均衡时记录)]
  */
-export type FastListenerMeta = [FastEventListener<any, any>, number, number]
+export type FastListenerMeta = [TypedFastEventListener<any, any>, number, number]
 
 export type FastListenerNode = {
     __listeners: FastListenerMeta[];
@@ -121,7 +140,7 @@ export type FastEventSubscriber = {
      *  scope.off(subscriber.listener) // 生效 
      * 
      */
-    listener: FastEventListener<any, any, any>
+    listener: TypedFastEventListener<any, any, any>
 }
 
 
@@ -139,13 +158,13 @@ export type FastEventOptions<Meta = Record<string, any>, Context = never> = {
     // 额外的全局元数据，当触发事件时传递给监听器
     meta: Meta
     // 当创建新监听器时回调,返回false中止添加监听器
-    onAddListener?: (type: string, listener: FastEventListener, options: FastEventListenOptions<Record<string, any>, Meta>) => boolean | FastEventSubscriber | void
+    onAddListener?: (type: string, listener: TypedFastEventListener, options: FastEventListenOptions<Record<string, any>, Meta>) => boolean | FastEventSubscriber | void
     // 当移除监听器时回调
-    onRemoveListener?: (type: string, listener: FastEventListener) => void
+    onRemoveListener?: (type: string, listener: TypedFastEventListener) => void
     // 当清空监听器时回调
     onClearListeners?: () => void
     // 当监听器函数执行出错时的回调，用于诊断时使用,可以打印错误信息
-    onListenerError?: ((error: Error, listener: FastEventListener, message: TypedFastEventMessage<any, Meta>, args: FastEventListenerArgs<Meta> | undefined) => void)
+    onListenerError?: ((error: Error, listener: TypedFastEventListener, message: TypedFastEventMessage<any, Meta>, args: FastEventListenerArgs<Meta> | undefined) => void)
     // 当执行监听器前时回调,返回false代表取消执行,any[]返回给emit
     onBeforeExecuteListener?: (message: TypedFastEventMessage<any, Meta>, args: FastEventListenerArgs<Meta>) => boolean | void | any[]
     // 当执行监听器后时回调
@@ -155,7 +174,7 @@ export type FastEventOptions<Meta = Record<string, any>, Context = never> = {
      */
     executor?: FastListenerExecutor
     // 默认监听器，优先级高类方法onMessage
-    onMessage?: FastEventListener
+    onMessage?: TypedFastEventListener
     // 是否展开emit返回值,默认为false
     expandEmitResults?: boolean
 }

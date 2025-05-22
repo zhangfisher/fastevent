@@ -1,5 +1,5 @@
 import { QueueOverflowError } from "../consts"
-import { FastEventListener, FastEventListenerArgs, TypedFastEventMessage } from "../types"
+import { TypedFastEventListener, FastEventListenerArgs, TypedFastEventMessage } from "../types"
 import { isFunction } from "../utils/isFunction"
 import { FastListenerPipe } from "./types"
 
@@ -77,7 +77,7 @@ export const queue = (options?: QueueListenerPipeOptions): FastListenerPipe => {
                 return false
         }
     }
-    return (listener: FastEventListener): FastEventListener => {
+    return (listener: TypedFastEventListener): TypedFastEventListener => {
         return async function (message: TypedFastEventMessage<any>, args: FastEventListenerArgs) {
             hasNewMessage = true
             if (isHandling) {

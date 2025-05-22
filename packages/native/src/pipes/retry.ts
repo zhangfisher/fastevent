@@ -1,4 +1,4 @@
-import { FastEventListener, FastEventListenerArgs, TypedFastEventMessage } from "../types"
+import { TypedFastEventListener, FastEventListenerArgs, TypedFastEventMessage } from "../types"
 import { isFunction } from "../utils/isFunction"
 import { FastListenerPipe } from "./types"
 
@@ -16,7 +16,7 @@ export interface RetryListenerPipeOptions {
 export const retry = (count: number, options?: RetryListenerPipeOptions): FastListenerPipe => {
     const { interval = 1000, drop } = options || {}
 
-    return (listener: FastEventListener): FastEventListener => {
+    return (listener: TypedFastEventListener): TypedFastEventListener => {
         return async function (message: TypedFastEventMessage, args: FastEventListenerArgs) {
             let retries = 0
             let lastError: Error | undefined

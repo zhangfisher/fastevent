@@ -1,5 +1,5 @@
 import { FastEvent } from "../event";
-import { FastEventListenerArgs, FastEventSubscriber, FastEventOptions, DeepPartial, FastEventListener, FastEventListenOptions } from '../types';
+import { FastEventListenerArgs, FastEventSubscriber, FastEventOptions, DeepPartial, TypedFastEventListener, FastEventListenOptions } from '../types';
 import { expandable } from "../utils/expandable";
 import { BroadcastEvent, NamespaceDelimiter } from "./consts";
 import type { FastEventBus } from "./eventbus";
@@ -53,7 +53,7 @@ export class FastEventBusNode<
             return this.eventbus!.emit(message, args)
         }
     }
-    private _onAddListener(type: string, listener: FastEventListener, options: FastEventListenOptions) {
+    private _onAddListener(type: string, listener: TypedFastEventListener, options: FastEventListenOptions) {
         // 以::开头代表在其他节点订阅事件
         if (type.includes(NamespaceDelimiter)) {
             const [nodeId, eventName] = type.split(NamespaceDelimiter)

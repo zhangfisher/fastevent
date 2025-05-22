@@ -1,7 +1,7 @@
 // eslint-disable  no-unused-vars
 import { describe, test, expect } from "vitest"
 import { FastEvent } from "../event"
-import { FastEventListener } from '../types';
+import { TypedFastEventListener } from '../types';
 import { FastEventScope } from "../scope";
 
 
@@ -207,7 +207,7 @@ describe("scope", () => {
         const emitter = new FastEvent();
         const listener = (({ type }) => {
             anyEvents.push(type)
-        }) as FastEventListener
+        }) as TypedFastEventListener
 
         emitter.onAny(listener)
 
@@ -256,7 +256,7 @@ describe("scope", () => {
         const emitter = new FastEvent();
         const listener = (({ type }) => {
             anyEvents.push(type)
-        }) as FastEventListener
+        }) as TypedFastEventListener
 
         emitter.onAny(listener)
 
@@ -313,7 +313,7 @@ describe("scope", () => {
         let receiveMeta: any
         const listener = (({ type, meta }, args) => {
             receiveMeta = meta
-        }) as FastEventListener
+        }) as TypedFastEventListener
 
         emitter.onAny(listener)
 
@@ -352,7 +352,7 @@ describe("scope", () => {
     test('nested scope with meta', async () => {
         const listener = (({ type, meta }) => {
             receiveMeta = meta
-        }) as FastEventListener
+        }) as TypedFastEventListener
 
         const emitter = new FastEvent({
             meta: { 'root': 1 }

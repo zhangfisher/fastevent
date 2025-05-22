@@ -3,7 +3,7 @@
 import { describe, test, expect } from "vitest"
 import type { Equal, Expect } from '@type-challenges/utils'
 import { FastEvent } from "../../event"
-import { FastEvents, FastEventMessageExtends, FastEventMessage } from "../../types"
+import { FastEvents, FastEventMessageExtends, FastEventMessage, FastEventListener, TypedFastEventListener } from "../../types"
 
 
 describe("types", () => {
@@ -110,9 +110,9 @@ describe("types", () => {
 
 
         // 构建通用的消息
-        const message: FastEventMessage = {
+        const message: FastEventMessage<string> = {
             type: "click",
-            payload: 100
+            payload: "100"
         }
         emitter.emit(message)
 
@@ -120,6 +120,44 @@ describe("types", () => {
 
         })
     })
+    test("所有监听器类型", () => {
+
+        type CustomMeta = { x: number; y: number; z?: number };
+        type CustomEvents = {
+            click: { x: number; y: number };
+            mousemove: boolean;
+            scroll: number;
+            focus: string;
+        };
+        type CustomContext = {
+            name: string,
+            age: number
+            address: string
+        };
+        const emitter = new FastEvent<CustomEvents, CustomMeta, CustomContext>({
+            context: {
+                name: "hello",
+                age: 18,
+                address: "beijing"
+            }
+        });
+
+        type ListenerTypes = typeof emitter.types.listeners
+
+        type cases = [
+            Expect<Equal<ListenerTypes['click'], TypedFastEventListener<"click", {
+                x: number;
+                y: number;
+            }, {
+                [x: string]: any;
+                x: number;
+                y: number;
+                z?: number | undefined;
+            }, any>
+            >>
+        ]
+    })
+
 })
 
 

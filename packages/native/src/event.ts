@@ -1,13 +1,13 @@
 import { FastEventScope, type FastEventScopeOptions } from './scope';
 import {
-    FastEventListener,
+    TypedFastEventListener,
     FastEventOptions,
     FastListeners,
     FastListenerNode,
     FastEventSubscriber,
     FastEventListenOptions,
     TypedFastEventMessage,
-    FastEventAnyListener,
+    TypedFastEventAnyListener,
     Fallback,
     FastEventEmitMessage,
     FastEventListenerArgs,
@@ -16,7 +16,8 @@ import {
     DeepPartial,
     FastEventMeta,
     Expand,
-    TypedFastEventMessageOptional
+    TypedFastEventMessageOptional,
+    FastEventListeners
 } from './types';
 import { parseEmitArgs } from './utils/parseEmitArgs';
 import { isPathMatched } from './utils/isPathMatched';
@@ -69,7 +70,8 @@ export class FastEvent<
         events: undefined as unknown as AllEvents,
         meta: undefined as unknown as Expand<FastEventMeta & Meta & Record<string, any>>,
         context: undefined as unknown as Expand<Fallback<Context, typeof this>>,
-        message: undefined as unknown as TypedFastEventMessageOptional<AllEvents, Expand<FastEventMeta & Meta & Record<string, any>>>
+        message: undefined as unknown as TypedFastEventMessageOptional<AllEvents, Expand<FastEventMeta & Meta & Record<string, any>>>,
+        listeners: undefined as unknown as FastEventListeners<AllEvents, Expand<FastEventMeta & Meta & Record<string, any>>>
     }
 
     /**
@@ -126,7 +128,7 @@ export class FastEvent<
      * @returns [节点, 监听器索引] - 返回监听器所在节点和在节点监听器列表中的索引
      * @private
      */
-    private _addListener(parts: string[], listener: FastEventListener<any, any>, options: Required<FastEventListenOptions>): [FastListenerNode | undefined, number] {
+    private _addListener(parts: string[], listener: TypedFastEventListener<any, any>, options: Required<FastEventListenOptions>): [FastListenerNode | undefined, number] {
         const { count, prepend } = options
         let index: number = 0
         const node = this._forEachNodes(parts, (node) => {
@@ -185,7 +187,7 @@ export class FastEvent<
      * @param listener - 需要移除的事件监听器
      * @description 遍历节点的监听器列表,移除所有匹配的监听器。支持移除普通函数和数组形式的监听器
      */
-    private _removeListener(node: FastListenerNode, path: string[], listener: FastEventListener<any, any, any>): void {
+    private _removeListener(node: FastListenerNode, path: string[], listener: TypedFastEventListener<any, any, any>): void {
         if (!listener) return
         removeItem(node.__listeners, (item: any) => {
             item = Array.isArray(item) ? item[0] : item
@@ -199,7 +201,7 @@ export class FastEvent<
             return isRemove
         })
     }
-    private _pipeListener(listener: FastEventListener<any, any, any, any>, pipes: FastListenerPipe[]): FastEventListener<any, any, any, any> {
+    private _pipeListener(listener: TypedFastEventListener<any, any, any, any>, pipes: FastListenerPipe[]): TypedFastEventListener<any, any, any, any> {
         pipes.forEach(decorator => {
             listener = renameFn(decorator(listener), listener.name)
         })
@@ -234,9 +236,9 @@ export class FastEvent<
     public on<T extends string>(type: T, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber
     public on(type: '**', options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber
 
-    public on<T extends Types = Types>(type: T, listener: FastEventListener<Exclude<T, number | symbol>, AllEvents[T], Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber
-    public on<T extends string>(type: T, listener: FastEventAnyListener<AllEvents, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber
-    public on(type: '**', listener: FastEventAnyListener<Record<string, any>, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber
+    public on<T extends Types = Types>(type: T, listener: TypedFastEventListener<Exclude<T, number | symbol>, AllEvents[T], Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber
+    public on<T extends string>(type: T, listener: TypedFastEventAnyListener<AllEvents, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber
+    public on(type: '**', listener: TypedFastEventAnyListener<Record<string, any>, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber
     public on(): FastEventSubscriber {
         const type = arguments[0] as string
         let listener = isFunction(arguments[1]) ? arguments[1] : (this._options.onMessage || this.onMessage).bind(this)
@@ -266,7 +268,7 @@ export class FastEvent<
 
         if (isFunction(options.filter) || isFunction(options.off)) {
             const oldListener = listener
-            listener = renameFn<FastEventListener>(function (message, args) {
+            listener = renameFn<TypedFastEventListener>(function (message, args) {
                 // 如果满足条件就退订
                 if (isFunction(options.off) && options.off.call(this, message, args)) {
                     off()
@@ -312,8 +314,8 @@ export class FastEvent<
      */
     public once<T extends Types = Types>(type: T, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber
     public once<T extends string>(type: T, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber
-    public once<T extends Types = Types>(type: T, listener: FastEventListener<Exclude<T, number | symbol>, AllEvents[T], Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber
-    public once<T extends string>(type: T, listener: FastEventAnyListener<AllEvents, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber
+    public once<T extends Types = Types>(type: T, listener: TypedFastEventListener<Exclude<T, number | symbol>, AllEvents[T], Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber
+    public once<T extends string>(type: T, listener: TypedFastEventAnyListener<AllEvents, Meta, Fallback<Context, typeof this>>, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber
     public once(): FastEventSubscriber {
         if (isFunction(arguments[1])) {
             return this.on(arguments[0], arguments[1], Object.assign({}, arguments[2], { count: 1 }))
@@ -337,7 +339,7 @@ export class FastEvent<
      * ```listener: FastEventAnyListener<AllEvents, Meta, Fallback<Context, typeof this>>): FastEventSubscriber
      */
     onAny(options?: Omit<FastEventListenOptions<AllEvents, Meta>, 'count'>): FastEventSubscriber
-    onAny<P = any>(listener: FastEventAnyListener<Record<string, P>, Meta, Fallback<Context, typeof this>>, options?: Omit<FastEventListenOptions<AllEvents, Meta>, 'count'>): FastEventSubscriber
+    onAny<P = any>(listener: TypedFastEventAnyListener<Record<string, P>, Meta, Fallback<Context, typeof this>>, options?: Omit<FastEventListenOptions<AllEvents, Meta>, 'count'>): FastEventSubscriber
     onAny(): FastEventSubscriber {
         return this.on("**", arguments[0], arguments[1])
     }
@@ -352,9 +354,9 @@ export class FastEvent<
     onMessage(message: TypedFastEventMessage<AllEvents, Meta>, args: FastEventListenerArgs<Meta>) {
 
     }
-    off(listener: FastEventListener<any, any, any>): void
-    off(type: string, listener: FastEventListener<any, any, any>): void
-    off(type: Types, listener: FastEventListener<any, any, any>): void
+    off(listener: TypedFastEventListener<any, any, any>): void
+    off(type: string, listener: TypedFastEventListener<any, any, any>): void
+    off(type: Types, listener: TypedFastEventListener<any, any, any>): void
     off(type: string): void
     off(type: Types): void
     off() {
@@ -542,7 +544,7 @@ export class FastEvent<
         traverseNodes(entryNode, callback, []);
     }
 
-    private _onListenerError(listener: FastEventListener, message: TypedFastEventMessage, args: FastEventListenerArgs<any> | undefined, e: any) {
+    private _onListenerError(listener: TypedFastEventListener, message: TypedFastEventMessage, args: FastEventListenerArgs<any> | undefined, e: any) {
         if (e instanceof Error) {
             // @ts-ignore
             e._emitter = `${listener.name || 'anonymous'}:${message.type}`
@@ -575,7 +577,7 @@ export class FastEvent<
      *   - 如果配置了ignoreErrors，返回错误对象
      *   - 否则抛出错误
      */
-    private _executeListener(listener: FastEventListener<any, any>, message: TypedFastEventMessage, args: FastEventListenerArgs<any> | undefined, catchErrors: boolean = false): Promise<any> | any {
+    private _executeListener(listener: TypedFastEventListener<any, any>, message: TypedFastEventMessage, args: FastEventListenerArgs<any> | undefined, catchErrors: boolean = false): Promise<any> | any {
         try {
             // 如果传入已经aborted的abortSignal，则直接返回
             if (args && args.abortSignal && args.abortSignal.aborted) {

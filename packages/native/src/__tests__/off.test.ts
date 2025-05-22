@@ -1,6 +1,6 @@
 import { describe, test, expect } from "vitest"
 import { FastEvent } from "../event"
-import { FastEventListener } from '../types';
+import { TypedFastEventListener } from '../types';
 
 
 describe("退订事件", () => {
@@ -91,7 +91,7 @@ describe("退订事件", () => {
     test("根据事件类型和监听器进行退订", () => {
         const emitter = new FastEvent()
         const events: string[] = []
-        const listener: FastEventListener<string, number> = (({ payload, type }) => {
+        const listener: TypedFastEventListener<string, number> = (({ payload, type }) => {
             expect(type).toBe("x")
             expect(payload).toBe(1)
             events.push(type)
@@ -105,7 +105,7 @@ describe("退订事件", () => {
     test("多级事件根据事件类型和监听器进行退订", () => {
         const emitter = new FastEvent()
         const events: string[] = []
-        const listener: FastEventListener<string, number> = (({ payload, type }) => {
+        const listener: TypedFastEventListener<string, number> = (({ payload, type }) => {
             expect(type).toBe("a/b/c/d")
             expect(payload).toBe(1)
             events.push(type)
@@ -122,7 +122,7 @@ describe("退订事件", () => {
     test("通配符事件退订", () => {
         const emitter = new FastEvent()
         const events: string[] = []
-        const listener: FastEventListener<string, number> = ({ payload, type }) => {
+        const listener: TypedFastEventListener<string, number> = ({ payload, type }) => {
             expect(type).toBe("a/b/c/d")
             expect(payload).toBe(1)
             events.push(type)
@@ -139,7 +139,7 @@ describe("退订事件", () => {
     test("退订指定的监听器", () => {
         const emitter = new FastEvent()
         const events: string[] = []
-        const listener: FastEventListener<string, number> = ({ payload, type }) => {
+        const listener: TypedFastEventListener<string, number> = ({ payload, type }) => {
             expect(type).toBe("a/b/c/d")
             expect(payload).toBe(1)
             events.push(type)
@@ -159,7 +159,7 @@ describe("退订事件", () => {
     test("退订指定的事件时不指定监听器", () => {
         const emitter = new FastEvent()
         const events: string[] = []
-        const listener: FastEventListener<string, number> = ({ payload, type }) => {
+        const listener: TypedFastEventListener<string, number> = ({ payload, type }) => {
             events.push(type)
         }
         emitter.on("a", listener)
@@ -180,7 +180,7 @@ describe("退订事件", () => {
     test("退订所有监听器", () => {
         const emitter = new FastEvent()
         const events: string[] = []
-        const listener: FastEventListener<string, number> = ({ payload, type }) => {
+        const listener: TypedFastEventListener<string, number> = ({ payload, type }) => {
             events.push(type)
         }
         emitter.on("a", listener)
@@ -205,7 +205,7 @@ describe("退订事件", () => {
     test("退订含通配符的事件", () => {
         const emitter = new FastEvent()
         const events: string[] = []
-        const listener: FastEventListener<string, number> = ({ payload, type }) => {
+        const listener: TypedFastEventListener<string, number> = ({ payload, type }) => {
             events.push(type)
         }
         emitter.on("a", listener)
@@ -230,7 +230,7 @@ describe("退订事件", () => {
     test("退订含通配符的事件", () => {
         const emitter = new FastEvent()
         const events: string[] = []
-        const listener: FastEventListener<string, number> = ({ payload, type }) => {
+        const listener: TypedFastEventListener<string, number> = ({ payload, type }) => {
             events.push(type)
         }
         emitter.on("a/*", listener)
@@ -252,7 +252,7 @@ describe("退订事件", () => {
     test("退订多层含通配符的事件", () => {
         const emitter = new FastEvent()
         const events: string[] = []
-        const listener: FastEventListener<string, number> = ({ payload, type }) => {
+        const listener: TypedFastEventListener<string, number> = ({ payload, type }) => {
             events.push(type)
         }
         emitter.on("a/*", listener)

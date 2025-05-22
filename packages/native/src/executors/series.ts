@@ -1,4 +1,4 @@
-import { FastEventListener, FastEventListenerArgs, TypedFastEventMessage } from "../types"
+import { TypedFastEventListener, FastEventListenerArgs, TypedFastEventMessage } from "../types"
 import { isString } from "../utils"
 import { isFunction } from "../utils/isFunction"
 import { FastListenerExecutor } from "./types"
@@ -40,7 +40,7 @@ export const series = (options?: SeriesExecutorOptions): FastListenerExecutor =>
         listeners.forEach(listener => listener[2]--)
         for (let i = 0; i < listeners.length; i++) {
             const item = listeners[reverse ? listeners.length - 1 - i : i]
-            const listener = item[0] as FastEventListener<any, any, any>
+            const listener = item[0] as TypedFastEventListener<any, any, any>
             try {
                 if (isFunction(onNext) && onNext(++index, stepResult, message, args, results) === false) {
                     break

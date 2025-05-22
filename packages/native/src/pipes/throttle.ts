@@ -1,4 +1,4 @@
-import { FastEventListener, FastEventListenerArgs, TypedFastEventMessage } from "../types"
+import { TypedFastEventListener, FastEventListenerArgs, TypedFastEventMessage } from "../types"
 import { FastListenerPipe } from "./types"
 
 export interface ThrottleOptions {
@@ -15,7 +15,7 @@ export interface ThrottleOptions {
  * @returns 装饰器函数
  */
 export const throttle = (interval: number, options?: ThrottleOptions): FastListenerPipe => {
-    return (listener: FastEventListener): FastEventListener => {
+    return (listener: TypedFastEventListener): TypedFastEventListener => {
         let lastExecutionTime = 0
 
         return async function (message: TypedFastEventMessage, args: FastEventListenerArgs) {

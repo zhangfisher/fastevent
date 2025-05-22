@@ -1,4 +1,4 @@
-import { FastEventListener, FastEventListenerArgs, TypedFastEventMessage } from "../types"
+import { TypedFastEventListener, FastEventListenerArgs, TypedFastEventMessage } from "../types"
 import { FastListenerPipe } from "./types"
 
 export interface DebounceOptions {
@@ -15,7 +15,7 @@ export interface DebounceOptions {
  * @returns 装饰器函数
  */
 export const debounce = (ms: number, options?: DebounceOptions): FastListenerPipe => {
-    return (listener: FastEventListener): FastEventListener => {
+    return (listener: TypedFastEventListener): TypedFastEventListener => {
         let isBlocked = false
         let timeoutId: any = null
 

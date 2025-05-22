@@ -67,8 +67,13 @@ declare module 'fastevent' {
 
 ## 消息类型
 
-`FastEvent`监听器接收到的是`TypedFastEventMessage`类型，该类型具有类型推断能力。
+`FastEvent`提供三种类型用于处理类型化的消息：
 
+- `TypedFastEventMessage`类型
+- `FastEventMessage`类型
+- `typeof FastEvent.types.message`类型
+
+`FastEvent`监听器接收到的是`TypedFastEventMessage`类型，该类型具有类型推断能力。
 
 ```ts twoslash
 import { FastEvent } from 'fastevent';
@@ -89,7 +94,33 @@ emitter.on('click', (message) => {
 
 ```
 
-`FastEvent`还额外提供了一个`FastMessage`类型用于不需要类型约束的场景。
+
+如果需要构建一个受约束的消息，可以使用`typeof FastEvent.types.message`。
+
+```ts twoslash
+import { FastEvent,FastEventMessage } from 'fastevent';
+
+type CustomEvents = {
+    click: { x: number; y: number };
+    mousemove: boolean;
+    scroll: number;
+    focus: string;
+};
+
+const emitter = new FastEvent<CustomEvents>(); 
+
+// 构建类型推断和约束的消息
+type MessageType = typeof emitter.types.message // [!code ++]
+const typedMessage:MessageType = {
+    type:"click",
+    payload: {
+        x:100,
+        y:100
+    }
+} 
+
+```
+`FastEvent`还额外提供了一个`FastEventMessage`类型用于不需要类型约束的场景。
 
 ```ts twoslash
 import { FastEvent,FastEventMessage } from 'fastevent';
@@ -101,16 +132,7 @@ type CustomEvents = {
     focus: string;
 };
 const emitter = new FastEvent<CustomEvents>(); 
-
-// 构建类型推断和约束的消息
-type MessageType = typeof emitter.types.message
-const typedMessage:MessageType = {
-    type:"click",
-    payload: {
-        x:100,
-        y:100
-    }
-}
+ 
 // 构建通用的消息，没有类型推断和约束
 const message:FastEventMessage = {
     type:"click",
@@ -221,6 +243,33 @@ emitter.on('click', function (message) {
 // 
 // 
 ``` 
+
+
+## 监听器类型
+
+`FastEvent`提供以下监听器函数类型。
+
+- `TypedFastEventListener`
+
+
+```ts twoslash
+import { FastEvent,FastEventMessage } from 'fastevent';
+
+type CustomEvents = {
+    click: { x: number; y: number };
+    mousemove: boolean;
+    scroll: number;
+    focus: string;
+};
+const emitter = new FastEvent<CustomEvents>(); 
+  
+type ClickListener = typeof emitter.types.listeners['click']
+
+```
+
+- `TypedFastEventAnyListener`
+- `FastEventListener`
+
 
 ## 检索类型
 
