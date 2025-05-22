@@ -2,7 +2,7 @@
 import { describe, test, expect } from "vitest"
 import type { Equal, Expect, NotAny } from '@type-challenges/utils'
 import { FastEvent } from "../../event"
-import { FastEventMessage, FastEventMeta, PickScopeEvents, ScopeEvents } from "../../types"
+import { TypedFastEventMessage, FastEventMeta, PickScopeEvents, ScopeEvents } from "../../types"
 import { FastEventScopeMeta } from "../../scope"
 import { FastEventBus } from "../../eventbus"
 import { E } from "vitest/dist/chunks/environment.d.Dmw5ulng.js"
@@ -47,7 +47,7 @@ describe("类型系统测试", () => {
             c: boolean
         }
 
-        type CustomMessage = FastEventMessage<CustomEvents, CustomMeta>
+        type CustomMessage = TypedFastEventMessage<CustomEvents, CustomMeta>
         const emitter = new FastEvent<CustomEvents, CustomMeta>()
 
         test("on方法应正确推导事件类型和元数据", () => {

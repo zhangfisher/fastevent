@@ -1,10 +1,10 @@
-import { FastEventListener, FastEventListenerArgs, FastEventMessage } from "../types"
+import { FastEventListener, FastEventListenerArgs, TypedFastEventMessage } from "../types"
 import { isFunction } from "../utils/isFunction"
 import { FastListenerPipe } from "./types"
 
 export interface RetryListenerPipeOptions {
     interval?: number | ((retryCount: number) => number) // 重试间隔，默认1000ms
-    drop?: (message: FastEventMessage, error: Error) => void // 所有重试失败后的回调
+    drop?: (message: TypedFastEventMessage, error: Error) => void // 所有重试失败后的回调
 }
 
 /**
@@ -17,7 +17,7 @@ export const retry = (count: number, options?: RetryListenerPipeOptions): FastLi
     const { interval = 1000, drop } = options || {}
 
     return (listener: FastEventListener): FastEventListener => {
-        return async function (message: FastEventMessage, args: FastEventListenerArgs) {
+        return async function (message: TypedFastEventMessage, args: FastEventListenerArgs) {
             let retries = 0
             let lastError: Error | undefined
             while (retries <= count) {

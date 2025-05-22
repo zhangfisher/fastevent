@@ -1,4 +1,4 @@
-import { FastEventListener, FastEventListenerArgs, FastEventMessage } from "../types"
+import { FastEventListener, FastEventListenerArgs, TypedFastEventMessage } from "../types"
 import { isString } from "../utils"
 import { isFunction } from "../utils/isFunction"
 import { FastListenerExecutor } from "./types"
@@ -20,9 +20,9 @@ export type SeriesExecutorOptions = {
     onReturns?: (results: any, cur: any) => any
     // 当调用下一个监听器前执行,返回false或触发错误均不再执行后续的监听器
     // 可以在此修改message
-    onNext?: (index: number, previous: any, message: FastEventMessage, args: FastEventListenerArgs, results: any) => boolean
+    onNext?: (index: number, previous: any, message: TypedFastEventMessage, args: FastEventListenerArgs, results: any) => boolean
     // 当执行监听器出错时的回调，返回false中止后续执行
-    onError?: 'skip' | 'abort' | 'error' | ((e: any, message: FastEventMessage, args: FastEventListenerArgs) => void | 'skip' | 'abort' | 'error')
+    onError?: 'skip' | 'abort' | 'error' | ((e: any, message: TypedFastEventMessage, args: FastEventListenerArgs) => void | 'skip' | 'abort' | 'error')
 }
 
 export const series = (options?: SeriesExecutorOptions): FastListenerExecutor => {

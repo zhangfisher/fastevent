@@ -1,4 +1,4 @@
-import { FastEventListener, FastEventListenerArgs, FastEventMessage } from "../types"
+import { FastEventListener, FastEventListenerArgs, TypedFastEventMessage } from "../types"
 import type { FastListenerPipe } from "./types"
 
 /**
@@ -6,13 +6,13 @@ import type { FastListenerPipe } from "./types"
  * @param predicate 可选的判断函数，用于决定是否使用缓存
  * @returns FastListenerPipe
  */
-export function memorize(predicate?: (message: FastEventMessage, args: FastEventListenerArgs) => boolean | Promise<boolean>): FastListenerPipe {
+export function memorize(predicate?: (message: TypedFastEventMessage, args: FastEventListenerArgs) => boolean | Promise<boolean>): FastListenerPipe {
     let lastResult: any = undefined
     let hasResult = false
     let lastPayload: any = undefined
     let hasPredicate = typeof (predicate) === 'function'
     return function (listener: FastEventListener): FastEventListener {
-        return async function (message: FastEventMessage, args: FastEventListenerArgs) {
+        return async function (message: TypedFastEventMessage, args: FastEventListenerArgs) {
             if (hasResult) {
                 // 如果有自定义判断函数，使用它来决定是否使用缓存
                 if (typeof (predicate) === 'function') {

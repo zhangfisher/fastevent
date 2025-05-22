@@ -6,7 +6,7 @@ import {
     FastListenerNode,
     FastEventSubscriber,
     FastEventListenOptions,
-    FastEventMessage,
+    TypedFastEventMessage,
     FastEventAnyListener,
     Fallback,
     FastEventEmitMessage,
@@ -16,8 +16,7 @@ import {
     DeepPartial,
     FastEventMeta,
     Expand,
-    Dict,
-    OptionalItems
+    TypedFastEventMessageOptional
 } from './types';
 import { parseEmitArgs } from './utils/parseEmitArgs';
 import { isPathMatched } from './utils/isPathMatched';
@@ -70,7 +69,7 @@ export class FastEvent<
         events: undefined as unknown as AllEvents,
         meta: undefined as unknown as Expand<FastEventMeta & Meta & Record<string, any>>,
         context: undefined as unknown as Expand<Fallback<Context, typeof this>>,
-        message: undefined as unknown as FastEventMessage<AllEvents, Expand<FastEventMeta & Meta & Record<string, any>>>
+        message: undefined as unknown as TypedFastEventMessageOptional<AllEvents, Expand<FastEventMeta & Meta & Record<string, any>>>
     }
 
     /**
@@ -350,7 +349,7 @@ export class FastEvent<
      * 
      */
     //  eslint-disable-next-line
-    onMessage(message: FastEventMessage<AllEvents, Meta>, args: FastEventListenerArgs<Meta>) {
+    onMessage(message: TypedFastEventMessage<AllEvents, Meta>, args: FastEventListenerArgs<Meta>) {
 
     }
     off(listener: FastEventListener<any, any, any>): void
@@ -460,7 +459,7 @@ export class FastEvent<
      * 4. 执行所有匹配到的监听器
      */
     private _emitRetainMessage(type: string, listenerNode: FastListenerNode | undefined, index: number) {
-        let messages = [] as FastEventMessage[]
+        let messages = [] as TypedFastEventMessage[]
         if (type.includes('*')) {
             // 找出所有保留的消息
             const patterns = type.split(this._delimiter)
@@ -543,7 +542,7 @@ export class FastEvent<
         traverseNodes(entryNode, callback, []);
     }
 
-    private _onListenerError(listener: FastEventListener, message: FastEventMessage, args: FastEventListenerArgs<any> | undefined, e: any) {
+    private _onListenerError(listener: FastEventListener, message: TypedFastEventMessage, args: FastEventListenerArgs<any> | undefined, e: any) {
         if (e instanceof Error) {
             // @ts-ignore
             e._emitter = `${listener.name || 'anonymous'}:${message.type}`
@@ -576,7 +575,7 @@ export class FastEvent<
      *   - 如果配置了ignoreErrors，返回错误对象
      *   - 否则抛出错误
      */
-    private _executeListener(listener: FastEventListener<any, any>, message: FastEventMessage, args: FastEventListenerArgs<any> | undefined, catchErrors: boolean = false): Promise<any> | any {
+    private _executeListener(listener: FastEventListener<any, any>, message: TypedFastEventMessage, args: FastEventListenerArgs<any> | undefined, catchErrors: boolean = false): Promise<any> | any {
         try {
             // 如果传入已经aborted的abortSignal，则直接返回
             if (args && args.abortSignal && args.abortSignal.aborted) {
@@ -613,7 +612,7 @@ export class FastEvent<
      */
     private _executeListeners(
         nodes: FastListenerNode[],
-        message: FastEventMessage,
+        message: TypedFastEventMessage,
         args: FastEventListenerArgs<Meta>,
         filter?: (listener: FastListenerMeta, node: FastListenerNode) => boolean
     ): any[] {
@@ -844,16 +843,16 @@ export class FastEvent<
      * console.log('服务器就绪');
      * ```
      */
-    public waitFor<T extends Types>(type: T, timeout?: number): Promise<FastEventMessage<{ [key in T]: AllEvents[T] }, Meta>>
-    public waitFor(type: string, timeout?: number): Promise<FastEventMessage<AllEvents, Meta>>
-    public waitFor<P = any>(type: string, timeout?: number): Promise<FastEventMessage<{ [key: string]: P }, Meta>>
-    public waitFor(): Promise<FastEventMessage<AllEvents, Meta>> {
+    public waitFor<T extends Types>(type: T, timeout?: number): Promise<TypedFastEventMessage<{ [key in T]: AllEvents[T] }, Meta>>
+    public waitFor(type: string, timeout?: number): Promise<TypedFastEventMessage<AllEvents, Meta>>
+    public waitFor<P = any>(type: string, timeout?: number): Promise<TypedFastEventMessage<{ [key: string]: P }, Meta>>
+    public waitFor(): Promise<TypedFastEventMessage<AllEvents, Meta>> {
         const type = arguments[0] as any
         const timeout = arguments[1] as number
-        return new Promise<FastEventMessage<AllEvents, Meta>>((resolve, reject) => {
+        return new Promise<TypedFastEventMessage<AllEvents, Meta>>((resolve, reject) => {
             let tid: any
             let subscriber: FastEventSubscriber
-            const listener = (message: FastEventMessage<AllEvents, Meta>) => {
+            const listener = (message: TypedFastEventMessage<AllEvents, Meta>) => {
                 clearTimeout(tid)
                 subscriber.off()
                 resolve(message)

@@ -3,21 +3,22 @@ import { type FastListenerPipe } from "./pipes/types"
 
 
 
-export interface FaseEventMessageExtends {
-
-}
 // 用来扩展全局Meta类型
 export interface FastEventMeta {
 
 }
+export interface FastEventMessageExtends {
 
-export type FastMessage<P = any> = {
+}
+
+export type FastEventMessage = {
     type: string
-    payload: P
+    payload: any
     meta?: Record<string, any>
 }
 
-export type FastEventMessage<
+
+export type TypedFastEventMessage<
     Events extends Record<string, any> = Record<string, any>,
     M = any
 > = (
@@ -28,7 +29,24 @@ export type FastEventMessage<
             meta: FastEventMeta & M & Record<string, any>
         }
     }[Exclude<keyof Events, number | symbol>]
-) & FaseEventMessageExtends
+) & DeepPartial<FastEventMessageExtends>
+
+
+// 用于构建消息时使用，meta是可选的
+export type TypedFastEventMessageOptional<
+    Events extends Record<string, any> = Record<string, any>,
+    M = any
+> = (
+    {
+        [K in keyof Events]: {
+            type: Exclude<K, number | symbol>
+            payload: Events[K]
+            meta?: DeepPartial<FastEventMeta & M & Record<string, any>>
+        }
+    }[Exclude<keyof Events, number | symbol>]
+) & DeepPartial<FastEventMessageExtends>
+
+
 
 // 用于emit方法使用
 export type FastEventEmitMessage<
@@ -42,7 +60,7 @@ export type FastEventEmitMessage<
             meta?: DeepPartial<FastEventMeta & M & Record<string, any>>
         }
     }[Exclude<keyof Events, number | symbol>]
-) & FaseEventMessageExtends
+) & DeepPartial<FastEventMessageExtends>
 
 
 // 只针对指定类型
@@ -51,7 +69,7 @@ export type FastEventListener<
     P = any,
     M = any,
     C = any
-> = (this: C, message: FastEventMessage<{
+> = (this: C, message: TypedFastEventMessage<{
     [K in T]: P
 }, M>, args: FastEventListenerArgs<M>) => any | Promise<any>
 
@@ -60,7 +78,7 @@ export type FastEventAnyListener<
     Events extends Record<string, any> = Record<string, any>,
     Meta = never,
     Context = any
-> = (this: Context, message: FastEventMessage<Events, Meta>, args: FastEventListenerArgs<Meta>) => any | Promise<any>
+> = (this: Context, message: TypedFastEventMessage<Events, Meta>, args: FastEventListenerArgs<Meta>) => any | Promise<any>
 
 /**
  * [监听器函数引用，需要执行多少次，实际执行的次数(用于负载均衡时记录)]
@@ -127,11 +145,11 @@ export type FastEventOptions<Meta = Record<string, any>, Context = never> = {
     // 当清空监听器时回调
     onClearListeners?: () => void
     // 当监听器函数执行出错时的回调，用于诊断时使用,可以打印错误信息
-    onListenerError?: ((error: Error, listener: FastEventListener, message: FastEventMessage<any, Meta>, args: FastEventListenerArgs<Meta> | undefined) => void)
+    onListenerError?: ((error: Error, listener: FastEventListener, message: TypedFastEventMessage<any, Meta>, args: FastEventListenerArgs<Meta> | undefined) => void)
     // 当执行监听器前时回调,返回false代表取消执行,any[]返回给emit
-    onBeforeExecuteListener?: (message: FastEventMessage<any, Meta>, args: FastEventListenerArgs<Meta>) => boolean | void | any[]
+    onBeforeExecuteListener?: (message: TypedFastEventMessage<any, Meta>, args: FastEventListenerArgs<Meta>) => boolean | void | any[]
     // 当执行监听器后时回调
-    onAfterExecuteListener?: (message: FastEventMessage<any, Meta>, returns: any[], listeners: FastListenerNode[]) => void
+    onAfterExecuteListener?: (message: TypedFastEventMessage<any, Meta>, returns: any[], listeners: FastListenerNode[]) => void
     /**
      * 全局执行器 
      */
@@ -159,9 +177,9 @@ export type FastEventListenOptions<
     count?: number
     // 将监听器添加到监听器列表的头部
     prepend?: boolean
-    filter?: (message: FastEventMessage<Events, Meta>, args: FastEventListenerArgs<Meta>) => boolean
+    filter?: (message: TypedFastEventMessage<Events, Meta>, args: FastEventListenerArgs<Meta>) => boolean
     // 当执行监听器前，如果此函数返回true则自动注销监听
-    off?: (message: FastEventMessage<Events, Meta>, args: FastEventListenerArgs<Meta>) => boolean
+    off?: (message: TypedFastEventMessage<Events, Meta>, args: FastEventListenerArgs<Meta>) => boolean
     // 对监听器函数进行包装装饰，返回包装后的函数
     pipes?: FastListenerPipe[]
 }
@@ -182,7 +200,7 @@ export type FastEventListenerArgs<M = Record<string, any>> = {
     /**
      * 当emit参数解析完成后的回调，用于修改emit参数
      */
-    parseArgs?: (message: FastEventMessage, args: FastEventListenerArgs) => void
+    parseArgs?: (message: TypedFastEventMessage, args: FastEventListenerArgs) => void
 }
 
 export type Merge<T extends object, U extends object> = {

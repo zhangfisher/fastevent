@@ -1,4 +1,4 @@
-import { FastEventMessage } from "../types"
+import { TypedFastEventMessage } from "../types"
 import { series, SeriesExecutorOptions } from "./series"
 import { FastListenerExecutor } from "./types"
 
@@ -21,7 +21,7 @@ export const waterfall = (options?: WaterfallExecutorOptions): FastListenerExecu
         // 出错时不再执行后续的监听器
         onError: 'abort',
         // 将结果作为payload传给下一个监听器
-        onNext: (index: number, previous: any, message: FastEventMessage) => {
+        onNext: (index: number, previous: any, message: TypedFastEventMessage) => {
             message.payload = previous
         }
     }) as unknown as SeriesExecutorOptions)

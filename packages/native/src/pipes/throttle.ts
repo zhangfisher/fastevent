@@ -1,11 +1,11 @@
-import { FastEventListener, FastEventListenerArgs, FastEventMessage } from "../types"
+import { FastEventListener, FastEventListenerArgs, TypedFastEventMessage } from "../types"
 import { FastListenerPipe } from "./types"
 
 export interface ThrottleOptions {
     /**
      * 当消息被丢弃时的回调函数
      */
-    drop?: (message: FastEventMessage) => void
+    drop?: (message: TypedFastEventMessage) => void
 }
 
 /**
@@ -18,7 +18,7 @@ export const throttle = (interval: number, options?: ThrottleOptions): FastListe
     return (listener: FastEventListener): FastEventListener => {
         let lastExecutionTime = 0
 
-        return async function (message: FastEventMessage, args: FastEventListenerArgs) {
+        return async function (message: TypedFastEventMessage, args: FastEventListenerArgs) {
             const now = Date.now()
             const timeSinceLastExecution = now - lastExecutionTime
 

@@ -1,14 +1,14 @@
 import { describe, expect, test } from 'vitest';
 import { FastEvent } from '../event';
 import { FastEventScope } from '../scope';
-import { FastEventMessage } from '../types';
+import { TypedFastEventMessage } from '../types';
 
 describe('onMessage测试', () => {
     describe('FastEvent类', () => {
         test('on方法未指定监听器时应调用onMessage', () => {
             class CustomEvent extends FastEvent {
                 onMessageCalled = false;
-                onMessage(message: FastEventMessage) {
+                onMessage(message: TypedFastEventMessage) {
                     this.onMessageCalled = true;
                 }
             }
@@ -25,7 +25,7 @@ describe('onMessage测试', () => {
         test('once方法未指定监听器时应调用onMessage', () => {
             class CustomEvent extends FastEvent {
                 onMessageCalled = false;
-                onMessage(message: FastEventMessage) {
+                onMessage(message: TypedFastEventMessage) {
                     this.onMessageCalled = true;
                     message.type
                 }
@@ -49,7 +49,7 @@ describe('onMessage测试', () => {
             class CustomEvent extends FastEvent {
                 onMessageCalled = false;
                 onMessageType = '';
-                onMessage(message: FastEventMessage) {
+                onMessage(message: TypedFastEventMessage) {
                     this.onMessageCalled = true;
                     this.onMessageType = message.type;
                 }
@@ -72,8 +72,8 @@ describe('onMessage测试', () => {
 
         test('继承FastEvent并重写onMessage方法应正确处理事件', () => {
             class CustomEvent extends FastEvent {
-                messages: FastEventMessage[] = [];
-                onMessage(message: FastEventMessage) {
+                messages: TypedFastEventMessage[] = [];
+                onMessage(message: TypedFastEventMessage) {
                     this.messages.push(message);
                 }
             }
@@ -96,7 +96,7 @@ describe('onMessage测试', () => {
         test('Scope类on方法未指定监听器时应调用onMessage', () => {
             class CustomScope extends FastEventScope {
                 onMessageCalled = false;
-                onMessage(message: FastEventMessage) {
+                onMessage(message: TypedFastEventMessage) {
                     expect(this).toBeInstanceOf(CustomScope)
                     this.onMessageCalled = true;
                 }
@@ -113,7 +113,7 @@ describe('onMessage测试', () => {
         test('Scope类once方法未指定监听器时应调用onMessage', () => {
             class CustomScope extends FastEventScope {
                 onMessageCalled = false;
-                onMessage(message: FastEventMessage) {
+                onMessage(message: TypedFastEventMessage) {
                     this.onMessageCalled = true;
                     message.type
                 }
@@ -133,7 +133,7 @@ describe('onMessage测试', () => {
             class CustomScope extends FastEventScope {
                 onMessageCalled = false;
                 onMessageType = '';
-                onMessage(message: FastEventMessage) {
+                onMessage(message: TypedFastEventMessage) {
                     this.onMessageCalled = true;
                     this.onMessageType = message.type;
                 }

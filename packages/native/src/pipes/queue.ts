@@ -1,5 +1,5 @@
 import { QueueOverflowError } from "../consts"
-import { FastEventListener, FastEventListenerArgs, FastEventMessage } from "../types"
+import { FastEventListener, FastEventListenerArgs, TypedFastEventMessage } from "../types"
 import { isFunction } from "../utils/isFunction"
 import { FastListenerPipe } from "./types"
 
@@ -23,12 +23,12 @@ export type QueueListenerPipeOptions = {
     // =0不启用此机制，当消息在队列中的时间到达lifetime（ms）后，自动丢弃
     lifetime?: number
     // 当新消息到达时触发此回调，可以用来处理新消息，转让默认是采用push操作
-    onPush?: (newMessage: FastEventMessage, messages: [FastEventMessage, number][]) => void
+    onPush?: (newMessage: TypedFastEventMessage, messages: [TypedFastEventMessage, number][]) => void
     // 当消息被弹出时触发此回调，可以在此消息队列进行排序等操作
     // hasNew: 自上次pop弹出消息后，是否有新的消息入列
-    onPop?: (messages: [FastEventMessage, number][], hasNew: boolean) => [FastEventMessage, number] | undefined
+    onPop?: (messages: [TypedFastEventMessage, number][], hasNew: boolean) => [TypedFastEventMessage, number] | undefined
     // 当消息被丢弃时触发此回调
-    onDrop?: (message: FastEventMessage) => void
+    onDrop?: (message: TypedFastEventMessage) => void
 }
 
 
@@ -41,12 +41,12 @@ export const queue = (options?: QueueListenerPipeOptions): FastListenerPipe => {
         lifetime: 0
     }, options)
 
-    let buffer: [FastEventMessage, number][] = []
+    let buffer: [TypedFastEventMessage, number][] = []
     let currentSize = size      // 当前缓冲区大小
     let isHandling = false     // 是否正在处理缓冲区中的消息
     let hasNewMessage: boolean = false
 
-    const pushMessage = (message: FastEventMessage) => {
+    const pushMessage = (message: TypedFastEventMessage) => {
         if (isFunction(onPush)) {
             onPush(message, buffer)
         } else {
@@ -54,7 +54,7 @@ export const queue = (options?: QueueListenerPipeOptions): FastListenerPipe => {
         }
     }
 
-    const handleOverflow = (message: FastEventMessage): boolean => {
+    const handleOverflow = (message: TypedFastEventMessage): boolean => {
         // 如果已达到最大大小且当前策略为expand，使用expandOverflow策略
         const strategy = (buffer.length >= maxExpandSize && overflow === 'expand') ? expandOverflow : overflow
         switch (strategy) {
@@ -78,7 +78,7 @@ export const queue = (options?: QueueListenerPipeOptions): FastListenerPipe => {
         }
     }
     return (listener: FastEventListener): FastEventListener => {
-        return async function (message: FastEventMessage<any>, args: FastEventListenerArgs) {
+        return async function (message: TypedFastEventMessage<any>, args: FastEventListenerArgs) {
             hasNewMessage = true
             if (isHandling) {
                 // 如果正在处理消息，尝试将新消息添加到缓冲区

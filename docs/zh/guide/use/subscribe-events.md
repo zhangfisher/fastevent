@@ -84,15 +84,8 @@ emitter.on('event', function (this, message, args) {
 
 FastEvent 使用标准化的消息格式处理所有事件，确保一致性和可扩展性。
 
-所有事件监听器都会接收到一个标准格式的消息对象`FastEventMessage`：
-
-```typescript
-interface FastEventMessage<T = string, P = any, M = Record<string, unknown>> {
-    type: T; // 事件类型标识符
-    payload: P; // 事件携带的数据
-    meta: M; // 事件元数据
-}
-```
+所有事件监听器都会接收到一个标准格式的消息对象`TypedFastEventMessage`。
+`TypedFastEventMessage`具备类型推断能力，能根据`FastEvent`实例时提供的泛型推断消息对象的`type`/`payload`/`meta`。
 
 -   **字段详解**
 
@@ -102,14 +95,15 @@ interface FastEventMessage<T = string, P = any, M = Record<string, unknown>> {
 | `payload` | `any`                     | 事件携带的数据 |
 | `meta`    | `Record<string, unknown>` | 事件元数据     |
 
+
 -   **消息扩展**
 
-`FastEvent`使用`FastEventMessage`作为消息对象，你可以使用`FastEventMessageExtends`接口来扩展消息对象。
+可以使用`FastEventMessageExtends`接口来扩展消息对象。
 
 `FaseEventMessageExtend`接口用于扩展消息对象，你可以使用它来添加自定义字段：
 
 ```typescript
-declare module 'fast-event' {
+declare module 'fastevent' {
     interface FastEventMessageExtends {
         // 自定义字段
     }

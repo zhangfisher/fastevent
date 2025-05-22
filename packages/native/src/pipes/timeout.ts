@@ -1,5 +1,5 @@
 import { TimeoutError } from "../consts"
-import { FastEventListener, FastEventListenerArgs, FastEventMessage } from "../types"
+import { FastEventListener, FastEventListenerArgs, TypedFastEventMessage } from "../types"
 import { FastListenerPipe } from "./types"
 
 /**
@@ -10,7 +10,7 @@ import { FastListenerPipe } from "./types"
  */
 export const timeout = <T = any>(ms: number, defaultValue?: T): FastListenerPipe => {
     return (listener: FastEventListener): FastEventListener => {
-        return async function (message: FastEventMessage, args: FastEventListenerArgs) {
+        return async function (message: TypedFastEventMessage, args: FastEventListenerArgs) {
             let timeoutId: any
 
             const timeoutPromise = new Promise((resolve, reject) => {

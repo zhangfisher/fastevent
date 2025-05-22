@@ -1,6 +1,6 @@
 import { describe, test, expect, vi } from "vitest"
 import { FastEvent } from "../../event"
-import { FastEventMessage } from "../../types"
+import { TypedFastEventMessage } from "../../types"
 import { waterfall } from "../../executors"
 
 describe("waterfall执行器测试", () => {
@@ -10,7 +10,7 @@ describe("waterfall执行器测试", () => {
         const payloads: any[] = []
 
         const listeners = Array.from({ length: 10 }).map((_, i) => {
-            return async (message: FastEventMessage) => {
+            return async (message: TypedFastEventMessage) => {
                 payloads.push(message.payload)
                 return i
             }
@@ -31,7 +31,7 @@ describe("waterfall执行器测试", () => {
         const payloads: any[] = []
 
         const listeners = Array.from({ length: 10 }).map((_, i) => {
-            return async (message: FastEventMessage) => {
+            return async (message: TypedFastEventMessage) => {
                 payloads.push(message.payload)
                 if (i === 5) throw new Error("test")
                 return i

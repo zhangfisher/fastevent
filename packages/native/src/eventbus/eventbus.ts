@@ -44,7 +44,7 @@
 
 import { FastEventDirectives } from "../consts";
 import { FastEvent } from "../event";
-import { Expand, FastEventListenerArgs, FastEventMessage } from '../types';
+import { Expand, FastEventListenerArgs, TypedFastEventMessage } from '../types';
 import { NodeDataEvent } from "./consts";
 import type { FastEventBusNode } from "./node";
 import { FastEventBusEvents, FastEventBusMessage, FastEventBusOptions } from "./types";
@@ -127,7 +127,7 @@ export class FastEventBus<
      */
     send<R = any>(message: FastEventBusMessage, args?: FastEventListenerArgs): R[] {
         message.type = `${message.to}${this.options.delimiter}${NodeDataEvent}`
-        return this.emit(message as FastEventMessage, args as any)[0]
+        return this.emit(message as TypedFastEventMessage, args as any)[0]
     }
 
 } 

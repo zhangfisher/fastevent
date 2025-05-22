@@ -1,7 +1,7 @@
 import { FastEventDirectives, UnboundError } from "./consts";
 import type { FastEvent } from "./event";
 import { FastListenerExecutor } from "./executors/types";
-import { FastEventAnyListener, FastEventEmitMessage, FastEventListener, FastEventListenerArgs, FastEventListenOptions, FastEventMessage, FastEventSubscriber, ScopeEvents, FastEventMeta, DeepPartial, Fallback, Dict } from './types';
+import { FastEventAnyListener, FastEventEmitMessage, FastEventListener, FastEventListenerArgs, FastEventListenOptions, TypedFastEventMessage, FastEventSubscriber, ScopeEvents, FastEventMeta, DeepPartial, Fallback, Dict, TypedFastEventMessageOptional } from './types';
 import { parseEmitArgs } from "./utils/parseEmitArgs";
 import { parseScopeArgs } from "./utils/parseScopeArgs";
 import { renameFn } from "./utils/renameFn";
@@ -31,7 +31,7 @@ export class FastEventScope<
         events: undefined as unknown as Events,
         meta: undefined as unknown as FinalMeta,
         context: undefined as unknown as Fallback<Context, typeof this>,
-        message: undefined as unknown as FastEventMessage<Events, FinalMeta>
+        message: undefined as unknown as TypedFastEventMessageOptional<Events, FinalMeta>
     }
     prefix: string = ''
     emitter!: FastEvent<Events>
@@ -73,7 +73,7 @@ export class FastEventScope<
         // 如果没有指定监听器，则使用onMessage作为监听器
         if (!listener) listener = (this._options.onMessage || this.onMessage).bind(this) as FastEventListener
         const scopeThis = this
-        const scopeListener = renameFn(function (message: FastEventMessage, args: FastEventListenerArgs) {
+        const scopeListener = renameFn(function (message: TypedFastEventMessage, args: FastEventListenerArgs) {
             if (message.type.startsWith(scopePrefix)) {
                 return listener.call(scopeThis.context, Object.assign({}, message, {
                     type: message.type.substring(scopePrefix.length)
@@ -156,11 +156,11 @@ export class FastEventScope<
             this.options.executor
         )
         message.type = this._getScopeType(message.type)!
-        return this.emitter.emit(message as FastEventMessage<Events, FinalMeta>, options)
+        return this.emitter.emit(message as TypedFastEventMessage<Events, FinalMeta>, options)
     }
     public async emitAsync<R = any>(type: string, payload?: any, options?: FastEventListenerArgs<FinalMeta>): Promise<[R | Error][]>
     public async emitAsync<R = any>(type: Types, payload?: Events[Types], options?: FastEventListenerArgs<FinalMeta>): Promise<[R | Error][]>
-    public async emitAsync<R = any>(message: FastEventMessage<Events, FinalMeta>, options?: FastEventListenerArgs<FinalMeta>): Promise<[R | Error][]>
+    public async emitAsync<R = any>(message: TypedFastEventMessage<Events, FinalMeta>, options?: FastEventListenerArgs<FinalMeta>): Promise<[R | Error][]>
     public async emitAsync<R = any>(): Promise<[R | Error][]> {
         const results = await Promise.allSettled(this.emit.apply(this, arguments as any))
         return results.map((result) => {
@@ -172,17 +172,17 @@ export class FastEventScope<
         })
     }
 
-    public async waitFor<T extends Types>(type: T, timeout?: number): Promise<FastEventMessage<{ [key in T]: Events[T] }, FinalMeta>>
-    public async waitFor(type: string, timeout?: number): Promise<FastEventMessage<{ [key: string]: any }, FinalMeta>>
-    public async waitFor<P = any>(type: string, timeout?: number): Promise<FastEventMessage<{ [key: string]: P }, FinalMeta>>
-    public async waitFor(): Promise<FastEventMessage<Events, FinalMeta>> {
+    public async waitFor<T extends Types>(type: T, timeout?: number): Promise<TypedFastEventMessage<{ [key in T]: Events[T] }, FinalMeta>>
+    public async waitFor(type: string, timeout?: number): Promise<TypedFastEventMessage<{ [key: string]: any }, FinalMeta>>
+    public async waitFor<P = any>(type: string, timeout?: number): Promise<TypedFastEventMessage<{ [key: string]: P }, FinalMeta>>
+    public async waitFor(): Promise<TypedFastEventMessage<Events, FinalMeta>> {
         const type = arguments[0] as string
         const timeout = arguments[1] as number
         const message = await this.emitter.waitFor(this._getScopeType(type)!, timeout)
         const scopeMessage = Object.assign({}, message, {
             type: this._fixScopeType(message.type)
         })
-        return scopeMessage as unknown as FastEventMessage<Events, FinalMeta>
+        return scopeMessage as unknown as TypedFastEventMessage<Events, FinalMeta>
     }
     /**
      * 创建一个新的作用域实例
@@ -250,7 +250,7 @@ export class FastEventScope<
      * @param message 
      */
     //  eslint-disable-next-line
-    onMessage(message: FastEventMessage<Events, FinalMeta>, args: FastEventListenerArgs<FinalMeta>) {
+    onMessage(message: TypedFastEventMessage<Events, FinalMeta>, args: FastEventListenerArgs<FinalMeta>) {
 
     }
 }

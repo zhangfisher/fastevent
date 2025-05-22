@@ -3,7 +3,7 @@
 import { describe, test, expect } from "vitest"
 import type { Equal, Expect } from '@type-challenges/utils'
 import { FastEvent } from "../../event"
-import { FastEvents, FastMessage } from "../../types"
+import { FastEvents, FastEventMessageExtends, FastEventMessage } from "../../types"
 
 
 describe("types", () => {
@@ -51,13 +51,13 @@ describe("types", () => {
 
         // 构建类型推断和约束的消息
         type MessageType = typeof emitter.types.message
+
         const typedMessage: MessageType = {
             type: "click",
             payload: {
                 x: 100,
                 y: 100
-            },
-            meta: {} as any
+            }
         }
 
 
@@ -72,7 +72,45 @@ describe("types", () => {
 
 
         // 构建通用的消息
-        const message: FastMessage = {
+        const message: FastEventMessage = {
+            type: "click",
+            payload: 100
+        }
+        emitter.emit(message)
+
+        emitter.on('click', (message) => {
+
+        })
+    })
+    test("消息类型约束2", () => {
+
+
+        const emitter = new FastEvent();
+
+        // 构建类型推断和约束的消息
+        type MessageType = typeof emitter.types.message
+
+        const typedMessage: MessageType = {
+            type: "click",
+            payload: {
+                x: 100,
+                y: 100
+            }
+        }
+
+
+        emitter.emit({
+            type: "click",
+            payload: {
+                x: 100,
+                y: 100
+            }
+        })
+
+
+
+        // 构建通用的消息
+        const message: FastEventMessage = {
             type: "click",
             payload: 100
         }

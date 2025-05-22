@@ -1,11 +1,11 @@
-import { FastEventListener, FastEventListenerArgs, FastEventMessage } from "../types"
+import { FastEventListener, FastEventListenerArgs, TypedFastEventMessage } from "../types"
 import { FastListenerPipe } from "./types"
 
 export interface DebounceOptions {
     /**
      * 当消息被丢弃时的回调函数
      */
-    drop?: (message: FastEventMessage) => void
+    drop?: (message: TypedFastEventMessage) => void
 }
 
 /**
@@ -19,7 +19,7 @@ export const debounce = (ms: number, options?: DebounceOptions): FastListenerPip
         let isBlocked = false
         let timeoutId: any = null
 
-        return async function (message: FastEventMessage, args: FastEventListenerArgs) {
+        return async function (message: TypedFastEventMessage, args: FastEventListenerArgs) {
             // 如果当前处于防抖动时间内，丢弃消息
             if (isBlocked) {
                 if (options?.drop) {
