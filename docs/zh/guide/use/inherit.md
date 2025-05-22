@@ -6,7 +6,7 @@
 ## 继承FastEvent
 
 ```ts twoslash
-import { FastEvent, FastEventOptions,OverrideOptions } from 'fastevent'
+import { FastEvent, FastEventOptions } from 'fastevent'
 interface MyEventOptions extends FastEventOptions {
     count?: number
 }
@@ -15,7 +15,7 @@ class MyEvent extends FastEvent {
         super(Object.assign({}, options))
     }
     get options() {
-        return super.options as OverrideOptions<MyEventOptions> // [!code ++]
+        return super.options as MyEventOptions // [!code ++]
     }
 }
 
@@ -27,12 +27,12 @@ type OptionsType = typeof emitter.options
 emitter.options.count = 100
 ```
 
-- 以上`MyEvent`继承了`FastEvent`，并且重载了`Options`选项，重载时需要使用`OverrideOptions<T>`对类型进行重定义。
+- 以上`MyEvent`继承了`FastEvent`，并且重载了`Options`选项。
 
 **当创建`FastEvent`实例时，如何传入`context`参数，则情况有些不一样。**
 
 ```ts twoslash
-import { FastEvent, FastEventOptions,OverrideOptions } from 'fastevent'
+import { FastEvent, FastEventOptions } from 'fastevent'
 interface MyEventOptions extends FastEventOptions {
     count?: number
 }
@@ -40,30 +40,26 @@ class MyEvent extends FastEvent {
     constructor(options?: Partial<MyEventOptions>) {
         super(Object.assign({}, options))
     }
-    get options() {
-        return super.options as OverrideOptions<MyEventOptions> // [!code ++]
-    }
 }
-
 const emitter = new MyEvent({
-    context: { a: 1 }
+    context: { a: 1 } as never
 })
 emitter.on('test', function (this, message) {
    type This = typeof this   // [!code error]
    // This !== {a:1}
+   // This == MyEvent
 })  
-type OptionsType = typeof emitter.options
-emitter.options.count = 100 
+type OptionsType = typeof emitter.options 
 ```
 
-**为什么监听器函数的`this`类型不是`{a:1}`呢？**
+**上例中，为什么监听器函数的`this`实际指向的是`{a:1}`,但是类型却不是`{a:1}`呢？**
 
-因为`MyEvent`虽然继承了`FastEvent`，但是没有为`options.context`提供泛型推断。
+因为`MyEvent`虽然继承了`FastEvent`，但是由于`context`是一个泛型参数，没有传递给`FastEvent`，导致`context=never`。
 
 所以需要修改如下：
 
 ```ts twoslash
-import { FastEvent, FastEventOptions,OverrideOptions } from 'fastevent'
+import { FastEvent, FastEventOptions } from 'fastevent'
 interface MyEventOptions<M, C> extends FastEventOptions<M, C> {
     count?: number
 }
@@ -76,7 +72,7 @@ class MyEvent<E extends Record<string, any> = Record<string, any>,
         super(Object.assign({}, options))
     }
     get options() {
-        return super.options as OverrideOptions<MyEventOptions<M, C>>
+        return super.options as MyEventOptions<M, C>
     }
 }
 
@@ -128,7 +124,7 @@ class MyScope<E extends Record<string, any> = MyScopeEvents,
         return 100
     }
     get options() {
-        return super.options as OverrideOptions<MyScopeOptions<M, C>>
+        return super.options as MyScopeOptions<M, C>
     }
 }
 

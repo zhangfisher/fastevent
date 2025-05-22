@@ -1,28 +1,26 @@
 /* eslint-disable no-unused-vars */
 
-import { describe, test, expect } from "vitest"
-import type { Equal, Expect, NotAny } from '@type-challenges/utils'
+import { describe, test } from "vitest"
+import type { Equal, Expect } from '@type-challenges/utils'
 import { FastEvent } from "../../event"
 import { FastEventScope, FastEventScopeMeta, FastEventScopeOptions } from "../../scope"
-import { ChangeFieldType, FastEventMeta, FastEventOptions, OverrideOptions } from "../../types"
-
-
-
+import { Dict, FastEventMeta, FastEventOptions, OverrideOptions } from "../../types"
 
 describe("继承FastEvent类型系统", () => {
 
     test("默认继承方式", () => {
-        interface MyEventOptions extends FastEventOptions {
+        interface MyEventOptions<Meta = Record<string, any>, Context = never> extends FastEventOptions<Meta, Context> {
             count?: number
         }
-        class MyEvent extends FastEvent {
-            constructor(options?: Partial<MyEventOptions>) {
+        class MyEvent<Events extends Dict = Dict, Meta extends Dict = Dict, Context = never> extends FastEvent<Events, Meta, Context> {
+            constructor(options?: Partial<MyEventOptions<Meta, Context>>) {
                 super(Object.assign({}, options))
             }
             get options() {
-                return super.options as OverrideOptions<MyEventOptions>
+                return super.options as MyEventOptions<Meta, Context>
             }
         }
+
         const myemitter1 = new MyEvent()
         myemitter1.on('test', function (this, message) {
             type cases = [
@@ -35,13 +33,55 @@ describe("继承FastEvent类型系统", () => {
         const myemitter2 = new MyEvent({
             context: { a: 1 }
         })
-        myemitter2.on('test', function (this, message) {
+
+        myemitter2.on('test', function (this, message, args) {
             type cases = [
                 // 没有指向{a:1}，因为没有传递泛型参数
-                Expect<Equal<typeof this, MyEvent>>,
+                Expect<Equal<typeof this, { a: number }>>,
                 Expect<Equal<typeof message.type, 'test'>>
             ]
         })
+    })
+    test("类继承时传入context", () => {
+        interface MyEventOptions extends FastEventOptions {
+            count?: number
+        }
+        type ctx = MyEventOptions['context']
+        class MyEvent extends FastEvent {
+            constructor(options?: Partial<MyEventOptions>) {
+                super(Object.assign({}, options))
+            }
+        }
+        const emitter = new MyEvent({
+            context: { a: 1 } as never
+        })
+        emitter.on('test', function (this, message) {
+            type This = typeof this   // [!code error]
+            // This !== {a:1}
+        })
+    })
+    test("类继承", () => {
+        interface MyEventOptions extends FastEventOptions {
+            count?: number
+        }
+        class MyEvent extends FastEvent {
+            constructor(options?: Partial<MyEventOptions>) {
+                super(Object.assign({}, options))
+            }
+            get options() {
+                return super.options as MyEventOptions
+            }
+        }
+
+        const emitter = new MyEvent()
+        emitter.on('test', function (this, message) {
+            type cases = [
+                Expect<Equal<typeof this, MyEvent>>,
+            ]
+        })
+        type cases = [
+            Expect<Equal<typeof emitter.options, MyEventOptions>>,
+        ]
     })
     test("继承时提供泛型参数", () => {
         type MyScopeEvents = {

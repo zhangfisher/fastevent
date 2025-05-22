@@ -2,6 +2,8 @@
 import { describe, test } from "vitest"
 import type { Equal, Expect } from '@type-challenges/utils'
 import { FastEvent } from "../../event"
+import { FastEventScope, FastEventScopeOptions } from "../../scope"
+import { OverrideOptions } from "../../types"
 
 describe("事件继承类型测试", () => {
     test("基本子类继承类型", () => {
@@ -184,6 +186,34 @@ describe("事件继承类型测试", () => {
                 Expect<Equal<typeof message.payload, any>>
             ]
         })
+    })
+    test("继承时FastEventScope时覆盖重载Options", () => {
+
+        type BaseEvents = {
+            a: number
+            b: string
+            c: boolean
+        }
+        type ChildEvents = {
+            x: 1
+            y: 2
+            z: 3
+        }
+        type MyOptions = {
+            a: number
+            b: string
+            c: boolean
+        }
+        class MyEventScope extends FastEventScope<ChildEvents & BaseEvents> {
+            constructor(options?: MyOptions & FastEventScopeOptions) {
+                super(options)
+            }
+            get options() {
+                return super.options as MyOptions & FastEventScopeOptions
+            }
+        }
+        const scope = new MyEventScope()
+        scope.options
     })
     // TODO: 解决继承时的动态泛型问题
     // test("动态传递事件类型给基类进行类型合并", () => {

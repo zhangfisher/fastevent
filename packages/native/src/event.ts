@@ -15,7 +15,8 @@ import {
     FastEvents,
     DeepPartial,
     FastEventMeta,
-    Expand
+    Expand,
+    Dict
 } from './types';
 import { parseEmitArgs } from './utils/parseEmitArgs';
 import { isPathMatched } from './utils/isPathMatched';
@@ -90,7 +91,7 @@ export class FastEvent<
             ignoreErrors: true,
             meta: undefined,
             expandEmitResults: true
-        }, options) as FastEventOptions<Meta, Context>
+        }, this._initOptions(options)) as unknown as FastEventOptions<Meta, Context>
         this._delimiter = this._options.delimiter!
         this._context = this._options.context as Context
         this._enableDevTools()
@@ -102,6 +103,18 @@ export class FastEvent<
     get meta() { return this.options.meta }
     /** 获取事件发射器的唯一标识符 */
     get id() { return this._options.id! }
+
+    /**
+     * 初始化选项
+     * 
+     * 本方法主要供子类重载
+     * 
+     * @param initial - 可选的初始字典对象
+     * @returns 返回传入的初始字典对象
+     */
+    _initOptions(initial?: Partial<FastEventOptions<Meta, Context>>) {
+        return initial
+    }
     /**
      * 添加事件监听器到事件树中
      * @param parts - 事件路径数组

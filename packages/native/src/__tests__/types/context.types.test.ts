@@ -2,8 +2,8 @@
 import { describe, test, expect } from "vitest"
 import type { Equal, Expect, NotAny } from '@type-challenges/utils'
 import { FastEvent } from "../../event"
-import { FastEventScope, FastEventScopeMeta, FastEventScopeOptions } from "../../scope"
-import { FastEventMeta, OverrideOptions } from "../../types"
+import { FastEventScope, FastEventScopeMeta } from "../../scope"
+import { FastEventMeta } from "../../types"
 
 describe("类型系统测试", () => {
     test("未指定上下文时应使用默认上下文类型", () => {
@@ -46,7 +46,23 @@ describe("类型系统测试", () => {
             ]
         })
     })
+    // test("作用域继承未指定上下文时的类型推导", () => {
+    //     const emitter = new FastEvent()
+    //     const withoutCtxScope = emitter.scope("x/y/z")
+    //     type withoutScopeCtx = Expect<Equal<typeof withoutCtxScope.options.context, never>>
 
+    //     withoutCtxScope.on("xxx", function (this, message) {
+    //         type cases = [
+    //             Expect<Equal<typeof this, FastEventScope>>
+    //         ]
+    //     })
+
+    //     withoutCtxScope.once("xxx", function (this, message) {
+    //         type cases = [
+    //             Expect<Equal<typeof this, FastEventScope>>
+    //         ]
+    //     })
+    // })
     test("作用域继承上下文时的类型推导", () => {
         const emitter = new FastEvent({
             context: {

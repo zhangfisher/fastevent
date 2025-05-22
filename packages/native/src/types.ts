@@ -102,7 +102,7 @@ export type FastEventSubscriber = {
 
 export type FastListeners = FastListenerNode
 
-export type FastEventOptions<Meta = Record<string, any>, Context = any> = {
+export type FastEventOptions<Meta = Record<string, any>, Context = never> = {
     id: string
     debug: boolean
     // 事件分隔符

@@ -1,12 +1,12 @@
 import { FastEventDirectives, UnboundError } from "./consts";
 import type { FastEvent } from "./event";
 import { FastListenerExecutor } from "./executors/types";
-import { FastEventAnyListener, FastEventEmitMessage, FastEventListener, FastEventListenerArgs, FastEventListenOptions, FastEventMessage, FastEventSubscriber, ScopeEvents, FastEventMeta, DeepPartial, Fallback } from './types';
+import { FastEventAnyListener, FastEventEmitMessage, FastEventListener, FastEventListenerArgs, FastEventListenOptions, FastEventMessage, FastEventSubscriber, ScopeEvents, FastEventMeta, DeepPartial, Fallback, Dict } from './types';
 import { parseEmitArgs } from "./utils/parseEmitArgs";
 import { parseScopeArgs } from "./utils/parseScopeArgs";
 import { renameFn } from "./utils/renameFn";
 
-export type FastEventScopeOptions<Meta = Record<string, any>, Context = any> = {
+export type FastEventScopeOptions<Meta = Record<string, any>, Context = never> = {
     meta: FastEventScopeMeta & FastEventMeta & Meta
     context: Context
     executor?: FastListenerExecutor
@@ -35,7 +35,7 @@ export class FastEventScope<
     prefix: string = ''
     emitter!: FastEvent<Events>
     constructor(options?: DeepPartial<FastEventScopeOptions<FinalMeta, Context>>) {
-        this._options = Object.assign({}, options) as unknown as FastEventScopeOptions<FinalMeta, Context>
+        this._options = Object.assign({}, this._initOptions(options)) as unknown as FastEventScopeOptions<FinalMeta, Context>
     }
     get context(): Fallback<Context, typeof this> { return (this.options.context || this) as Fallback<Context, typeof this> }
     get options() { return this._options as FastEventScopeOptions<FinalMeta, Context> }
@@ -47,6 +47,17 @@ export class FastEventScope<
         if (prefix.length > 0 && !prefix.endsWith(emitter.options.delimiter!)) {
             this.prefix = prefix + emitter.options.delimiter
         }
+    }
+    /**
+     * 初始化选项
+     * 
+     * 本方法主要供子类重载
+     * 
+     * @param initial - 可选的初始字典对象
+     * @returns 返回传入的初始字典对象
+     */
+    _initOptions(initial: Dict | undefined) {
+        return initial
     }
     /**
      * 获取作用域监听器
