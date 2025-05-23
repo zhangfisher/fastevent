@@ -73,7 +73,7 @@ export class FlexEventDevTools {
                 results.push(...cur.__listeners)
                 return results
             }, [])
-                .map((listener, i) => `${listener[0].name || 'anonymous'}(${listener[2]}) -> ${results[i]}`)
+                .map((listener, i) => `${listener[0].name || 'anonymous'}(${listener[2]}) -> ${results[i]} ${listener[3] ? `(tag=${listener[3]})` : ''}`)
 
             console.log(`FastEvent<\x1B[31m${message.type}\x1B[30m> is emit, listeners:`, listeners)
             this.reduxStore.dispatch({

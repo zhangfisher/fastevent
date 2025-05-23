@@ -24,6 +24,8 @@ emitter.on('add', (message) => {
 emitter.on('add', function onAdd(message) {
     console.log('onAdd: ', message);
     return Math.floor(Math.random() * 100);
+},{
+    tag:"app.tsx"
 });
 emitter.on('add', function onAddError(message) {
     console.log('onAddError: ', message);
