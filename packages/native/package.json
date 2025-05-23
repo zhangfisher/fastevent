@@ -1,6 +1,6 @@
 {
     "name": "fastevent",
-    "version": "2.2.0",
+    "version": "2.2.1",
     "description": "The Ultimate Event Trigger Library – Fast, Feature-Rich, Battle-Tested!",
     "main": "dist/index.js",
     "module": "dist/index.mjs",
