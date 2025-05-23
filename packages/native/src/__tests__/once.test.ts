@@ -66,5 +66,21 @@ describe("只订阅一次的事件的发布与订阅", async () => {
         expect(values).toEqual([1, 1, 2, 3, 4])
     })
 
+    test("多个只订阅一次事件监听器均应该正确销毁", () => {
+        const emitter = new FastEvent()
+        const events: number[] = []
+
+        emitter.once("x", () => { events.push(1) })
+        emitter.once("x", () => { events.push(2) })
+        emitter.once("x", () => { events.push(3) })
+        emitter.once("x", () => { events.push(4) })
+        emitter.once("x", () => { events.push(5) })
+
+        emitter.emit("x", 1)
+        expect(events).toEqual([1, 2, 3, 4, 5])
+
+        const listeners = emitter.getListeners("x")
+        expect(listeners.length).toBe(0)
+    })
 
 })
