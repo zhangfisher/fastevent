@@ -158,6 +158,21 @@ describe("types", () => {
         ]
     })
 
+    test("通用监听器类型传递", () => {
+
+        const emitter = new FastEvent();
+        type MyListener<
+            P = any,
+            M extends Record<string, any> = Record<string, any>,
+            T extends string = string
+        > = FastEventListener<P, M, T>
+        const listener: MyListener = (message) => {
+            console.log(message)
+        }
+        emitter.on("xxx", listener)
+    })
+
+
 })
 
 
