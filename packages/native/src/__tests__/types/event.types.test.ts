@@ -4,8 +4,14 @@ import type { Equal, Expect, NotAny } from '@type-challenges/utils'
 import { FastEvent } from "../../event"
 import { TypedFastEventMessage, FastEventMeta, PickScopeEvents, ScopeEvents } from "../../types"
 import { FastEventScopeMeta } from "../../scope"
-import { FastEventBus } from "../../eventbus"
-import { E } from "vitest/dist/chunks/environment.d.Dmw5ulng.js"
+// declare module "../.." {
+//     interface FastEvents {
+//         click: { x: number; y: number };
+//         mousemove: boolean;
+//         scroll: number;
+//         focus: string;
+//     }
+// }
 
 describe("类型系统测试", () => {
     describe("作用域事件类型定义", () => {
@@ -28,6 +34,8 @@ describe("类型系统测试", () => {
                     c: 3
                 }>>
             ]
+
+
         })
     })
 
@@ -49,6 +57,7 @@ describe("类型系统测试", () => {
 
         type CustomMessage = TypedFastEventMessage<CustomEvents, CustomMeta>
         const emitter = new FastEvent<CustomEvents, CustomMeta>()
+
 
         test("on方法应正确推导事件类型和元数据", () => {
             emitter.on("a", (message) => {

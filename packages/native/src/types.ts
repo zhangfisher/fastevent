@@ -15,7 +15,7 @@ export type FastEventMessage<P = any, M extends Record<string, any> = Record<str
     type: T
     payload: P
     meta?: M & Partial<FastEventMeta>
-}
+} & FastEventMessageExtends
 
 
 export type TypedFastEventMessage<
@@ -29,7 +29,7 @@ export type TypedFastEventMessage<
             meta: FastEventMeta & M & Record<string, any>
         }
     }[Exclude<keyof Events, number | symbol>]
-) & DeepPartial<FastEventMessageExtends>
+) & FastEventMessageExtends
 
 
 // 用于构建消息时使用，meta是可选的
@@ -44,7 +44,7 @@ export type TypedFastEventMessageOptional<
             meta?: DeepPartial<FastEventMeta & M & Record<string, any>>
         }
     }[Exclude<keyof Events, number | symbol>]
-) & DeepPartial<FastEventMessageExtends>
+) & FastEventMessageExtends
 
 
 
@@ -60,7 +60,7 @@ export type FastEventEmitMessage<
             meta?: DeepPartial<FastEventMeta & M & Record<string, any>>
         }
     }[Exclude<keyof Events, number | symbol>]
-) & DeepPartial<FastEventMessageExtends>
+) & FastEventMessageExtends
 
 
 

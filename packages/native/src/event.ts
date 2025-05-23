@@ -44,7 +44,7 @@ export class FastEvent<
     Events extends Record<string, any> = Record<string, any>,
     Meta extends Record<string, any> = Record<string, any>,
     Context = never,
-    // 以上几个泛型是快捷方式
+    // 泛型快捷方式
     AllEvents extends Record<string, any> = Events & FastEvents,
     Types extends keyof AllEvents = Expand<Exclude<keyof (AllEvents), number | symbol>>
 > {
@@ -71,7 +71,8 @@ export class FastEvent<
         meta: undefined as unknown as Expand<FastEventMeta & Meta & Record<string, any>>,
         context: undefined as unknown as Expand<Fallback<Context, typeof this>>,
         message: undefined as unknown as TypedFastEventMessageOptional<AllEvents, Expand<FastEventMeta & Meta & Record<string, any>>>,
-        listeners: undefined as unknown as FastEventListeners<AllEvents, Expand<FastEventMeta & Meta & Record<string, any>>>
+        listeners: undefined as unknown as FastEventListeners<AllEvents, Expand<FastEventMeta & Meta & Record<string, any>>>,
+        anyListener: undefined as unknown as TypedFastEventAnyListener<AllEvents, Expand<FastEventMeta & Meta & Record<string, any>>, Expand<Fallback<Context, typeof this>>>
     }
 
     /**

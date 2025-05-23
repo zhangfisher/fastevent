@@ -14,7 +14,7 @@ export type FastEventScopeOptions<Meta = Record<string, any>, Context = never> =
     onMessage?: TypedFastEventListener
 }
 
-export type FastEventScopeMeta = {
+export interface FastEventScopeMeta {
     scope: string
 }
 
@@ -32,7 +32,9 @@ export class FastEventScope<
         meta: undefined as unknown as FinalMeta,
         context: undefined as unknown as Fallback<Context, typeof this>,
         message: undefined as unknown as TypedFastEventMessageOptional<Events, FinalMeta>,
-        listeners: undefined as unknown as FastEventListeners<Events, FinalMeta>
+        listeners: undefined as unknown as FastEventListeners<Events, FinalMeta>,
+        anyListener: undefined as unknown as TypedFastEventAnyListener<Events, FinalMeta, Fallback<Context, typeof this>>
+
     }
     prefix: string = ''
     emitter!: FastEvent<Events>

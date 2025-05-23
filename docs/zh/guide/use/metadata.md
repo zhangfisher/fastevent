@@ -26,7 +26,7 @@ emitter.on('x', (message, args) => {
 
 也可以在触发事件时提供额外元数据，该元数据将被合并到事件消息的元数据中。
 
-```typescript
+```typescript twoslash
 import { FastEvent } from 'fastevent';
 
 const emitter = new FastEvent({

@@ -251,6 +251,7 @@ emitter.on('click', function (message) {
 
 - `TypedFastEventListener`
 
+根据`FastEvent`泛型参数自动推导出来的监听器类型。
 
 ```ts twoslash
 import { FastEvent,FastEventMessage } from 'fastevent';
@@ -264,17 +265,74 @@ type CustomEvents = {
 const emitter = new FastEvent<CustomEvents>(); 
   
 type ClickListener = typeof emitter.types.listeners['click']
+const listener:ClickListener = (message) => {
+    message.type
+    message.payload
+}
 
 ```
 
 - `TypedFastEventAnyListener`
+
+根据`FastEvent`泛型参数自动推导出来的监听器类型。
+
+```ts twoslash
+import { FastEvent,FastEventMessage } from 'fastevent';
+
+type CustomEvents = {
+    click: { x: number; y: number };
+    mousemove: boolean;
+    scroll: number;
+    focus: string;
+};
+const emitter = new FastEvent<CustomEvents>(); 
+  
+type anyListener = typeof emitter.types.anyListener
+
+const listener:anyListener = (message) => {
+    if(message.type=='click'){
+        message.payload
+    }else if(message.type=='mousemove'){
+        message.payload
+    }else if(message.type=='scroll'){
+        message.payload
+    }
+}
+
+
+```
+
+
 - `FastEventListener`
+
+通用的监听器类型。
+
+```ts twoslash
+import { FastEvent,FastEventMessage,FastEventListener } from 'fastevent';
+
+type CustomEvents = {
+    click: { x: number; y: number };
+    mousemove: boolean;
+    scroll: number;
+    focus: string;
+};
+const emitter = new FastEvent<CustomEvents>(); 
+  
+type anyListener = typeof emitter.types.anyListener
+
+const listener:FastEventListener<number> = (message) => {
+    message.type
+    message.payload    
+}
+
+
+```
 
 
 ## 检索类型
 
-`FastEvent`和`FastEventScope`都提供了`types`对象用于检索事件类型。
-
+`FastEvent`和`FastEventScope`支持泛型参数推导，为提供了`types`对象用于检索以下类型。
+ 
 ```ts twoslash
 import { FastEvent } from 'fastevent';
 
@@ -302,6 +360,9 @@ type EventType = typeof emitter.types.events;
 type MetaType = typeof emitter.types.meta;
 type ContextType = typeof emitter.types.context;
 type MessageType = typeof emitter.types.message;
+type ListenersType = typeof emitter.types.listeners;
+type anylistenerType = typeof emitter.types.anyListener;
+
 
 ```
 
@@ -312,3 +373,113 @@ type MessageType = typeof emitter.types.message;
 :::
 
 
+## 全局扩展
+
+`FastEvent`和`FastEventScope`支持全局扩展，用于扩展`FastEvent`和`FastEventScope`的类型。
+
+### FastEvents
+
+扩展全局事件类型。
+
+```ts twoslash
+import { FastEvent } from 'fastevent';
+
+declare module "fastevent" {
+    interface FastEvents {
+        click: { x: number; y: number };
+        mousemove: boolean;
+        scroll: number;
+        focus: string;
+    }
+} 
+const emitter = new FastEvent();
+
+type EventTypes = typeof emitter.types.events
+
+```
+
+
+### FastEventMeta
+
+扩展全局元数据类型。
+
+```ts twoslash
+import { FastEvent } from 'fastevent';
+
+declare module "fastevent" {
+    interface FastEventMeta {
+        x: number;
+        y: number;
+        z?: number;
+    }
+} 
+
+const emitter = new FastEvent();
+
+type MetaType = typeof emitter.types.meta
+
+emitter.onAny((message) => {
+    message.meta.x  // number
+    message.meta.y  // boolean
+    message.meta.z  // string 
+})
+```
+
+
+###  FastEventScopeMeta
+
+扩展全局事件作用域元数据类型。
+
+```ts  twoslash
+import { FastEvent } from 'fastevent';
+
+declare module "fastevent" {
+    interface FastEventMeta {
+        root: number;
+    }
+    interface FastEventScopeMeta {
+        x: number;
+        y: boolean;
+        z?: string;
+    }
+} 
+
+const emitter = new FastEvent();
+
+const scope = emitter.scope("a/b/c");
+
+type MetaType = typeof scope.types.meta
+
+scope.onAny((message) => {
+    message.meta.x  // number
+    message.meta.y  // boolean
+    message.meta.z  // string
+    message.meta.scope // string
+    message.meta.root // number
+})
+
+```
+
+### FastEventMessageExtends
+
+扩展全局消息类型。
+
+```ts  twoslash
+import { FastEvent,FastEventMessage } from 'fastevent';
+
+declare module "fastevent" {
+    interface FastEventMessageExtends {
+        timestamp: number;
+    }
+} 
+
+const message:FastEventMessage = {
+    type: "click",
+    payload: {
+        x: 1,
+        y: 2
+    },
+    timestamp: 1629999999999
+}
+
+```
