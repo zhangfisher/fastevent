@@ -134,6 +134,7 @@ export class FastEvent<
         let index: number = 0
         const node = this._forEachNodes(parts, (node) => {
             const newListener = [listener, count, 0] as unknown as FastListenerMeta
+            if (options.tag) newListener.push(options.tag)
             if (prepend) {
                 node.__listeners.splice(0, 0, newListener)
                 index = 0
@@ -761,6 +762,16 @@ export class FastEvent<
             expandEmitResults(results)
         }
         return results
+    }
+
+    getListeners(type: keyof AllEvents): FastListenerMeta[]
+    getListeners(type: string): FastListenerMeta[] {
+        const nodes: FastListenerNode[] = []
+        const parts = type.split(this._delimiter);
+        this._traverseToPath(this.listeners, parts, (node) => {
+            nodes.push(node)
+        })
+        return nodes[0].__listeners
     }
     /**
      * 异步触发事件

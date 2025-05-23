@@ -100,9 +100,14 @@ export type FastEventListener<
 
 
 /**
- * [监听器函数引用，需要执行多少次，实际执行的次数(用于负载均衡时记录)]
+ * [ 
+ *      监听器函数引用，
+ *      需要执行多少次，                     =0代表不限
+ *      实际执行的次数(用于负载均衡时记录)
+ *      标签            用于调试一般可以标识监听器类型或任意信息
+ * ]
  */
-export type FastListenerMeta = [TypedFastEventListener<any, any>, number, number]
+export type FastListenerMeta = [TypedFastEventListener<any, any>, number, number, string?]
 
 export type FastListenerNode = {
     __listeners: FastListenerMeta[];
@@ -201,6 +206,15 @@ export type FastEventListenOptions<
     off?: (message: TypedFastEventMessage<Events, Meta>, args: FastEventListenerArgs<Meta>) => boolean
     // 对监听器函数进行包装装饰，返回包装后的函数
     pipes?: FastListenerPipe[]
+    /**
+     * 为监听器添加一个tag，在监听器注册表中记录,用于调试使用
+     * 
+     * emitter.on(type,listener,{tag:"x"})
+     * 
+     * emitter.getListeners(tag)
+     * 
+     */
+    tag?: string
 }
 
 
