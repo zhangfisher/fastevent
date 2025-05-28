@@ -868,7 +868,7 @@ export class FastEvent<
             let subscriber: FastEventSubscriber
             const listener = (message: TypedFastEventMessage<AllEvents, Meta>) => {
                 clearTimeout(tid)
-                subscriber.off()
+                subscriber && subscriber.off()
                 resolve(message)
             }
             if (timeout && timeout > 0) {

@@ -203,6 +203,23 @@ describe("waitfor", () => {
 
     });
 
+    test('等待retain事件时马上返回', async () => {
+        const emitter = new FastEvent();
+
+        emitter.emit("x", 1, true)
+
+        // Arrange
+        const results = await emitter.waitFor('x', 500);
+
+        expect(results).toEqual({
+            type: 'x',
+            payload: 1,
+            meta: undefined
+        });
+
+
+    });
+
 
 
 })
