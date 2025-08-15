@@ -631,23 +631,30 @@ export class FastEvent<
                 .map((listener, i) => [listener, i, node.__listeners] as [FastListenerMeta, number, FastListenerMeta[]]));
         }, []);
 
-        try {
-            const executeor = this._getListenerExecutor(args)
-            if (executeor) {
-                const r = executeor(listeners.map(listener => listener[0]), message, args, this._executeListener.bind(this)) as any[]
-                return Array.isArray(r) ? r : [r]
-            } else {
-                return listeners.map(listener => this._executeListener(listener[0][0], message, args, true))
-            }
-        } finally {
-            // 由于可能涉及到删除修改__listeners，所以需要倒序， 从后往前删除
-            for (let i = listeners.length - 1; i >= 0; i--) {
-                const meta = listeners[i][0] as FastListenerMeta
-                meta[2]++  // 实际执行的次数
-                // =0不限执行次数，>0时代表执行次数限制
-                if (meta[1] > 0 && meta[1] <= meta[2]) {
-                    listeners[i][2].splice(i, 1)
-                }
+        // 执行监听器前计数选减一，否则如果在监听器函数中再次触发时会导致重复执行。
+        // 比如：在once('x')监听函数中执行再次emit('x')就会导致循环
+        this._decListenerExecCount(listeners)
+        
+        const executeor = this._getListenerExecutor(args)
+        if (executeor) {
+            const r = executeor(listeners.map(listener => listener[0]), message, args, this._executeListener.bind(this)) as any[]
+            return Array.isArray(r) ? r : [r]
+        } else {
+            return listeners.map(listener => this._executeListener(listener[0][0], message, args, true))
+        } 
+    }
+    /**
+     * 减少侦听器的执行次数
+     * @param listeners 
+     */
+    _decListenerExecCount(listeners: [FastListenerMeta, number, FastListenerMeta[]][]){
+        // 由于可能涉及到删除修改__listeners，所以需要倒序， 从后往前删除
+        for (let i = listeners.length - 1; i >= 0; i--) {
+            const meta = listeners[i][0] as FastListenerMeta
+            meta[2]++  // 实际执行的次数
+            // =0不限执行次数，>0时代表执行次数限制
+            if (meta[1] > 0 && meta[1] <= meta[2]) {
+                listeners[i][2].splice(i, 1)
             }
         }
     }
