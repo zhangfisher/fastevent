@@ -82,5 +82,23 @@ describe("只订阅一次的事件的发布与订阅", async () => {
         const listeners = emitter.getListeners("x")
         expect(listeners.length).toBe(0)
     })
+    test("在once侦听器里面再次触发时，侦听器只执行一次", () => {
+        const emitter = new FastEvent()
+        const values: number[] = []
+        return new Promise<void>((resolve) => {
+            emitter.once(`x`, (event) => {
+                values.push(event.payload)
+                emitter.emit("x", 1)
+                emitter.emit("x", 2)
+                emitter.emit("x", 3)
+                emitter.emit("x", 4)
+                resolve()
+                expect(values.length).toBe(1)
+            })
+            emitter.emit("x", 0)
+            
+        })
+    })
+
 
 })
