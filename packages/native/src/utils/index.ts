@@ -4,3 +4,6 @@ export * from "./isFunction"
 export * from "./isString"
 export * from "./expandable"
 export * from "./isPathMatched"
+export * from './isSubsctiber'
+export * from './isClass'
+export * from './isFastEvent'
