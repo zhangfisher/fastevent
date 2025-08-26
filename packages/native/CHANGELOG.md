@@ -1,5 +1,11 @@
 ## 2.2.2
 
+## 2.2.4
+
+### Patch Changes
+
+-   35cb2da: 新导出 isPathMatched 函数
+
 ## 2.2.3
 
 ### Patch Changes
