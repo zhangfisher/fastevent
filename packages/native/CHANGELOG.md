@@ -1,5 +1,11 @@
 ## 2.2.2
 
+## 2.2.5
+
+### Patch Changes
+
+-   cd223c7: feat: add utils exports
+
 ## 2.2.4
 
 ### Patch Changes
