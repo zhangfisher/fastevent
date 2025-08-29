@@ -862,6 +862,12 @@ export class FastEvent<
      * // 无限等待事件
      * const event = await emitter.waitFor('server/ready');
      * console.log('服务器就绪');
+     * 
+     * // 等待指定的事件发生，并且如果该事件有其他订阅者，则同时等待该事件的所有订阅执行完成
+     * waitFor
+     * 
+     * 
+     * 
      * ```
      */
     public waitFor<T extends Types>(type: T, timeout?: number): Promise<TypedFastEventMessage<{ [key in T]: AllEvents[T] }, Meta>>
