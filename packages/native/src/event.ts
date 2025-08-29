@@ -132,9 +132,8 @@ export class FastEvent<
     private _addListener(parts: string[], listener: TypedFastEventListener<any, any>, options: Required<FastEventListenOptions>): [FastListenerNode | undefined, number] {
         const { count, prepend } = options
         let index: number = 0
-        const node = this._forEachNodes(parts, (node) => {
-            const newListener = [listener, count, 0] as unknown as FastListenerMeta
-            if (options.tag) newListener.push(options.tag)
+        const node = this._forEachNodes(parts, (node) => { 
+            const newListener = [listener, count, 0,options.tag,options.flags] as unknown as FastListenerMeta
             if (prepend) {
                 node.__listeners.splice(0, 0, newListener)
                 index = 0
@@ -247,6 +246,7 @@ export class FastEvent<
 
         const options = Object.assign({
             count: 0,
+            flags:0,
             prepend: false
         }, isFunction(arguments[1]) ? arguments[2] : arguments[1]) as Required<FastEventListenOptions>
 

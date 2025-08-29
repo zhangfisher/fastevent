@@ -15,6 +15,7 @@ describe('FastEvent钩子函数测试', () => {
         expect(onAddListener).toHaveBeenCalledTimes(1)
         expect(onAddListener).toHaveBeenCalledWith('test', listener, {
             "count": 0,
+            flags: 0,
             "prepend": false,
         })
     })
@@ -134,7 +135,7 @@ describe('FastEvent钩子函数测试', () => {
                 meta: undefined
             }),
             ['result'],
-            [{ __listeners: [[listener, 0, 1]] }]
+            [{ __listeners: [[listener, 0, 1,undefined,0]] }]
         )
     })
 
@@ -178,6 +179,7 @@ describe('FastEvent钩子函数测试', () => {
 
         expect(onAddListener).toHaveBeenCalledWith('a/b/c', listener, {
             "count": 0,
+            "flags": 0,
             "prepend": false,
         })
         expect(onRemoveListener).toHaveBeenCalledWith('a/b/c', listener)
@@ -194,6 +196,7 @@ describe('FastEvent钩子函数测试', () => {
 
         expect(onAddListener).toHaveBeenCalledWith('a/*/c', listener, {
             "count": 0,
+            "flags": 0,
             "prepend": false,
         },)
     })
