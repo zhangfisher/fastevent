@@ -1,5 +1,11 @@
 ## 2.2.2
 
+## 2.2.6
+
+### Patch Changes
+
+-   e370ae2: feat: add flags listener options
+
 ## 2.2.5
 
 ### Patch Changes
