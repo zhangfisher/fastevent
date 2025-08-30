@@ -99,21 +99,17 @@ export type FastEventListener<
 > = (message: FastEventMessage<P, M, T>, args: FastEventListenerArgs<M>) => any | Promise<any>
 
 
-
-export enum FastListenerFlags {
-    follow = 1,        //该监听器会在所有监听器执行完毕后再执行
-    x=2
-}
+ 
 /**
  * [ 
  *      监听器函数引用，
  *      需要执行多少次，                     =0代表不限
  *      实际执行的次数(用于负载均衡时记录)
  *      标签            用于调试一般可以标识监听器类型或任意信息
- *      Flags
+ *      标识
  * ]
  */
-export type FastListenerMeta = [TypedFastEventListener<any, any>, number, number, string?,FastListenerFlags?]
+export type FastListenerMeta = [TypedFastEventListener<any, any>, number, number, string,number]
 
 
 
@@ -210,7 +206,7 @@ export type FastEventListenOptions<
     // 将监听器添加到监听器列表的头部
     prepend?: boolean
     // 该监听器会在其他监听器执行完毕后再触发执行
-    flags?: FastListenerFlags
+    flags?: number
     filter?: (message: TypedFastEventMessage<Events, Meta>, args: FastEventListenerArgs<Meta>) => boolean
     // 当执行监听器前，如果此函数返回true则自动注销监听
     off?: (message: TypedFastEventMessage<Events, Meta>, args: FastEventListenerArgs<Meta>) => boolean

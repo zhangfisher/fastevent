@@ -17,7 +17,7 @@ import {
     FastEventMeta,
     Expand,
     TypedFastEventMessageOptional,
-    FastEventListeners
+    FastEventListeners 
 } from './types';
 import { parseEmitArgs } from './utils/parseEmitArgs';
 import { isPathMatched } from './utils/isPathMatched';
@@ -600,6 +600,8 @@ export class FastEvent<
         const executor = args.executor || this._options.executor
         if (isFunction(executor)) return executor
     }
+    
+
     /**
      * 执行监听器节点列表中的所有监听器函数
      * @param nodes 监听器节点列表
@@ -620,7 +622,7 @@ export class FastEvent<
         args: FastEventListenerArgs<Meta>,
         filter?: (listener: FastListenerMeta, node: FastListenerNode) => boolean
     ): any[] {
-        if (!nodes || nodes.length === 0) return []
+        if (!nodes || nodes.length === 0) return [] 
         // 1. 遍历所有监听器任务,即需要执行的监听器函数[]
         const listeners = nodes.reduce<[FastListenerMeta, number, FastListenerMeta[]][]>((result, node) => {
             return result.concat(node.__listeners
@@ -628,7 +630,9 @@ export class FastEvent<
                     if (!isFunction(filter)) return true
                     return filter(listener, node)
                 })
-                .map((listener, i) => [listener, i, node.__listeners] as [FastListenerMeta, number, FastListenerMeta[]]));
+                .map((listener, i) => { 
+                    return [listener, i, node.__listeners] as [FastListenerMeta, number, FastListenerMeta[]]
+                }));
         }, []);
 
         // 执行监听器前计数选减一，否则如果在监听器函数中再次触发时会导致重复执行。
@@ -639,9 +643,9 @@ export class FastEvent<
         if (executeor) {
             const r = executeor(listeners.map(listener => listener[0]), message, args, this._executeListener.bind(this)) as any[]
             return Array.isArray(r) ? r : [r]
-        } else {
+        }else {
             return listeners.map(listener => this._executeListener(listener[0][0], message, args, true))
-        } 
+        }
     }
     /**
      * 减少侦听器的执行次数
@@ -657,6 +661,16 @@ export class FastEvent<
                 listeners[i][2].splice(i, 1)
             }
         }
+    }
+    
+    getListeners(type: keyof AllEvents): FastListenerMeta[]
+    getListeners(type: string): FastListenerMeta[] {
+        const nodes: FastListenerNode[] = []
+        const parts = type.split(this._delimiter);
+        this._traverseToPath(this.listeners, parts, (node) => {
+            nodes.push(node)
+        })
+        return nodes[0].__listeners
     }
     /**
      * 触发事件并执行对应的监听器
@@ -771,15 +785,6 @@ export class FastEvent<
         return results
     }
 
-    getListeners(type: keyof AllEvents): FastListenerMeta[]
-    getListeners(type: string): FastListenerMeta[] {
-        const nodes: FastListenerNode[] = []
-        const parts = type.split(this._delimiter);
-        this._traverseToPath(this.listeners, parts, (node) => {
-            nodes.push(node)
-        })
-        return nodes[0].__listeners
-    }
     /**
      * 异步触发事件
      * @param type - 事件类型，可以是字符串或预定义的事件类型
@@ -827,7 +832,7 @@ export class FastEvent<
     public async emitAsync<R = any>(message: FastEventEmitMessage<AllEvents, Meta>, options?: FastEventListenerArgs<Meta>): Promise<[R | Error][]>
 
     public async emitAsync<R = any>(): Promise<[R | Error][]> {
-        const results = await Promise.allSettled(this.emit.apply(this, arguments as any))
+        const results = await Promise.allSettled(this.emit.apply(this, arguments as any)) 
         return results.map((result) => {
             if (result.status === 'fulfilled') {
                 return result.value
@@ -890,6 +895,7 @@ export class FastEvent<
                     reject(new Error('wait for event<' + type + '> is timeout'))
                 }, timeout)
             }
+            // 订阅事件
             subscriber = this.on(type, listener as any) as unknown as FastEventSubscriber
         })
     }
