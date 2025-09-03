@@ -1,5 +1,11 @@
 ## 2.2.2
 
+## 2.2.8
+
+### Patch Changes
+
+-   32ef8ce: 修复 emit 方法时的泛型事件参数推断
+
 ## 2.2.7
 
 ### Patch Changes
