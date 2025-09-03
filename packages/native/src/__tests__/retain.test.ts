@@ -23,6 +23,19 @@ describe("订阅与发布retain事件", async () => {
             expect(payload).toBe(2)
         })
     })
+    test("emitAsync简单发布订阅retain事件", () => {
+        const emitter = new FastEvent()
+        return new Promise<void>((resolve) => {
+            emitter.emitAsync("x", 1, true).then(()=>{
+                emitter.on("x", ({ type, payload }) => {
+                    expect(type).toBe("x")
+                    expect(payload).toBe(1)
+                    resolve()
+                })
+            })        
+        })
+        
+    })
     test("取消retain事件", () => {
         const emitter = new FastEvent()
         emitter.emit("x", 1, true)
@@ -109,7 +122,7 @@ describe("订阅与发布retain事件", async () => {
             events.push(type)
         })
         expect(events).toEqual(["a/b/c1", "a/b/c2"])
-    })
+    })    
     test("使用retain=true参数简单发布订阅retain事件", () => {
         const emitter = new FastEvent()
         const events: string[] = []
@@ -173,7 +186,8 @@ describe("订阅与发布retain事件", async () => {
 
     test("普通事件retain事件的重复接收问题", () => {
         const emitter = new FastEvent()
-        emitter.emit("a/b/c", 1, { retain: true })
+        // emitter.emit("a/b/c", 1, { retain: true })
+        emitter.emit("a/b/c", 1, true)
         const events: any[] = []
         emitter.on("a/b/c", () => {
             events.push(1)

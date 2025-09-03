@@ -363,3 +363,5 @@ export type Overloads<T> = Unique<
 
 
 export type Dict<V = any> = Record<Exclude<string, number | symbol>, V>
+
+export type Union<T> = T extends infer O ? { [K in keyof O]: O[K] } : never;

@@ -1,5 +1,30 @@
 ## 2.2.2
 
+## 2.2.9
+
+### Patch Changes
+
+-   4624b5b: 修复 emitAsync 方法的类型错误
+
+## 2.2.8
+
+### Patch Changes
+
+-   32ef8ce: 修复 emit 方法时的泛型事件参数推断
+
+## 2.2.7
+
+### Patch Changes
+
+-   5e1db3a: scope 的 emit/emitAsync 新增加 retain 参数签名
+
+## 2.2.6
+
+### Patch Changes
+
+-   a7e87d7: event scope.emit & emitAsync 新增加 retain
+-   e370ae2: feat: add flags listener options
+
 ## 2.2.5
 
 ### Patch Changes

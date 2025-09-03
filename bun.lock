@@ -22,7 +22,7 @@
     },
     "packages/native": {
       "name": "fastevent",
-      "version": "2.2.5",
+      "version": "2.2.7",
       "devDependencies": {
         "@changesets/cli": "^2.28.1",
         "@swc/core": "^1.11.16",
@@ -33,7 +33,7 @@
         "tinybench": "^4.0.1",
         "tsup": "^8.4.0",
         "tsx": "^4.19.3",
-        "typescript": "^5.8.2",
+        "typescript": "^5.9.2",
         "vitepress": "^1.6.3",
         "vitest": "^3.1.2",
       },
@@ -1128,7 +1128,7 @@
 
     "twoslash-vue": ["twoslash-vue@0.3.1", "https://registry.npmmirror.com/twoslash-vue/-/twoslash-vue-0.3.1.tgz", { "dependencies": { "@vue/language-core": "2.2.4", "twoslash": "0.3.1", "twoslash-protocol": "0.3.1" }, "peerDependencies": { "typescript": "^5.5.0" } }, "sha512-9/PS0/iL2m8G6N2ILdI18sZ8l6ex+W2nN5jIaTpfFPlnY0MOX2G5UxEVs+AuNimM9SwEnwfiIuDY9ubDCIQpSQ=="],
 
-    "typescript": ["typescript@5.8.3", "https://registry.npmmirror.com/typescript/-/typescript-5.8.3.tgz", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-p1diW6TqL9L07nNxvRMM7hMMw4c5XOo/1ibL4aAIGmSAt9slTE1Xgw5KWuof2uTOvCg9BY7ZRi+GaF+7sfgPeQ=="],
+    "typescript": ["typescript@5.9.2", "https://registry.npmmirror.com/typescript/-/typescript-5.9.2.tgz", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-CWBzXQrc/qOkhidw1OzBTQuYRbfyxDXJMVJ1XNwUHGROVmuaeiEm3OslpZ1RV96d7SKKjZKrSJu3+t/xlw3R9A=="],
 
     "union-value": ["union-value@1.0.1", "https://registry.npmmirror.com/union-value/-/union-value-1.0.1.tgz", { "dependencies": { "arr-union": "^3.1.0", "get-value": "^2.0.6", "is-extendable": "^0.1.1", "set-value": "^2.0.1" } }, "sha512-tJfXmxMeWYnczCVs7XAEvIV7ieppALdyepWMkHkwciRpZraG/xwT+s2JN8+pr1+8jCRf80FFzvr+MpQeeoF4Xg=="],
 
