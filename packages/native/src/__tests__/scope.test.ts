@@ -413,4 +413,36 @@ describe("scope", () => {
         ])
 
     })
+    test("Scope简单发布订阅retain事件", () => {
+        const emitter = new FastEvent().scope('x')        
+        const events: string[] = []
+        emitter.emit("a", 1,true)
+        emitter.emit("a/b", 2,true)
+        emitter.emit("a/b/c", 3,true)
+        emitter.emit("a/b/c/d", 4,true)
+
+        emitter.on("a", ({ type, payload }) => {
+            expect(type).toBe("a")
+            expect(payload).toBe(1)
+            events.push(type)
+        })
+        emitter.on("a/b", ({ type, payload }) => {
+            expect(type).toBe("a/b")
+            expect(payload).toBe(2)
+            events.push(type)
+        })
+        emitter.on("a/b/c", ({ type, payload }) => {
+            expect(type).toBe("a/b/c")
+            expect(payload).toBe(3)
+            events.push(type)
+        })
+        emitter.on("a/b/c/d", ({ type, payload }) => {
+            expect(type).toBe("a/b/c/d")
+            expect(payload).toBe(4)
+            events.push(type)
+        })
+        expect(events).toEqual(["a", "a/b", "a/b/c", "a/b/c/d"])
+        
+    })
+
 })

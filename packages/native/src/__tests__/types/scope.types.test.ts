@@ -149,8 +149,22 @@ describe("作用域上下文类型系统", () => {
                 Expect<Equal<typeof message.payload, any>>,
                 Expect<Equal<typeof message.meta, FastEventMeta & Record<string, any> & FastEventScopeMeta>>
             ]
-        })
+        })        
     })
-
+    test("作用域指定事件类型", () => {
+        const emitter = new FastEvent()
+        const scope = emitter.scope<{
+            a:boolean,
+            b:number,
+            c:string
+        }>("x/y/z")
+        type ScopeEvents = typeof scope.types.events
+        type cases = [
+            Expect<Equal<ScopeEvents['a'], boolean>>,
+            Expect<Equal<ScopeEvents['b'], number>>,
+            Expect<Equal<ScopeEvents['c'], string>>
+        ]
+        
+    })
 })
 
