@@ -37,7 +37,7 @@ export class FastEventScope<
 
     }
     prefix: string = ''
-    emitter!: FastEvent<Events>
+    emitter!: FastEvent<any>
     constructor(options?: DeepPartial<FastEventScopeOptions<FinalMeta, Context>>) {
         this._options = Object.assign({}, this._initOptions(options)) as unknown as FastEventScopeOptions<FinalMeta, Context>
     }
@@ -142,9 +142,9 @@ export class FastEventScope<
     public emit(type: Types, directive: symbol): void
     public emit(type: string, directive: symbol): void
     public emit<R = any, T extends Types = Types>(type: T, payload?: Events[T], retain?: boolean): R[]
-    public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? Events[Types] : any, retain?: boolean): R[]
+    public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? Events[T] : any, retain?: boolean): R[]
     public emit<R = any>(type: Types, payload?: Events[Types], options?: FastEventListenerArgs<FinalMeta>): R[]
-    public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? Events[Types] : any, options?: FastEventListenerArgs<FinalMeta>): R[]
+    public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? Events[T] : any, options?: FastEventListenerArgs<FinalMeta>): R[]
     public emit<R = any>(message: FastEventEmitMessage<Events, FinalMeta>, options?: FastEventListenerArgs<FinalMeta>): R[]
     public emit<R = any, T extends string = string>(message: FastEventEmitMessage<{
         [K in T]: K extends Types ? Events[K] : any

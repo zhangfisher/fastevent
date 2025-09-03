@@ -164,7 +164,8 @@ describe("作用域上下文类型系统", () => {
             Expect<Equal<ScopeEvents['b'], number>>,
             Expect<Equal<ScopeEvents['c'], string>>
         ]
-        
+        scope.emit('a',1)
+        scope.emitAsync('b',true)
     })
 })
 

@@ -45,8 +45,8 @@ export class FastEvent<
     Meta extends Record<string, any> = Record<string, any>,
     Context = never,
     // 泛型快捷方式
-    AllEvents extends Record<string, any> = Events & FastEvents,
-    Types extends keyof AllEvents = Expand<Exclude<keyof (AllEvents), number | symbol>>
+    AllEvents extends Record<string, any> = Expand<Events & FastEvents>,
+    Types extends keyof AllEvents = Expand<Exclude<keyof AllEvents, number | symbol>>
 > {
     __FastEvent__: boolean = true
     /** 事件监听器树结构，存储所有注册的事件监听器 */
@@ -735,12 +735,12 @@ export class FastEvent<
     public emit(type: string, directive: symbol): any[]
     // 支持retain参数
     public emit<R = any, T extends Types = Types>(type: T, payload?: AllEvents[T], retain?: boolean): R[]
-    public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? AllEvents[Types] : any, retain?: boolean): R[]
+    public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? AllEvents[T] : any, retain?: boolean): R[]
     public emit<R = any, T extends string = string>(message: FastEventEmitMessage<{ [K in T]: K extends Types ? AllEvents[K] : any }, Meta>, retain?: boolean): R[]
     public emit<R = any>(message: FastEventEmitMessage<AllEvents, Meta>, retain?: boolean): R[]
     // 使用完整的配置选项
     public emit<R = any, T extends Types = Types>(type: T, payload?: AllEvents[T], options?: FastEventListenerArgs<Meta>): R[]
-    public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? AllEvents[Types] : any, options?: FastEventListenerArgs<Meta>): R[]
+    public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? AllEvents[T] : any, options?: FastEventListenerArgs<Meta>): R[]
     public emit<R = any, T extends string = string>(message: FastEventEmitMessage<{ [K in T]: K extends Types ? AllEvents[K] : any }, Meta>, options?: FastEventListenerArgs<Meta>): R[]
     public emit<R = any>(message: FastEventEmitMessage<AllEvents, Meta>, options?: FastEventListenerArgs<Meta>): R[]
     public emit(): any {
