@@ -1,5 +1,11 @@
 ## 2.2.2
 
+## 2.2.9
+
+### Patch Changes
+
+-   4624b5b: 修复 emitAsync 方法的类型错误
+
 ## 2.2.8
 
 ### Patch Changes
