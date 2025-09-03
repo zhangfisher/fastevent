@@ -1,5 +1,11 @@
 ## 2.2.2
 
+## 2.2.7
+
+### Patch Changes
+
+-   5e1db3a: scope 的 emit/emitAsync 新增加 retain 参数签名
+
 ## 2.2.6
 
 ### Patch Changes
