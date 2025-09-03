@@ -1,5 +1,12 @@
 ## 2.2.2
 
+## 2.2.6
+
+### Patch Changes
+
+-   a7e87d7: event scope.emit & emitAsync 新增加 retain
+-   e370ae2: feat: add flags listener options
+
 ## 2.2.5
 
 ### Patch Changes
