@@ -17,7 +17,7 @@ type CustomEvents = {
 };
 const emitter = new FastEvent<CustomEvents>();
 
-emitter.emit('click', 1);
+emitter.emit('click', { x: 100, y: 100 });
 //            ^|
 //
 //
