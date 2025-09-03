@@ -163,10 +163,11 @@ export class FastEventScope<
         message.type = this._getScopeType(message.type)!
         return this.emitter.emit(message as TypedFastEventMessage<Events, FinalMeta>, options)
     }
-    public async emitAsync<R = any>(type: Types, payload?: Events[Types], retain?: boolean): Promise<[R | Error][]>
-    public async emitAsync<R = any>(type: string, payload?: any, retain?: boolean): Promise<[R | Error][]>
-    public async emitAsync<R = any>(type: string, payload?: any, options?: FastEventListenerArgs<FinalMeta>): Promise<[R | Error][]>
-    public async emitAsync<R = any>(type: Types, payload?: Events[Types], options?: FastEventListenerArgs<FinalMeta>): Promise<[R | Error][]>
+    public async emitAsync<R = any, T extends Types = Types>(type: T, payload?: Events[T], retain?: boolean): Promise<[R | Error][]>
+    public async emitAsync<R = any, T extends string = string>(type: T, payload?: T extends Types ? Events[T] : any, retain?: boolean): Promise<[R | Error][]>
+    public async emitAsync<R = any, T extends Types = Types>(type: T, payload?: Events[T], options?: FastEventListenerArgs<FinalMeta>): Promise<[R | Error][]>
+    public async emitAsync<R = any, T extends string = string>(type: T, payload?:  T extends Types ? Events[T] : any, options?: FastEventListenerArgs<FinalMeta>): Promise<[R | Error][]>
+    
     public async emitAsync<R = any>(message: TypedFastEventMessage<Events, FinalMeta>, options?: FastEventListenerArgs<FinalMeta>): Promise<[R | Error][]>
     public async emitAsync<R = any>(): Promise<[R | Error][]> {
         const results = await Promise.allSettled(this.emit.apply(this, arguments as any))

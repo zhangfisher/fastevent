@@ -58,6 +58,13 @@ describe("emit类型系统测试", () => {
         }>()
         // type D = Parameters<typeof emitter.emit>
         // type of = Overloads<typeof emitter.emit>
+        
+        // emitter.emitAsync('a',1,true)
+        // emitter.emitAsync('a',true,true)
+        // emitter.emitAsync('b',true,true)
+        // emitter.emitAsync('b',1,true)
+        // emitter.emitAsync('c',1,true)
+        // emitter.emitAsync('c','',true)
 
         // emitter.emit('a',1,true)
         // emitter.emit('a',true,true)
@@ -89,6 +96,15 @@ describe("emit类型系统测试", () => {
         // scope.emit('b',1,true)
         // scope.emit('c',1,true)
         // scope.emit('c','',true)
+
+        // scope.emitAsync('a',1,true)
+        // scope.emitAsync('a',true,true)
+        // scope.emitAsync('b',true,true)
+        // scope.emitAsync('b',1,true)
+        // scope.emitAsync('c',1,true)
+        // scope.emitAsync('c','',true)
+
+
         // scope.emit('xx',1,true)
 
         

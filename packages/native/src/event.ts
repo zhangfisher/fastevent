@@ -820,14 +820,15 @@ export class FastEvent<
      *   timestamp: Date.now()
      * });
      * ```
-     */
-    public async emitAsync<R = any>(type: string, payload?: any, retain?: boolean): Promise<[R | Error][]>
-    public async emitAsync<R = any>(type: Types, payload?: AllEvents[Types], retain?: boolean): Promise<[R | Error][]>
+     */ 
+    public async emitAsync<R = any, T extends Types = Types>(type: T, payload?: AllEvents[T], retain?: boolean): Promise<[R | Error][]>
+    public async emitAsync<R = any, T extends string = string>(type: T, payload?: T extends Types ? AllEvents[T] : any, retain?: boolean): Promise<[R | Error][]>
+    
     public async emitAsync<R = any, T extends string = string>(message: FastEventEmitMessage<{ [K in T]: K extends Types ? AllEvents[K] : any }, Meta>, retain?: boolean): Promise<[R | Error][]>
     public async emitAsync<R = any>(message: FastEventEmitMessage<AllEvents, Meta>, retain?: boolean): Promise<[R | Error][]>
     // ---    
-    public async emitAsync<R = any>(type: string, payload?: any, options?: FastEventListenerArgs<Meta>): Promise<[R | Error][]>
-    public async emitAsync<R = any>(type: Types, payload?: AllEvents[Types], options?: FastEventListenerArgs<Meta>): Promise<[R | Error][]>
+    public async emitAsync<R = any, T extends string = string>(type: T, payload?:  T extends Types ? AllEvents[T] : any, options?: FastEventListenerArgs<Meta>): Promise<[R | Error][]>
+    public async emitAsync<R = any, T extends Types = Types>(type: T, payload?: AllEvents[T], options?: FastEventListenerArgs<Meta>): Promise<[R | Error][]>
     public async emitAsync<R = any, T extends string = string>(message: FastEventEmitMessage<{ [K in T]: K extends Types ? AllEvents[K] : any }, Meta>, options?: FastEventListenerArgs<Meta>): Promise<[R | Error][]>
     public async emitAsync<R = any>(message: FastEventEmitMessage<AllEvents, Meta>, options?: FastEventListenerArgs<Meta>): Promise<[R | Error][]>
 
