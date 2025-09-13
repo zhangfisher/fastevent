@@ -1,5 +1,11 @@
 ## 2.2.2
 
+## 2.2.12
+
+### Patch Changes
+
+-   a7a2735: feat: upgrade ScopeEvents
+
 ## 2.2.11
 
 ### Patch Changes
