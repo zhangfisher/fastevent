@@ -1009,11 +1009,8 @@ export class FastEvent<
      * ```
      */
 
-    scope<P extends string>(
-        prefix: P,
-        options?: DeepPartial<FastEventScopeOptions<Meta, Context>>,
-    ): FastEventScope<ScopeEvents<AllEvents, P>, Meta, Context>;
-    
+    scope<P extends string>(prefix: P, options?: DeepPartial<FastEventScopeOptions<Meta, Context>>): FastEventScope<ScopeEvents<AllEvents, P>, Meta, Context>;
+
     scope<E extends Record<string, any> = Record<string, any>, P extends string = string, M extends Record<string, any> = Record<string, any>, C = Context>(
         prefix: P,
         options?: DeepPartial<FastEventScopeOptions<Meta & M, C>>,

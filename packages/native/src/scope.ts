@@ -295,8 +295,12 @@ export class FastEventScope<
         P extends string = string,
         M extends Record<string, any> = Record<string, any>,
         C = Context,
-        ScopeInstance extends FastEventScope<any, any, any> = FastEventScope<ScopeEvents<ScopeEvents<Events, P> & E, P> & E, FinalMeta & M, C>,
-    >(prefix: P, scopeObj: ScopeInstance, options?: DeepPartial<FastEventScopeOptions<Partial<FinalMeta> & M, C>>): ScopeInstance;
+        ScopeInstance extends FastEventScope<any, any, any> = FastEventScope<ScopeEvents<Events, P> & E, FinalMeta & M, C>,
+    >(
+        prefix: P,
+        scopeObj: ScopeInstance,
+        options?: DeepPartial<FastEventScopeOptions<Partial<FinalMeta> & M, C>>,
+    ): ScopeInstance & FastEventScope<ScopeEvents<Events, P> & E, FinalMeta & M, C>;
     scope<E extends Record<string, any> = Record<string, any>, P extends string = string, M extends Record<string, any> = Record<string, any>, C = Context>() {
         const [prefix, scopeObj, options] = parseScopeArgs(arguments, this.options.meta, this.options.context);
         let scope: FastEventScope<ScopeEvents<Events, P> & E, FinalMeta & M, C>;

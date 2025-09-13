@@ -180,4 +180,27 @@ describe('作用域上下文类型系统', () => {
         // scope.emit('users/fisher/offline', 1);
         // scope.emit('posts/fisher/offline', '22');
     });
+    test('继承scope类', () => {
+        type Events = {
+            'rooms/*/users/online': { name: string; status?: number };
+            'rooms/*/users/*/online': { name: string; status?: number };
+            'rooms/*/users/*/offline': boolean;
+            'rooms/*/posts/**': number;
+            'rooms/*/posts/*/online': number;
+        };
+        const emitter = new FastEvent<Events>();
+
+        class CustomScope<Prefix extends string = string> extends FastEventScope<ScopeEvents<Events, Prefix>> {
+            test() {}
+        }
+        type S = ScopeEvents<Events, 'rooms/a'>;
+
+        function getRoomScope<Prefix extends string>(prefix: Prefix) {
+            return emitter.scope(prefix, new CustomScope<`rooms/${Prefix}`>());
+        }
+
+        const scope = getRoomScope('y');
+
+        type scopEvents = keyof typeof scope.types.events;
+    });
 });
