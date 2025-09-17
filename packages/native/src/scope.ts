@@ -22,6 +22,7 @@ import {
 import { parseEmitArgs } from './utils/parseEmitArgs';
 import { parseScopeArgs } from './utils/parseScopeArgs';
 import { renameFn } from './utils/renameFn';
+import { PickPayload, AtPayloads } from './types/index';
 
 export type FastEventScopeOptions<Meta = Record<string, any>, Context = never> = {
     meta: FastEventScopeMeta & FastEventMeta & Meta;
@@ -102,7 +103,7 @@ export class FastEventScope<
         if (!listener) listener = (this._options.onMessage || this.onMessage).bind(this) as TypedFastEventListener;
         const scopeThis = this;
         const scopeListener = renameFn(function (message: TypedFastEventMessage, args: FastEventListenerArgs) {
-            if (message.type.startsWith(scopePrefix)) {
+            if (typeof message === 'object' && typeof message.type === 'string' && message.type.startsWith(scopePrefix)) {
                 return listener.call(
                     scopeThis.context,
                     Object.assign({}, message, {
@@ -111,7 +112,7 @@ export class FastEventScope<
                     args,
                 );
             }
-        }, listener.name);
+        }, listener.name) as TypedFastEventListener;
         return scopeListener;
     }
     private _getScopeType(type: string) {
@@ -194,19 +195,18 @@ export class FastEventScope<
 
     public emit(type: Types, directive: symbol): void;
     public emit(type: string, directive: symbol): void;
-    public emit<R = any, T extends Types = Types>(type: T, payload?: Events[T], retain?: boolean): R[];
-    public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? Events[T] : RecordValues<MatchEventType<T, Events>>, retain?: boolean): R[];
-    public emit<R = any>(type: Types, payload?: Events[Types], options?: FastEventListenerArgs<FinalMeta>): R[];
+    public emit<R = any, T extends Types = Types>(type: T, payload?: PickPayload<Events[T]>, retain?: boolean): R[];
+    public emit<R = any, T extends string = string>(type: T, payload?: PickPayload<T extends Types ? Events[T] : RecordValues<MatchEventType<T, Events>>>, retain?: boolean): R[];
     public emit<R = any, T extends string = string>(
         type: T,
-        payload?: T extends Types ? Events[T] : RecordValues<MatchEventType<T, Events>>,
+        payload?: PickPayload<T extends Types ? Events[T] : RecordValues<MatchEventType<T, Events>>>,
         options?: FastEventListenerArgs<FinalMeta>,
     ): R[];
-    public emit<R = any>(message: FastEventEmitMessage<Events, FinalMeta>, options?: FastEventListenerArgs<FinalMeta>): R[];
+    public emit<R = any>(message: FastEventEmitMessage<AtPayloads<Events>, FinalMeta>, options?: FastEventListenerArgs<FinalMeta>): R[];
     public emit<R = any, T extends string = string>(
         message: FastEventEmitMessage<
             {
-                [K in T]: K extends Types ? Events[K] : any;
+                [K in T]: PickPayload<K extends Types ? Events[K] : any>;
             },
             FinalMeta
         >,
@@ -221,16 +221,23 @@ export class FastEventScope<
         message.type = this._getScopeType(message.type)!;
         return this.emitter.emit(message as TypedFastEventMessage<Events, FinalMeta>, options);
     }
-    public async emitAsync<R = any, T extends Types = Types>(type: T, payload?: Events[T], retain?: boolean): Promise<[R | Error][]>;
-    public async emitAsync<R = any, T extends string = string>(type: T, payload?: T extends Types ? Events[T] : any, retain?: boolean): Promise<[R | Error][]>;
-    public async emitAsync<R = any, T extends Types = Types>(type: T, payload?: Events[T], options?: FastEventListenerArgs<FinalMeta>): Promise<[R | Error][]>;
+    public async emitAsync<R = any, T extends Types = Types>(type: T, payload?: PickPayload<Events[T]>, retain?: boolean): Promise<[R | Error][]>;
+    public async emitAsync<R = any, T extends string = string>(type: T, payload?: PickPayload<T extends Types ? Events[T] : any>, retain?: boolean): Promise<[R | Error][]>;
+    public async emitAsync<R = any, T extends Types = Types>(type: T, payload?: PickPayload<Events[T]>, options?: FastEventListenerArgs<FinalMeta>): Promise<[R | Error][]>;
     public async emitAsync<R = any, T extends string = string>(
         type: T,
-        payload?: T extends Types ? Events[T] : any,
+        payload?: PickPayload<T extends Types ? Events[T] : any>,
         options?: FastEventListenerArgs<FinalMeta>,
     ): Promise<[R | Error][]>;
-
-    public async emitAsync<R = any>(message: TypedFastEventMessage<Events, FinalMeta>, options?: FastEventListenerArgs<FinalMeta>): Promise<[R | Error][]>;
+    public async emitAsync<R = any, T extends string = string>(
+        message: FastEventEmitMessage<
+            {
+                [K in T]: PickPayload<K extends Types ? Events[K] : any>;
+            },
+            FinalMeta
+        >,
+        options?: FastEventListenerArgs<FinalMeta>,
+    ): Promise<[R | Error][]>;
     public async emitAsync<R = any>(): Promise<[R | Error][]> {
         const results = await Promise.allSettled(this.emit.apply(this, arguments as any));
         return results.map((result) => {

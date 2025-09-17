@@ -40,15 +40,17 @@ export type FastEventEmitMessage<Events extends Record<string, any> = Record<str
 }[Exclude<keyof Events, number | symbol>] &
     FastEventMessageExtends;
 
+// 如果事件类型中的payload使用AssertFastMessage标识，则说明该payload是FastMessage类型，而不是payload本身
+type SelectMessage<T extends string, P = any, M = any> = TypedFastEventMessage<Record<T, P>, M> extends { payload: infer Payload }
+    ? Payload extends { __IS_FAST_MESSAGE__: true }
+        ? Omit<Payload, '__IS_FAST_MESSAGE__'>
+        : TypedFastEventMessage<Record<T, P>, M>
+    : never;
+
 // 只针对指定类型
 export type TypedFastEventListener<T extends string = string, P = any, M = any, C = any> = (
     this: C,
-    message: TypedFastEventMessage<
-        {
-            [K in T]: P;
-        },
-        M
-    >,
+    message: SelectMessage<T, P, M>,
     args: FastEventListenerArgs<M>,
 ) => any | Promise<any>;
 
@@ -149,8 +151,18 @@ export type FastEventOptions<Meta = Record<string, any>, Context = never> = {
     executor?: FastListenerExecutor;
     // 默认监听器，优先级高类方法onMessage
     onMessage?: TypedFastEventListener;
-    // 是否展开emit返回值,默认为false
+    // 是否展开emit返回值,默认为false，用于将事件转发给其他FastEvent时使用
     expandEmitResults?: boolean;
+    /**
+     * 对接收到的消息进行转换，用于将消息转换成其他格式
+     *
+     * new FastEvent({
+     *    transform:(message)=>{
+     *        message.payload
+     *    }
+     * })
+     */
+    transform?: (message: FastEventMessage) => TypedFastEventMessage;
 };
 
 export interface FastEvents {}
@@ -191,6 +203,13 @@ export type FastEventListenerArgs<M = Record<string, any>> = {
      * 当emit参数解析完成后的回调，用于修改emit参数
      */
     parseArgs?: (message: TypedFastEventMessage, args: FastEventListenerArgs) => void;
+    /**
+     * 额外的标识
+     *
+     * - 1: transformed 当消息是经过transform转换后的消息时的标识
+     *
+     */
+    flags?: number;
 };
 
 export type Merge<T extends object, U extends object> = {
@@ -319,3 +338,45 @@ export type RecordPrefix<P extends string, R extends Record<string, any>> = {
 
 export * from './MatchPattern';
 export * from './ScopeEvents';
+
+/**
+ * 声明事件类型时，一般情况下，K=事件名称，V=事件Payload参数类型
+ *
+ * AssertFastMessage用于声明V是一个FastMessage类型，而不是Payload类型
+ * 
+ * 一般配合transform参数使用
+ * 
+ * 例如：
+ * type CustomEvents = {
+       click: { x: number; y: number };
+    }
+    const emitter = new FastEvent<CustomEvents>();
+    emitter.on('click', (message) => {
+        // typeof message.payload === { x: number; y: number }
+    })
+    const emitter = new FastEvent<CustomEvents>({
+        transform:(message)=>{
+            if(message.type === 'click'){
+                return message.payload
+            }else{
+                return message
+            }
+        }
+    });
+    emitter.on('click', (message) => {
+        // typeof message === { x: number; y: number }
+   }
+ * 
+ *
+ */
+export type AssertFastMessage<M> = M & {
+    __IS_FAST_MESSAGE__: true;
+};
+
+export type NotPayload<M> = AssertFastMessage<M>;
+
+export type PickPayload<M> = M extends Record<string, any> ? Omit<M, '__IS_FAST_MESSAGE__'> : M;
+
+export type AtPayloads<Events extends Record<string, any>> = {
+    [K in keyof Events]: PickPayload<Events[K]>;
+};

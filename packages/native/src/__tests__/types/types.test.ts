@@ -1,13 +1,12 @@
 /* eslint-disable no-unused-vars */
 
-import { describe, test, expect } from "vitest"
-import type { Equal, Expect } from '@type-challenges/utils'
-import { FastEvent } from "../../event"
-import { FastEvents, FastEventMessageExtends, FastEventMessage, FastEventListener, TypedFastEventListener } from "../../types"
+import { describe, test, expect } from 'vitest';
+import type { Equal, Expect } from '@type-challenges/utils';
+import { FastEvent } from '../../event';
+import { FastEvents, FastEventMessageExtends, FastEventMessage, FastEventListener, TypedFastEventListener, AssertFastMessage } from '../../types';
 
-
-describe("types", () => {
-    test("自定义事件类型和元数据类型", () => {
+describe('types', () => {
+    test('自定义事件类型和元数据类型', () => {
         type CustomMeta = { x: number; y: number; z?: number };
         type CustomEvents = {
             click: { x: number; y: number };
@@ -16,31 +15,35 @@ describe("types", () => {
             focus: string;
         };
         type CustomContext = {
-            name: string,
-            age: number
-            address: string
+            name: string;
+            age: number;
+            address: string;
         };
         const emitter = new FastEvent<CustomEvents, CustomMeta, CustomContext>({
             context: {
-                name: "hello",
+                name: 'hello',
                 age: 18,
-                address: "beijing"
-            }
+                address: 'beijing',
+            },
         });
 
         type cases = [
-            Expect<Equal<typeof emitter.types.events, CustomEvents & FastEvents>>,
-            Expect<Equal<typeof emitter.types.meta, {
-                [x: string]: any;
-                x: number;
-                y: number;
-                z?: number | undefined;
-            }>>,
+            Expect<Equal<typeof emitter.types.events, CustomEvents>>,
+            Expect<
+                Equal<
+                    typeof emitter.types.meta,
+                    {
+                        [x: string]: any;
+                        x: number;
+                        y: number;
+                        z?: number | undefined;
+                    }
+                >
+            >,
             Expect<Equal<typeof emitter.types.context, CustomContext>>,
-        ]
-    })
-    test("消息类型约束", () => {
-
+        ];
+    });
+    test('消息类型约束', () => {
         type CustomEvents = {
             click: { x: number; y: number };
             mousemove: boolean;
@@ -50,78 +53,65 @@ describe("types", () => {
         const emitter = new FastEvent<CustomEvents>();
 
         // 构建类型推断和约束的消息
-        type MessageType = typeof emitter.types.message
+        type MessageType = typeof emitter.types.message;
 
         const typedMessage: MessageType = {
-            type: "click",
+            type: 'click',
             payload: {
                 x: 100,
-                y: 100
-            }
-        }
-
+                y: 100,
+            },
+        };
 
         emitter.emit({
-            type: "click",
+            type: 'click',
             payload: {
                 x: 100,
-                y: 100
-            }
-        })
-
-
+                y: 100,
+            },
+        });
 
         // 构建通用的消息
         const message: FastEventMessage = {
-            type: "click",
-            payload: 100
-        }
-        emitter.emit(message)
+            type: 'click',
+            payload: 100,
+        };
+        emitter.emit(message);
 
-        emitter.on('click', (message) => {
-
-        })
-    })
-    test("消息类型约束2", () => {
-
-
+        emitter.on('click', (message) => {});
+    });
+    test('消息类型约束2', () => {
         const emitter = new FastEvent();
 
         // 构建类型推断和约束的消息
-        type MessageType = typeof emitter.types.message
+        type MessageType = typeof emitter.types.message;
 
         const typedMessage: MessageType = {
-            type: "click",
+            type: 'click',
             payload: {
                 x: 100,
-                y: 100
-            }
-        }
-
+                y: 100,
+            },
+        };
 
         emitter.emit({
-            type: "click",
+            type: 'click',
             payload: {
                 x: 100,
-                y: 100
-            }
-        })
-
-
+                y: 100,
+            },
+        });
 
         // 构建通用的消息
         const message: FastEventMessage<string> = {
-            type: "click",
-            payload: "100"
-        }
-        emitter.emit(message)
+            type: 'click',
+            payload: '100',
+        };
+        emitter.emit(message);
 
-        emitter.on('click', (message) => {
-
-        })
-    })
-    test("所有监听器类型", () => {
-
+        emitter.on('click', (message) => {});
+    });
+    test('所有监听器类型', () => {
         type CustomMeta = { x: number; y: number; z?: number };
         type CustomEvents = {
             click: { x: number; y: number };
@@ -130,50 +120,73 @@ describe("types", () => {
             focus: string;
         };
         type CustomContext = {
-            name: string,
-            age: number
-            address: string
+            name: string;
+            age: number;
+            address: string;
         };
         const emitter = new FastEvent<CustomEvents, CustomMeta, CustomContext>({
             context: {
-                name: "hello",
+                name: 'hello',
                 age: 18,
-                address: "beijing"
-            }
+                address: 'beijing',
+            },
         });
 
-        type ListenerTypes = typeof emitter.types.listeners
+        type ListenerTypes = typeof emitter.types.listeners;
 
         type cases = [
-            Expect<Equal<ListenerTypes['click'], TypedFastEventListener<"click", {
-                x: number;
-                y: number;
-            }, {
-                [x: string]: any;
-                x: number;
-                y: number;
-                z?: number | undefined;
-            }, any>
-            >>
-        ]
-    })
+            Expect<
+                Equal<
+                    ListenerTypes['click'],
+                    TypedFastEventListener<
+                        'click',
+                        {
+                            x: number;
+                            y: number;
+                        },
+                        {
+                            [x: string]: any;
+                            x: number;
+                            y: number;
+                            z?: number | undefined;
+                        },
+                        any
+                    >
+                >
+            >,
+        ];
+    });
 
-    test("通用监听器类型传递", () => {
-
+    test('通用监听器类型传递', () => {
         const emitter = new FastEvent();
-        type MyListener<
-            P = any,
-            M extends Record<string, any> = Record<string, any>,
-            T extends string = string
-        > = FastEventListener<P, M, T>
+        type MyListener<P = any, M extends Record<string, any> = Record<string, any>, T extends string = string> = FastEventListener<P, M, T>;
         const listener: MyListener = (message) => {
-            console.log(message)
-        }
-        emitter.on("xxx", listener)
-    })
+            console.log(message);
+        };
+        emitter.on('xxx', listener);
+    });
 
+    test('自定义事件转换', () => {
+        type CustomEvents = {
+            click: AssertFastMessage<{ x: number; y: number }>;
+            mousemove: boolean;
+            scroll: number;
+            focus: string;
+        };
+        const emitter = new FastEvent<CustomEvents>({
+            transform: (message) => {
+                return message.payload;
+            },
+        });
 
-})
-
-
-
+        emitter.on('click', (message) => {
+            message.x;
+            message.y;
+            type cases = [Expect<Equal<typeof message, { x: number; y: number }>>];
+        });
+        emitter.on('mousemove', (message) => {
+            message.payload;
+            type cases = [Expect<Equal<typeof message.payload, boolean>>];
+        });
+    });
+});
