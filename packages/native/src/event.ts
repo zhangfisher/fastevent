@@ -21,6 +21,10 @@ import {
     MatchEventType,
     RecordValues,
     PickPayload,
+    FastEventListenerFlags,
+    PickTransformedEvents,
+    FastMessagePayload,
+    OmitTransformedEvents,
 } from './types';
 import { parseEmitArgs } from './utils/parseEmitArgs';
 import { isPathMatched } from './utils/isPathMatched';
@@ -250,16 +254,28 @@ export class FastEvent<
     public on<T extends string>(type: T, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber;
     public on(type: '**', options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber;
 
-    public on<T extends Types = Types>(
+    // 处理标准事件类型
+    public on<T extends keyof OmitTransformedEvents<AllEvents>>(
         type: T,
         listener: TypedFastEventListener<Exclude<T, number | symbol>, AllEvents[T], Meta, Fallback<Context, typeof this>>,
         options?: FastEventListenOptions<AllEvents, Meta>,
     ): FastEventSubscriber;
-    public on<T extends string>(
+
+    // 处理使用 NotPayload 标识的事件类型
+    public on<T extends keyof PickTransformedEvents<AllEvents>>(
+        type: T,
+        listener: (message: PickPayload<AllEvents[T]>, args: FastEventListenerArgs<Meta>) => any | Promise<any>,
+        options?: FastEventListenOptions<AllEvents, Meta>,
+    ): FastEventSubscriber;
+
+    // 处理通配符事件类型
+    public on<T extends Exclude<string, Types>>(
         type: T,
         listener: TypedFastEventAnyListener<MatchEventType<T, AllEvents>, Meta, Fallback<Context, typeof this>>,
         options?: FastEventListenOptions<AllEvents, Meta>,
     ): FastEventSubscriber;
+
+    // 处理全局监听
     public on(
         type: '**',
         listener: TypedFastEventAnyListener<Record<string, any>, Meta, Fallback<Context, typeof this>>,
@@ -344,12 +360,23 @@ export class FastEvent<
      */
     public once<T extends Types = Types>(type: T, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber;
     public once<T extends string>(type: T, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber;
-    public once<T extends Types = Types>(
+
+    // 处理标准事件类型
+    public once<T extends keyof OmitTransformedEvents<AllEvents>>(
         type: T,
         listener: TypedFastEventListener<Exclude<T, number | symbol>, AllEvents[T], Meta, Fallback<Context, typeof this>>,
         options?: FastEventListenOptions<AllEvents, Meta>,
     ): FastEventSubscriber;
-    public once<T extends string>(
+
+    // 处理使用 NotPayload 标识的事件类型
+    public once<T extends keyof PickTransformedEvents<AllEvents>>(
+        type: T,
+        listener: (message: PickPayload<AllEvents[T]>, args: FastEventListenerArgs<Meta>) => any | Promise<any>,
+        options?: FastEventListenOptions<AllEvents, Meta>,
+    ): FastEventSubscriber;
+
+    // 处理通配符事件类型
+    public once<T extends Exclude<string, Types>>(
         type: T,
         listener: TypedFastEventAnyListener<MatchEventType<T, AllEvents>, Meta, Fallback<Context, typeof this>>,
         options?: FastEventListenOptions<AllEvents, Meta>,
@@ -600,6 +627,10 @@ export class FastEvent<
             throw e;
         }
     }
+    private _setListenerFlags(flags: any, value: FastEventListenerFlags): FastEventListenerFlags {
+        if (!flags || flags === 0) return value;
+        return flags | value;
+    }
     /**
      * 执行单个监听器函数
      * @param listener - 要执行的监听器函数或包装过的监听器对象
@@ -631,7 +662,10 @@ export class FastEvent<
                 return this._onListenerError(listener, message, args, new AbortError(listener.name));
             }
             if (isFunction(this._options.transform)) {
+                if (!args) args = {};
+                args.rawEventType = message.type;
                 message = this._options.transform.call(this, message);
+                args.flags = this._setListenerFlags(args.flags, FastEventListenerFlags.Transformed);
             }
             let result = listener.call(this.context, message, args!);
             // 自动处理reject Promise

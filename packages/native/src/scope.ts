@@ -18,6 +18,9 @@ import {
     FastEventListeners,
     RecordValues,
     MatchEventType,
+    FastEventListenerFlags,
+    OmitTransformedEvents,
+    PickTransformedEvents,
 } from './types';
 import { parseEmitArgs } from './utils/parseEmitArgs';
 import { parseScopeArgs } from './utils/parseScopeArgs';
@@ -103,14 +106,16 @@ export class FastEventScope<
         if (!listener) listener = (this._options.onMessage || this.onMessage).bind(this) as TypedFastEventListener;
         const scopeThis = this;
         const scopeListener = renameFn(function (message: TypedFastEventMessage, args: FastEventListenerArgs) {
-            if (typeof message === 'object' && typeof message.type === 'string' && message.type.startsWith(scopePrefix)) {
-                return listener.call(
-                    scopeThis.context,
-                    Object.assign({}, message, {
-                        type: message.type.substring(scopePrefix.length),
-                    }),
-                    args,
-                );
+            const type = args.rawEventType || message.type;
+            if (type.startsWith(scopePrefix)) {
+                // 消息是否经过转换
+                const isTransformed = ((args.flags || 0) & FastEventListenerFlags.Transformed) > 0;
+                const msg = isTransformed
+                    ? message
+                    : Object.assign({}, message, {
+                          type: type.substring(scopePrefix.length),
+                      });
+                return listener.call(scopeThis.context, msg, args);
             }
         }, listener.name) as TypedFastEventListener;
         return scopeListener;
@@ -123,22 +128,25 @@ export class FastEventScope<
     }
     // 使用默认的onMessage监听器
     public on<T extends Types = Types>(type: T, options?: FastEventListenOptions<Events, FinalMeta>): FastEventSubscriber;
-    public on<T extends string>(type: T, options?: FastEventListenOptions<Events, FinalMeta>): FastEventSubscriber;
+    public on<T extends Exclude<string, Types>>(type: T, options?: FastEventListenOptions<Events, FinalMeta>): FastEventSubscriber;
     public on(type: '**', options?: FastEventListenOptions<Events, FinalMeta>): FastEventSubscriber;
     // 传入监听器
-    public on<T extends Types = Types>(
+    public on<T extends keyof OmitTransformedEvents<Events>>(
         type: T,
         listener: TypedFastEventListener<Exclude<T, number | symbol>, Events[T], FinalMeta, Fallback<Context, typeof this>>,
         options?: FastEventListenOptions,
     ): FastEventSubscriber;
-    public on<T extends string>(
+
+    // 处理使用 NotPayload 标识的事件类型
+    public on<T extends keyof PickTransformedEvents<Events>>(
         type: T,
-        listener: TypedFastEventListener<
-            Exclude<keyof MatchEventType<T, Events>, number | symbol>,
-            RecordValues<MatchEventType<T, Events>>,
-            FinalMeta,
-            Fallback<Context, typeof this>
-        >,
+        listener: (message: PickPayload<Events[T]>, args: FastEventListenerArgs<Meta>) => any | Promise<any>,
+        options?: FastEventListenOptions<Events, Meta>,
+    ): FastEventSubscriber;
+
+    public on<T extends Exclude<string, Types>>(
+        type: T,
+        listener: TypedFastEventAnyListener<MatchEventType<T, Events>, Meta, Fallback<Context, typeof this>>,
         options?: FastEventListenOptions,
     ): FastEventSubscriber;
     public on(type: '**', listener: TypedFastEventAnyListener<Events, FinalMeta, Fallback<Context, typeof this>>, options?: FastEventListenOptions): FastEventSubscriber;
@@ -149,17 +157,18 @@ export class FastEventScope<
         args[1] = this._getScopeListener(args[1]);
         return this.emitter.on(...args);
     }
+
     public once<T extends Types = Types>(type: T, options?: FastEventListenOptions<Events, FinalMeta>): FastEventSubscriber;
-    public once<T extends string>(type: T, options?: FastEventListenOptions<Events, FinalMeta>): FastEventSubscriber;
+    public once<T extends Exclude<string, Types>>(type: T, options?: FastEventListenOptions<Events, FinalMeta>): FastEventSubscriber;
 
     public once<T extends Types = Types>(
         type: T,
         listener: TypedFastEventListener<Exclude<T, number | symbol>, Events[T], FinalMeta, Fallback<Context, typeof this>>,
         options?: FastEventListenOptions,
     ): FastEventSubscriber;
-    public once<T extends string>(
+    public once<T extends Exclude<string, Types>>(
         type: T,
-        listener: TypedFastEventListener<string, any, FinalMeta, Fallback<Context, typeof this>>,
+        listener: TypedFastEventAnyListener<MatchEventType<T, Events>, Meta, Fallback<Context, typeof this>>,
         options?: FastEventListenOptions,
     ): FastEventSubscriber;
     public once(): FastEventSubscriber {

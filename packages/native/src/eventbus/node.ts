@@ -13,7 +13,7 @@ export class FastEventBusNode<Events extends Record<string, any> = Record<string
     Meta,
     Context
 > {
-    eventbus?: FastEventBus<any, any, any>;
+    eventbus?: FastEventBus<any, any, any, any, any>;
     private _subscribers: FastEventSubscriber[] = [];
     constructor(options?: DeepPartial<FastEventBusNodeOptions<Meta, Context>>) {
         super(options as any);
@@ -87,7 +87,7 @@ export class FastEventBusNode<Events extends Record<string, any> = Record<string
      * 加入事件总线
      * @param eventBus 要加入的事件总线
      */
-    connect(eventbus: FastEventBus<any, any, any>): void {
+    connect<E extends Record<string, any> = Record<string, any>, M extends Record<string, any> = Record<string, any>, C = any>(eventbus: FastEventBus<E, M, C>): void {
         this.eventbus = eventbus;
         this.eventbus.add(this);
         // 订阅广播事件，以便能接收到广播消息

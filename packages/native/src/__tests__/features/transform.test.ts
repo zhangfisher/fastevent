@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
-import { FastEvent } from '../event';
-import { AssertFastMessage } from '../types';
+import { FastEvent } from '../../event';
+import { AssertFastMessage } from '../../types';
 
 describe('转换事件消息', async () => {
     test('转换自定义侦听消息', () => {
@@ -63,6 +63,9 @@ describe('转换事件消息', async () => {
             emitter.emit({
                 type: 'mousemove',
                 payload: true,
+            });
+            emitter.once('mousemove', (message) => {
+                message;
             });
         });
     });
@@ -133,6 +136,10 @@ describe('转换事件消息', async () => {
 
             scope.on('scroll', (message) => {
                 message.payload;
+            });
+
+            scope.on('aaaa', (message) => {
+                message.type;
             });
         });
     });

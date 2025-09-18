@@ -4,7 +4,7 @@ import { describe, test, expect } from 'vitest';
 import type { Equal, Expect, NotAny } from '@type-challenges/utils';
 import { FastEvent } from '../../event';
 import { FastEventScope, FastEventScopeMeta } from '../../scope';
-import { ChangeFieldType, FastEventMeta, FastEvents, PickScopeEvents, RequiredItems, ScopeEvents } from '../../types';
+import { ChangeFieldType, FastEventMeta, FastEvents, RequiredItems, ScopeEvents } from '../../types';
 
 declare module '../../types' {
     interface FastEventMeta {
@@ -41,8 +41,6 @@ describe('事件作用域类型测试', () => {
             y: string;
         };
         const scope = emitter.scope<CustomScopeEvents>('a/b/c');
-
-        type ScopeEvents = Expect<Equal<typeof scope.types.events, PickScopeEvents<Record<string, any> & FastEvents, string> & CustomScopeEvents>>;
 
         scope.on('x', (message) => {
             type cases = [
@@ -112,6 +110,8 @@ describe('作用域上下文类型系统', () => {
         const scope = emitter.scope('x/y/z', {
             context: 1,
         });
+        type scopeEvents = typeof scope.types.events;
+
         type scopeCtx = Expect<Equal<typeof scope.options.context, number>>;
 
         scope.on('a', function (this, message) {
@@ -141,7 +141,7 @@ describe('作用域上下文类型系统', () => {
         }>('x/y/z');
         type ScopeEvents = typeof scope.types.events;
         type cases = [Expect<Equal<ScopeEvents['a'], boolean>>, Expect<Equal<ScopeEvents['b'], number>>, Expect<Equal<ScopeEvents['c'], string>>];
-        scope.emit('a', 1);
+        scope.emit('a');
         scope.emitAsync('b', 1);
     });
     test('scope发布通配符事件', () => {

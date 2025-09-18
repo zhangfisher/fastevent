@@ -44,10 +44,18 @@ export type MatchEventType<T extends string, Events extends Record<string, any>>
         }[keyof Events] extends infer Result
             ? Result extends Record<string, any>
                 ? Result
-                : any
-            : any,
+                : Record<string, any>
+            : Record<string, any>,
         {
             [K in T]: any;
         }
     >
 >;
+
+export type MatchEventPayload<Events extends Record<string, any>, T> = T extends keyof Events
+    ? Events[T]
+    : T extends string
+    ? T extends keyof MatchEventType<T, Events>
+        ? MatchEventType<T, Events>[T]
+        : any
+    : any;

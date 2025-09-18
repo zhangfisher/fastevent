@@ -3,8 +3,8 @@
  */
 
 import { describe, test, expect, vi } from "vitest"
-import { FastEvent } from "../event"
-import { AbortError } from "../consts"
+import { FastEvent } from "../../event"
+import { AbortError } from "../../consts"
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 

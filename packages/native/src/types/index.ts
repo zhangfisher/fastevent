@@ -40,17 +40,15 @@ export type FastEventEmitMessage<Events extends Record<string, any> = Record<str
 }[Exclude<keyof Events, number | symbol>] &
     FastEventMessageExtends;
 
-// 如果事件类型中的payload使用AssertFastMessage标识，则说明该payload是FastMessage类型，而不是payload本身
-type SelectMessage<T extends string, P = any, M = any> = TypedFastEventMessage<Record<T, P>, M> extends { payload: infer Payload }
-    ? Payload extends { __IS_FAST_MESSAGE__: true }
-        ? Omit<Payload, '__IS_FAST_MESSAGE__'>
-        : TypedFastEventMessage<Record<T, P>, M>
-    : never;
+export type FastMessagePayload<P = any> = {
+    type: P;
+    __IS_FAST_MESSAGE__: true;
+};
 
 // 只针对指定类型
 export type TypedFastEventListener<T extends string = string, P = any, M = any, C = any> = (
     this: C,
-    message: SelectMessage<T, P, M>,
+    message: TypedFastEventMessage<Record<T, P>, M>,
     args: FastEventListenerArgs<M>,
 ) => any | Promise<any>;
 
@@ -187,6 +185,10 @@ export type FastEventListenOptions<Events extends Record<string, any> = Record<s
     tag?: string;
 };
 
+export enum FastEventListenerFlags {
+    Transformed = 1, // 标识消息是经过transform转换后的
+}
+
 export type FastEventListenerArgs<M = Record<string, any>> = {
     retain?: boolean;
     meta?: DeepPartial<M> & Record<string, any>;
@@ -209,7 +211,11 @@ export type FastEventListenerArgs<M = Record<string, any>> = {
      * - 1: transformed 当消息是经过transform转换后的消息时的标识
      *
      */
-    flags?: number;
+    flags?: FastEventListenerFlags;
+    /**
+     * 如果消息经过转换前的原主题
+     */
+    rawEventType?: string;
 };
 
 export type Merge<T extends object, U extends object> = {
@@ -369,14 +375,30 @@ export * from './ScopeEvents';
  * 
  *
  */
-export type AssertFastMessage<M> = M & {
+
+export type AssertFastMessage<M> = {
+    type: M;
     __IS_FAST_MESSAGE__: true;
 };
 
 export type NotPayload<M> = AssertFastMessage<M>;
 
-export type PickPayload<M> = M extends Record<string, any> ? Omit<M, '__IS_FAST_MESSAGE__'> : M;
+export type PickPayload<M> = M extends FastMessagePayload ? M['type'] : M;
 
 export type AtPayloads<Events extends Record<string, any>> = {
     [K in keyof Events]: PickPayload<Events[K]>;
+};
+
+export type PickTransformedEvents<T extends Record<string, any>> = {
+    [key in keyof T as T[key] extends FastMessagePayload ? key : never]: T[key];
+};
+export type OmitTransformedEvents<T extends Record<string, any>> = {
+    [key in keyof T as T[key] extends FastMessagePayload ? never : key]: T[key];
+};
+
+type CustomEvents = {
+    click: NotPayload<{ x: number; y: number }>;
+    mousemove: boolean;
+    scroll: number;
+    focus: string;
 };

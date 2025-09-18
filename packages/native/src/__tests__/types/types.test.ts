@@ -3,7 +3,7 @@
 import { describe, test, expect } from 'vitest';
 import type { Equal, Expect } from '@type-challenges/utils';
 import { FastEvent } from '../../event';
-import { FastEvents, FastEventMessageExtends, FastEventMessage, FastEventListener, TypedFastEventListener, AssertFastMessage } from '../../types';
+import { FastEventMessage, FastEventListener, TypedFastEventListener, AssertFastMessage as NotPayload } from '../../types';
 
 describe('types', () => {
     test('自定义事件类型和元数据类型', () => {
@@ -168,11 +168,12 @@ describe('types', () => {
 
     test('自定义事件转换', () => {
         type CustomEvents = {
-            click: AssertFastMessage<{ x: number; y: number }>;
+            click: NotPayload<{ x: number; y: number }>;
             mousemove: boolean;
             scroll: number;
             focus: string;
         };
+
         const emitter = new FastEvent<CustomEvents>({
             transform: (message) => {
                 return message.payload;
@@ -187,6 +188,42 @@ describe('types', () => {
         emitter.on('mousemove', (message) => {
             message.payload;
             type cases = [Expect<Equal<typeof message.payload, boolean>>];
+        });
+
+        emitter.on('xxx', (message) => {
+            message.payload;
+            type cases = [Expect<Equal<typeof message.type, 'xxx'>>, Expect<Equal<typeof message.payload, any>>];
+        });
+    });
+    test('Scope自定义事件转换', () => {
+        type CustomEvents = {
+            'div/click': NotPayload<{ x: number; y: number }>;
+            'div/mousemove': boolean;
+            'div/scroll': number;
+            'div/focus': string;
+        };
+
+        const emitter = new FastEvent<CustomEvents>({
+            transform: (message) => {
+                return message.payload;
+            },
+        });
+
+        const scope = emitter.scope('div');
+
+        scope.on('click', (message) => {
+            message.x;
+            message.y;
+            type cases = [Expect<Equal<typeof message, { x: number; y: number }>>];
+        });
+        scope.on('mousemove', (message) => {
+            message.payload;
+            type cases = [Expect<Equal<typeof message.payload, boolean>>];
+        });
+
+        scope.on('xxx', (message) => {
+            message.payload;
+            type cases = [Expect<Equal<typeof message.type, 'xxx'>>, Expect<Equal<typeof message.payload, any>>];
         });
     });
 });
