@@ -1,5 +1,6 @@
 import type { FastListenerExecutor } from '../executors/types';
 import { type FastListenerPipe } from '../pipes/types';
+import { ExpandWildcard } from './ExpandWildcard';
 
 // 用来扩展全局Meta类型
 export interface FastEventMeta {}
@@ -160,7 +161,7 @@ export type FastEventOptions<Meta = Record<string, any>, Context = never> = {
      *    }
      * })
      */
-    transform?: (message: FastEventMessage) => TypedFastEventMessage;
+    transform?: (message: FastEventMessage) => any;
 };
 
 export interface FastEvents {}
@@ -342,9 +343,6 @@ export type RecordPrefix<P extends string, R extends Record<string, any>> = {
     [K in keyof R as K extends `${P}/${infer S}` ? S : never]: R[K];
 };
 
-export * from './MatchPattern';
-export * from './ScopeEvents';
-
 /**
  * 声明事件类型时，一般情况下，K=事件名称，V=事件Payload参数类型
  *
@@ -371,9 +369,7 @@ export * from './ScopeEvents';
     });
     emitter.on('click', (message) => {
         // typeof message === { x: number; y: number }
-   }
- * 
- *
+    }
  */
 
 export type AssertFastMessage<M> = {
@@ -389,16 +385,17 @@ export type AtPayloads<Events extends Record<string, any>> = {
     [K in keyof Events]: PickPayload<Events[K]>;
 };
 
-export type PickTransformedEvents<T extends Record<string, any>> = {
+export type PickTransformedEvents<T extends Record<string, any>> = ExpandWildcard<{
     [key in keyof T as T[key] extends FastMessagePayload ? key : never]: T[key];
-};
+}>;
 export type OmitTransformedEvents<T extends Record<string, any>> = {
     [key in keyof T as T[key] extends FastMessagePayload ? never : key]: T[key];
 };
 
-type CustomEvents = {
-    click: NotPayload<{ x: number; y: number }>;
-    mousemove: boolean;
-    scroll: number;
-    focus: string;
+export type TransformedEvents<Events extends Record<string, any>> = {
+    [K in keyof Events]: NotPayload<Events[K]>;
 };
+
+export * from './MatchPattern';
+export * from './ScopeEvents';
+export * from './ExpandWildcard';

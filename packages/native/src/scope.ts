@@ -140,7 +140,7 @@ export class FastEventScope<
     // 处理使用 NotPayload 标识的事件类型
     public on<T extends keyof PickTransformedEvents<Events>>(
         type: T,
-        listener: (message: PickPayload<Events[T]>, args: FastEventListenerArgs<Meta>) => any | Promise<any>,
+        listener: (message: PickPayload<RecordValues<MatchEventType<Exclude<T, number | symbol>, Events>>>, args: FastEventListenerArgs<Meta>) => any | Promise<any>,
         options?: FastEventListenOptions<Events, Meta>,
     ): FastEventSubscriber;
 
@@ -161,11 +161,20 @@ export class FastEventScope<
     public once<T extends Types = Types>(type: T, options?: FastEventListenOptions<Events, FinalMeta>): FastEventSubscriber;
     public once<T extends Exclude<string, Types>>(type: T, options?: FastEventListenOptions<Events, FinalMeta>): FastEventSubscriber;
 
-    public once<T extends Types = Types>(
+    // 传入监听器
+    public once<T extends keyof OmitTransformedEvents<Events>>(
         type: T,
         listener: TypedFastEventListener<Exclude<T, number | symbol>, Events[T], FinalMeta, Fallback<Context, typeof this>>,
         options?: FastEventListenOptions,
     ): FastEventSubscriber;
+
+    // 处理使用 NotPayload 标识的事件类型
+    public once<T extends keyof PickTransformedEvents<Events>>(
+        type: T,
+        listener: (message: PickPayload<RecordValues<MatchEventType<Exclude<T, number | symbol>, Events>>>, args: FastEventListenerArgs<Meta>) => any | Promise<any>,
+        options?: FastEventListenOptions<Events, Meta>,
+    ): FastEventSubscriber;
+
     public once<T extends Exclude<string, Types>>(
         type: T,
         listener: TypedFastEventAnyListener<MatchEventType<T, Events>, Meta, Fallback<Context, typeof this>>,

@@ -264,7 +264,7 @@ export class FastEvent<
     // 处理使用 NotPayload 标识的事件类型
     public on<T extends keyof PickTransformedEvents<AllEvents>>(
         type: T,
-        listener: (message: PickPayload<AllEvents[T]>, args: FastEventListenerArgs<Meta>) => any | Promise<any>,
+        listener: (message: PickPayload<RecordValues<MatchEventType<Exclude<T, number | symbol>, AllEvents>>>, args: FastEventListenerArgs<Meta>) => any | Promise<any>,
         options?: FastEventListenOptions<AllEvents, Meta>,
     ): FastEventSubscriber;
 
@@ -371,7 +371,7 @@ export class FastEvent<
     // 处理使用 NotPayload 标识的事件类型
     public once<T extends keyof PickTransformedEvents<AllEvents>>(
         type: T,
-        listener: (message: PickPayload<AllEvents[T]>, args: FastEventListenerArgs<Meta>) => any | Promise<any>,
+        listener: (message: PickPayload<RecordValues<MatchEventType<Exclude<T, number | symbol>, AllEvents>>>, args: FastEventListenerArgs<Meta>) => any | Promise<any>,
         options?: FastEventListenOptions<AllEvents, Meta>,
     ): FastEventSubscriber;
 
