@@ -127,6 +127,12 @@ describe('事件通配符匹配', () => {
         emitter.once('users/xxxxx', (event) => {
             type cases = [Expect<Equal<typeof event.type, 'users/xxxxx'>>, Expect<Equal<typeof event.payload, any>>];
         });
+
+        const scope = emitter.scope('users');
+
+        scope.on('a/online', (event) => {
+            type cases = [Expect<Equal<typeof event.type, '*/online'>>, Expect<Equal<typeof event.payload, string>>];
+        });
     });
     test('发布通配符事件', () => {
         type Events = {
@@ -142,6 +148,7 @@ describe('事件通配符匹配', () => {
         emitter.emit('users/fisher/offline', true);
         emitter.emit('posts/fisher/offline', 1);
 
+        // emitter.emit('a', 'x');
         // emitter.emit('users/fisher/online', 'x');
         // emitter.emit('users/fisher/offline', 1);
         // emitter.emit('posts/fisher/offline', true);

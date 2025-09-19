@@ -4,7 +4,7 @@ import { describe, test, expect } from 'vitest';
 import type { Equal, Expect, NotAny } from '@type-challenges/utils';
 import { FastEvent } from '../../event';
 import { FastEventScope, FastEventScopeMeta } from '../../scope';
-import { ChangeFieldType, FastEventMeta, FastEvents, PickScopeEvents, RequiredItems, ScopeEvents } from '../../types';
+import { ChangeFieldType, FastEventMeta, FastEvents, RequiredItems, ScopeEvents } from '../../types';
 
 declare module '../../types' {
     interface FastEventMeta {
@@ -41,8 +41,6 @@ describe('事件作用域类型测试', () => {
             y: string;
         };
         const scope = emitter.scope<CustomScopeEvents>('a/b/c');
-
-        type ScopeEvents = Expect<Equal<typeof scope.types.events, PickScopeEvents<Record<string, any> & FastEvents, string> & CustomScopeEvents>>;
 
         scope.on('x', (message) => {
             type cases = [
@@ -112,6 +110,8 @@ describe('作用域上下文类型系统', () => {
         const scope = emitter.scope('x/y/z', {
             context: 1,
         });
+        type scopeEvents = typeof scope.types.events;
+
         type scopeCtx = Expect<Equal<typeof scope.options.context, number>>;
 
         scope.on('a', function (this, message) {
@@ -141,7 +141,7 @@ describe('作用域上下文类型系统', () => {
         }>('x/y/z');
         type ScopeEvents = typeof scope.types.events;
         type cases = [Expect<Equal<ScopeEvents['a'], boolean>>, Expect<Equal<ScopeEvents['b'], number>>, Expect<Equal<ScopeEvents['c'], string>>];
-        scope.emit('a', 1);
+        scope.emit('a');
         scope.emitAsync('b', 1);
     });
     test('scope发布通配符事件', () => {
@@ -179,5 +179,73 @@ describe('作用域上下文类型系统', () => {
         // scope.emit('users/fisher/online', 2);
         // scope.emit('users/fisher/offline', 1);
         // scope.emit('posts/fisher/offline', '22');
+    });
+    test('继承scope类', () => {
+        type Events = {
+            'rooms/*/users/online': { name: string; status?: number };
+            'rooms/*/users/*/online': { name: string; status?: number };
+            'rooms/*/users/*/offline': boolean;
+            'rooms/*/posts/**': number;
+            'rooms/*/posts/*/online': number;
+        };
+        const emitter = new FastEvent<Events>();
+
+        class CustomScope<Prefix extends string = string> extends FastEventScope<ScopeEvents<Events, Prefix>> {
+            test() {}
+        }
+        type S = ScopeEvents<Events, 'rooms/a'>;
+
+        function getRoomScope<Prefix extends string>(prefix: Prefix) {
+            return emitter.scope(prefix, new CustomScope<`rooms/${Prefix}`>());
+        }
+
+        const scope = getRoomScope('y');
+
+        type scopEvents = keyof typeof scope.types.events;
+    });
+    test('继承scope类2', () => {
+        interface VoerkaModuleEvents {
+            initial: string;
+            create: string;
+            ready: string;
+            start: string;
+            stop: string;
+            reset: string;
+            observabled: string;
+            stateUpdated: string;
+            settingUpdated: string;
+        }
+
+        type dd = VoerkaModuleEvents & Record<string, any>;
+
+        class ModuleBase<Events extends Record<string, any> = {}> extends FastEventScope<VoerkaModuleEvents & Events> {
+            test(this: FastEventScope<VoerkaModuleEvents>) {
+                type events = typeof this.types.events;
+                this.on('initial', (message) => {
+                    message.type;
+                    message.payload;
+                });
+            }
+        }
+
+        class BModule extends ModuleBase<{ name: string }> {
+            test() {
+                this.on('name', (message) => {
+                    message.type;
+                    message.payload;
+                });
+            }
+        }
+
+        const module = new ModuleBase();
+        type d = typeof module.types.events;
+
+        module.on('create', (msg) => {
+            msg.type;
+            msg.payload;
+        });
+
+        const b1 = new BModule();
+        type bevents = keyof typeof b1.types.events;
     });
 });

@@ -1,5 +1,6 @@
 import type { FastListenerExecutor } from '../executors/types';
 import { type FastListenerPipe } from '../pipes/types';
+import { ExpandWildcard } from './ExpandWildcard';
 
 // 用来扩展全局Meta类型
 export interface FastEventMeta {}
@@ -40,15 +41,15 @@ export type FastEventEmitMessage<Events extends Record<string, any> = Record<str
 }[Exclude<keyof Events, number | symbol>] &
     FastEventMessageExtends;
 
+export type FastMessagePayload<P = any> = {
+    type: P;
+    __IS_FAST_MESSAGE__: true;
+};
+
 // 只针对指定类型
 export type TypedFastEventListener<T extends string = string, P = any, M = any, C = any> = (
     this: C,
-    message: TypedFastEventMessage<
-        {
-            [K in T]: P;
-        },
-        M
-    >,
+    message: TypedFastEventMessage<Record<T, P>, M>,
     args: FastEventListenerArgs<M>,
 ) => any | Promise<any>;
 
@@ -149,16 +150,21 @@ export type FastEventOptions<Meta = Record<string, any>, Context = never> = {
     executor?: FastListenerExecutor;
     // 默认监听器，优先级高类方法onMessage
     onMessage?: TypedFastEventListener;
-    // 是否展开emit返回值,默认为false
+    // 是否展开emit返回值,默认为false，用于将事件转发给其他FastEvent时使用
     expandEmitResults?: boolean;
+    /**
+     * 对接收到的消息进行转换，用于将消息转换成其他格式
+     *
+     * new FastEvent({
+     *    transform:(message)=>{
+     *        message.payload
+     *    }
+     * })
+     */
+    transform?: (message: FastEventMessage) => any;
 };
 
 export interface FastEvents {}
-
-export type PickScopeEvents<T extends Record<string, any>, Prefix extends string> = {
-    [K in keyof T as K extends `${Prefix}/${infer Rest}` ? Rest : never]: T[K];
-};
-export type ScopeEvents<T extends Record<string, any>, Prefix extends string> = PickScopeEvents<T, Prefix>;
 
 export type FastEventListenOptions<Events extends Record<string, any> = Record<string, any>, Meta = any> = {
     // 侦听执行次数，当为1时为单次侦听，为0时为永久侦听，其他值为执行次数,每执行一次减一，减到0时移除监听器
@@ -180,6 +186,10 @@ export type FastEventListenOptions<Events extends Record<string, any> = Record<s
     tag?: string;
 };
 
+export enum FastEventListenerFlags {
+    Transformed = 1, // 标识消息是经过transform转换后的
+}
+
 export type FastEventListenerArgs<M = Record<string, any>> = {
     retain?: boolean;
     meta?: DeepPartial<M> & Record<string, any>;
@@ -196,6 +206,17 @@ export type FastEventListenerArgs<M = Record<string, any>> = {
      * 当emit参数解析完成后的回调，用于修改emit参数
      */
     parseArgs?: (message: TypedFastEventMessage, args: FastEventListenerArgs) => void;
+    /**
+     * 额外的标识
+     *
+     * - 1: transformed 当消息是经过transform转换后的消息时的标识
+     *
+     */
+    flags?: FastEventListenerFlags;
+    /**
+     * 如果消息经过转换前的原主题
+     */
+    rawEventType?: string;
 };
 
 export type Merge<T extends object, U extends object> = {
@@ -316,55 +337,65 @@ export type Dict<V = any> = Record<Exclude<string, number | symbol>, V>;
 
 export type Union<T> = T extends infer O ? { [K in keyof O]: O[K] } : never;
 
-// /**
-
-// 编写一个MatchEventType<T extends string, Events extends Record<string, any>> typescript类型
-
-// 实现返回当T匹配为Events中的key时，返回Events中对应[K,V]类型，否则返回any
-
-// 例如：
-
-// type Events = {
-//     'client/a/join': string;
-// }
-
-// type R = MatchEventType<'client/a/join', Events>
-// // R=={ 'client/a/join': string }
-
-// 重点在于当Events中的Key包含通配符时，进行通配符匹配，例如：
-
-// type Events = {
-//     'client/*/join': string;
-//     x: number;
-
-// }
-
-// type R1 = MatchEventType<'client/a/join', Events>
-// // R1=={ 'client/a/join': string }
-// type R2 = MatchEventType<'client/b/join', Events>
-// // R2=={ 'client/b/join': string }
-
-// */
-type ExtractWildcardPatterns<T extends string, Pattern extends string> = Pattern extends `${infer Prefix}/*/${infer Suffix}`
-    ? T extends `${Prefix}/${infer Middle}/${Suffix}`
-        ? { [K in Pattern]: any } // 匹配成功，返回通配符模式
-        : never
-    : Pattern extends T
-    ? { [K in Pattern]: any } // 精确匹配
-    : never;
-
-type MatchEventType<T extends string, Events extends Record<string, any>> = {
-    [K in keyof Events]: ExtractWildcardPatterns<T, K & string> extends never ? never : { [P in K]: Events[K] };
-}[keyof Events] extends infer Result
-    ? Result extends Record<string, any>
-        ? Result
-        : any
-    : any;
-
-export * from './MatchPattern';
-
 export type RecordValues<R extends Record<string, any>> = R[keyof R];
 
 export type RecordPrefix<P extends string, R extends Record<string, any>> = {
     [K in keyof R as K extends `${P}/${infer S}` ? S : never]: R[K];
 };
+
+/**
+ * 声明事件类型时，一般情况下，K=事件名称，V=事件Payload参数类型
+ *
+ * AssertFastMessage用于声明V是一个FastMessage类型，而不是Payload类型
+ * 
+ * 一般配合transform参数使用
+ * 
+ * 例如：
+ * type CustomEvents = {
+       click: { x: number; y: number };
+    }
+    const emitter = new FastEvent<CustomEvents>();
+    emitter.on('click', (message) => {
+        // typeof message.payload === { x: number; y: number }
+    })
+    const emitter = new FastEvent<CustomEvents>({
+        transform:(message)=>{
+            if(message.type === 'click'){
+                return message.payload
+            }else{
+                return message
+            }
+        }
+    });
+    emitter.on('click', (message) => {
+        // typeof message === { x: number; y: number }
+    }
+ */
+
+export type AssertFastMessage<M> = {
+    type: M;
+    __IS_FAST_MESSAGE__: true;
+};
+
+export type NotPayload<M> = AssertFastMessage<M>;
+
+export type PickPayload<M> = M extends FastMessagePayload ? M['type'] : M;
+
+export type AtPayloads<Events extends Record<string, any>> = {
+    [K in keyof Events]: PickPayload<Events[K]>;
+};
+
+export type PickTransformedEvents<T extends Record<string, any>> = ExpandWildcard<{
+    [key in keyof T as T[key] extends FastMessagePayload ? key : never]: T[key];
+}>;
+export type OmitTransformedEvents<T extends Record<string, any>> = {
+    [key in keyof T as T[key] extends FastMessagePayload ? never : key]: T[key];
+};
+
+export type TransformedEvents<Events extends Record<string, any>> = {
+    [K in keyof Events]: NotPayload<Events[K]>;
+};
+
+export * from './MatchPattern';
+export * from './ScopeEvents';
+export * from './ExpandWildcard';

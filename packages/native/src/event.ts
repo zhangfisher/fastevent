@@ -20,6 +20,11 @@ import {
     FastEventListeners,
     MatchEventType,
     RecordValues,
+    PickPayload,
+    FastEventListenerFlags,
+    PickTransformedEvents,
+    FastMessagePayload,
+    OmitTransformedEvents,
 } from './types';
 import { parseEmitArgs } from './utils/parseEmitArgs';
 import { isPathMatched } from './utils/isPathMatched';
@@ -249,16 +254,28 @@ export class FastEvent<
     public on<T extends string>(type: T, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber;
     public on(type: '**', options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber;
 
-    public on<T extends Types = Types>(
+    // 处理标准事件类型
+    public on<T extends keyof OmitTransformedEvents<AllEvents>>(
         type: T,
         listener: TypedFastEventListener<Exclude<T, number | symbol>, AllEvents[T], Meta, Fallback<Context, typeof this>>,
         options?: FastEventListenOptions<AllEvents, Meta>,
     ): FastEventSubscriber;
-    public on<T extends string>(
+
+    // 处理使用 NotPayload 标识的事件类型
+    public on<T extends keyof PickTransformedEvents<AllEvents>>(
+        type: T,
+        listener: (message: PickPayload<RecordValues<MatchEventType<Exclude<T, number | symbol>, AllEvents>>>, args: FastEventListenerArgs<Meta>) => any | Promise<any>,
+        options?: FastEventListenOptions<AllEvents, Meta>,
+    ): FastEventSubscriber;
+
+    // 处理通配符事件类型
+    public on<T extends Exclude<string, Types>>(
         type: T,
         listener: TypedFastEventAnyListener<MatchEventType<T, AllEvents>, Meta, Fallback<Context, typeof this>>,
         options?: FastEventListenOptions<AllEvents, Meta>,
     ): FastEventSubscriber;
+
+    // 处理全局监听
     public on(
         type: '**',
         listener: TypedFastEventAnyListener<Record<string, any>, Meta, Fallback<Context, typeof this>>,
@@ -299,13 +316,13 @@ export class FastEvent<
             const oldListener = listener;
             listener = renameFn<TypedFastEventListener>(function (message, args) {
                 // 如果满足条件就退订
-                if (isFunction(options.off) && options.off.call(this, message, args)) {
+                if (isFunction(options.off) && options.off.call(this, message as any, args)) {
                     off();
                     return;
                 }
                 // 如果满足条件就触发监听器
                 if (isFunction(options.filter)) {
-                    if (options.filter.call(this, message, args!)) return oldListener.call(this, message, args);
+                    if (options.filter.call(this, message as any, args!)) return oldListener.call(this, message, args);
                 } else {
                     return oldListener.call(this, message, args);
                 }
@@ -343,12 +360,23 @@ export class FastEvent<
      */
     public once<T extends Types = Types>(type: T, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber;
     public once<T extends string>(type: T, options?: FastEventListenOptions<AllEvents, Meta>): FastEventSubscriber;
-    public once<T extends Types = Types>(
+
+    // 处理标准事件类型
+    public once<T extends keyof OmitTransformedEvents<AllEvents>>(
         type: T,
         listener: TypedFastEventListener<Exclude<T, number | symbol>, AllEvents[T], Meta, Fallback<Context, typeof this>>,
         options?: FastEventListenOptions<AllEvents, Meta>,
     ): FastEventSubscriber;
-    public once<T extends string>(
+
+    // 处理使用 NotPayload 标识的事件类型
+    public once<T extends keyof PickTransformedEvents<AllEvents>>(
+        type: T,
+        listener: (message: PickPayload<RecordValues<MatchEventType<Exclude<T, number | symbol>, AllEvents>>>, args: FastEventListenerArgs<Meta>) => any | Promise<any>,
+        options?: FastEventListenOptions<AllEvents, Meta>,
+    ): FastEventSubscriber;
+
+    // 处理通配符事件类型
+    public once<T extends Exclude<string, Types>>(
         type: T,
         listener: TypedFastEventAnyListener<MatchEventType<T, AllEvents>, Meta, Fallback<Context, typeof this>>,
         options?: FastEventListenOptions<AllEvents, Meta>,
@@ -599,6 +627,10 @@ export class FastEvent<
             throw e;
         }
     }
+    private _setListenerFlags(flags: any, value: FastEventListenerFlags): FastEventListenerFlags {
+        if (!flags || flags === 0) return value;
+        return flags | value;
+    }
     /**
      * 执行单个监听器函数
      * @param listener - 要执行的监听器函数或包装过的监听器对象
@@ -628,6 +660,12 @@ export class FastEvent<
             // 如果传入已经aborted的abortSignal，则直接返回
             if (args && args.abortSignal && args.abortSignal.aborted) {
                 return this._onListenerError(listener, message, args, new AbortError(listener.name));
+            }
+            if (isFunction(this._options.transform)) {
+                if (!args) args = {};
+                args.rawEventType = message.type;
+                message = this._options.transform.call(this, message);
+                args.flags = this._setListenerFlags(args.flags, FastEventListenerFlags.Transformed);
             }
             let result = listener.call(this.context, message, args!);
             // 自动处理reject Promise
@@ -784,19 +822,23 @@ export class FastEvent<
     public emit<T extends Types = Types>(type: T, directive: symbol): any[];
     public emit(type: string, directive: symbol): any[];
     // 支持retain参数
-    public emit<R = any, T extends Types = Types>(type: T, payload?: AllEvents[T], retain?: boolean): R[];
-    public emit<R = any, T extends string = string>(type: T, payload?: T extends Types ? AllEvents[T] : RecordValues<MatchEventType<T, AllEvents>>, retain?: boolean): R[];
+    public emit<R = any, T extends Types = Types>(type: T, payload?: PickPayload<AllEvents[T]>, retain?: boolean): R[];
+    public emit<R = any, T extends string = string>(
+        type: T,
+        payload: PickPayload<T extends Types ? AllEvents[T] : RecordValues<MatchEventType<T, AllEvents>>>,
+        retain?: boolean,
+    ): R[];
     public emit<R = any, T extends string = string>(message: FastEventEmitMessage<{ [K in T]: K extends Types ? AllEvents[K] : any }, Meta>, retain?: boolean): R[];
     public emit<R = any>(message: FastEventEmitMessage<AllEvents, Meta>, retain?: boolean): R[];
     // 使用完整的配置选项
-    public emit<R = any, T extends Types = Types>(type: T, payload?: AllEvents[T], options?: FastEventListenerArgs<Meta>): R[];
+    public emit<R = any, T extends Types = Types>(type: T, payload?: PickPayload<AllEvents[T]>, options?: FastEventListenerArgs<Meta>): R[];
     public emit<R = any, T extends string = string>(
         type: T,
-        payload?: T extends Types ? AllEvents[T] : RecordValues<MatchEventType<T, AllEvents>>,
+        payload: PickPayload<T extends Types ? AllEvents[T] : RecordValues<MatchEventType<T, AllEvents>>>,
         options?: FastEventListenerArgs<Meta>,
     ): R[];
     public emit<R = any, T extends string = string>(
-        message: FastEventEmitMessage<{ [K in T]: K extends Types ? AllEvents[K] : any }, Meta>,
+        message: FastEventEmitMessage<{ [K in T]: PickPayload<K extends Types ? AllEvents[K] : any> }, Meta>,
         options?: FastEventListenerArgs<Meta>,
     ): R[];
     public emit<R = any>(message: FastEventEmitMessage<AllEvents, Meta>, options?: FastEventListenerArgs<Meta>): R[];
@@ -878,23 +920,23 @@ export class FastEvent<
      * });
      * ```
      */
-    public async emitAsync<R = any, T extends Types = Types>(type: T, payload?: AllEvents[T], retain?: boolean): Promise<[R | Error][]>;
-    public async emitAsync<R = any, T extends string = string>(type: T, payload?: T extends Types ? AllEvents[T] : any, retain?: boolean): Promise<[R | Error][]>;
+    public async emitAsync<R = any, T extends Types = Types>(type: T, payload?: PickPayload<AllEvents[T]>, retain?: boolean): Promise<[R | Error][]>;
+    public async emitAsync<R = any, T extends string = string>(type: T, payload?: PickPayload<T extends Types ? AllEvents[T] : any>, retain?: boolean): Promise<[R | Error][]>;
 
     public async emitAsync<R = any, T extends string = string>(
-        message: FastEventEmitMessage<{ [K in T]: K extends Types ? AllEvents[K] : any }, Meta>,
+        message: FastEventEmitMessage<{ [K in T]: PickPayload<K extends Types ? AllEvents[K] : any> }, Meta>,
         retain?: boolean,
     ): Promise<[R | Error][]>;
     public async emitAsync<R = any>(message: FastEventEmitMessage<AllEvents, Meta>, retain?: boolean): Promise<[R | Error][]>;
     // ---
     public async emitAsync<R = any, T extends string = string>(
         type: T,
-        payload?: T extends Types ? AllEvents[T] : any,
+        payload?: PickPayload<T extends Types ? AllEvents[T] : any>,
         options?: FastEventListenerArgs<Meta>,
     ): Promise<[R | Error][]>;
-    public async emitAsync<R = any, T extends Types = Types>(type: T, payload?: AllEvents[T], options?: FastEventListenerArgs<Meta>): Promise<[R | Error][]>;
+    public async emitAsync<R = any, T extends Types = Types>(type: T, payload?: PickPayload<AllEvents[T]>, options?: FastEventListenerArgs<Meta>): Promise<[R | Error][]>;
     public async emitAsync<R = any, T extends string = string>(
-        message: FastEventEmitMessage<{ [K in T]: K extends Types ? AllEvents[K] : any }, Meta>,
+        message: FastEventEmitMessage<{ [K in T]: PickPayload<K extends Types ? AllEvents[K] : any> }, Meta>,
         options?: FastEventListenerArgs<Meta>,
     ): Promise<[R | Error][]>;
     public async emitAsync<R = any>(message: FastEventEmitMessage<AllEvents, Meta>, options?: FastEventListenerArgs<Meta>): Promise<[R | Error][]>;
@@ -1009,11 +1051,8 @@ export class FastEvent<
      * ```
      */
 
-    scope<P extends string>(
-        prefix: P,
-        options?: DeepPartial<FastEventScopeOptions<Meta, Context>>,
-    ): FastEventScope<ScopeEvents<AllEvents, P>, Meta, Context>;
-    
+    scope<P extends string>(prefix: P, options?: DeepPartial<FastEventScopeOptions<Meta, Context>>): FastEventScope<ScopeEvents<AllEvents, P>, Meta, Context>;
+
     scope<E extends Record<string, any> = Record<string, any>, P extends string = string, M extends Record<string, any> = Record<string, any>, C = Context>(
         prefix: P,
         options?: DeepPartial<FastEventScopeOptions<Meta & M, C>>,

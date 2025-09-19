@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
-import { FastEvent } from '../event';
-import { FastEventScope } from '../scope';
-import { TypedFastEventMessage } from '../types';
+import { FastEvent } from '../../event';
+import { FastEventScope } from '../../scope';
+import { TypedFastEventMessage } from '../../types';
 
 describe('onMessage测试', () => {
     describe('FastEvent类', () => {
@@ -27,7 +27,7 @@ describe('onMessage测试', () => {
                 onMessageCalled = false;
                 onMessage(message: TypedFastEventMessage) {
                     this.onMessageCalled = true;
-                    message.type
+                    message.type;
                 }
             }
 
@@ -97,12 +97,12 @@ describe('onMessage测试', () => {
             class CustomScope extends FastEventScope {
                 onMessageCalled = false;
                 onMessage(message: TypedFastEventMessage) {
-                    expect(this).toBeInstanceOf(CustomScope)
+                    expect(this).toBeInstanceOf(CustomScope);
                     this.onMessageCalled = true;
                 }
             }
             const emitter = new FastEvent();
-            const scope = emitter.scope("user", new CustomScope())
+            const scope = emitter.scope('user', new CustomScope());
             const subscriber = scope.on('test');
 
             scope.emit('test', { data: 'test' });
@@ -115,12 +115,12 @@ describe('onMessage测试', () => {
                 onMessageCalled = false;
                 onMessage(message: TypedFastEventMessage) {
                     this.onMessageCalled = true;
-                    message.type
+                    message.type;
                 }
             }
 
             const emitter = new FastEvent();
-            const scope = emitter.scope("user", new CustomScope())
+            const scope = emitter.scope('user', new CustomScope());
             const subscriber = scope.once('test');
 
             scope.emit('test', { data: 'test' });
@@ -129,7 +129,6 @@ describe('onMessage测试', () => {
         });
 
         test('Scope类onAny方法未指定监听器时应调用onMessage', () => {
-
             class CustomScope extends FastEventScope {
                 onMessageCalled = false;
                 onMessageType = '';
@@ -140,7 +139,7 @@ describe('onMessage测试', () => {
             }
 
             const emitter = new FastEvent();
-            const scope = emitter.scope("user", new CustomScope())
+            const scope = emitter.scope('user', new CustomScope());
 
             const subscriber = scope.onAny();
 

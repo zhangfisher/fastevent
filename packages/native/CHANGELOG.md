@@ -1,5 +1,23 @@
 ## 2.2.2
 
+## 2.3.0
+
+### Minor Changes
+
+-   ae7522f: add transform message for listener
+
+## 2.2.12
+
+### Patch Changes
+
+-   a7a2735: feat: upgrade ScopeEvents
+
+## 2.2.11
+
+### Patch Changes
+
+-   2beec06: feat: ScopeEvents 类型支持通配符
+
 ## 2.2.10
 
 ### Patch Changes
