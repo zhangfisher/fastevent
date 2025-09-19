@@ -203,4 +203,49 @@ describe('作用域上下文类型系统', () => {
 
         type scopEvents = keyof typeof scope.types.events;
     });
+    test('继承scope类2', () => {
+        interface VoerkaModuleEvents {
+            initial: string;
+            create: string;
+            ready: string;
+            start: string;
+            stop: string;
+            reset: string;
+            observabled: string;
+            stateUpdated: string;
+            settingUpdated: string;
+        }
+
+        type dd = VoerkaModuleEvents & Record<string, any>;
+
+        class ModuleBase<Events extends Record<string, any> = {}> extends FastEventScope<VoerkaModuleEvents & Events> {
+            test(this: FastEventScope<VoerkaModuleEvents>) {
+                type events = typeof this.types.events;
+                this.on('initial', (message) => {
+                    message.type;
+                    message.payload;
+                });
+            }
+        }
+
+        class BModule extends ModuleBase<{ name: string }> {
+            test() {
+                this.on('name', (message) => {
+                    message.type;
+                    message.payload;
+                });
+            }
+        }
+
+        const module = new ModuleBase();
+        type d = typeof module.types.events;
+
+        module.on('create', (msg) => {
+            msg.type;
+            msg.payload;
+        });
+
+        const b1 = new BModule();
+        type bevents = keyof typeof b1.types.events;
+    });
 });
