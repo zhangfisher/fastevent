@@ -21,11 +21,13 @@ import {
     FastEventListenerFlags,
     OmitTransformedEvents,
     PickTransformedEvents,
+    FastEventMessage,
 } from './types';
 import { parseEmitArgs } from './utils/parseEmitArgs';
 import { parseScopeArgs } from './utils/parseScopeArgs';
 import { renameFn } from './utils/renameFn';
 import { PickPayload, AtPayloads } from './types/index';
+import { isFunction } from './utils/isFunction';
 
 export type FastEventScopeOptions<Meta = Record<string, any>, Context = never> = {
     meta: FastEventScopeMeta & FastEventMeta & Meta;
@@ -33,6 +35,16 @@ export type FastEventScopeOptions<Meta = Record<string, any>, Context = never> =
     executor?: FastListenerExecutor;
     // 默认监听器，优先级高类方法onMessage
     onMessage?: TypedFastEventListener;
+    /**
+     * 对接收到的消息进行转换，用于将消息转换成其他格式
+     *
+     * new FastEvent({
+     *    transform:(message)=>{
+     *        message.payload
+     *    }
+     * })
+     */
+    transform?: (message: FastEventMessage) => any;
 };
 
 export interface FastEventScopeMeta {
@@ -108,13 +120,29 @@ export class FastEventScope<
         const scopeListener = renameFn(function (message: TypedFastEventMessage, args: FastEventListenerArgs) {
             const type = args.rawEventType || message.type;
             if (type.startsWith(scopePrefix)) {
-                // 消息是否经过转换
+                // 1. 判断是否经过全局Transform转换
+                // 消息是否经过转换，如果经过转换，由于结果不确定，所以不进行前缀处理，直接将消息传递给监听器
                 const isTransformed = ((args.flags || 0) & FastEventListenerFlags.Transformed) > 0;
-                const msg = isTransformed
+                // let msg: any;
+                // if (isTransformed) {
+                //     msg = message;
+                // } else {
+                //     if (isFunction(scopeThis._options.transform)) {
+                //         args.rawEventType = message.type;
+                //         args.flags = (args.flags || 0) | FastEventListenerFlags.Transformed;
+                //         msg = scopeThis._options.transform.call(scopeThis, message);
+                //     } else {
+                //         msg = Object.assign({}, message, {
+                //             type: type.substring(scopePrefix.length),
+                //         });
+                //     }
+                // }
+                let msg = isTransformed
                     ? message
                     : Object.assign({}, message, {
                           type: type.substring(scopePrefix.length),
                       });
+
                 return listener.call(scopeThis.context, msg, args);
             }
         }, listener.name) as TypedFastEventListener;
@@ -235,10 +263,23 @@ export class FastEventScope<
         if (arguments.length === 2 && typeof arguments[0] === 'string' && arguments[1] === FastEventDirectives.clearRetain) {
             return this.emitter.emit(this._getScopeType(arguments[0])!);
         }
-        const [message, options] = parseEmitArgs(arguments, this.emitter.options.meta, this.options.meta, this.options.executor);
+        let [message, args] = parseEmitArgs(arguments, this.emitter.options.meta, this.options.meta, this.options.executor);
         message.type = this._getScopeType(message.type)!;
-        return this.emitter.emit(message as TypedFastEventMessage<Events, FinalMeta>, options);
+
+        this._transformMessage(message, args);
+
+        return this.emitter.emit(message as TypedFastEventMessage<Events, FinalMeta>, args);
     }
+
+    private _transformMessage(message: FastEventMessage, args: FastEventListenerArgs<FinalMeta>) {
+        if (isFunction(this._options.transform)) {
+            args.rawEventType = message.type;
+            args.flags = (args.flags || 0) | FastEventListenerFlags.Transformed;
+            message.payload = this._options.transform.call(this, message);
+        }
+        return message;
+    }
+
     public async emitAsync<R = any, T extends Types = Types>(type: T, payload?: PickPayload<Events[T]>, retain?: boolean): Promise<[R | Error][]>;
     public async emitAsync<R = any, T extends string = string>(type: T, payload?: PickPayload<T extends Types ? Events[T] : any>, retain?: boolean): Promise<[R | Error][]>;
     public async emitAsync<R = any, T extends Types = Types>(type: T, payload?: PickPayload<Events[T]>, options?: FastEventListenerArgs<FinalMeta>): Promise<[R | Error][]>;

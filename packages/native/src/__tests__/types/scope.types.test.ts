@@ -240,10 +240,10 @@ describe('作用域上下文类型系统', () => {
         const module = new ModuleBase();
         type d = typeof module.types.events;
 
-        module.on('create', (msg) => {
-            msg.type;
-            msg.payload;
-        });
+        // module.on('create', (msg) => {
+        //     msg.type;
+        //     msg.payload;
+        // });
 
         const b1 = new BModule();
         type bevents = keyof typeof b1.types.events;

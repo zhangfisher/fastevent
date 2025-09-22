@@ -661,13 +661,9 @@ export class FastEvent<
             if (args && args.abortSignal && args.abortSignal.aborted) {
                 return this._onListenerError(listener, message, args, new AbortError(listener.name));
             }
-            if (isFunction(this._options.transform)) {
-                if (!args) args = {};
-                args.rawEventType = message.type;
-                message = this._options.transform.call(this, message);
-                args.flags = this._setListenerFlags(args.flags, FastEventListenerFlags.Transformed);
-            }
-            let result = listener.call(this.context, message, args!);
+            const isTransformed = ((args?.flags || 0) & FastEventListenerFlags.Transformed) > 0;
+
+            let result = listener.call(this.context, isTransformed ? message.payload : message, args!);
             // 自动处理reject Promise
             if (catchErrors && result && result instanceof Promise) {
                 result = tryReturnError(result, (e) => this._onListenerError(listener, message, args, e));
@@ -717,6 +713,14 @@ export class FastEvent<
                     }),
             );
         }, []);
+
+        // 转换消息
+        if (isFunction(this._options.transform)) {
+            if (!args) args = {};
+            args.rawEventType = message.type;
+            message.payload = this._options.transform.call(this, message);
+            args.flags = this._setListenerFlags(args.flags, FastEventListenerFlags.Transformed);
+        }
 
         // 执行监听器前计数选减一，否则如果在监听器函数中再次触发时会导致重复执行。
         // 比如：在once('x')监听函数中执行再次emit('x')就会导致循环
@@ -870,6 +874,12 @@ export class FastEvent<
             } else if (r === false) {
                 throw new AbortError(message.type);
             }
+        }
+        // 触发时进行消息转换
+        if (isFunction(this._options.transform)) {
+            message.payload = this._options.transform.call(this, message);
+            args.rawEventType = message.type;
+            args.flags = (args.flags || 0) | FastEventListenerFlags.Transformed;
         }
         // 执行监听器
         results.push(...this._executeListeners(nodes, message, args));

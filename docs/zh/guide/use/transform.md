@@ -139,8 +139,49 @@ emitter.on('div/scroll',(message)=>{  })
 emitter.on('div/mousemove',(message)=>{  })
 ``` 
 
-
 ## 作用域
+
+`FastEvent`支持为每个`scope`方法单独指定`transform`。
+
+
+
+```ts twoslash {15-17,26}
+import { FastEvent,FastEventScope,TransformedEvents } from 'fastevent';
+
+type CustomEvents = TransformedEvents<{
+    'client/connect': number;
+    'client/disconnect': number;
+}>;
+
+const emitter = new FastEvent();
+
+class MyScope extends FastEventScope<CustomEvents> {
+    constructor() {
+        super(
+            Object.assign(
+                {
+                    transform: (message:any) => {
+                        return message.payload;
+                    },
+                },
+                arguments[0],
+            ),
+        );
+    }
+}
+
+const scope = emitter.scope('div', new MyScope());
+// 或者 scope.options.transform=(message)=>{}  
+
+scope.on('client/connect', (message) => {
+    
+});
+scope.emit('client/connect', 100);
+```
+
+
+
+## 通配符
 
 消息转换时的类型推断还支持通配符。
 
@@ -173,5 +214,5 @@ scope.on('y/mousemove',(message)=>{
 
 :::warning 提示
 -   `transform`用于将标准的 FastEventMessage 转换为你需要的格式
--   `NotPayload`和`TransformedEvents`用于声明类型，以便在`on/once`时为监听器提供类型声明。
+-   `NotPayload`和`TransformedEvents`用于声明类型，为`on/once`等监听器提供类型推断支持。
 :::
