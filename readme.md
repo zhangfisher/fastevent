@@ -393,6 +393,55 @@ events.emit('data/string', 'hello');
 events.emit('data/object', { value: true });
 ```
 
+## Message transform
+
+By default, the `FastEvent` listener receives messages in the format of `FastEventMessage`, which includes three fields: `type`, `payload`, and optional `meta`.
+However, FastEvent also provides customization capabilities, allowing each event to receive different messages with corresponding type prompts.
+
+```ts
+import { FastEvent, FastEventOptions, NotPayload } from 'fastevent';
+
+// {<event type>:<payload>}
+type CustomEvents = {
+    // NotPayload is used to indicate that it is not a payload, but a complete message body
+    click: NotPayload<{ x: number; y: number }>;
+    'div/mousemove': boolean;
+    'div/scroll': number;
+    'div/focus': string;
+};
+
+const emitter = new FastEvent<CustomEvents>({
+    //Convert standard FastEventMessage to the format you need
+    transform: (message: FastEventMessage) => {
+        if (['div/click', 'div/mousemove'].includes(message.type)) {
+            return message.payload;
+        }
+        return message;
+    },
+});
+
+emitter.on('click', (message) => {
+    // typeof message === { x: number; y: number }  ✅
+});
+```
+
+`NotPayload` is only used to identify some events, and `Transformed` can also be used to message all events.
+
+```ts
+import { FastEvent, FastEventOptions, TransformedEvents } from 'fastevent';
+
+// {<event type>:<message>}
+type CustomEvents = TransformedEvents<{
+    click: { x: number; y: number };
+    'div/mousemove': boolean;
+    'div/scroll': number;
+    'div/focus': string;
+}>;
+```
+
+-   `transform` is used to convert standard FastEventMessage into the format you need
+-   `NotPayload` and `TransformonEvents` are used to declare types, in order to provide type declarations for listeners when `on/once`.
+
 ## Unit Testing
 
 `FastEvent` has been thoroughly unit tested, with over `280+` cumulative test cases and `99%+` test coverage.

@@ -169,3 +169,9 @@ scope.on('y/mousemove',(message)=>{
 })
 ``` 
 
+
+
+:::warning 提示
+-   `transform`用于将标准的 FastEventMessage 转换为你需要的格式
+-   `NotPayload`和`TransformedEvents`用于声明类型，以便在`on/once`时为监听器提供类型声明。
+:::

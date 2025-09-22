@@ -398,6 +398,55 @@ events.emit('data/string', 'hello');
 events.emit('data/object', { value: true });
 ```
 
+## 消息转换
+
+默认情况下，`FastEvent`监听器接收到的消息格式统一为`FastEventMessage`，包括`type`、`payload`和可选的`meta`三个字段。
+但是，`FastEvent`也提供了自定义能力，让每个事件的接收到的消息均不一样，并且具有相应的类型提示。
+
+```ts
+import { FastEvent, FastEventOptions, NotPayload } from 'fastevent';
+
+// {<事件名称>:<消息有效负载payload类型>}
+type CustomEvents = {
+    // NotPayload用来标识不是一个payload，而是完整的消息体
+    click: NotPayload<{ x: number; y: number }>;
+    'div/mousemove': boolean;
+    'div/scroll': number;
+    'div/focus': string;
+};
+
+const emitter = new FastEvent<CustomEvents>({
+    // 将标准的FastEventMessage转换为你需要的格式
+    transform: (message: FastEventMessage) => {
+        if (['div/click', 'div/mousemove'].includes(message.type)) {
+            return message.payload;
+        }
+        return message;
+    },
+});
+
+emitter.on('click', (message) => {
+    // typeof message === { x: number; y: number }  ✅
+});
+```
+
+`NotPayload`只用于标识部分事件，也可以使用`TransformedEvents`来将所有事件消息。
+
+```ts
+import { FastEvent, FastEventOptions, TransformedEvents } from 'fastevent';
+
+// {<事件名称>:<消息类型>}
+type CustomEvents = TransformedEvents<{
+    click: { x: number; y: number };
+    'div/mousemove': boolean;
+    'div/scroll': number;
+    'div/focus': string;
+}>;
+```
+
+-   `transform`用于将标准的 FastEventMessage 转换为你需要的格式
+-   `NotPayload`和`TransformedEvents`用于声明类型，以便在`on/once`时为监听器提供类型声明。
+
 ## 单元测试
 
 `FastEvent`经过充分的单元测试，累计单元测试用例超过`280+`，测试覆盖率`99%+`。
