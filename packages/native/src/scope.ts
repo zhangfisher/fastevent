@@ -264,20 +264,19 @@ export class FastEventScope<
             return this.emitter.emit(this._getScopeType(arguments[0])!);
         }
         let [message, args] = parseEmitArgs(arguments, this.emitter.options.meta, this.options.meta, this.options.executor);
-        message.type = this._getScopeType(message.type)!;
 
         this._transformMessage(message, args);
+        message.type = this._getScopeType(message.type)!;
 
         return this.emitter.emit(message as TypedFastEventMessage<Events, FinalMeta>, args);
     }
 
     private _transformMessage(message: FastEventMessage, args: FastEventListenerArgs<FinalMeta>) {
         if (isFunction(this._options.transform)) {
-            args.rawEventType = message.type;
+            args.rawEventType = this._getScopeType(message.type)!;
             args.flags = (args.flags || 0) | FastEventListenerFlags.Transformed;
             message.payload = this._options.transform.call(this, message);
         }
-        return message;
     }
 
     public async emitAsync<R = any, T extends Types = Types>(type: T, payload?: PickPayload<Events[T]>, retain?: boolean): Promise<[R | Error][]>;
