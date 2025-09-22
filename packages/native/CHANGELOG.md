@@ -1,5 +1,11 @@
 ## 2.2.2
 
+## 2.3.1
+
+### Patch Changes
+
+-   888f72e: feat: 支持为`scope`单独指定`transform`
+
 ## 2.3.0
 
 ### Minor Changes
