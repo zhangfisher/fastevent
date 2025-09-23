@@ -1,3 +1,5 @@
+import { FirstObjectItem } from './FirstObjectItem';
+
 // MergeUnion<{ a: 1 } | { b: 2 }> === { a: 1, b: 2 }
 export type MergeUnion<T> = (T extends any ? (x: T) => void : never) extends (x: infer U) => void ? { [K in keyof U]: U[K] } : never;
 
@@ -37,7 +39,18 @@ type Fallback<T, F> = [T] extends [never]
     ? F // 处理undefined情况
     : T; // 否则返回原类型
 
-export type MatchEventType<T extends string, Events extends Record<string, any>> = MergeUnion<
+/**
+ *
+ * 返回所有匹配事件的类型
+ *
+ * 支持通配符
+ *
+ * @param T 事件名称
+ * @param Events 事件类型
+ * @returns
+ *
+ */
+export type WildcardEvents<Events extends Record<string, any>, T extends string> = MergeUnion<
     Fallback<
         {
             [K in keyof Events]: MatchPattern<T, K & string> extends never ? never : { [P in K]: Events[K] };
@@ -51,11 +64,7 @@ export type MatchEventType<T extends string, Events extends Record<string, any>>
         }
     >
 >;
+// 只返回最相近匹配的事件类型
+export type ClosestWildcardEvents<Events extends Record<string, any>, T extends string> = FirstObjectItem<WildcardEvents<Events, T>>;
 
-export type MatchEventPayload<Events extends Record<string, any>, T> = T extends keyof Events
-    ? Events[T]
-    : T extends string
-    ? T extends keyof MatchEventType<T, Events>
-        ? MatchEventType<T, Events>[T]
-        : any
-    : any;
+type s = ClosestWildcardEvents<any, 'xxx'>;

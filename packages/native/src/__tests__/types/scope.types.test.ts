@@ -148,9 +148,10 @@ describe('作用域上下文类型系统', () => {
         type Events = {
             'x/users/online': { name: string; status?: number };
             'x/users/*/online': { name: string; status?: number };
+            'x/users/*/*': 1;
             'x/users/*/offline': boolean;
+            'x/posts/*/online': string;
             'x/posts/**': number;
-            'x/posts/*/online': number;
         };
         const emitter = new FastEvent<Events>();
         // 不需要显式指定类型参数，应该能自动推断
@@ -163,9 +164,12 @@ describe('作用域上下文类型系统', () => {
         scope.on('users/x/online', (message) => {
             type cases = [Expect<Equal<typeof message.type, 'users/*/online'>>, Expect<Equal<typeof message.payload, { name: string; status?: number }>>];
         });
+        scope.on('users/x/y', (message) => {
+            type cases = [Expect<Equal<typeof message.type, 'users/*/*'>>, Expect<Equal<typeof message.payload, 1>>];
+        });
 
         scope.on('posts/fisher/online', (message) => {
-            type cases = [Expect<Equal<typeof message.type, 'posts/**' | 'posts/*/online'>>, Expect<Equal<typeof message.payload, number>>];
+            type cases = [Expect<Equal<typeof message.type, 'posts/*/online'>>, Expect<Equal<typeof message.payload, string>>];
         });
 
         // 正确的类型检查
@@ -190,16 +194,21 @@ describe('作用域上下文类型系统', () => {
         };
         const emitter = new FastEvent<Events>();
 
-        class CustomScope<Prefix extends string = string> extends FastEventScope<ScopeEvents<Events, Prefix>> {
+        class CustomScope extends FastEventScope<ScopeEvents<Events, 'rooms/a'>> {
             test() {}
         }
         type S = ScopeEvents<Events, 'rooms/a'>;
 
         function getRoomScope<Prefix extends string>(prefix: Prefix) {
-            return emitter.scope(prefix, new CustomScope<`rooms/${Prefix}`>());
+            // return emitter.scope(prefix, new CustomScope<`rooms/${Prefix}`>());
+            return emitter.scope(prefix, new CustomScope());
         }
 
         const scope = getRoomScope('y');
+        scope.test;
+        scope.on('users/online', (message) => {
+            type cases = [Expect<Equal<typeof message.type, 'users/online'>>, Expect<Equal<typeof message.payload, { name: string; status?: number }>>];
+        });
 
         type scopEvents = keyof typeof scope.types.events;
     });
@@ -224,12 +233,13 @@ describe('作用域上下文类型系统', () => {
                 this.on('initial', (message) => {
                     message.type;
                     message.payload;
+                    type cases = [Expect<Equal<typeof message.type, 'initial'>>, Expect<Equal<typeof message.payload, string>>];
                 });
             }
         }
 
         class BModule extends ModuleBase<{ name: string }> {
-            test() {
+            test2() {
                 this.on('name', (message) => {
                     message.type;
                     message.payload;
@@ -247,5 +257,8 @@ describe('作用域上下文类型系统', () => {
 
         const b1 = new BModule();
         type bevents = keyof typeof b1.types.events;
+
+        b1.test;
+        b1.test2;
     });
 });

@@ -335,8 +335,6 @@ export type Overloads<T> = Unique<
 
 export type Dict<V = any> = Record<Exclude<string, number | symbol>, V>;
 
-export type Union<T> = T extends infer O ? { [K in keyof O]: O[K] } : never;
-
 export type RecordValues<R extends Record<string, any>> = R[keyof R];
 
 export type RecordPrefix<P extends string, R extends Record<string, any>> = {
@@ -396,6 +394,7 @@ export type TransformedEvents<Events extends Record<string, any>> = {
     [K in keyof Events]: NotPayload<Events[K]>;
 };
 
-export * from './MatchPattern';
+export * from './WildcardEvents';
 export * from './ScopeEvents';
 export * from './ExpandWildcard';
+export * from './Keys';
