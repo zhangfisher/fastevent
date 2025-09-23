@@ -18,13 +18,14 @@ import {
     Expand,
     TypedFastEventMessageOptional,
     FastEventListeners,
-    MatchEventType,
+    WildcardEvents,
     RecordValues,
     PickPayload,
     FastEventListenerFlags,
     PickTransformedEvents,
     FastMessagePayload,
     OmitTransformedEvents,
+    ClosestWildcardEvents,
 } from './types';
 import { parseEmitArgs } from './utils/parseEmitArgs';
 import { isPathMatched } from './utils/isPathMatched';
@@ -264,14 +265,14 @@ export class FastEvent<
     // 处理使用 NotPayload 标识的事件类型
     public on<T extends keyof PickTransformedEvents<AllEvents>>(
         type: T,
-        listener: (message: PickPayload<RecordValues<MatchEventType<Exclude<T, number | symbol>, AllEvents>>>, args: FastEventListenerArgs<Meta>) => any | Promise<any>,
+        listener: (message: PickPayload<RecordValues<ClosestWildcardEvents<AllEvents, Exclude<T, number | symbol>>>>, args: FastEventListenerArgs<Meta>) => any | Promise<any>,
         options?: FastEventListenOptions<AllEvents, Meta>,
     ): FastEventSubscriber;
 
     // 处理通配符事件类型
     public on<T extends Exclude<string, Types>>(
         type: T,
-        listener: TypedFastEventAnyListener<MatchEventType<T, AllEvents>, Meta, Fallback<Context, typeof this>>,
+        listener: TypedFastEventAnyListener<ClosestWildcardEvents<AllEvents, T>, Meta, Fallback<Context, typeof this>>,
         options?: FastEventListenOptions<AllEvents, Meta>,
     ): FastEventSubscriber;
 
@@ -371,14 +372,14 @@ export class FastEvent<
     // 处理使用 NotPayload 标识的事件类型
     public once<T extends keyof PickTransformedEvents<AllEvents>>(
         type: T,
-        listener: (message: PickPayload<RecordValues<MatchEventType<Exclude<T, number | symbol>, AllEvents>>>, args: FastEventListenerArgs<Meta>) => any | Promise<any>,
+        listener: (message: PickPayload<RecordValues<ClosestWildcardEvents<AllEvents, Exclude<T, number | symbol>>>>, args: FastEventListenerArgs<Meta>) => any | Promise<any>,
         options?: FastEventListenOptions<AllEvents, Meta>,
     ): FastEventSubscriber;
 
     // 处理通配符事件类型
     public once<T extends Exclude<string, Types>>(
         type: T,
-        listener: TypedFastEventAnyListener<MatchEventType<T, AllEvents>, Meta, Fallback<Context, typeof this>>,
+        listener: TypedFastEventAnyListener<ClosestWildcardEvents<AllEvents, T>, Meta, Fallback<Context, typeof this>>,
         options?: FastEventListenOptions<AllEvents, Meta>,
     ): FastEventSubscriber;
     public once(): FastEventSubscriber {
@@ -661,13 +662,9 @@ export class FastEvent<
             if (args && args.abortSignal && args.abortSignal.aborted) {
                 return this._onListenerError(listener, message, args, new AbortError(listener.name));
             }
-            if (isFunction(this._options.transform)) {
-                if (!args) args = {};
-                args.rawEventType = message.type;
-                message = this._options.transform.call(this, message);
-                args.flags = this._setListenerFlags(args.flags, FastEventListenerFlags.Transformed);
-            }
-            let result = listener.call(this.context, message, args!);
+            const isTransformed = ((args?.flags || 0) & FastEventListenerFlags.Transformed) > 0;
+
+            let result = listener.call(this.context, isTransformed ? message.payload : message, args!);
             // 自动处理reject Promise
             if (catchErrors && result && result instanceof Promise) {
                 result = tryReturnError(result, (e) => this._onListenerError(listener, message, args, e));
@@ -717,6 +714,14 @@ export class FastEvent<
                     }),
             );
         }, []);
+
+        // 转换消息
+        if (isFunction(this._options.transform)) {
+            if (!args) args = {};
+            args.rawEventType = message.type;
+            message.payload = this._options.transform.call(this, message);
+            args.flags = this._setListenerFlags(args.flags, FastEventListenerFlags.Transformed);
+        }
 
         // 执行监听器前计数选减一，否则如果在监听器函数中再次触发时会导致重复执行。
         // 比如：在once('x')监听函数中执行再次emit('x')就会导致循环
@@ -825,7 +830,7 @@ export class FastEvent<
     public emit<R = any, T extends Types = Types>(type: T, payload?: PickPayload<AllEvents[T]>, retain?: boolean): R[];
     public emit<R = any, T extends string = string>(
         type: T,
-        payload: PickPayload<T extends Types ? AllEvents[T] : RecordValues<MatchEventType<T, AllEvents>>>,
+        payload: PickPayload<T extends Types ? AllEvents[T] : RecordValues<WildcardEvents<AllEvents, T>>>,
         retain?: boolean,
     ): R[];
     public emit<R = any, T extends string = string>(message: FastEventEmitMessage<{ [K in T]: K extends Types ? AllEvents[K] : any }, Meta>, retain?: boolean): R[];
@@ -834,7 +839,7 @@ export class FastEvent<
     public emit<R = any, T extends Types = Types>(type: T, payload?: PickPayload<AllEvents[T]>, options?: FastEventListenerArgs<Meta>): R[];
     public emit<R = any, T extends string = string>(
         type: T,
-        payload: PickPayload<T extends Types ? AllEvents[T] : RecordValues<MatchEventType<T, AllEvents>>>,
+        payload: PickPayload<T extends Types ? AllEvents[T] : RecordValues<WildcardEvents<AllEvents, T>>>,
         options?: FastEventListenerArgs<Meta>,
     ): R[];
     public emit<R = any, T extends string = string>(
@@ -870,6 +875,12 @@ export class FastEvent<
             } else if (r === false) {
                 throw new AbortError(message.type);
             }
+        }
+        // 触发时进行消息转换
+        if (isFunction(this._options.transform)) {
+            message.payload = this._options.transform.call(this, message);
+            args.rawEventType = message.type;
+            args.flags = (args.flags || 0) | FastEventListenerFlags.Transformed;
         }
         // 执行监听器
         results.push(...this._executeListeners(nodes, message, args));
@@ -1062,8 +1073,8 @@ export class FastEvent<
         P extends string = string,
         M extends Record<string, any> = Record<string, any>,
         C = Context,
-        ScopeObject extends FastEventScope<any, any, any> = FastEventScope<ScopeEvents<AllEvents, P> & E, Meta & M, C>,
-    >(prefix: P, scopeObj: ScopeObject, options?: DeepPartial<FastEventScopeOptions<Meta & M, C>>): ScopeObject;
+        ScopeObject extends FastEventScope<any, any, any> = FastEventScope<any, any, any>,
+    >(prefix: P, scopeObj: ScopeObject, options?: DeepPartial<FastEventScopeOptions<Meta & M, C>>): ScopeObject & FastEventScope<ScopeEvents<AllEvents, P> & E, Meta & M, C>;
     scope<E extends Record<string, any> = Record<string, any>, P extends string = string, M extends Record<string, any> = Record<string, any>, C = Context>() {
         const [prefix, scopeObj, options] = parseScopeArgs(arguments, this.options.meta, this.options.context);
         let scope;

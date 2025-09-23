@@ -141,18 +141,17 @@ describe('启用Transform时的类型支持', () => {
             scope.on('a/mousemove', (message) => {
                 expect(message).toBe(true);
                 type cases = [Expect<Equal<typeof message, boolean>>];
-                resolve();
             });
             scope.once('a/mousemove', (message) => {
                 expect(message).toBe(true);
                 type cases = [Expect<Equal<typeof message, boolean>>];
-                resolve();
             });
             scope.emit('mousemove', true);
             scope.on('xxx', (message) => {
                 message.payload;
                 type cases = [Expect<Equal<typeof message.type, 'xxx'>>, Expect<Equal<typeof message.payload, any>>];
             });
+            resolve();
         });
     });
 });

@@ -1,5 +1,23 @@
 ## 2.2.2
 
+## 2.3.3
+
+### Patch Changes
+
+-   0cd8993: 优化事件名称包含通配符时的类型推断
+
+## 2.3.2
+
+### Patch Changes
+
+-   c85c3d4: 优化 scope 执行 transform 逻辑
+
+## 2.3.1
+
+### Patch Changes
+
+-   888f72e: feat: 支持为`scope`单独指定`transform`
+
 ## 2.3.0
 
 ### Minor Changes
