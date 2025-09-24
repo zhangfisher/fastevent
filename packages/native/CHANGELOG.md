@@ -1,5 +1,11 @@
 ## 2.2.2
 
+## 2.3.4
+
+### Patch Changes
+
+-   d3647f5: fix: scope event types
+
 ## 2.3.3
 
 ### Patch Changes
