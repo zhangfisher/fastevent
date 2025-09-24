@@ -36,6 +36,10 @@
  *    }
  * })
  *
+ * emitter.publish("xxxx")
+ *
+ *
+ *
  *
  *
  */
