@@ -139,7 +139,8 @@ const scope = emitter.scope('user', {
 
 作用域继承父级的事件类型定义：
 
-```typescript
+```typescript twoslash
+import { FastEvent } from 'fastevent';
 interface AppEvents {
     'user/login': { userId: string };
     'user/logout': { userId: string };
@@ -152,10 +153,100 @@ const userScope = emitter.scope('user');
 // 类型检查正常
 userScope.emit('login', { userId: '123' }); // ✅
 
+userScope.on('login', (message) => {
+//            ^|
+    message.type;       // 'login'
+    message.payload     // { userId: string }
+});
+
 // 类型错误
-userScope.emit('login', { userId: 123 }); // ❌
-userScope.emit('unknown', {}); // ❌
+// userScope.emit('login', { userId: 123 }); // ❌
+// userScope.emit('unknown', {}); // ❌
 ```
+
+### 扩展类
+
+可以继承自`FastEventScope`来扩展作用域，并且提供类型推断安全。
+
+```typescript twoslash
+import { FastEvent,FastEventScope } from 'fastevent';
+interface AppEvents {
+    'user/login': { userId: string };
+    'user/logout': { userId: string };
+    'user/profile/update': { name: string };
+}
+
+const emitter = new FastEvent<AppEvents>();
+const userScope = emitter.scope('user');
+
+class Room extends FastEventScope {    
+    join(name: string) {}
+    leave() {}
+}
+
+const room2 = emitter.scope('user')
+const room = emitter.scope('user',new Room())
+
+type events = typeof room.types.events
+
+
+room.join('x')
+
+// 类型检查正常
+//userScope.emit('login', { userId: '123' }); // ✅
+
+room.on('login', (message) => {
+    message.type;       // 'login'
+    message.payload     // { userId: string }
+});
+room.once('logout', (message) => {
+    message.type;       // 'logout'
+    message.payload     // { userId: string }
+});
+room.on('profile/update', (message) => {
+    message.type;       // 'profile/update'
+    message.payload     // { name: string }
+});
+```
+
+当事件名称中包括通配符时，同样可以类型推断：
+
+```typescript twoslash
+import { FastEvent,FastEventScope } from 'fastevent';
+interface AppEvents {
+    'user/*/login': { userId: string };
+    'user/*/logout': { userId: string };
+    'user/*/profile/update': { name: string };
+}
+
+const emitter = new FastEvent<AppEvents>();
+const userScope = emitter.scope('user');
+
+class Room extends FastEventScope {    
+    join(name: string) {}
+    leave() {}
+}
+
+const room = emitter.scope('user/tom',new Room())
+
+type events = typeof room.types.events
+
+room.join('x')
+
+room.on('login', (message) => {
+    message.type;       // 'login'
+    message.payload     // { userId: string }
+});
+room.once('logout', (message) => {
+    message.type;       // 'logout'
+    message.payload     // { userId: string }
+});
+room.on('profile/update', (message) => {
+    message.type;       // 'profile/update'
+    message.payload     // { name: string }
+});
+```
+
 
 ## 使用场景
 

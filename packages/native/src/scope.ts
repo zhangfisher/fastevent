@@ -15,7 +15,6 @@ import {
     Fallback,
     Dict,
     TypedFastEventMessageOptional,
-    FastEventListeners,
     RecordValues,
     WildcardEvents,
     FastEventListenerFlags,
@@ -23,6 +22,7 @@ import {
     PickTransformedEvents,
     FastEventMessage,
     ClosestWildcardEvents,
+    Class,
 } from './types';
 import { parseEmitArgs } from './utils/parseEmitArgs';
 import { parseScopeArgs } from './utils/parseScopeArgs';
@@ -186,13 +186,13 @@ export class FastEventScope<
     // 处理使用 NotPayload 标识的事件类型
     public once<T extends keyof PickTransformedEvents<Events>>(
         type: T,
-        listener: (message: PickPayload<RecordValues<WildcardEvents<Events, Exclude<T, number | symbol>>>>, args: FastEventListenerArgs<Meta>) => any | Promise<any>,
+        listener: (message: PickPayload<RecordValues<ClosestWildcardEvents<Events, Exclude<T, number | symbol>>>>, args: FastEventListenerArgs<Meta>) => any | Promise<any>,
         options?: FastEventListenOptions<Events, Meta>,
     ): FastEventSubscriber;
 
     public once<T extends Exclude<string, Types>>(
         type: T,
-        listener: TypedFastEventAnyListener<WildcardEvents<Events, T>, Meta, Fallback<Context, typeof this>>,
+        listener: TypedFastEventAnyListener<ClosestWildcardEvents<Events, T>, Meta, Fallback<Context, typeof this>>,
         options?: FastEventListenOptions,
     ): FastEventSubscriber;
     public once(): FastEventSubscriber {
@@ -342,6 +342,11 @@ export class FastEventScope<
         prefix: P,
         options?: DeepPartial<FastEventScopeOptions<Partial<FinalMeta> & M, C>>,
     ): FastEventScope<ScopeEvents<Events, P> & E, FinalMeta & M, C>;
+    scope<E extends Record<string, any> = Record<string, any>, P extends string = string, C = Context, ScopeObject extends InstanceType<Class> = InstanceType<Class>>(
+        prefix: P,
+        scopeObj: ScopeObject,
+        options?: DeepPartial<FastEventScopeOptions<Meta>>,
+    ): FastEventScopeExtend<Events, P, ScopeObject>;
     scope<
         E extends Record<string, any> = Record<string, any>,
         P extends string = string,
@@ -371,3 +376,6 @@ export class FastEventScope<
     //  eslint-disable-next-line
     onMessage(message: TypedFastEventMessage<Events, FinalMeta>, args: FastEventListenerArgs<FinalMeta>) {}
 }
+
+export type FastEventScopeExtend<Events extends Record<string, any>, Prefix extends string, T extends InstanceType<Class> = never> = FastEventScope<ScopeEvents<Events, Prefix>> &
+    T;

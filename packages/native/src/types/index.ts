@@ -1,7 +1,6 @@
 import type { FastListenerExecutor } from '../executors/types';
 import { type FastListenerPipe } from '../pipes/types';
 import { ExpandWildcard } from './ExpandWildcard';
-
 // 用来扩展全局Meta类型
 export interface FastEventMeta {}
 export interface FastEventMessageExtends {}
@@ -398,3 +397,5 @@ export * from './WildcardEvents';
 export * from './ScopeEvents';
 export * from './ExpandWildcard';
 export * from './Keys';
+
+export type Class = (new (...args: any[]) => any) | (abstract new (...args: any[]) => any);

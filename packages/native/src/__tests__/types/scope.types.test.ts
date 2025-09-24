@@ -3,7 +3,7 @@
 import { describe, test, expect } from 'vitest';
 import type { Equal, Expect, NotAny } from '@type-challenges/utils';
 import { FastEvent } from '../../event';
-import { FastEventScope, FastEventScopeMeta } from '../../scope';
+import { FastEventScope, FastEventScopeExtend, FastEventScopeMeta } from '../../scope';
 import { ChangeFieldType, FastEventMeta, FastEvents, RequiredItems, ScopeEvents } from '../../types';
 
 declare module '../../types' {
@@ -194,14 +194,13 @@ describe('作用域上下文类型系统', () => {
         };
         const emitter = new FastEvent<Events>();
 
-        class CustomScope extends FastEventScope<ScopeEvents<Events, 'rooms/a'>> {
+        class CustomScope extends FastEventScope {
             test() {}
         }
         type S = ScopeEvents<Events, 'rooms/a'>;
 
         function getRoomScope<Prefix extends string>(prefix: Prefix) {
-            // return emitter.scope(prefix, new CustomScope<`rooms/${Prefix}`>());
-            return emitter.scope(prefix, new CustomScope());
+            return emitter.scope(`rooms/${prefix}`, new CustomScope());
         }
 
         const scope = getRoomScope('y');
@@ -260,5 +259,66 @@ describe('作用域上下文类型系统', () => {
 
         b1.test;
         b1.test2;
+    });
+    test('继承scope类32', () => {
+        type Events = {
+            'rooms/*/users/online': { name: string; status?: number };
+            'rooms/*/users/*/online': { name: string; status?: number };
+            'rooms/*/users/*/offline': boolean;
+            'rooms/*/posts/**': number;
+            'rooms/*/posts/*/online': number;
+        };
+        const emitter = new FastEvent<Events>();
+
+        class CustomScope extends FastEventScope {
+            join(name: string) {}
+            leave() {}
+        }
+        type S = ScopeEvents<Events, 'rooms/y'>;
+
+        function getRoom<Prefix extends string>(prefix: Prefix) {
+            return emitter.scope(`rooms/${prefix}`, new CustomScope()); // as FastEventScopeExtend<Events, `rooms/${Prefix}`, CustomScope>;
+        }
+
+        const room = getRoom('y');
+        type RoomEvents = typeof room.types.events;
+        room.join('fisher');
+        room.leave();
+        room.on('posts/a', (message) => {
+            message.type;
+            message.payload;
+        });
+        room.on('users/online', (message) => {
+            type cases = [Expect<Equal<typeof message.type, 'users/online'>>, Expect<Equal<typeof message.payload, { name: string; status?: number }>>];
+        });
+    });
+
+    test('继承scope类4', () => {
+        type Events = {
+            'rooms/*/users/online': { name: string; status?: number };
+            'rooms/*/users/*/online': { name: string; status?: number };
+            'rooms/*/users/*/offline': boolean;
+            'rooms/*/posts/**': number;
+            'rooms/*/posts/*/online': number;
+        };
+        const emitter = new FastEvent<Events>();
+
+        class User extends FastEventScope {
+            login(name: string) {}
+            logout() {}
+        }
+
+        const useScope = emitter.scope(`rooms/x`);
+        const jack = useScope.scope('users/jack', new User());
+
+        jack.login('');
+        jack.logout();
+
+        jack.on('online', (message) => {
+            type cases = [Expect<Equal<typeof message.type, 'online'>>, Expect<Equal<typeof message.payload, { name: string; status?: number }>>];
+        });
+        jack.on('offline', (message) => {
+            type cases = [Expect<Equal<typeof message.type, 'offline'>>, Expect<Equal<typeof message.payload, boolean>>];
+        });
     });
 });

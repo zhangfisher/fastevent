@@ -1,4 +1,4 @@
-import { FastEventScope, type FastEventScopeOptions } from './scope';
+import { FastEventScope, type FastEventScopeOptions, FastEventScopeExtend } from './scope';
 import {
     TypedFastEventListener,
     FastEventOptions,
@@ -26,6 +26,7 @@ import {
     FastMessagePayload,
     OmitTransformedEvents,
     ClosestWildcardEvents,
+    Class,
 } from './types';
 import { parseEmitArgs } from './utils/parseEmitArgs';
 import { isPathMatched } from './utils/isPathMatched';
@@ -1068,6 +1069,11 @@ export class FastEvent<
         prefix: P,
         options?: DeepPartial<FastEventScopeOptions<Meta & M, C>>,
     ): FastEventScope<ScopeEvents<AllEvents, P> & E, Meta & M, C>;
+    scope<E extends Record<string, any> = Record<string, any>, P extends string = string, C = Context, ScopeObject extends InstanceType<Class> = InstanceType<Class>>(
+        prefix: P,
+        scopeObj: ScopeObject,
+        options?: DeepPartial<FastEventScopeOptions<Meta>>,
+    ): FastEventScopeExtend<AllEvents, P, ScopeObject>;
     scope<
         E extends Record<string, any> = Record<string, any>,
         P extends string = string,
@@ -1075,15 +1081,15 @@ export class FastEvent<
         C = Context,
         ScopeObject extends FastEventScope<any, any, any> = FastEventScope<any, any, any>,
     >(prefix: P, scopeObj: ScopeObject, options?: DeepPartial<FastEventScopeOptions<Meta & M, C>>): ScopeObject & FastEventScope<ScopeEvents<AllEvents, P> & E, Meta & M, C>;
-    scope<E extends Record<string, any> = Record<string, any>, P extends string = string, M extends Record<string, any> = Record<string, any>, C = Context>() {
+    scope() {
         const [prefix, scopeObj, options] = parseScopeArgs(arguments, this.options.meta, this.options.context);
         let scope;
         if (scopeObj) {
             scope = scopeObj;
         } else {
-            scope = new FastEventScope<ScopeEvents<AllEvents, P> & E, Meta & M, C>();
+            scope = new FastEventScope();
         }
-        scope.bind(this as any, prefix, options as FastEventScopeOptions<Meta & M, C>);
+        scope.bind(this as any, prefix, options);
         return scope;
     }
 }
