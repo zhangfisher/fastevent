@@ -74,7 +74,7 @@ console.log(metas);
 - `getListeners`方法用于获取事件监听器元数据，返回监听器注册信息`FastListenerMeta`。
 
 ```ts
-type FastListenerMeta = [TypedFastEventListener<any, any>, number, number, string?]
+type FastListenerMeta = [TypedFastEventListener<any, any>, number, number, string，number]
 ```
 
 `FastListenerMeta`是一个数组，包含以下信息：
@@ -83,7 +83,8 @@ type FastListenerMeta = [TypedFastEventListener<any, any>, number, number, strin
 | `0` | `TypedFastEventListener` | 监听器函数 |
 | `1` | `number` | 监听器调用限制次数，`0`表示无限制，`1`代表只调用一次 |
 | `2` | `number` | 监听器实际执行的次数，当达到限制次数后，监听器将被移除 |
-| `3` | `string` | 额外的信息，用于标识监听器 |
+| `3` | `string` | 额外的标签，用于标识监听器，供调试使用 |
+| `4` | `number` | 标识，用于额外标识监听器，高级选项 |
 
 
 - **事件监听器标签**
