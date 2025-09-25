@@ -1092,4 +1092,26 @@ export class FastEvent<
         scope.bind(this as any, prefix, options);
         return scope;
     }
+    // /**
+    //  * 用于将满足条件的消息桥接到其他FastEvent
+    //  *
+    //  * const emitter = new FastEvent();
+    //  * const otherEmitter = new FastEvent();
+    //  *
+    //  * - 将data/消息桥接到其他发射器
+    //  * const otherEmitter2 = emitter.bridgeTo(otherEmitter, (message) => {
+    //  *   return message.type.startsWith('data/');
+    //  * });
+    //  * - 将data/消息桥接到其他发射器，并且更改消息类型
+    //  * const otherEmitter2 = emitter.bridgeTo(otherEmitter, (message) => {
+    //  *   return message.type === 'data/process';
+    //  * }，(message) => {
+    //  *     message.type = message.type.replace('data/','message/')
+    //  *     return message
+    //  * };
+    //  *
+    //  *
+    //  *
+    //  */
+    // bridgeTo(emitter: FastEvent) {}
 }
