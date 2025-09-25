@@ -23,7 +23,6 @@ import {
     PickPayload,
     FastEventListenerFlags,
     PickTransformedEvents,
-    FastMessagePayload,
     OmitTransformedEvents,
     ClosestWildcardEvents,
     Class,
