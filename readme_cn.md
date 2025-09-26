@@ -449,7 +449,7 @@ type CustomEvents = TransformedEvents<{
 
 ## 单元测试
 
-`FastEvent`经过充分的单元测试，累计单元测试用例超过`280+`，测试覆盖率`99%+`。
+`FastEvent`经过充分的单元测试，累计单元测试用例超过`320+`，测试覆盖率`99%+`。
 
 ## License
 
