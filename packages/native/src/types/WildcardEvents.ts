@@ -1,4 +1,4 @@
-import { FirstObjectItem } from './FirstObjectItem';
+import { Keys } from './Keys';
 
 // MergeUnion<{ a: 1 } | { b: 2 }> === { a: 1, b: 2 }
 export type MergeUnion<T> = (T extends any ? (x: T) => void : never) extends (x: infer U) => void ? { [K in keyof U]: U[K] } : never;
@@ -39,6 +39,9 @@ type Fallback<T, F> = [T] extends [never]
     ? F // 处理undefined情况
     : T; // 否则返回原类型
 
+  
+
+
 /**
  *
  * 返回所有匹配事件的类型
@@ -64,7 +67,65 @@ export type WildcardEvents<Events extends Record<string, any>, T extends string>
         }
     >
 >;
-// 只返回最相近匹配的事件类型
-export type ClosestWildcardEvents<Events extends Record<string, any>, T extends string> = FirstObjectItem<WildcardEvents<Events, T>>;
 
-type s = ClosestWildcardEvents<any, 'xxx'>;
+
+/**
+ * 保留对象中第一项
+ */
+type FirstObjectItem<T extends Record<string, any>> = Pick<T, Keys<T> extends any[] ? Keys<T>[0] : never>;
+  
+type isEmpty<T extends Record<string, any>> = keyof T extends never ? true : false;
+// 获取所有Key包括通配符字符*的项
+type GetWildcardItems<T extends Record<string, any>> = {
+    [K in keyof T as K extends `${string}*${string}` ? K : K extends `*`  ? K : never]: T[K];
+}
+
+export type GetNotWildcardItems<T extends Record<string, any>> = {
+    [K in keyof T as K extends `${string}*${string}` ? never : K extends `*`  ? never : K]: T[K];
+}
+
+export type GetFirstMatchedItem<T extends Record<string, any>> =FirstObjectItem<isEmpty<GetNotWildcardItems<T>> extends true
+    ? GetWildcardItems<T>
+    : GetNotWildcardItems<T>>
+
+    
+// 只返回最相近匹配的事件类型
+export type ClosestWildcardEvents<Events extends Record<string, any>, T extends string> 
+= GetFirstMatchedItem<WildcardEvents<Events, T>>
+
+
+  
+
+
+
+// type  Events2 = ClosestWildcardEvents<{
+//     '$join': { room: string; welcome: string; users: string[] }
+//     '$leave': string
+//     '$error': string
+//     '$add': string
+//     '$remove': string
+//     '*': number
+// },'$join'>
+
+
+
+// type WebEvents = ClosestWildcardEvents<{
+//     'rooms/*/$join': { room: string; welcome: string; users: string[] }
+//     'rooms/*/$leave': string
+//     'rooms/*/$error': string
+//     'rooms/*/$add': string
+//     'rooms/*/$remove': string
+//     'rooms/*/*': number
+// },'rooms/*/$join'>
+
+
+
+// type  Events = ClosestWildcardEvents<{
+//     '$join': { room: string; welcome: string; users: string[] }
+//     '$leave': string
+//     '$error': string
+//     '$add': string
+//     '$remove': string
+//     '*': number
+// },'$join'>
+   

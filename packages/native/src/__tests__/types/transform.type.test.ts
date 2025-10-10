@@ -3,7 +3,8 @@
 import { describe, test, expect } from 'vitest';
 import type { Equal, Expect } from '@type-challenges/utils';
 import { FastEvent } from '../../event';
-import { FastEventMessage, FastEventListener, TypedFastEventListener, AssertFastMessage as NotPayload, PickTransformedEvents } from '../../types';
+import {  AssertFastMessage as NotPayload, PickTransformedEvents, TransformedEvents, RecordValues, ClosestWildcardEvents } from '../../types';
+
 
 describe('启用Transform时的类型支持', () => {
     test('自定义事件转换', () => {
@@ -154,4 +155,46 @@ describe('启用Transform时的类型支持', () => {
             resolve();
         });
     });
+    test('所有Scope自定义事件转换', () => {
+        type WebEvents = TransformedEvents<{
+            'rooms/*/$join': { room: string; welcome: string; users: string[] }
+            'rooms/*/$leave': string
+            'rooms/*/$error': string
+            'rooms/*/$add': string
+            'rooms/*/$remove': string
+            'rooms/*/*': number
+        }>
+         const emitter = new FastEvent<WebEvents>()
+        emitter.on('rooms/xssss/$join', (message) => {
+            type cases = [                
+                Expect<Equal<typeof message.room, string>>,
+                Expect<Equal<typeof message.welcome, string>>,
+                Expect<Equal<typeof message.users, string[]>>
+            ]
+        })
+        emitter.once('rooms/xssss/$join', (message) => {
+            type cases = [                
+                Expect<Equal<typeof message.room, string>>,
+                Expect<Equal<typeof message.welcome, string>>,
+                Expect<Equal<typeof message.users, string[]>>
+            ]
+        })
+        const scope = emitter.scope('rooms/test')
+        type ScopeEvents = typeof scope.types.events
+        type JoinEvents = ScopeEvents['$join']['type']
+        type SJoinEventss = ClosestWildcardEvents<ScopeEvents, '$join'>
+        type JoinEventss = RecordValues<ClosestWildcardEvents<ScopeEvents, '$join'>>
+        
+        
+        scope.on('$join', (message) => {
+            message.room
+            message.welcome
+            message.users
+            type cases = [                
+                Expect<Equal<typeof message.room, string>>,
+                Expect<Equal<typeof message.welcome, string>>,
+                Expect<Equal<typeof message.users, string[]>>
+            ]
+        })
+    })
 });
