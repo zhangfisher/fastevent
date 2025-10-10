@@ -1,5 +1,11 @@
 ## 2.2.2
 
+## 2.3.5
+
+### Patch Changes
+
+-   7c1fb68: FastEventScope 增加 listeners 返回监听器注册信息
+
 ## 2.3.4
 
 ### Patch Changes
