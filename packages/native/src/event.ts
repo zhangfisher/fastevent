@@ -756,6 +756,11 @@ export class FastEvent<
         }
     }
 
+    /**
+     * 获取指定类型的所有事件监听器
+     * @param type - 事件类型，必须是 AllEvents 的键
+     * @returns 包含指定类型的所有监听器元数据的数组
+     */
     getListeners(type: keyof AllEvents): FastListenerMeta[];
     getListeners(type: string): FastListenerMeta[] {
         const nodes: FastListenerNode[] = [];

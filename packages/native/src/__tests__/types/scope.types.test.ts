@@ -4,7 +4,7 @@ import { describe, test, expect } from 'vitest';
 import type { Equal, Expect, NotAny } from '@type-challenges/utils';
 import { FastEvent } from '../../event';
 import { FastEventScope, FastEventScopeExtend, FastEventScopeMeta } from '../../scope';
-import { ChangeFieldType, FastEventMeta, FastEvents, RequiredItems, ScopeEvents } from '../../types';
+import { ChangeFieldType, FastEventMeta, FastEvents, RequiredItems, ScopeEvents, TypedFastEventListener } from '../../types';
 
 declare module '../../types' {
     interface FastEventMeta {
@@ -154,6 +154,14 @@ describe('作用域上下文类型系统', () => {
             'x/posts/**': number;
         };
         const emitter = new FastEvent<Events>();
+        emitter.on('x/posts/fisher/online', (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, 'x/posts/*/online'>>, 
+                Expect<Equal<typeof message.payload, string>>
+            ];
+        });
+        
+        
         // 不需要显式指定类型参数，应该能自动推断
         const scope = emitter.scope('x');
 
@@ -169,7 +177,10 @@ describe('作用域上下文类型系统', () => {
         });
 
         scope.on('posts/fisher/online', (message) => {
-            type cases = [Expect<Equal<typeof message.type, 'posts/*/online'>>, Expect<Equal<typeof message.payload, string>>];
+            type cases = [
+                Expect<Equal<typeof message.type, 'posts/*/online'>>, 
+                Expect<Equal<typeof message.payload, string>>
+            ];
         });
 
         // 正确的类型检查
@@ -320,5 +331,36 @@ describe('作用域上下文类型系统', () => {
         jack.on('offline', (message) => {
             type cases = [Expect<Equal<typeof message.type, 'offline'>>, Expect<Equal<typeof message.payload, boolean>>];
         });
+    });
+    test('scope监听器类型', () => {
+        type Events = {
+            'rooms/*/users/online': { name: string; status?: number };
+            'rooms/*/users/*/online': { name: string; status?: number };
+            'rooms/*/users/*/offline': boolean;
+            'rooms/*/posts/**': number;
+            'rooms/*/posts/*/online': number;
+        };
+        const emitter = new FastEvent<Events>();
+        const useScope = emitter.scope(`rooms/x`);
+
+        type ScopeListeners = typeof useScope.types.listeners;
+
+        // 'users/online': TypedFastEventListener<"users/online", {
+        //         name: string;
+        //         status?: number;
+        //     }, FastEventMeta & FastEventScopeMeta & Record<string, any>, any>;
+        //     'users/*/online': TypedFastEventListener<...>;
+        //     'users/*/offline': TypedFastEventListener<...>;
+        //     'posts/**': TypedFastEventListener<...>;
+        //     'posts/*/online': TypedFastEventListener<...>;
+        type ListenerKeys = keyof ScopeListeners;
+        type cases = [
+            Expect<Equal<ScopeListeners['users/online'], 
+            TypedFastEventListener<"users/online", {name: string;status?: number}, FastEventMeta & FastEventScopeMeta & Record<string, any>, any
+            >>>,
+            Expect<Equal<ListenerKeys, 'users/online' | 'users/*/online' | 'users/*/offline' | 'posts/**' | 'posts/*/online'>>
+        ];
+        
+
     });
 });
