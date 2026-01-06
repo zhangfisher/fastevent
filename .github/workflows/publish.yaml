@@ -1,5 +1,4 @@
 name: Publish Package
-
 on:
   push:
     branches:
@@ -15,27 +14,29 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
-
     steps:
-      - name: 清理潜在的 Token 冲突
-        run: |
-          # 清除可能干扰 OIDC 的旧令牌环境变量
-          unset NODE_AUTH_TOKEN
-          # 或直接设置为空
-          # export NODE_AUTH_TOKEN=""
       - name: Checkout Repo
         uses: actions/checkout@v4
 
-      - name: Setup bun
-        uses: oven-sh/setup-bun@v1 # Uncomment this if you're using Bun
+      # 步骤顺序调整：setup-node 必须紧接在 checkout 之后
       - name: Setup Node.js for OIDC
         uses: actions/setup-node@v4
         with:
-          # 必须指定 >=20 的 Node.js 版本，以确保 npm >= 11.5 支持 OIDC
           node-version: "20.x"
-          # 这是 OIDC 发布的核心配置，告诉 npm 使用 GitHub OIDC 令牌
           registry-url: "https://registry.npmjs.org"
-      # 安装依赖
+
+      - name: Setup bun
+        uses: oven-sh/setup-bun@v1
+
+      # 清理步骤移到 setup-node 之后，确保清除残留
+      - name: 清理潜在的 Token 冲突
+        run: |
+          # 彻底清理 npm 可能读取的所有认证环境变量
+          unset NODE_AUTH_TOKEN
+          unset NPM_TOKEN
+          # 验证是否清理成功
+          echo "NODE_AUTH_TOKEN 值为: '${NODE_AUTH_TOKEN:-未设置}'"
+
       - name: Install dependencies
         run: bun install
 
@@ -43,12 +44,7 @@ jobs:
         id: changesets
         uses: changesets/action@v1
         with:
-          # This expects you to have a script called release which does a build for your packages and calls changeset publish
           publish: bun run release
         env:
-          # this doesn't work but semantic-release works
-          # see https://github.com/sonofmagic/npm-lib-rollup-template/blob/main/.github/workflows/release.yml#L46
-          # NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          # npm_config_registry: https://registry.npmjs.org
+          # 重要：不设置任何 npm 相关 token！
