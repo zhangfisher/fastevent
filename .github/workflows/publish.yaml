@@ -17,6 +17,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: 清理潜在的 Token 冲突
+        run: |
+          # 清除可能干扰 OIDC 的旧令牌环境变量
+          unset NODE_AUTH_TOKEN
+          # 或直接设置为空
+          # export NODE_AUTH_TOKEN=""
       - name: Checkout Repo
         uses: actions/checkout@v4
 
