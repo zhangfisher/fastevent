@@ -1,5 +1,11 @@
 ## 2.2.2
 
+## 2.3.7
+
+### Patch Changes
+
+-   61da93b: 优化 removeItem 和 isPathMatched
+
 ## 2.3.6
 
 ### Patch Changes
