@@ -444,7 +444,7 @@ type CustomEvents = TransformedEvents<{
 
 ## Unit Testing
 
-`FastEvent` has been thoroughly unit tested, with over `280+` cumulative test cases and `99%+` test coverage.
+`FastEvent` has been thoroughly unit tested, with over `320+` cumulative test cases and `99%+` test coverage.
 
 ## License
 

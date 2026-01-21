@@ -9,3 +9,4 @@ type LastOfUnion<T> = UnionToIntersection<T extends any ? (x: T) => 0 : never> e
 // 将联合类型转换为交叉类型
 type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void ? I : never;
 export type Keys<T extends Record<string, any>> = UnionToTuple<keyof T>;
+

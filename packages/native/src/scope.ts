@@ -23,6 +23,7 @@ import {
     FastEventMessage,
     ClosestWildcardEvents,
     Class,
+    FastEventListeners,
 } from './types';
 import { parseEmitArgs } from './utils/parseEmitArgs';
 import { parseScopeArgs } from './utils/parseScopeArgs';
@@ -67,7 +68,7 @@ export class FastEventScope<
         meta: undefined as unknown as FinalMeta,
         context: undefined as unknown as Fallback<Context, typeof this>,
         message: undefined as unknown as TypedFastEventMessageOptional<Events, FinalMeta>,
-        // listeners: undefined as unknown as FastEventListeners<Events, FinalMeta>,
+        listeners: undefined as unknown as FastEventListeners<Events, FinalMeta>,
         anyListener: undefined as unknown as TypedFastEventAnyListener<Events, FinalMeta, Fallback<Context, typeof this>>,
     };
     prefix: string = '';
@@ -80,6 +81,13 @@ export class FastEventScope<
     }
     get options() {
         return this._options as FastEventScopeOptions<FinalMeta, Context>;
+    }
+    /**
+     * 获取监听器
+     * @returns 监听器
+     */
+    get listeners(){
+        return this.emitter.getListeners(this.prefix)
     }
     bind(emitter: FastEvent<any>, prefix: string, options?: DeepPartial<FastEventScopeOptions<FinalMeta, Context>>) {
         this.emitter = emitter;
