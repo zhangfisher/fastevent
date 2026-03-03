@@ -74,6 +74,7 @@ export class FastEvent<
 
     /** 当前注册的监听器总数 */
     listenerCount: number = 0;
+
     types = {
         events: undefined as unknown as AllEvents,
         meta: undefined as unknown as Expand<FastEventMeta & Meta & Record<string, any>>,
