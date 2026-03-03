@@ -36,7 +36,7 @@ import { ScopeEvents } from './types';
 import { FastListenerPipe } from './pipes';
 import { AbortError, CancelError, FastEventDirectives } from './consts';
 import { parseScopeArgs } from './utils/parseScopeArgs';
-import { FastListenerExecutor } from './executors';
+import { FastListenerExecutor, parallel } from './executors';
 import { expandEmitResults } from './utils/expandEmitResults';
 import { isSubsctiber } from './utils/isSubsctiber';
 import { tryReturnError } from './utils/tryReturnError';
@@ -105,6 +105,7 @@ export class FastEvent<
                 ignoreErrors: true,
                 meta: undefined,
                 expandEmitResults: true,
+                executor: parallel()
             },
             this._initOptions(options),
         ) as unknown as FastEventOptions<Meta, Context>;
@@ -1074,11 +1075,8 @@ export class FastEvent<
         prefix: P,
         options?: DeepPartial<FastEventScopeOptions<Meta & M, C>>,
     ): FastEventScope<ScopeEvents<AllEvents, P> & E, Meta & M, C>;
-    scope<E extends Record<string, any> = Record<string, any>, P extends string = string, C = Context, ScopeObject extends InstanceType<Class> = InstanceType<Class>>(
-        prefix: P,
-        scopeObj: ScopeObject,
-        options?: DeepPartial<FastEventScopeOptions<Meta>>,
-    ): FastEventScopeExtend<AllEvents, P, ScopeObject>;
+
+    // 处理 FastEventScope 子类（优先级高，放在前面）
     scope<
         E extends Record<string, any> = Record<string, any>,
         P extends string = string,
@@ -1086,6 +1084,13 @@ export class FastEvent<
         C = Context,
         ScopeObject extends FastEventScope<any, any, any> = FastEventScope<any, any, any>,
     >(prefix: P, scopeObj: ScopeObject, options?: DeepPartial<FastEventScopeOptions<Meta & M, C>>): ScopeObject & FastEventScope<ScopeEvents<AllEvents, P> & E, Meta & M, C>;
+
+    // 处理通用的 Class 实例（排除 FastEventScope）
+    scope<E extends Record<string, any> = Record<string, any>, P extends string = string, C = Context, ScopeObject extends InstanceType<Class> = InstanceType<Class>>(
+        prefix: P,
+        scopeObj: ScopeObject,
+        options?: DeepPartial<FastEventScopeOptions<Meta>>,
+    ): FastEventScopeExtend<AllEvents, P, ScopeObject>;
     scope() {
         const [prefix, scopeObj, options] = parseScopeArgs(arguments, this.options.meta, this.options.context);
         let scope;

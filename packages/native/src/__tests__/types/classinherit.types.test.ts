@@ -193,7 +193,7 @@ describe('继承FastEventScope类型系统', () => {
         type cases = [Expect<Equal<Parameters<typeof myScope.test>[0], number>>];
 
         myScope.test(1);
-
+ 
         myScope.on('a', (message) => {
             message.meta.root = '1';
             type cases = [

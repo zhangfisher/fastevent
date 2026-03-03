@@ -149,11 +149,7 @@ export class FastEventScope<
     private _fixScopeType(type: string) {
         return type.startsWith(this.prefix) ? type.substring(this.prefix.length) : type;
     }
-    // 使用默认的onMessage监听器
-    public on<T extends Types = Types>(type: T, options?: FastEventListenOptions<Events, FinalMeta>): FastEventSubscriber;
-    public on<T extends Exclude<string, Types>>(type: T, options?: FastEventListenOptions<Events, FinalMeta>): FastEventSubscriber;
-    public on(type: '**', options?: FastEventListenOptions<Events, FinalMeta>): FastEventSubscriber;
-    // 传入监听器
+    // 传入监听器 - 优先级最高，必须放在前面
     public on<T extends keyof OmitTransformedEvents<Events>>(
         type: T,
         listener: TypedFastEventListener<Exclude<T, number | symbol>, Events[T], FinalMeta, Fallback<Context, typeof this>>,
@@ -163,16 +159,22 @@ export class FastEventScope<
     // 处理使用 NotPayload 标识的事件类型
     public on<T extends keyof PickTransformedEvents<Events>>(
         type: T,
-        listener: (message: PickPayload<RecordValues<ClosestWildcardEvents<Events, Exclude<T, number | symbol>>>>, args: FastEventListenerArgs<Meta>) => any | Promise<any>,
-        options?: FastEventListenOptions<Events, Meta>,
+        listener: (message: PickPayload<RecordValues<ClosestWildcardEvents<Events, Exclude<T, number | symbol>>>>, args: FastEventListenerArgs<FinalMeta>) => any | Promise<any>,
+        options?: FastEventListenOptions<Events, FinalMeta>,
     ): FastEventSubscriber;
 
+    // 处理通配符事件类型
     public on<T extends Exclude<string, Types>>(
         type: T,
-        listener: TypedFastEventAnyListener<ClosestWildcardEvents<Events, T>, Meta, Fallback<Context, typeof this>>,
+        listener: TypedFastEventAnyListener<ClosestWildcardEvents<Events, T>, FinalMeta, Fallback<Context, typeof this>>,
         options?: FastEventListenOptions,
     ): FastEventSubscriber;
+
     public on(type: '**', listener: TypedFastEventAnyListener<Events, FinalMeta, Fallback<Context, typeof this>>, options?: FastEventListenOptions): FastEventSubscriber;
+    // 使用默认的onMessage监听器
+    public on<T extends Types = Types>(type: T, options?: FastEventListenOptions<Events, FinalMeta>): FastEventSubscriber;
+    public on<T extends Exclude<string, Types>>(type: T, options?: FastEventListenOptions<Events, FinalMeta>): FastEventSubscriber;
+    public on(type: '**', options?: FastEventListenOptions<Events, FinalMeta>): FastEventSubscriber;
     public on(): FastEventSubscriber {
         if (!this.emitter) throw new UnboundError();
         const args = [...arguments] as [any, any, any];
@@ -194,13 +196,13 @@ export class FastEventScope<
     // 处理使用 NotPayload 标识的事件类型
     public once<T extends keyof PickTransformedEvents<Events>>(
         type: T,
-        listener: (message: PickPayload<RecordValues<ClosestWildcardEvents<Events, Exclude<T, number | symbol>>>>, args: FastEventListenerArgs<Meta>) => any | Promise<any>,
-        options?: FastEventListenOptions<Events, Meta>,
+        listener: (message: PickPayload<RecordValues<ClosestWildcardEvents<Events, Exclude<T, number | symbol>>>>, args: FastEventListenerArgs<FinalMeta>) => any | Promise<any>,
+        options?: FastEventListenOptions<Events, FinalMeta>,
     ): FastEventSubscriber;
 
     public once<T extends Exclude<string, Types>>(
         type: T,
-        listener: TypedFastEventAnyListener<ClosestWildcardEvents<Events, T>, Meta, Fallback<Context, typeof this>>,
+        listener: TypedFastEventAnyListener<ClosestWildcardEvents<Events, T>, FinalMeta, Fallback<Context, typeof this>>,
         options?: FastEventListenOptions,
     ): FastEventSubscriber;
     public once(): FastEventSubscriber {
