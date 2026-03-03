@@ -85,7 +85,30 @@ export type FastListenerNode = {
     [key: string]: FastListenerNode;
 };
 
+/**
+ * FastEvent 订阅者类型
+ *
+ * @description
+ * 当使用 { iterable: true } 选项时，返回的订阅者对象支持异步迭代，
+ * 可以使用 for await...of 语法消费事件消息。
+ *
+ * @example
+ * ```ts
+ * // 普通订阅者（不启用 iterable）
+ * const subscriber1 = emitter.on('event', listener);
+ * subscriber1.off();
+ *
+ * // 可迭代订阅者（启用 iterable）
+ * const subscriber2 = emitter.on('event', null, { iterable: true });
+ * for await (const message of subscriber2) {
+ *     console.log(message);
+ * }
+ * ```
+ */
 export type FastEventSubscriber = {
+    /**
+     * 取消订阅
+     */
     off: () => void;
     /**
      * 为什么要有一个listener引用? 主要用于移除监听器时使用
@@ -115,7 +138,22 @@ export type FastEventSubscriber = {
      *  scope.off(subscriber.listener) // 生效
      *
      */
-    listener: TypedFastEventListener<any, any, any>;
+    readonly listener: TypedFastEventListener<any, any, any>;
+    /**
+     * 异步迭代器（仅当启用 iterable 时可用）
+     */
+    [Symbol.asyncIterator]?: () => AsyncIterator<TypedFastEventMessage>;
+} & {
+    /**
+     * 将消息加入队列（内部方法，仅当启用 iterable 时可用）
+     * @internal
+     */
+    _enqueue?: (message: TypedFastEventMessage) => void;
+    /**
+     * 关闭订阅者（内部方法，仅当启用 iterable 时可用）
+     * @internal
+     */
+    _close?: () => void;
 };
 
 export type FastListeners = FastListenerNode;
@@ -183,6 +221,22 @@ export type FastEventListenOptions<Events extends Record<string, any> = Record<s
      * emitter.getListeners(tag)
      */
     tag?: string;
+    /**
+     * 启用异步迭代器功能
+     * @default false
+     * @description
+     * 当设置为 true 时，返回的订阅者对象支持异步迭代，可以使用 for await...of 语法消费事件消息。
+     * 默认会添加 queue() pipe 来缓存消息，用户可以通过 pipes 选项覆盖默认行为。
+     *
+     * @example
+     * ```ts
+     * const subscriber = emitter.on('event', null, { iterable: true });
+     * for await (const message of subscriber) {
+     *     console.log(message);
+     * }
+     * ```
+     */
+    iterable?: boolean;
 };
 
 export enum FastEventListenerFlags {

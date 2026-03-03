@@ -6,6 +6,15 @@ import { FastEvent } from '../../event';
 import { FastEventMessage, FastEventListener, TypedFastEventListener, AssertFastMessage as NotPayload } from '../../types';
 
 describe('types', () => {
+    test("未定义事件类型时就支持任意事件",()=>{
+        const emitter = new FastEvent()
+        emitter.on("test",(message)=>{
+            type cases = [
+                Expect<Equal<typeof message.type , 'test'>>,
+                Expect<Equal<typeof message.payload , any>>, 
+            ]
+        })
+    })
     test('自定义事件类型和元数据类型', () => {
         type CustomMeta = { x: number; y: number; z?: number };
         type CustomEvents = {

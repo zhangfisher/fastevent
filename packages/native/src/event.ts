@@ -33,8 +33,9 @@ import { removeItem } from './utils/removeItem';
 import { renameFn } from './utils/renameFn';
 import { isFunction } from './utils/isFunction';
 import { ScopeEvents } from './types';
-import { FastListenerPipe } from './pipes';
+import { FastListenerPipe, queue } from './pipes';
 import { AbortError, CancelError, FastEventDirectives } from './consts';
+import { FastEventSubscriberClass } from './subscriber';
 import { parseScopeArgs } from './utils/parseScopeArgs';
 import { FastListenerExecutor, parallel } from './executors';
 import { expandEmitResults } from './utils/expandEmitResults';
@@ -286,22 +287,43 @@ export class FastEvent<
     ): FastEventSubscriber;
     public on(): FastEventSubscriber {
         const type = arguments[0] as string;
-        let listener = isFunction(arguments[1]) ? arguments[1] : (this._options.onMessage || this.onMessage).bind(this);
 
-        const options = Object.assign(
+        // 解析参数和选项
+        let listener: any;
+        let options: any;
+
+        if (arguments.length < 2) {
+            // on(type)
+            listener = (this._options.onMessage || this.onMessage).bind(this);
+            options = {};
+        } else if (isFunction(arguments[1])) {
+            // on(type, listener, options?)
+            listener = arguments[1];
+            options = arguments[2] || {};
+        } else if (arguments.length > 2) {
+            // on(type, null, options?) 或 on(type, non-function, options?)
+            listener = (this._options.onMessage || this.onMessage).bind(this);
+            options = arguments[2] || {};
+        } else {
+            // on(type, options?)
+            listener = (this._options.onMessage || this.onMessage).bind(this);
+            options = arguments[1];
+        }
+
+        const finalOptions = Object.assign(
             {
                 count: 0,
                 flags: 0,
                 prepend: false,
             },
-            isFunction(arguments[1]) ? arguments[2] : arguments[1],
+            options
         ) as Required<FastEventListenOptions>;
 
         if (type.length === 0) throw new Error('event type cannot be empty');
 
         //
         if (isFunction(this._options.onAddListener)) {
-            const r = this._options.onAddListener(type, listener, options);
+            const r = this._options.onAddListener(type, listener, finalOptions);
             if (r === false) {
                 throw new CancelError();
             } else if (isSubsctiber(r)) {
@@ -311,33 +333,149 @@ export class FastEvent<
 
         const parts = type.split(this._delimiter);
 
-        if (options.pipes && options.pipes.length > 0) {
-            listener = this._pipeListener(listener, options.pipes);
+        // 处理 pipes（适用于所有订阅者，包括 iterable）
+        if (finalOptions.pipes && finalOptions.pipes.length > 0) {
+            listener = this._pipeListener(listener, finalOptions.pipes);
         }
 
-        if (isFunction(options.filter) || isFunction(options.off)) {
+        // ========== 新增：检查 iterable 选项 ==========
+        // 如果启用 iterable，调用独立函数处理
+        if (finalOptions.iterable) {
+            return this._createIterableSubscriber(type, listener, finalOptions, parts);
+        }
+        // ========== 结束新增 ==========
+
+        // 处理 filter 和 off（仅用于普通订阅者）
+        if (isFunction(finalOptions.filter) || isFunction(finalOptions.off)) {
             const oldListener = listener;
+            const off = () => node && this._removeListener(node, parts, listener);
             listener = renameFn<TypedFastEventListener>(function (message, args) {
                 // 如果满足条件就退订
-                if (isFunction(options.off) && options.off.call(this, message as any, args)) {
+                if (isFunction(finalOptions.off) && finalOptions.off.call(this, message as any, args)) {
                     off();
                     return;
                 }
                 // 如果满足条件就触发监听器
-                if (isFunction(options.filter)) {
-                    if (options.filter.call(this, message as any, args!)) return oldListener.call(this, message, args);
+                if (isFunction(finalOptions.filter)) {
+                    if (finalOptions.filter.call(this, message as any, args!)) return oldListener.call(this, message, args);
                 } else {
                     return oldListener.call(this, message, args);
                 }
             }, listener.name);
         }
 
-        const [node, index] = this._addListener(parts, listener, options);
+        // 添加到监听器树
+        const [node, index] = this._addListener(parts, listener, finalOptions);
         const off = () => node && this._removeListener(node, parts, listener);
+
         // 触发监听器保留消息
         this._emitRetainMessage(type, node, index);
 
         return { off, listener };
+    }
+
+    /**
+     * 创建支持异步迭代的订阅者
+     * @private
+     * @param type - 事件类型
+     * @param listener - 事件监听器（已经经过 pipes 处理）
+     * @param options - 监听器选项
+     * @param parts - 事件路径分割后的数组
+     * @returns 支持异步迭代的订阅者对象
+     */
+    private _createIterableSubscriber(
+        type: string,
+        listener: TypedFastEventListener<any, any, any>,
+        options: Required<FastEventListenOptions>,
+        parts: string[]
+    ): FastEventSubscriber {
+        // 如果用户未指定 pipes，默认添加 queue()
+        if (!options.pipes || options.pipes.length === 0) {
+            options.pipes = [queue()];
+            listener = this._pipeListener(listener, options.pipes);
+        }
+
+        // 声明 subscriber 变量，以便在包装函数中使用
+        let subscriber: FastEventSubscriberClass;
+        let offFn: () => void;
+
+        // 先添加监听器获取 node
+        const [node, index] = this._addListener(parts, listener, options);
+
+        // 创建 off 函数
+        offFn = () => {
+            if (node) {
+                this._removeListener(node, parts, listener);
+            }
+            if (subscriber) {
+                subscriber._close();
+            }
+        };
+
+        // 处理 filter 和 off（使用辅助方法）
+        listener = this._wrapListenerWithFilterOrOff(listener, options, offFn);
+
+        // 创建 FastEventSubscriber 实例
+        subscriber = new FastEventSubscriberClass(
+            offFn,
+            listener
+        );
+
+        // 包装监听器，将消息推送到订阅者队列
+        const originalListener = listener;
+        const wrappedListener = async function (this: any, message: TypedFastEventMessage, args: FastEventListenerArgs) {
+            // 推送到订阅者队列
+            subscriber._enqueue(message);
+
+            // 执行原始监听器
+            return originalListener.call(this, message, args);
+        };
+
+        // 更新监听器树中的监听器引用
+        if (node && node.__listeners) {
+            const listenerIndex = node.__listeners.findIndex(l => l[0] === listener);
+            if (listenerIndex !== -1) {
+                node.__listeners[listenerIndex][0] = wrappedListener;
+            }
+        }
+
+        // 触发保留消息
+        this._emitRetainMessage(type, node, index);
+
+        return subscriber;
+    }
+
+    /**
+     * 使用 filter 和 off 选项包装监听器
+     * @private
+     * @param listener - 原始监听器
+     * @param options - 监听器选项
+     * @param offFn - off 函数（在 filter/off 回调中调用）
+     * @returns 包装后的监听器
+     */
+    private _wrapListenerWithFilterOrOff(
+        listener: TypedFastEventListener<any, any, any>,
+        options: Required<FastEventListenOptions>,
+        offFn: () => void
+    ): TypedFastEventListener<any, any, any> {
+        if (!isFunction(options.filter) && !isFunction(options.off)) {
+            return listener;
+        }
+
+        const oldListener = listener;
+        return renameFn<TypedFastEventListener>(function (message, args) {
+            // 如果满足条件就退订
+            if (isFunction(options.off) && options.off.call(this, message as any, args)) {
+                offFn();
+                return;
+            }
+            // 如果满足条件就触发监听器
+            if (isFunction(options.filter)) {
+                if (options.filter.call(this, message as any, args!)) return oldListener.call(this, message, args);
+            } else {
+                return oldListener.call(this, message, args);
+            }
+        }, listener.name);
     }
 
     /**
