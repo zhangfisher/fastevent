@@ -4,7 +4,7 @@ import { FastEvent } from "../../event"
 describe("Default执行器测试", () => {
     test("使用全局default执行器时应该执行所有监听器", () => {
         const emitter = new FastEvent({
-            executor: 'default'
+            
         })
 
         const listener1 = vi.fn(() => "result1")
@@ -22,7 +22,7 @@ describe("Default执行器测试", () => {
 
     test("异步执行器应该正确处理Promise结果", async () => {
         const emitter = new FastEvent({
-            executor: 'default'
+            
         })
 
         const listener1 = vi.fn(async () => {
@@ -46,7 +46,7 @@ describe("Default执行器测试", () => {
 
     test("异步执行器应该正确处理错误", async () => {
         const emitter = new FastEvent({
-            executor: 'default'
+            
         })
 
         const error = new Error("测试错误")

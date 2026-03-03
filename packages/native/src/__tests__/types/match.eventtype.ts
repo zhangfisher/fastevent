@@ -204,7 +204,7 @@ describe('事件通配符匹配', () => {
         // 'x/devices/x/offline'能同时与'x/devices/*/*'和'x/devices/*/offline'匹配，但是'x/devices/*/offline'的优先级更高
         // 一般情况下应该将明确语义的类型排在前面
         emitter.on('x/devices/x/offline', (message) => {
-            type cases = [Expect<Equal<typeof message.type, 'x/devices/*/*'>>, Expect<Equal<typeof message.payload, number>>];
+            type cases = [Expect<Equal<typeof message.type, 'x/devices/*/offline'>>, Expect<Equal<typeof message.payload, boolean>>];
         });
         emitter.once('x/users/x/online', (message) => {
             type cases = [Expect<Equal<typeof message.type, 'x/users/*/online'>>, Expect<Equal<typeof message.payload, { name: string; status?: number }>>];
@@ -213,11 +213,8 @@ describe('事件通配符匹配', () => {
         emitter.once('x/posts/fisher/online', (message) => {
             type cases = [Expect<Equal<typeof message.type, 'x/posts/*/online'>>, Expect<Equal<typeof message.payload, string>>];
         });
-        // 当存在多个匹配事件，匹配事件时与声明顺序有关。
-        // 'x/devices/x/offline'能同时与'x/devices/*/*'和'x/devices/*/offline'匹配，但是'x/devices/*/*'声明在前，所以优先匹配
-        // 所以一般情况下应该将明确语义的类型排在前面
         emitter.once('x/devices/x/offline', (message) => {
-            type cases = [Expect<Equal<typeof message.type, 'x/devices/*/*'>>, Expect<Equal<typeof message.payload, number>>];
+            type cases = [Expect<Equal<typeof message.type, 'x/devices/*/offline'>>, Expect<Equal<typeof message.payload, boolean>>];
         });
     });
 });
