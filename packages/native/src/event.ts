@@ -1076,21 +1076,19 @@ export class FastEvent<
         options?: DeepPartial<FastEventScopeOptions<Meta & M, C>>,
     ): FastEventScope<ScopeEvents<AllEvents, P> & E, Meta & M, C>;
 
-    // 处理 FastEventScope 子类（优先级高，放在前面）
-    scope<
-        E extends Record<string, any> = Record<string, any>,
-        P extends string = string,
-        M extends Record<string, any> = Record<string, any>,
-        C = Context,
-        ScopeObject extends FastEventScope<any, any, any> = FastEventScope<any, any, any>,
-    >(prefix: P, scopeObj: ScopeObject, options?: DeepPartial<FastEventScopeOptions<Meta & M, C>>): ScopeObject & FastEventScope<ScopeEvents<AllEvents, P> & E, Meta & M, C>;
-
-    // 处理通用的 Class 实例（排除 FastEventScope）
-    scope<E extends Record<string, any> = Record<string, any>, P extends string = string, C = Context, ScopeObject extends InstanceType<Class> = InstanceType<Class>>(
+    // 处理 FastEventScope 子类，自动合并实例的事件类型
+    scope<P extends string = string, ScopeObject extends FastEventScope<any, any, any> = FastEventScope<any, any, any>>(
         prefix: P,
         scopeObj: ScopeObject,
         options?: DeepPartial<FastEventScopeOptions<Meta>>,
     ): FastEventScopeExtend<AllEvents, P, ScopeObject>;
+
+    // 处理通用的 Class 实例（非 FastEventScope）
+    scope<E extends Record<string, any> = Record<string, any>, P extends string = string, C = Context, ScopeObject extends InstanceType<Class> = InstanceType<Class>>(
+        prefix: P,
+        scopeObj: ScopeObject,
+        options?: DeepPartial<FastEventScopeOptions<Meta>>,
+    ): FastEventScope<ScopeEvents<AllEvents, P>> & ScopeObject;
     scope() {
         const [prefix, scopeObj, options] = parseScopeArgs(arguments, this.options.meta, this.options.context);
         let scope;

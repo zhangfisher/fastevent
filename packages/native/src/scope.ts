@@ -356,7 +356,7 @@ export class FastEventScope<
         prefix: P,
         scopeObj: ScopeObject,
         options?: DeepPartial<FastEventScopeOptions<Meta>>,
-    ): FastEventScopeExtend<Events, P, ScopeObject>;
+    ): FastEventScope<ScopeEvents<Events, P> & E> & ScopeObject;
     scope<
         E extends Record<string, any> = Record<string, any>,
         P extends string = string,
@@ -387,5 +387,17 @@ export class FastEventScope<
     onMessage(message: TypedFastEventMessage<Events, FinalMeta>, args: FastEventListenerArgs<FinalMeta>) {}
 }
 
-export type FastEventScopeExtend<Events extends Record<string, any>, Prefix extends string, T extends InstanceType<Class> = never> = FastEventScope<ScopeEvents<Events, Prefix>> &
-    T;
+// 从 FastEventScope 实例中提取事件类型
+type ExtractScopeEvents<T> = T extends FastEventScope<infer Events, any, any> ? Events : Record<string, any>;
+
+// 从 FastEventScope 实例中提取 Meta 类型
+type ExtractScopeMeta<T> = T extends FastEventScope<any, infer Meta, any> ? Meta : Record<string, any>;
+
+// 从 FastEventScope 实例中提取 Context 类型
+type ExtractScopeContext<T> = T extends FastEventScope<any, any, infer Context> ? Context : never;
+
+export type FastEventScopeExtend<
+    Events extends Record<string, any>,
+    Prefix extends string,
+    T extends FastEventScope<any, any, any> = FastEventScope<any, any, any>,
+> = FastEventScope<ScopeEvents<Events, Prefix> & ExtractScopeEvents<T>, ExtractScopeMeta<T>, ExtractScopeContext<T>> & T;
