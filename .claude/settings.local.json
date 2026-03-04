@@ -17,7 +17,8 @@
       "Bash(npx vitest run packages/native/src/__tests__/debug_payload.test.ts)",
       "Bash(npx tsc --noEmit src/__tests__/debug_payload.test.ts)",
       "Bash(npx tsc --noEmit --skipLibCheck)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(ls -la packages/native/src/__tests__/debug*.ts)"
     ]
   }
 }
