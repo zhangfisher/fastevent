@@ -187,7 +187,7 @@ export class FastEventScope<
         return type.startsWith(this.prefix) ? type.substring(this.prefix.length) : type;
     }
     // 传入监听器 - 优先级最高，必须放在前面
-    public on<T extends keyof OmitTransformedEvents<Events>>(
+    public on<T extends  Types >(
         type: T,
         listener: TypedFastEventListener<
             Exclude<T, number | symbol>,
@@ -220,13 +220,21 @@ export class FastEventScope<
         >,
         options?: FastEventListenOptions,
     ): FastEventSubscriber;
-
+    public on<T extends Exclude<string, Types>>(
+        type: T,
+        listener: TypedFastEventAnyListener<
+            ClosestWildcardEvents<Events, T>,
+            Meta,
+            Fallback<Context, typeof this>
+        >,
+        options?: FastEventListenOptions<Events, Meta>,
+    ): FastEventSubscriber;
     public on(
         type: "**",
         listener: TypedFastEventAnyListener<Events, FinalMeta, Fallback<Context, typeof this>>,
         options?: FastEventListenOptions,
     ): FastEventSubscriber;
-    // 使用默认的onMessage监听器
+    // 返回异步迭代器
     public on<T extends Types = Types>(
         type: T,
         options?: FastEventListenOptions<Events, FinalMeta>,
@@ -486,16 +494,16 @@ export class FastEventScope<
     >(
         prefix: P,
         options?: DeepPartial<FastEventScopeOptions<Partial<FinalMeta> & M, C>>,
-    ): FastEventScope<ScopeEvents<Events, P> & E, FinalMeta & M, C>;
-    scope<
-        P extends string = string,
-        C = Context,
-        ScopeInstance extends FastEventScope<any, any, any> = FastEventScope<any, any, any>,
-    >(
-        prefix: P,
-        scopeObj: ScopeInstance,
-        options?: DeepPartial<FastEventScopeOptions<Meta>>,
-    ): FastEventScopeExtend<Events, P, ScopeInstance, Meta>;
+    ): FastEventScope<ScopeEvents<Events & E, P> , FinalMeta & M, C>;
+    // scope<
+    //     P extends string = string,
+    //     C = Context,
+    //     ScopeInstance extends FastEventScope<any, any, any> = FastEventScope<any, any, any>,
+    // >(
+    //     prefix: P,
+    //     scopeObj: ScopeInstance,
+    //     options?: DeepPartial<FastEventScopeOptions<Meta>>,
+    // ): FastEventScopeExtend<Events, P, ScopeInstance, Meta>;
     scope<
         E extends Record<string, any> = Record<string, any>,
         P extends string = string,
@@ -510,7 +518,7 @@ export class FastEventScope<
         prefix: P,
         scopeObj: ScopeInstance,
         options?: DeepPartial<FastEventScopeOptions<Partial<FinalMeta> & M, C>>,
-    ): FastEventScopeExtend<Events, P, ScopeInstance, Meta>;
+    ): FastEventScopeExtend<Events & E, P, ScopeInstance, Meta>;
     scope<
         E extends Record<string, any> = Record<string, any>,
         P extends string = string,
@@ -556,11 +564,11 @@ type ExtractScopeContext<T> = T extends FastEventScope<any, any, infer Context> 
 export type FastEventScopeExtend<
     Events extends Record<string, any>,
     Prefix extends string,
-    T extends FastEventScope<any, any, any, any, any> = FastEventScope<any, any, any, any, any>,
+    T extends FastEventScope<any, any, any> = FastEventScope<any, any, any>,
     EmitterMeta extends Record<string, any> = Record<string, any>,
 > = FastEventScope<
-    ScopeEvents<Events, Prefix> & ExtractScopeEvents<T>,
+    ScopeEvents<Events & ExtractScopeEvents<T>, Prefix> ,
     EmitterMeta & ExtractScopeMeta<T>,
     ExtractScopeContext<T>
 > &
-    T;
+    Omit<T,keyof FastEventScope>;

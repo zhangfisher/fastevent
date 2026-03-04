@@ -5,7 +5,7 @@ import { queue, throttle } from "../../pipes"
 describe('FastEvent 异步迭代器基础功能', () => {
     test('应该支持 for await...of 语法', async () => {
         const emitter = new FastEvent();
-        const subscriber = emitter.on('test', null, { iterable: true });
+        const subscriber = emitter.on('test');
 
         emitter.emit('test', 'message1');
         emitter.emit('test', 'message2');
@@ -21,7 +21,7 @@ describe('FastEvent 异步迭代器基础功能', () => {
 
     test('emit 在迭代之前发送的消息应该被 queue 缓存', async () => {
         const emitter = new FastEvent();
-        const subscriber = emitter.on('test', null, { iterable: true });
+        const subscriber = emitter.on('test');
 
         // 在迭代之前发送多条消息
         emitter.emit('test', 'message1');
@@ -43,7 +43,7 @@ describe('FastEvent 异步迭代器基础功能', () => {
 
     test('迭代过程中发送的新消息应该能正常接收', async () => {
         const emitter = new FastEvent();
-        const subscriber = emitter.on('test', null, { iterable: true });
+        const subscriber = emitter.on('test');
 
         const messages = [];
 
@@ -67,7 +67,7 @@ describe('FastEvent 异步迭代器基础功能', () => {
 
     test('应该在 off() 后停止接收新消息', async () => {
         const emitter = new FastEvent();
-        const subscriber = emitter.on('test', null, { iterable: true });
+        const subscriber = emitter.on('test',  { iterable: true });
 
         emitter.emit('test', 'before');
         subscriber.off();
@@ -100,7 +100,7 @@ describe('FastEvent 异步迭代器基础功能', () => {
 describe('Pipe 集成', () => {
     test('iterable=true 时应该默认添加 queue pipe', async () => {
         const emitter = new FastEvent();
-        const subscriber = emitter.on('test', null, { iterable: true });
+        const subscriber = emitter.on('test');
 
         // 发送多条消息
         for (let i = 0; i < 10; i++) {
@@ -169,7 +169,7 @@ describe('Pipe 集成', () => {
 describe('并发安全', () => {
     test('不应该允许同时迭代同一个订阅者', async () => {
         const emitter = new FastEvent();
-        const subscriber = emitter.on('test', null, { iterable: true });
+        const subscriber = emitter.on('test');
 
         const iterator1 = subscriber[Symbol.asyncIterator]();
 
@@ -181,7 +181,7 @@ describe('并发安全', () => {
 
     test('应该在迭代完成后允许重新迭代', async () => {
         const emitter = new FastEvent();
-        const subscriber = emitter.on('test', null, { iterable: true });
+        const subscriber = emitter.on('test');
 
         emitter.emit('test', 'msg1');
 
@@ -206,7 +206,7 @@ describe('并发安全', () => {
 describe('边缘情况', () => {
     test('空队列时应该等待新消息', async () => {
         const emitter = new FastEvent();
-        const subscriber = emitter.on('test', null, { iterable: true });
+        const subscriber = emitter.on('test');
 
         const iterator = subscriber[Symbol.asyncIterator]();
 
@@ -221,7 +221,7 @@ describe('边缘情况', () => {
 
     test('关闭后迭代应该结束', async () => {
         const emitter = new FastEvent();
-        const subscriber = emitter.on('test', null, { iterable: true });
+        const subscriber = emitter.on('test');
 
         emitter.emit('test', 'msg1');
         subscriber.off();

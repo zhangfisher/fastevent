@@ -8,6 +8,8 @@ import {
     FastEventListener,
     TypedFastEventListener,
     AssertFastMessage as NotPayload,
+    Expand,
+    FastEventMeta,
 } from "../../types";
 
 describe("types", () => {
@@ -166,13 +168,13 @@ describe("types", () => {
                 age: 18,
                 address: "beijing",
             },
-        });
-
+        });    
+        type Meta = Expand<Record<string, any> & FastEventMeta & CustomMeta >
         type cases = [
             Expect<Equal<typeof emitter.types.events, CustomEvents>>,
             Expect<
                 Equal<
-                    typeof emitter.types.meta,
+                      typeof emitter.types.meta,
                     {
                         [x: string]: any;
                         x: number;
@@ -185,3 +187,19 @@ describe("types", () => {
         ];
     });
 });
+
+
+// class A{
+//     types = null as unknown as {
+//         a:boolean
+//     }
+// }
+
+// class AA extends A{
+//      declare types: Expand<{
+//         b: boolean
+//     } & A['types']>
+// }
+
+// const aa= new AA()
+// aa.types

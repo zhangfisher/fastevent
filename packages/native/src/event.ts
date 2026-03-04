@@ -81,25 +81,25 @@ export class FastEvent<
     /** 当前注册的监听器总数 */
     listenerCount: number = 0;
 
-    types = {
-        events: undefined as unknown as AllEvents,
-        meta: undefined as unknown as Expand<FastEventMeta & Meta & Record<string, any>>,
-        context: undefined as unknown as Expand<Fallback<Context, typeof this>>,
-        message: undefined as unknown as TypedFastEventMessageOptional<
+    // 子类通过：declare types : { } & typeof FastEvent.types  扩展类型
+     types  = null as unknown as  {
+        events:  AllEvents
+        meta:  Expand<Record<string, any> & FastEventMeta & Meta > 
+        context:  Expand<Fallback<Context,FastEvent<AllEvents,Meta,Context>>> 
+        message:  TypedFastEventMessageOptional<
             AllEvents,
             Expand<FastEventMeta & Meta & Record<string, any>>
-        >,
-        listeners: undefined as unknown as FastEventListeners<
+        >
+        listeners:  FastEventListeners<
             AllEvents,
             Expand<FastEventMeta & Meta & Record<string, any>>
-        >,
-        anyListener: undefined as unknown as TypedFastEventAnyListener<
+        >
+        anyListener:  TypedFastEventAnyListener<
             AllEvents,
             Expand<FastEventMeta & Meta & Record<string, any>>,
-            Expand<Fallback<Context, typeof this>>
-        >,
-    };
-
+            Expand<Fallback<Context,FastEvent<AllEvents,Meta,Context>>>
+        >
+    }
     /**
      * 创建FastEvent实例
      * @param options - 事件发射器的配置选项
