@@ -1,6 +1,6 @@
-import { FastEventDirectives, UnboundError } from './consts';
-import type { FastEvent } from './event';
-import { FastListenerExecutor } from './executors/types';
+import { FastEventDirectives, UnboundError } from "./consts";
+import type { FastEvent } from "./event";
+import { FastListenerExecutor } from "./executors/types";
 import {
     TypedFastEventAnyListener,
     FastEventEmitMessage,
@@ -22,14 +22,13 @@ import {
     PickTransformedEvents,
     FastEventMessage,
     ClosestWildcardEvents,
-    Class,
     FastEventListeners,
-} from './types';
-import { parseEmitArgs } from './utils/parseEmitArgs';
-import { parseScopeArgs } from './utils/parseScopeArgs';
-import { renameFn } from './utils/renameFn';
-import { PickPayload, AtPayloads } from './types/index';
-import { isFunction } from './utils/isFunction';
+} from "./types";
+import { parseEmitArgs } from "./utils/parseEmitArgs";
+import { parseScopeArgs } from "./utils/parseScopeArgs";
+import { renameFn } from "./utils/renameFn";
+import { PickPayload, AtPayloads } from "./types/index";
+import { isFunction } from "./utils/isFunction";
 
 export type FastEventScopeOptions<Meta = Record<string, any>, Context = never> = {
     meta: FastEventScopeMeta & FastEventMeta & Meta;
@@ -63,18 +62,46 @@ export class FastEventScope<
     __FastEventScope__: boolean = true;
     private _options: DeepPartial<FastEventScopeOptions<FinalMeta, Context>> = {};
 
-    types = {
-        events: undefined as unknown as Events,
-        meta: undefined as unknown as FinalMeta,
-        context: undefined as unknown as Fallback<Context, typeof this>,
-        message: undefined as unknown as TypedFastEventMessageOptional<Events, FinalMeta>,
-        listeners: undefined as unknown as FastEventListeners<Events, FinalMeta>,
-        anyListener: undefined as unknown as TypedFastEventAnyListener<Events, FinalMeta, Fallback<Context, typeof this>>,
+    // types = {
+    //     events: undefined as unknown as Events,
+    //     meta: undefined as unknown as FinalMeta,
+    //     context: undefined as unknown as Fallback<Context, typeof this>,
+    //     message: undefined as unknown as TypedFastEventMessageOptional<Events, FinalMeta>,
+    //     listeners: undefined as unknown as FastEventListeners<Events, FinalMeta>,
+    //     anyListener: undefined as unknown as TypedFastEventAnyListener<
+    //         Events,
+    //         FinalMeta,
+    //         Fallback<Context, typeof this>
+    //     >,
+    // };
+    // declare types: {
+    //     // 基本类型字段（不依赖 this）
+    //     events: Events;
+    //     meta: FinalMeta;
+    //     message: TypedFastEventMessageOptional<Events, FinalMeta>;
+    //     listeners: FastEventListeners<Events, FinalMeta>;
+
+    //     // 需要使用 this 的字段 - 使用当前类作为占位符
+    //     // 在实际使用时，TypeScript 会正确推断为实例类型
+    //     context: Fallback<Context, FastEventScope<Events, Meta, Context, Types, FinalMeta>>;
+    //     anyListener: TypedFastEventAnyListener<
+    //         Events,
+    //         FinalMeta,
+    //         Fallback<Context, FastEventScope<Events, Meta, Context, Types, FinalMeta>>
+    //     >;
+    // };
+    declare types: {
+        events: Events;
+        meta: FinalMeta;
+        message: TypedFastEventMessageOptional<Events, FinalMeta>;
     };
-    prefix: string = '';
+    prefix: string = "";
     emitter!: FastEvent<any>;
     constructor(options?: DeepPartial<FastEventScopeOptions<FinalMeta, Context>>) {
-        this._options = Object.assign({}, this._initOptions(options)) as unknown as FastEventScopeOptions<FinalMeta, Context>;
+        this._options = Object.assign(
+            {},
+            this._initOptions(options),
+        ) as unknown as FastEventScopeOptions<FinalMeta, Context>;
     }
     get context(): Fallback<Context, typeof this> {
         return (this.options.context || this) as Fallback<Context, typeof this>;
@@ -86,10 +113,14 @@ export class FastEventScope<
      * 获取监听器
      * @returns 监听器
      */
-    get listeners(){
-        return this.emitter.getListeners(this.prefix)
+    get listeners() {
+        return this.emitter.getListeners(this.prefix);
     }
-    bind(emitter: FastEvent<any>, prefix: string, options?: DeepPartial<FastEventScopeOptions<FinalMeta, Context>>) {
+    bind(
+        emitter: FastEvent<any>,
+        prefix: string,
+        options?: DeepPartial<FastEventScopeOptions<FinalMeta, Context>>,
+    ) {
         this.emitter = emitter;
         this._options = Object.assign(
             this._options,
@@ -124,9 +155,15 @@ export class FastEventScope<
         const scopePrefix = this.prefix;
         if (scopePrefix.length === 0) return listener;
         // 如果没有指定监听器，则使用onMessage作为监听器
-        if (!listener) listener = (this._options.onMessage || this.onMessage).bind(this) as TypedFastEventListener;
+        if (!listener)
+            listener = (this._options.onMessage || this.onMessage).bind(
+                this,
+            ) as TypedFastEventListener;
         const scopeThis = this;
-        const scopeListener = renameFn(function (message: TypedFastEventMessage, args: FastEventListenerArgs) {
+        const scopeListener = renameFn(function (
+            message: TypedFastEventMessage,
+            args: FastEventListenerArgs,
+        ) {
             const type = args.rawEventType || message.type;
             if (type.startsWith(scopePrefix)) {
                 // 1. 判断是否经过全局Transform转换
@@ -152,29 +189,53 @@ export class FastEventScope<
     // 传入监听器 - 优先级最高，必须放在前面
     public on<T extends keyof OmitTransformedEvents<Events>>(
         type: T,
-        listener: TypedFastEventListener<Exclude<T, number | symbol>, Events[T], FinalMeta, Fallback<Context, typeof this>>,
+        listener: TypedFastEventListener<
+            Exclude<T, number | symbol>,
+            Events[T],
+            FinalMeta,
+            Fallback<Context, typeof this>
+        >,
         options?: FastEventListenOptions,
     ): FastEventSubscriber;
 
     // 处理使用 NotPayload 标识的事件类型
     public on<T extends keyof PickTransformedEvents<Events>>(
         type: T,
-        listener: (message: PickPayload<RecordValues<ClosestWildcardEvents<Events, Exclude<T, number | symbol>>>>, args: FastEventListenerArgs<FinalMeta>) => any | Promise<any>,
+        listener: (
+            message: PickPayload<
+                RecordValues<ClosestWildcardEvents<Events, Exclude<T, number | symbol>>>
+            >,
+            args: FastEventListenerArgs<FinalMeta>,
+        ) => any | Promise<any>,
         options?: FastEventListenOptions<Events, FinalMeta>,
     ): FastEventSubscriber;
 
     // 处理通配符事件类型
     public on<T extends Exclude<string, Types>>(
         type: T,
-        listener: TypedFastEventAnyListener<ClosestWildcardEvents<Events, T>, FinalMeta, Fallback<Context, typeof this>>,
+        listener: TypedFastEventAnyListener<
+            ClosestWildcardEvents<Events, T>,
+            FinalMeta,
+            Fallback<Context, typeof this>
+        >,
         options?: FastEventListenOptions,
     ): FastEventSubscriber;
 
-    public on(type: '**', listener: TypedFastEventAnyListener<Events, FinalMeta, Fallback<Context, typeof this>>, options?: FastEventListenOptions): FastEventSubscriber;
+    public on(
+        type: "**",
+        listener: TypedFastEventAnyListener<Events, FinalMeta, Fallback<Context, typeof this>>,
+        options?: FastEventListenOptions,
+    ): FastEventSubscriber;
     // 使用默认的onMessage监听器
-    public on<T extends Types = Types>(type: T, options?: FastEventListenOptions<Events, FinalMeta>): FastEventSubscriber;
-    public on<T extends Exclude<string, Types>>(type: T, options?: FastEventListenOptions<Events, FinalMeta>): FastEventSubscriber;
-    public on(type: '**', options?: FastEventListenOptions<Events, FinalMeta>): FastEventSubscriber;
+    public on<T extends Types = Types>(
+        type: T,
+        options?: FastEventListenOptions<Events, FinalMeta>,
+    ): FastEventSubscriber;
+    public on<T extends Exclude<string, Types>>(
+        type: T,
+        options?: FastEventListenOptions<Events, FinalMeta>,
+    ): FastEventSubscriber;
+    public on(type: "**", options?: FastEventListenOptions<Events, FinalMeta>): FastEventSubscriber;
     public on(): FastEventSubscriber {
         if (!this.emitter) throw new UnboundError();
         const args = [...arguments] as [any, any, any];
@@ -183,39 +244,63 @@ export class FastEventScope<
         return this.emitter.on(...args);
     }
 
-    public once<T extends Types = Types>(type: T, options?: FastEventListenOptions<Events, FinalMeta>): FastEventSubscriber;
-    public once<T extends Exclude<string, Types>>(type: T, options?: FastEventListenOptions<Events, FinalMeta>): FastEventSubscriber;
+    public once<T extends Types = Types>(
+        type: T,
+        options?: FastEventListenOptions<Events, FinalMeta>,
+    ): FastEventSubscriber;
+    public once<T extends Exclude<string, Types>>(
+        type: T,
+        options?: FastEventListenOptions<Events, FinalMeta>,
+    ): FastEventSubscriber;
 
     // 传入监听器
     public once<T extends keyof OmitTransformedEvents<Events>>(
         type: T,
-        listener: TypedFastEventListener<Exclude<T, number | symbol>, Events[T], FinalMeta, Fallback<Context, typeof this>>,
+        listener: TypedFastEventListener<
+            Exclude<T, number | symbol>,
+            Events[T],
+            FinalMeta,
+            Fallback<Context, typeof this>
+        >,
         options?: FastEventListenOptions,
     ): FastEventSubscriber;
 
     // 处理使用 NotPayload 标识的事件类型
     public once<T extends keyof PickTransformedEvents<Events>>(
         type: T,
-        listener: (message: PickPayload<RecordValues<ClosestWildcardEvents<Events, Exclude<T, number | symbol>>>>, args: FastEventListenerArgs<FinalMeta>) => any | Promise<any>,
+        listener: (
+            message: PickPayload<
+                RecordValues<ClosestWildcardEvents<Events, Exclude<T, number | symbol>>>
+            >,
+            args: FastEventListenerArgs<FinalMeta>,
+        ) => any | Promise<any>,
         options?: FastEventListenOptions<Events, FinalMeta>,
     ): FastEventSubscriber;
 
     public once<T extends Exclude<string, Types>>(
         type: T,
-        listener: TypedFastEventAnyListener<ClosestWildcardEvents<Events, T>, FinalMeta, Fallback<Context, typeof this>>,
+        listener: TypedFastEventAnyListener<
+            ClosestWildcardEvents<Events, T>,
+            FinalMeta,
+            Fallback<Context, typeof this>
+        >,
         options?: FastEventListenOptions,
     ): FastEventSubscriber;
     public once(): FastEventSubscriber {
         return this.on(arguments[0], arguments[1], Object.assign({}, arguments[2], { count: 1 }));
     }
 
-    onAny(options?: Pick<FastEventListenOptions, 'prepend'>): FastEventSubscriber;
+    onAny(options?: Pick<FastEventListenOptions, "prepend">): FastEventSubscriber;
     onAny<P = any>(
-        listener: TypedFastEventAnyListener<{ [K: string]: P }, FinalMeta, Fallback<Context, typeof this>>,
-        options?: Pick<FastEventListenOptions, 'prepend'>,
+        listener: TypedFastEventAnyListener<
+            { [K: string]: P },
+            FinalMeta,
+            Fallback<Context, typeof this>
+        >,
+        options?: Pick<FastEventListenOptions, "prepend">,
     ): FastEventSubscriber;
     onAny(): FastEventSubscriber {
-        return this.on('**' as any, ...(arguments as any));
+        return this.on("**" as any, ...(arguments as any));
     }
     off(listener: TypedFastEventListener<any, any, any>): void;
     off(type: string, listener: TypedFastEventListener<any, any, any>): void;
@@ -224,7 +309,7 @@ export class FastEventScope<
     off(type: Types): void;
     off() {
         const args = arguments as unknown as [any, any];
-        if (typeof args[0] === 'string') {
+        if (typeof args[0] === "string") {
             args[0] = this._getScopeType(args[0]);
         }
         this.emitter.off(...args);
@@ -238,14 +323,29 @@ export class FastEventScope<
 
     public emit(type: Types, directive: symbol): void;
     public emit(type: string, directive: symbol): void;
-    public emit<R = any, T extends Types = Types>(type: T, payload?: PickPayload<Events[T]>, retain?: boolean): R[];
-    public emit<R = any, T extends string = string>(type: T, payload?: PickPayload<T extends Types ? Events[T] : RecordValues<WildcardEvents<Events, T>>>, retain?: boolean): R[];
+    public emit<R = any, T extends Types = Types>(
+        type: T,
+        payload?: PickPayload<Events[T]>,
+        retain?: boolean,
+    ): R[];
     public emit<R = any, T extends string = string>(
         type: T,
-        payload?: PickPayload<T extends Types ? Events[T] : RecordValues<WildcardEvents<Events, T>>>,
+        payload?: PickPayload<
+            T extends Types ? Events[T] : RecordValues<WildcardEvents<Events, T>>
+        >,
+        retain?: boolean,
+    ): R[];
+    public emit<R = any, T extends string = string>(
+        type: T,
+        payload?: PickPayload<
+            T extends Types ? Events[T] : RecordValues<WildcardEvents<Events, T>>
+        >,
         options?: FastEventListenerArgs<FinalMeta>,
     ): R[];
-    public emit<R = any>(message: FastEventEmitMessage<AtPayloads<Events>, FinalMeta>, options?: FastEventListenerArgs<FinalMeta>): R[];
+    public emit<R = any>(
+        message: FastEventEmitMessage<AtPayloads<Events>, FinalMeta>,
+        options?: FastEventListenerArgs<FinalMeta>,
+    ): R[];
     public emit<R = any, T extends string = string>(
         message: FastEventEmitMessage<
             {
@@ -257,10 +357,19 @@ export class FastEventScope<
     ): R[];
     public emit() {
         // 清除保留事件
-        if (arguments.length === 2 && typeof arguments[0] === 'string' && arguments[1] === FastEventDirectives.clearRetain) {
+        if (
+            arguments.length === 2 &&
+            typeof arguments[0] === "string" &&
+            arguments[1] === FastEventDirectives.clearRetain
+        ) {
             return this.emitter.emit(this._getScopeType(arguments[0])!);
         }
-        let [message, args] = parseEmitArgs(arguments, this.emitter.options.meta, this.options.meta, this.options.executor);
+        let [message, args] = parseEmitArgs(
+            arguments,
+            this.emitter.options.meta,
+            this.options.meta,
+            this.options.executor,
+        );
 
         this._transformMessage(message, args);
         message.type = this._getScopeType(message.type)!;
@@ -276,9 +385,21 @@ export class FastEventScope<
         }
     }
 
-    public async emitAsync<R = any, T extends Types = Types>(type: T, payload?: PickPayload<Events[T]>, retain?: boolean): Promise<[R | Error][]>;
-    public async emitAsync<R = any, T extends string = string>(type: T, payload?: PickPayload<T extends Types ? Events[T] : any>, retain?: boolean): Promise<[R | Error][]>;
-    public async emitAsync<R = any, T extends Types = Types>(type: T, payload?: PickPayload<Events[T]>, options?: FastEventListenerArgs<FinalMeta>): Promise<[R | Error][]>;
+    public async emitAsync<R = any, T extends Types = Types>(
+        type: T,
+        payload?: PickPayload<Events[T]>,
+        retain?: boolean,
+    ): Promise<[R | Error][]>;
+    public async emitAsync<R = any, T extends string = string>(
+        type: T,
+        payload?: PickPayload<T extends Types ? Events[T] : any>,
+        retain?: boolean,
+    ): Promise<[R | Error][]>;
+    public async emitAsync<R = any, T extends Types = Types>(
+        type: T,
+        payload?: PickPayload<Events[T]>,
+        options?: FastEventListenerArgs<FinalMeta>,
+    ): Promise<[R | Error][]>;
     public async emitAsync<R = any, T extends string = string>(
         type: T,
         payload?: PickPayload<T extends Types ? Events[T] : any>,
@@ -296,7 +417,7 @@ export class FastEventScope<
     public async emitAsync<R = any>(): Promise<[R | Error][]> {
         const results = await Promise.allSettled(this.emit.apply(this, arguments as any));
         return results.map((result) => {
-            if (result.status === 'fulfilled') {
+            if (result.status === "fulfilled") {
                 return result.value;
             } else {
                 return result.reason;
@@ -304,9 +425,18 @@ export class FastEventScope<
         });
     }
 
-    public async waitFor<T extends Types>(type: T, timeout?: number): Promise<TypedFastEventMessage<{ [key in T]: Events[T] }, FinalMeta>>;
-    public async waitFor(type: string, timeout?: number): Promise<TypedFastEventMessage<{ [key: string]: any }, FinalMeta>>;
-    public async waitFor<P = any>(type: string, timeout?: number): Promise<TypedFastEventMessage<{ [key: string]: P }, FinalMeta>>;
+    public async waitFor<T extends Types>(
+        type: T,
+        timeout?: number,
+    ): Promise<TypedFastEventMessage<{ [key in T]: Events[T] }, FinalMeta>>;
+    public async waitFor(
+        type: string,
+        timeout?: number,
+    ): Promise<TypedFastEventMessage<{ [key: string]: any }, FinalMeta>>;
+    public async waitFor<P = any>(
+        type: string,
+        timeout?: number,
+    ): Promise<TypedFastEventMessage<{ [key: string]: P }, FinalMeta>>;
     public async waitFor(): Promise<TypedFastEventMessage<Events, FinalMeta>> {
         const type = arguments[0] as string;
         const timeout = arguments[1] as number;
@@ -348,28 +478,50 @@ export class FastEventScope<
      * profileScope.emit('update', { name: 'John' });
      * ```
      */
-    public scope<E extends Record<string, any> = Record<string, any>, P extends string = string, M extends Record<string, any> = Record<string, any>, C = Context>(
+    public scope<
+        E extends Record<string, any> = Record<string, any>,
+        P extends string = string,
+        M extends Record<string, any> = Record<string, any>,
+        C = Context,
+    >(
         prefix: P,
         options?: DeepPartial<FastEventScopeOptions<Partial<FinalMeta> & M, C>>,
     ): FastEventScope<ScopeEvents<Events, P> & E, FinalMeta & M, C>;
-    scope<E extends Record<string, any> = Record<string, any>, P extends string = string, C = Context, ScopeObject extends InstanceType<Class> = InstanceType<Class>>(
+    scope<
+        P extends string = string,
+        C = Context,
+        ScopeInstance extends FastEventScope<any, any, any> = FastEventScope<any, any, any>,
+    >(
         prefix: P,
-        scopeObj: ScopeObject,
+        scopeObj: ScopeInstance,
         options?: DeepPartial<FastEventScopeOptions<Meta>>,
-    ): FastEventScope<ScopeEvents<Events, P> & E> & ScopeObject;
+    ): FastEventScopeExtend<Events, P, ScopeInstance, Meta>;
     scope<
         E extends Record<string, any> = Record<string, any>,
         P extends string = string,
         M extends Record<string, any> = Record<string, any>,
         C = Context,
-        ScopeInstance extends FastEventScope<Record<string, any>, any, any> = FastEventScope<Record<string, any>, any, any>,
+        ScopeInstance extends FastEventScope<Record<string, any>, any, any> = FastEventScope<
+            Record<string, any>,
+            any,
+            any
+        >,
     >(
         prefix: P,
         scopeObj: ScopeInstance,
         options?: DeepPartial<FastEventScopeOptions<Partial<FinalMeta> & M, C>>,
-    ): ScopeInstance & FastEventScope<ScopeEvents<Events, P> & E, FinalMeta & M, C>;
-    scope<E extends Record<string, any> = Record<string, any>, P extends string = string, M extends Record<string, any> = Record<string, any>, C = Context>() {
-        const [prefix, scopeObj, options] = parseScopeArgs(arguments, this.options.meta, this.options.context);
+    ): FastEventScopeExtend<Events, P, ScopeInstance, Meta>;
+    scope<
+        E extends Record<string, any> = Record<string, any>,
+        P extends string = string,
+        M extends Record<string, any> = Record<string, any>,
+        C = Context,
+    >() {
+        const [prefix, scopeObj, options] = parseScopeArgs(
+            arguments,
+            this.options.meta,
+            this.options.context,
+        );
         let scope: FastEventScope<ScopeEvents<Events, P> & E, FinalMeta & M, C>;
         if (scopeObj) {
             scope = scopeObj;
@@ -384,14 +536,19 @@ export class FastEventScope<
      * @param message
      */
     //  eslint-disable-next-line
-    onMessage(message: TypedFastEventMessage<Events, FinalMeta>, args: FastEventListenerArgs<FinalMeta>) {}
+    onMessage(
+        message: TypedFastEventMessage<Events, FinalMeta>,
+        args: FastEventListenerArgs<FinalMeta>,
+    ) {}
 }
 
 // 从 FastEventScope 实例中提取事件类型
-type ExtractScopeEvents<T> = T extends FastEventScope<infer Events, any, any> ? Events : Record<string, any>;
+type ExtractScopeEvents<T> =
+    T extends FastEventScope<infer Events, any, any> ? Events : Record<string, any>;
 
 // 从 FastEventScope 实例中提取 Meta 类型
-type ExtractScopeMeta<T> = T extends FastEventScope<any, infer Meta, any> ? Meta : Record<string, any>;
+type ExtractScopeMeta<T> =
+    T extends FastEventScope<any, infer Meta, any> ? Meta : Record<string, any>;
 
 // 从 FastEventScope 实例中提取 Context 类型
 type ExtractScopeContext<T> = T extends FastEventScope<any, any, infer Context> ? Context : never;
@@ -399,5 +556,11 @@ type ExtractScopeContext<T> = T extends FastEventScope<any, any, infer Context> 
 export type FastEventScopeExtend<
     Events extends Record<string, any>,
     Prefix extends string,
-    T extends FastEventScope<any, any, any> = FastEventScope<any, any, any>,
-> = FastEventScope<ScopeEvents<Events, Prefix> & ExtractScopeEvents<T>, ExtractScopeMeta<T>, ExtractScopeContext<T>> & T;
+    T extends FastEventScope<any, any, any, any, any> = FastEventScope<any, any, any, any, any>,
+    EmitterMeta extends Record<string, any> = Record<string, any>,
+> = FastEventScope<
+    ScopeEvents<Events, Prefix> & ExtractScopeEvents<T>,
+    EmitterMeta & ExtractScopeMeta<T>,
+    ExtractScopeContext<T>
+> &
+    T;

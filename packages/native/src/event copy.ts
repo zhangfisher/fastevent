@@ -1,4 +1,4 @@
-import { FastEventScope, FastEventScopeExtend, type FastEventScopeOptions } from "./scope";
+import { FastEventScope, type FastEventScopeOptions, FastEventScopeExtend } from "./scope";
 import {
     TypedFastEventListener,
     FastEventOptions,
@@ -1321,16 +1321,6 @@ export class FastEvent<
      * ```
      */
 
-    // 处理 FastEventScope 子类，直接返回传入的 ScopeObject 实例
-    // 不会创建新的类型实例，而是通过 bind 方法将实例绑定到 FastEvent
-    scope<
-        P extends string = string,
-        ScopeObject extends FastEventScope<any, any, any> = FastEventScope<any, any, any>,
-    >(
-        prefix: P,
-        scopeObj: ScopeObject,
-        options?: DeepPartial<FastEventScopeOptions<Meta>>,
-    ): FastEventScopeExtend<AllEvents, P, ScopeObject, Meta>;
     scope<P extends string>(
         prefix: P,
         options?: DeepPartial<FastEventScopeOptions<Meta, Context>>,
@@ -1346,6 +1336,27 @@ export class FastEvent<
         options?: DeepPartial<FastEventScopeOptions<Meta & M, C>>,
     ): FastEventScope<ScopeEvents<AllEvents, P> & E, Meta & M, C>;
 
+    // 处理 FastEventScope 子类，自动合并实例的事件类型
+    scope<
+        P extends string = string,
+        ScopeObject extends FastEventScope<any, any, any> = FastEventScope<any, any, any>,
+    >(
+        prefix: P,
+        scopeObj: ScopeObject,
+        options?: DeepPartial<FastEventScopeOptions<Meta>>,
+    ): FastEventScopeExtend<AllEvents, P, ScopeObject, Meta>;
+
+    // 处理通用的 Class 实例（非 FastEventScope）
+    scope<
+        E extends Record<string, any> = Record<string, any>,
+        P extends string = string,
+        C = Context,
+        ScopeObject extends InstanceType<Class> = InstanceType<Class>,
+    >(
+        prefix: P,
+        scopeObj: ScopeObject,
+        options?: DeepPartial<FastEventScopeOptions<Meta>>,
+    ): FastEventScope<ScopeEvents<AllEvents, P>> & ScopeObject;
     scope() {
         const [prefix, scopeObj, options] = parseScopeArgs(
             arguments,

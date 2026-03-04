@@ -4,7 +4,20 @@
       "Bash(npx tsc --noEmit)",
       "Bash(bun run test -- --run)",
       "Bash(bun run test -- --run classinherit.types.test.ts)",
-      "Bash(bun run test)"
+      "Bash(bun run test)",
+      "Bash(npx tsc --noEmit src/__tests__/debug_payload.ts)",
+      "mcp__plugin_oh-my-claudecode_t__lsp_diagnostics",
+      "Bash(bun run test --reporter=verbose)",
+      "Bash(bun run test src/__tests__/types/scope.types.test.ts)",
+      "Bash(bun run test src/__tests__/types/classinherit.types.test.ts)",
+      "Bash(bun run test src/__tests__/types/)",
+      "Bash(bun run test src/__tests__/debug_payload.ts)",
+      "Bash(npx vitest run src/__tests__/debug_payload.test.ts)",
+      "Bash(npx vitest run packages/native/src/__tests__/types/classinherit.types.test.ts packages/native/src/__tests__/types/meta.types.test.ts packages/native/src/__tests__/types/scope.types.test.ts --no-coverage)",
+      "Bash(npx vitest run packages/native/src/__tests__/debug_payload.test.ts)",
+      "Bash(npx tsc --noEmit src/__tests__/debug_payload.test.ts)",
+      "Bash(npx tsc --noEmit --skipLibCheck)",
+      "Bash(npx tsc:*)"
     ]
   }
 }
