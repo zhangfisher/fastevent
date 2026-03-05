@@ -17,8 +17,6 @@ import {
 } from "../../types";
 import { a1 } from "vitest/dist/chunks/reporters.d.BFLkQcL6.js";
 
- 
-
 describe("事件作用域类型测试", () => {
     type CustomEvents = {
         a: boolean;
@@ -42,7 +40,7 @@ describe("事件作用域类型测试", () => {
                         typeof message.meta,
                         FastEventMeta & FastEventScopeMeta & Record<string, any>
                     >
-                > 
+                >,
             ];
         });
     });
@@ -370,7 +368,6 @@ describe("作用域上下文类型系统", () => {
 
         const useScope = emitter.scope(`rooms/x`);
 
-   
         type uEevents = ScopeEvents<
             {
                 "rooms/*/users/online": {
@@ -391,12 +388,12 @@ describe("作用域上下文类型系统", () => {
 
         const jack = useScope.scope("users/jack", new User());
         type jEevents = ScopeEvents<uEevents, "users/jack">;
-        type jEeventNames = keyof jEevents
+        type jEeventNames = keyof jEevents;
         type jackEvents = typeof jack.types.events;
- 
+
         jack.login("");
-        jack.logout(); 
-        
+        jack.logout();
+
         jack.on("online", (message) => {
             type cases = [
                 Expect<Equal<typeof message.type, "online">>,
@@ -411,90 +408,88 @@ describe("作用域上下文类型系统", () => {
             ];
         });
     });
-     test("继承scope类5", () => {
-
+    test("继承scope类5", () => {
         type Events = {
-            "a1/b1/c1/d1/e1/f1":boolean
-            "a1/b1/c1/d1/e1/f2":boolean
-            "a1/b1/c1/d1/e1/f3":boolean
-            "a1/b1/c1/d1/e1/f4":boolean
-            "a1/b1/c1/d1/e2/f1":boolean
-            "a1/b1/c1/d1/e3/f1":boolean
-            "a1/b1/c1/d2/e1/f1":boolean
-            "a1/b1/c1/d3/e1/f1":boolean
-            "a1/b1/c2/d1/e1/f1":boolean
-            "a1/b1/c3/d1/e1/f1":boolean
-            "a1/b2/c1/d1/e1/f1":boolean
-            "a1/b2/c2/d1/e1/f1":boolean
-            "a1/b2/c3/d1/e1/f1":boolean
-            "a1/b3/c1/d1/e1/f1":boolean
-            "a1/b3/c2/d1/e1/f1":boolean
-            "a1/b3/c3/d1/e1/f1":boolean 
-        }; 
+            "a1/b1/c1/d1/e1/f1": boolean;
+            "a1/b1/c1/d1/e1/f2": boolean;
+            "a1/b1/c1/d1/e1/f3": boolean;
+            "a1/b1/c1/d1/e1/f4": boolean;
+            "a1/b1/c1/d1/e2/f1": boolean;
+            "a1/b1/c1/d1/e3/f1": boolean;
+            "a1/b1/c1/d2/e1/f1": boolean;
+            "a1/b1/c1/d3/e1/f1": boolean;
+            "a1/b1/c2/d1/e1/f1": boolean;
+            "a1/b1/c3/d1/e1/f1": boolean;
+            "a1/b2/c1/d1/e1/f1": boolean;
+            "a1/b2/c2/d1/e1/f1": boolean;
+            "a1/b2/c3/d1/e1/f1": boolean;
+            "a1/b3/c1/d1/e1/f1": boolean;
+            "a1/b3/c2/d1/e1/f1": boolean;
+            "a1/b3/c3/d1/e1/f1": boolean;
+        };
         const emitter = new FastEvent<Events>();
-        const a1=emitter.scope("a1") 
-        type d = keyof Parameters<typeof a1.on>[1]
-        a1.on('')
+        const a1 = emitter.scope("a1");
+        type d = keyof Parameters<typeof a1.on>[1];
+        a1.on("");
         type a1Kyes = keyof typeof a1.types.events;
-        const b1= a1.scope("b1")   
-        b1.on('')
-        type b1Kyes = keyof typeof b1.types.events; 
-        const c1=b1.scope("c1")
-        c1.on('d1/e1/f1')
-        type c1Kyes =   keyof typeof c1.types.events;
-        const d1=c1.scope("d1")
-        d1.on('d1/e1/f1')
-        type d1Kyes =   keyof typeof d1.types.events;
-        const e1=d1.scope("e1")
-        e1.on('d1/e1/f1')
-        type e1Kyes =   keyof typeof e1.types.events;
-    });     
-    
-    test("继承scope类6", () => {
+        const b1 = a1.scope("b1");
+        b1.on("");
+        type b1Kyes = keyof typeof b1.types.events;
+        const c1 = b1.scope("c1");
+        c1.on("");
+        type c1Kyes = keyof typeof c1.types.events;
+        const d1 = c1.scope("d1");
+        d1.on("d1/e1/f1");
+        type d1Kyes = keyof typeof d1.types.events;
+        const e1 = d1.scope("e1");
+        e1.on("d1/e1/f1");
+        type e1Kyes = keyof typeof e1.types.events;
+    });
 
+    test("继承scope类6", () => {
         type Events = {
-            "a1/b1/c1/d1/e1/f1":boolean
-            "a1/b1/c1/d1/e1/f2":boolean
-            "a1/b1/c1/d1/e1/f3":boolean
-            "a1/b1/c1/d1/e1/f4":boolean
-            "a1/b1/c1/d1/e2/f1":boolean
-            "a1/b1/c1/d1/e3/f1":boolean
-            "a1/b1/c1/d2/e1/f1":boolean
-            "a1/b1/c1/d3/e1/f1":boolean
-            "a1/b1/c2/d1/e1/f1":boolean
-            "a1/b1/c3/d1/e1/f1":boolean
-            "a1/b2/c1/d1/e1/f1":boolean
-            "a1/b2/c2/d1/e1/f1":boolean
-            "a1/b2/c3/d1/e1/f1":boolean
-            "a1/b3/c1/d1/e1/f1":boolean
-            "a1/b3/c2/d1/e1/f1":boolean
-            "a1/b3/c3/d1/e1/f1":boolean 
-        }; 
+            "a1/b1/c1/d1/e1/f1": boolean;
+            "a1/b1/c1/d1/e1/f2": boolean;
+            "a1/b1/c1/d1/e1/f3": boolean;
+            "a1/b1/c1/d1/e1/f4": boolean;
+            "a1/b1/c1/d1/e2/f1": boolean;
+            "a1/b1/c1/d1/e3/f1": boolean;
+            "a1/b1/c1/d2/e1/f1": boolean;
+            "a1/b1/c1/d3/e1/f1": boolean;
+            "a1/b1/c2/d1/e1/f1": boolean;
+            "a1/b1/c3/d1/e1/f1": boolean;
+            "a1/b2/c1/d1/e1/f1": boolean;
+            "a1/b2/c2/d1/e1/f1": boolean;
+            "a1/b2/c3/d1/e1/f1": boolean;
+            "a1/b3/c1/d1/e1/f1": boolean;
+            "a1/b3/c2/d1/e1/f1": boolean;
+            "a1/b3/c3/d1/e1/f1": boolean;
+        };
         class User extends FastEventScope {
             login(name: string) {}
             logout() {}
         }
 
         const emitter = new FastEvent<Events>();
-        const a1=emitter.scope("a1",new User()) 
-        type d = keyof Parameters<typeof a1.on>[1]
-        a1.on('')
+        const a1 = emitter.scope("a1", new User());
+        type d = keyof Parameters<typeof a1.on>[1];
+        a1.on("");
         type a1Kyes = keyof typeof a1.types.events;
-        const b1= a1.scope("b1",new User())   
-        b1.on('')
-        b1.login('')
-        b1.logout()
-        type b1Kyes = keyof typeof b1.types.events; 
-        const c1=b1.scope("c1",new User())
-        c1.on('d1/e1/f2')
-        type c1Kyes =   keyof typeof c1.types.events;
-        const d1=c1.scope("d1",new User())
-        d1.on('d1/e1/f1')
-        d1.on('')
-        type d1Kyes =   keyof typeof d1.types.events;
-        const e1=d1.scope("e1",new User())
-        e1.on('d1/e1/f1')
-        type e1Kyes =   keyof typeof e1.types.events;
+        const b1 = a1.scope("b1", new User());
+        b1.on("");
+        b1.login("");
+        b1.logout();
+        type b1Kyes = keyof typeof b1.types.events;
+        const c1 = b1.scope("c1", new User());
+        c1.on("d1/e1/f2");
+        type c1Kyes = keyof typeof c1.types.events;
+        const d1 = c1.scope("d1", new User());
+        d1.on("d1/e1/f1");
+        d1.on("");
+        type d1Kyes = keyof typeof d1.types.events;
+        const e1 = d1.scope("e1", new User());
+        e1.on("d1/e1/f1");
+        type e1Kyes = keyof typeof e1.types.events;
     });
     // test("scope监听器类型", () => {
     //     type Events = {

@@ -186,8 +186,8 @@ export class FastEventScope<
     private _fixScopeType(type: string) {
         return type.startsWith(this.prefix) ? type.substring(this.prefix.length) : type;
     }
-    // 传入监听器 - 优先级最高，必须放在前面
-    public on<T extends  Types >(
+    // 标准事件类型
+    public on<T extends keyof OmitTransformedEvents<Events>>(
         type: T,
         listener: TypedFastEventListener<
             Exclude<T, number | symbol>,
@@ -198,7 +198,7 @@ export class FastEventScope<
         options?: FastEventListenOptions,
     ): FastEventSubscriber;
 
-    // 处理使用 NotPayload 标识的事件类型
+    // 处理使用 NotPayload 标识的事件类型，即经过转换的事件消息
     public on<T extends keyof PickTransformedEvents<Events>>(
         type: T,
         listener: (
@@ -494,7 +494,7 @@ export class FastEventScope<
     >(
         prefix: P,
         options?: DeepPartial<FastEventScopeOptions<Partial<FinalMeta> & M, C>>,
-    ): FastEventScope<ScopeEvents<Events & E, P> , FinalMeta & M, C>;
+    ): FastEventScope<ScopeEvents<Events & E, P>, FinalMeta & M, C>;
     // scope<
     //     P extends string = string,
     //     C = Context,
@@ -567,8 +567,8 @@ export type FastEventScopeExtend<
     T extends FastEventScope<any, any, any> = FastEventScope<any, any, any>,
     EmitterMeta extends Record<string, any> = Record<string, any>,
 > = FastEventScope<
-    ScopeEvents<Events & ExtractScopeEvents<T>, Prefix> ,
+    ScopeEvents<Events, Prefix> & ExtractScopeEvents<T>,
     EmitterMeta & ExtractScopeMeta<T>,
     ExtractScopeContext<T>
 > &
-    Omit<T,keyof FastEventScope>;
+    Omit<T, keyof FastEventScope>;

@@ -1,17 +1,24 @@
-import type { FastListenerExecutor } from '../executors/types';
-import { type FastListenerPipe } from '../pipes/types';
-import { ExpandWildcard } from './ExpandWildcard';
+import type { FastListenerExecutor } from "../executors/types";
+import { type FastListenerPipe } from "../pipes/types";
+import { ExpandWildcard } from "./ExpandWildcard";
 // 用来扩展全局Meta类型
 export interface FastEventMeta {}
 export interface FastEventMessageExtends {}
 
-export type FastEventMessage<P = any, M extends Record<string, any> = Record<string, any>, T extends string = string> = {
+export type FastEventMessage<
+    P = any,
+    M extends Record<string, any> = Record<string, any>,
+    T extends string = string,
+> = {
     type: T;
     payload: P;
     meta?: M & Partial<FastEventMeta>;
 } & FastEventMessageExtends;
 
-export type TypedFastEventMessage<Events extends Record<string, any> = Record<string, any>, M = any> = {
+export type TypedFastEventMessage<
+    Events extends Record<string, any> = Record<string, any>,
+    M = any,
+> = {
     [K in keyof Events]: {
         type: Exclude<K, number | symbol>;
         payload: Events[K];
@@ -21,7 +28,10 @@ export type TypedFastEventMessage<Events extends Record<string, any> = Record<st
     FastEventMessageExtends;
 
 // 用于构建消息时使用，meta是可选的
-export type TypedFastEventMessageOptional<Events extends Record<string, any> = Record<string, any>, M = any> = {
+export type TypedFastEventMessageOptional<
+    Events extends Record<string, any> = Record<string, any>,
+    M = any,
+> = {
     [K in keyof Events]: {
         type: Exclude<K, number | symbol>;
         payload: Events[K];
@@ -31,7 +41,10 @@ export type TypedFastEventMessageOptional<Events extends Record<string, any> = R
     FastEventMessageExtends;
 
 // 用于emit方法使用
-export type FastEventEmitMessage<Events extends Record<string, any> = Record<string, any>, M = any> = {
+export type FastEventEmitMessage<
+    Events extends Record<string, any> = Record<string, any>,
+    M = any,
+> = {
     [K in keyof Events]: {
         type: Exclude<K, number | symbol>;
         payload?: Events[K];
@@ -53,20 +66,29 @@ export type TypedFastEventListener<T extends string = string, P = any, M = any, 
 ) => any | Promise<any>;
 
 // 任意事件类型
-export type TypedFastEventAnyListener<Events extends Record<string, any> = Record<string, any>, Meta = never, Context = any> = (
+export type TypedFastEventAnyListener<
+    Events extends Record<string, any> = Record<string, any>,
+    Meta = never,
+    Context = any,
+> = (
     this: Context,
     message: TypedFastEventMessage<Events, Meta>,
     args: FastEventListenerArgs<Meta>,
 ) => any | Promise<any>;
 
-export type FastEventListeners<Events extends Record<string, any> = Record<string, any>, M = any, C = any> = {
+export type FastEventListeners<
+    Events extends Record<string, any> = Record<string, any>,
+    M = any,
+    C = any,
+> = {
     [K in keyof Events]: TypedFastEventListener<Exclude<K, number | symbol>, Events[K], M, C>;
 };
 
-export type FastEventListener<P = any, M extends Record<string, any> = Record<string, any>, T extends string = string> = (
-    message: FastEventMessage<P, M, T>,
-    args: FastEventListenerArgs<M>,
-) => any | Promise<any>;
+export type FastEventListener<
+    P = any,
+    M extends Record<string, any> = Record<string, any>,
+    T extends string = string,
+> = (message: FastEventMessage<P, M, T>, args: FastEventListenerArgs<M>) => any | Promise<any>;
 
 /**
  * [
@@ -170,17 +192,33 @@ export type FastEventOptions<Meta = Record<string, any>, Context = never> = {
     // 额外的全局元数据，当触发事件时传递给监听器
     meta: Meta;
     // 当创建新监听器时回调,返回false中止添加监听器
-    onAddListener?: (type: string, listener: TypedFastEventListener, options: FastEventListenOptions<Record<string, any>, Meta>) => boolean | FastEventSubscriber | void;
+    onAddListener?: (
+        type: string,
+        listener: TypedFastEventListener,
+        options: FastEventListenOptions<Record<string, any>, Meta>,
+    ) => boolean | FastEventSubscriber | void;
     // 当移除监听器时回调
     onRemoveListener?: (type: string, listener: TypedFastEventListener) => void;
     // 当清空监听器时回调
     onClearListeners?: () => void;
     // 当监听器函数执行出错时的回调，用于诊断时使用,可以打印错误信息
-    onListenerError?: (error: Error, listener: TypedFastEventListener, message: TypedFastEventMessage<any, Meta>, args: FastEventListenerArgs<Meta> | undefined) => void;
+    onListenerError?: (
+        error: Error,
+        listener: TypedFastEventListener,
+        message: TypedFastEventMessage<any, Meta>,
+        args: FastEventListenerArgs<Meta> | undefined,
+    ) => void;
     // 当执行监听器前时回调,返回false代表取消执行,any[]返回给emit
-    onBeforeExecuteListener?: (message: TypedFastEventMessage<any, Meta>, args: FastEventListenerArgs<Meta>) => boolean | void | any[];
+    onBeforeExecuteListener?: (
+        message: TypedFastEventMessage<any, Meta>,
+        args: FastEventListenerArgs<Meta>,
+    ) => boolean | void | any[];
     // 当执行监听器后时回调
-    onAfterExecuteListener?: (message: TypedFastEventMessage<any, Meta>, returns: any[], listeners: FastListenerNode[]) => void;
+    onAfterExecuteListener?: (
+        message: TypedFastEventMessage<any, Meta>,
+        returns: any[],
+        listeners: FastListenerNode[],
+    ) => void;
     /**
      * 全局执行器
      */
@@ -203,16 +241,25 @@ export type FastEventOptions<Meta = Record<string, any>, Context = never> = {
 
 export interface FastEvents {}
 
-export type FastEventListenOptions<Events extends Record<string, any> = Record<string, any>, Meta = any> = {
+export type FastEventListenOptions<
+    Events extends Record<string, any> = Record<string, any>,
+    Meta = any,
+> = {
     // 侦听执行次数，当为1时为单次侦听，为0时为永久侦听，其他值为执行次数,每执行一次减一，减到0时移除监听器
     count?: number;
     // 将监听器添加到监听器列表的头部
     prepend?: boolean;
     // 该监听器会在其他监听器执行完毕后再触发执行
     flags?: number;
-    filter?: (message: TypedFastEventMessage<Events, Meta>, args: FastEventListenerArgs<Meta>) => boolean;
+    filter?: (
+        message: TypedFastEventMessage<Events, Meta>,
+        args: FastEventListenerArgs<Meta>,
+    ) => boolean;
     // 当执行监听器前，如果此函数返回true则自动注销监听
-    off?: (message: TypedFastEventMessage<Events, Meta>, args: FastEventListenerArgs<Meta>) => boolean;
+    off?: (
+        message: TypedFastEventMessage<Events, Meta>,
+        args: FastEventListenerArgs<Meta>,
+    ) => boolean;
     // 对监听器函数进行包装装饰，返回包装后的函数
     pipes?: FastListenerPipe[];
     /**
@@ -291,8 +338,8 @@ export type DeepPartial<T> = {
 export type Fallback<T, F> = [T] extends [never]
     ? F // 处理never情况
     : T extends undefined
-    ? F // 处理undefined情况
-    : T; // 否则返回原类型
+      ? F // 处理undefined情况
+      : T; // 否则返回原类型
 
 export type ChangeFieldType<Record, Name extends string, Type = any> = Expand<
     Omit<Record, Name> & {
@@ -301,7 +348,7 @@ export type ChangeFieldType<Record, Name extends string, Type = any> = Expand<
 >;
 
 // 用当继承FastEvent时重载Options使用
-export type OverrideOptions<T> = ChangeFieldType<Required<T>, 'context', never>;
+export type OverrideOptions<T> = ChangeFieldType<Required<T>, "context", never>;
 
 export type ObjectKeys<T, I = string> = { [P in keyof T]: P extends I ? P : never }[keyof T];
 
@@ -316,7 +363,10 @@ export type ObjectKeys<T, I = string> = { [P in keyof T]: P extends I ? P : neve
  * type T2 = Unique<[1, 2, 2, 3]>;              // [1, 2, 3]
  * type T3 = Unique<['a', 'b', 'a']>;           // ['a', 'b']
  */
-export type Unique<T extends any[], Result extends any[] = []> = T extends [infer First, ...infer Rest]
+export type Unique<T extends any[], Result extends any[] = []> = T extends [
+    infer First,
+    ...infer Rest,
+]
     ? First extends Result[number]
         ? Unique<Rest, Result>
         : Unique<Rest, [...Result, First]>
@@ -333,57 +383,92 @@ export type Overloads<T> = Unique<
         (...args: infer A7): infer R7;
         (...args: infer A8): infer R8;
     }
-        ? [(...args: A1) => R1, (...args: A2) => R2, (...args: A3) => R3, (...args: A4) => R4, (...args: A5) => R5, (...args: A6) => R6, (...args: A7) => R7, (...args: A8) => R8]
+        ? [
+              (...args: A1) => R1,
+              (...args: A2) => R2,
+              (...args: A3) => R3,
+              (...args: A4) => R4,
+              (...args: A5) => R5,
+              (...args: A6) => R6,
+              (...args: A7) => R7,
+              (...args: A8) => R8,
+          ]
         : T extends {
-              (...args: infer A1): infer R1;
-              (...args: infer A2): infer R2;
-              (...args: infer A3): infer R3;
-              (...args: infer A4): infer R4;
-              (...args: infer A5): infer R5;
-              (...args: infer A6): infer R6;
-              (...args: infer A7): infer R7;
-          }
-        ? [(...args: A1) => R1, (...args: A2) => R2, (...args: A3) => R3, (...args: A4) => R4, (...args: A5) => R5, (...args: A6) => R6, (...args: A7) => R7]
-        : T extends {
-              (...args: infer A1): infer R1;
-              (...args: infer A2): infer R2;
-              (...args: infer A3): infer R3;
-              (...args: infer A4): infer R4;
-              (...args: infer A5): infer R5;
-              (...args: infer A6): infer R6;
-          }
-        ? [(...args: A1) => R1, (...args: A2) => R2, (...args: A3) => R3, (...args: A4) => R4, (...args: A5) => R5, (...args: A6) => R6]
-        : T extends {
-              (...args: infer A1): infer R1;
-              (...args: infer A2): infer R2;
-              (...args: infer A3): infer R3;
-              (...args: infer A4): infer R4;
-              (...args: infer A5): infer R5;
-          }
-        ? [(...args: A1) => R1, (...args: A2) => R2, (...args: A3) => R3, (...args: A4) => R4, (...args: A5) => R5]
-        : T extends {
-              (...args: infer A1): infer R1;
-              (...args: infer A2): infer R2;
-              (...args: infer A3): infer R3;
-              (...args: infer A4): infer R4;
-          }
-        ? [(...args: A1) => R1, (...args: A2) => R2, (...args: A3) => R3, (...args: A4) => R4]
-        : T extends {
-              (...args: infer A1): infer R1;
-              (...args: infer A2): infer R2;
-              (...args: infer A3): infer R3;
-          }
-        ? [(...args: A1) => R1, (...args: A2) => R2, (...args: A3) => R3]
-        : T extends {
-              (...args: infer A1): infer R1;
-              (...args: infer A2): infer R2;
-          }
-        ? [(...args: A1) => R1, (...args: A2) => R2]
-        : T extends {
-              (...args: infer A1): infer R1;
-          }
-        ? [(...args: A1) => R1]
-        : [T]
+                (...args: infer A1): infer R1;
+                (...args: infer A2): infer R2;
+                (...args: infer A3): infer R3;
+                (...args: infer A4): infer R4;
+                (...args: infer A5): infer R5;
+                (...args: infer A6): infer R6;
+                (...args: infer A7): infer R7;
+            }
+          ? [
+                (...args: A1) => R1,
+                (...args: A2) => R2,
+                (...args: A3) => R3,
+                (...args: A4) => R4,
+                (...args: A5) => R5,
+                (...args: A6) => R6,
+                (...args: A7) => R7,
+            ]
+          : T extends {
+                  (...args: infer A1): infer R1;
+                  (...args: infer A2): infer R2;
+                  (...args: infer A3): infer R3;
+                  (...args: infer A4): infer R4;
+                  (...args: infer A5): infer R5;
+                  (...args: infer A6): infer R6;
+              }
+            ? [
+                  (...args: A1) => R1,
+                  (...args: A2) => R2,
+                  (...args: A3) => R3,
+                  (...args: A4) => R4,
+                  (...args: A5) => R5,
+                  (...args: A6) => R6,
+              ]
+            : T extends {
+                    (...args: infer A1): infer R1;
+                    (...args: infer A2): infer R2;
+                    (...args: infer A3): infer R3;
+                    (...args: infer A4): infer R4;
+                    (...args: infer A5): infer R5;
+                }
+              ? [
+                    (...args: A1) => R1,
+                    (...args: A2) => R2,
+                    (...args: A3) => R3,
+                    (...args: A4) => R4,
+                    (...args: A5) => R5,
+                ]
+              : T extends {
+                      (...args: infer A1): infer R1;
+                      (...args: infer A2): infer R2;
+                      (...args: infer A3): infer R3;
+                      (...args: infer A4): infer R4;
+                  }
+                ? [
+                      (...args: A1) => R1,
+                      (...args: A2) => R2,
+                      (...args: A3) => R3,
+                      (...args: A4) => R4,
+                  ]
+                : T extends {
+                        (...args: infer A1): infer R1;
+                        (...args: infer A2): infer R2;
+                        (...args: infer A3): infer R3;
+                    }
+                  ? [(...args: A1) => R1, (...args: A2) => R2, (...args: A3) => R3]
+                  : T extends {
+                          (...args: infer A1): infer R1;
+                          (...args: infer A2): infer R2;
+                      }
+                    ? [(...args: A1) => R1, (...args: A2) => R2]
+                    : T extends {
+                            (...args: infer A1): infer R1;
+                        }
+                      ? [(...args: A1) => R1]
+                      : [T]
 >;
 
 export type Dict<V = any> = Record<Exclude<string, number | symbol>, V>;
@@ -403,11 +488,19 @@ export type RecordPrefix<P extends string, R extends Record<string, any>> = {
  * 
  * 例如：
  * type CustomEvents = {
-       click: { x: number; y: number };
+       click: NotPayload<{ x: number; y: number }>;
+       <事件名称,即type>:<事件负载，即payload>
     }
+    常规情况下，事件的K=事件名称，V=事件Payload参数类型
+
+    但是如我们使用了transform对事件进行了转换时，此时接收到的消息可能就不是标准事件消息{type,payload}
+
+    此时可以使用NotPayload或AssertFastMessage类型声明
+
     const emitter = new FastEvent<CustomEvents>();
     emitter.on('click', (message) => {
-        // typeof message.payload === { x: number; y: number }
+        // 因为上面的click事件中使用了NotPayload类型
+        // typeof message === { x: number; y: number }
     })
     const emitter = new FastEvent<CustomEvents>({
         transform:(message)=>{
@@ -430,7 +523,7 @@ export type AssertFastMessage<M> = {
 
 export type NotPayload<M> = AssertFastMessage<M>;
 
-export type PickPayload<M> = M extends FastMessagePayload ? M['type'] : M;
+export type PickPayload<M> = M extends FastMessagePayload ? M["type"] : M;
 
 export type AtPayloads<Events extends Record<string, any>> = {
     [K in keyof Events]: PickPayload<Events[K]>;
@@ -447,9 +540,9 @@ export type TransformedEvents<Events extends Record<string, any>> = {
     [K in keyof Events]: NotPayload<Events[K]>;
 };
 
-export * from './WildcardEvents';
-export * from './ScopeEvents';
-export * from './ExpandWildcard';
-export * from './Keys';
+export * from "./WildcardEvents";
+export * from "./ScopeEvents";
+export * from "./ExpandWildcard";
+export * from "./Keys";
 
 export type Class = (new (...args: any[]) => any) | (abstract new (...args: any[]) => any);

@@ -4,7 +4,7 @@ import { describe, test } from "vitest";
 import type { Equal, Expect } from "@type-challenges/utils";
 import { FastEvent } from "../../event";
 import { FastEventScope, FastEventScopeMeta, FastEventScopeOptions } from "../../scope";
-import { Dict, FastEventMeta, FastEventOptions, OverrideOptions } from "../../types";
+import { Dict, Expand, FastEventMeta, FastEventOptions, OverrideOptions } from "../../types";
 
 describe("继承FastEvent类型系统", () => {
     test("默认继承方式", () => {
@@ -220,11 +220,13 @@ describe("继承FastEventScope类型系统", () => {
             }
         }
 
+        const r = new MyScope();
         const myScope = emitter.scope("modules/my", new MyScope());
 
-        type cases = [Expect<Equal<Parameters<typeof myScope.test>[0], number>>];
+        type events = typeof myScope.types.events;
 
         myScope.test(1);
+        myScope.on("a");
 
         myScope.on("a", (message) => {
             // message.meta.root = "1";
@@ -272,8 +274,10 @@ describe("继承FastEventScope类型系统", () => {
                 root: 100,
             },
         });
-
-        type Meta = Expect<Equal<typeof emitter.meta, { root: number }>>;
+        type RootMeta = {
+            root: number;
+        };
+        type Meta = Expect<Equal<typeof emitter.meta, RootMeta>>;
 
         type MyScopeMeta = {
             x: number;
@@ -302,7 +306,11 @@ describe("继承FastEventScope类型系统", () => {
                 Expect<
                     Equal<
                         typeof message.meta,
-                        MyScopeMeta & FastEventMeta & Record<string, any> & FastEventScopeMeta
+                        MyScopeMeta &
+                            FastEventMeta &
+                            Record<string, any> &
+                            FastEventScopeMeta &
+                            RootMeta
                     >
                 >,
             ];
@@ -314,7 +322,11 @@ describe("继承FastEventScope类型系统", () => {
                 Expect<
                     Equal<
                         typeof message.meta,
-                        MyScopeMeta & FastEventMeta & Record<string, any> & FastEventScopeMeta
+                        MyScopeMeta &
+                            FastEventMeta &
+                            Record<string, any> &
+                            FastEventScopeMeta &
+                            RootMeta
                     >
                 >,
             ];
@@ -331,6 +343,9 @@ describe("继承FastEventScope类型系统", () => {
                 root: 100,
             },
         });
+        type RootMeta = {
+            root: number;
+        };
 
         type Meta = Expect<Equal<typeof emitter.meta, { root: number }>>;
 
@@ -361,7 +376,11 @@ describe("继承FastEventScope类型系统", () => {
                 Expect<
                     Equal<
                         typeof message.meta,
-                        MyScopeMeta & FastEventMeta & Record<string, any> & FastEventScopeMeta
+                        MyScopeMeta &
+                            FastEventMeta &
+                            Record<string, any> &
+                            FastEventScopeMeta &
+                            RootMeta
                     >
                 >,
             ];
@@ -373,7 +392,11 @@ describe("继承FastEventScope类型系统", () => {
                 Expect<
                     Equal<
                         typeof message.meta,
-                        MyScopeMeta & FastEventMeta & Record<string, any> & FastEventScopeMeta
+                        MyScopeMeta &
+                            FastEventMeta &
+                            Record<string, any> &
+                            FastEventScopeMeta &
+                            RootMeta
                     >
                 >,
             ];
