@@ -1,6 +1,7 @@
 import type { FastListenerExecutor } from "../executors/types";
 import { type FastListenerPipe } from "../pipes/types";
 import { ExpandWildcard } from "./ExpandWildcard";
+import { ClosestWildcardEvents, WildcardEvents } from "./WildcardEvents";
 // 用来扩展全局Meta类型
 export interface FastEventMeta {}
 export interface FastEventMessageExtends {}
@@ -562,3 +563,49 @@ interface TransformedWildcardEvents {
 type TEvents = PickTransformedEvents<TransformedWildcardEvents>;
 type TEventsK = keyof TEvents;
 type NotTEvents = OmitTransformedEvents<TransformedWildcardEvents>;
+
+/**
+ * Checks if the given key T matches any wildcard pattern in Events
+ * It excludes cases that only match global wildcards (* and **)
+ */
+type IsTransformedKey<Events extends Record<string, any>, T extends string> =
+    // If WildcardEvents<Events, T> contains keys other than global wildcards (* and **)
+    // then T matches a specific wildcard pattern, return T
+    // Otherwise return never
+    Exclude<keyof WildcardEvents<Events, T>, "*" | "**"> extends never ? never : T;
+
+// 调试类型：验证 WildcardEvents 的行为
+type d = WildcardEvents<TransformedWildcardEvents, "users/a/b">;
+type dKeys = keyof d; // 应该包含 "users/*/*" 和其他匹配的模式
+type dKeysExcluded = Exclude<dKeys, "*" | "**">; // 排除全局通配符
+
+// 测试 IsTransformedKey
+type IsTransformedKeyTest1 = IsTransformedKey<TransformedWildcardEvents, "users/a/b">; // 应该是 "users/a/b"
+type IsTransformedKeyTest2 = IsTransformedKey<TransformedWildcardEvents, "xa/b">; // 应该是 never（只匹配 "*"）
+type IsTransformedKeyTest3 = IsTransformedKey<TransformedWildcardEvents, "users/123/online">; // 应该是 "users/123/online"
+type IsTransformedKeyTest4 = IsTransformedKey<TransformedWildcardEvents, "posts/1/view">; // 应该是 "posts/1/view"
+
+type GetTransformedKey<Events extends Record<string, any>, T extends string> =
+    T extends IsTransformedKey<Events, T> ? ClosestWildcardEvents<Events, T> : never;
+
+function test<T extends string = keyof TransformedWildcardEvents>(
+    type: T,
+): T extends IsTransformedKey<TransformedWildcardEvents, T>
+    ? ClosestWildcardEvents<TransformedWildcardEvents, T>
+    : 2 {
+    return 1 as any;
+}
+
+// 测试用例
+
+const a = test("users/a/b"); // 预期类型: 1 (匹配 "users/*/*")
+type dd = keyof typeof a;
+const b = test("xa/b"); // 预期类型: 2 (只匹配 "*"，被排除)
+const c = test("users/123/online"); // 预期类型: 1 (匹配 "users/*/online")
+const d_test = test("posts/1/view"); // 预期类型: 1 (匹配 "posts/*/view")
+
+// 验证类型：
+// typeof a 应该是 1
+// typeof b 应该是 2
+// typeof c 应该是 1
+// typeof d_test 应该是 1

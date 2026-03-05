@@ -155,7 +155,7 @@ describe("FastEvent 使用异步迭代器监听事件类型系统测试", () => 
         });
         test("单星通配符(*)事件的异步迭代器消息类型", () => {
             const emitter = new FastEvent<TransformedWildcardEvents>();
-
+            emitter.on("");
             const messages = emitter.on("users/*/online");
             type MessageType = IteratorMessage<typeof messages>;
             type cases = [Expect<Equal<MessageType, { name: string; status?: number }>>];
@@ -214,9 +214,34 @@ describe("FastEvent 使用异步迭代器监听事件类型系统测试", () => 
                     >
                 >
             >;
+            emitter.on("");
             const messages = emitter.oon("users/a/b");
             type dd = FastEventIterator<{ "users/*/*": string }>;
-            type d1 = PickTransformedEvents<TransformedWildcardEvents>;
+            type TES = {
+                [x: `users/${string}/online`]: NotPayload<{
+                    name: string;
+                    status?: number;
+                }> &
+                    NotPayload<string>;
+                [x: `users/${string}/offline`]: never;
+                [x: `users/${string}/${string}`]: NotPayload<string>;
+
+                [x: `posts/${string}/comment`]: NotPayload<string>;
+                [x: `devices/${string}/status`]: NotPayload<"online" | "offline">;
+                [x: string]: NotPayload<string>;
+
+                "**": NotPayload<any>;
+            } & { [x: `posts/${string}/view`]: NotPayload<number> } & {
+                "posts/**": NotPayload<{
+                    title: string;
+                    views: number;
+                }>;
+            } & { "devices/**": NotPayload<number> };
+
+            type TEvents = PickTransformedEvents<TransformedWildcardEvents>;
+            type TEKeys = keyof TEvents;
+            type TEKeys2 = keyof TES;
+            type OEvents = OmitTransformedEvents<TransformedWildcardEvents>;
             type isMatched = ["users/a/b"];
             type WKeys = WildcardKeys<TransformedWildcardEvents>;
             type d2 = ClosestWildcardEvents<

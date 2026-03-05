@@ -454,6 +454,7 @@ describe("作用域事件类型检查", () => {
             n: boolean;
         };
         const emitter = new FastEvent<CustomEvents>();
+        emitter.on("");
         // ❌ 无法从全局事件中推导出scope事件类型
         // const scope = emitter.scope<ScopeCustomEvents>("a/b")
         //✅ 当为scope指定事件前缀类型时，才从全局事件中推导出scope事件类型
