@@ -19,7 +19,11 @@
       "Bash(npx tsc --noEmit --skipLibCheck)",
       "Bash(npx tsc:*)",
       "Bash(ls -la packages/native/src/__tests__/debug*.ts)",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(npx vitest run packages/native/src/__tests__/features/eventIterator.test.ts -t \"应该支持 AbortSignal 取消迭代\")",
+      "Bash(bun test packages/native/src/__tests__/features/eventIterator.test.ts --timeout 10000 -t \"应该支持 AbortSignal 取消迭代\")",
+      "Bash(bun test packages/native/src/__tests__/features/eventIterator.test.ts -t \"应该支持 AbortSignal 取消迭代\")",
+      "Bash(bun test packages/native/src/__tests__/features/eventIterator.test.ts)"
     ]
   }
 }

@@ -3,6 +3,7 @@
  * 重构：使用 queue.ts 中的队列参数和逻辑
  */
 
+import { AbortError } from "../consts";
 import type { FastEvent } from "../event";
 import type { FastEventScope } from "../scope";
 import type { FastEventListener, FastEventListenOptions, FastEventMessage } from "../types";
@@ -94,14 +95,22 @@ export class FastEventIterator<T> implements AsyncIterableIterator<T> {
      */
     create(options?: FastEventListenOptions) {
         if (this._created) return;
-        // 监听事件 - 使用 FastEvent 的 on 方法，返回订阅者对象
-        const subscriber = (this.eventEmitter as any).on(this.eventName, this._listener, options);
-        this.unsubscribe = subscriber.off;
-        // 处理中止信号
-        if (this.options.signal) {
-            this.options.signal.addEventListener("abort", () => {
-                this.off();
-            });
+        try {
+            // 监听事件 - 使用 FastEvent 的 on 方法，返回订阅者对象
+            const subscriber = (this.eventEmitter as any).on(
+                this.eventName,
+                this._listener,
+                options,
+            );
+            this.unsubscribe = subscriber.off;
+            // 处理中止信号
+            if (this.options.signal) {
+                this.options.signal.addEventListener("abort", () => {
+                    this.off(true);
+                });
+            }
+        } finally {
+            this._created = true;
         }
     }
     /**
@@ -156,7 +165,7 @@ export class FastEventIterator<T> implements AsyncIterableIterator<T> {
         if (this.isStopped) return;
 
         // 从 FastEvent 消息中提取 payload
-        const data = message.payload as T;
+        const data = message as T;
         if (this.isStopped) return;
 
         // 如果有等待的消费者，直接resolve
@@ -176,7 +185,7 @@ export class FastEventIterator<T> implements AsyncIterableIterator<T> {
         }
     }
 
-    off(): void {
+    off(abort?: boolean): void {
         if (!this._created) return;
         if (this.isStopped) return;
 
@@ -187,18 +196,20 @@ export class FastEventIterator<T> implements AsyncIterableIterator<T> {
             this.unsubscribe();
             this.unsubscribe = null;
         }
-
-        // 清理等待的resolvers
-        this.resolvers.forEach((resolver) => {
-            resolver({ value: undefined, done: true });
-        });
-        this.resolvers = [];
-
-        // 清理等待的error resolvers
-        this.errorResolvers.forEach((resolver) => {
-            resolver(new Error("Iterator stopped"));
-        });
-        this.errorResolvers = [];
+        // 如果是强制中止，如调用了AbortSign
+        if (abort) {
+            // 清理等待的error resolvers
+            this.errorResolvers.forEach((resolver) => {
+                resolver(new AbortError());
+            });
+            this.errorResolvers = [];
+        } else {
+            // 清理等待的resolvers
+            this.resolvers.forEach((resolver) => {
+                resolver({ value: undefined, done: true });
+            });
+            this.resolvers = [];
+        }
     }
 
     async next(): Promise<IteratorResult<T>> {
@@ -206,7 +217,7 @@ export class FastEventIterator<T> implements AsyncIterableIterator<T> {
             return Promise.reject(this.error);
         }
 
-        if (this.isStopped) {
+        if (this.isStopped && this.buffer.length === 0) {
             return { value: undefined, done: true };
         }
 

@@ -8,6 +8,12 @@ import { describe, test, expect } from "bun:test";
 import { FastEvent } from "../../event";
 import { createAsyncEventIterator } from "../../utils/eventIterator";
 
+async function delay(time: number = 1) {
+    return new Promise<void>((resolve) => {
+        setTimeout(resolve, time);
+    });
+}
+
 describe("FastEventIterator", () => {
     test("应该正确创建异步迭代器并消费事件", async () => {
         const emitter = new FastEvent();
@@ -188,31 +194,43 @@ describe("FastEventIterator", () => {
         expect(results).toEqual([3, 2, 1]);
     });
 
-    test("应该支持 AbortSignal 取消迭代", async () => {
-        const emitter = new FastEvent();
-        const controller = new AbortController();
-        const iterator = createAsyncEventIterator<string>(emitter, "abort", {
-            signal: controller.signal,
-        });
-        iterator.create();
-        // 发送消息
-        emitter.emit("abort", "message1");
-
-        // 取消迭代
-        controller.abort();
-
-        const results: string[] = [];
-        try {
-            for await (const message of iterator) {
-                results.push(message);
+    test("应该支持 AbortSignal 取消迭代", () => {
+        return new Promise<void>((resolve) => {
+            const emitter = new FastEvent();
+            const controller = new AbortController();
+            const iterator = createAsyncEventIterator<string>(emitter, "abort", {
+                signal: controller.signal,
+            });
+            iterator.create();
+            let isAborted: boolean = false;
+            async function getMessages() {
+                const data: any[] = [];
+                try {
+                    for await (const message of iterator) {
+                        data.push(message);
+                    }
+                } catch (e) {
+                    expect(e).toBeInstanceOf(Error);
+                    throw e;
+                }
             }
-        } catch {
-            // 可能会因为取消而抛出错误
-        }
-
-        // 迭代器应该停止
-        const result = await iterator.next();
-        expect(result).toEqual({ value: undefined, done: true });
+            getMessages()
+                .then(() => {})
+                .catch((e: any) => {
+                    expect(e).toBeInstanceOf(Error);
+                    isAborted = true;
+                });
+            let i: number = 0;
+            setTimeout(() => {
+                controller.abort();
+            }, 10);
+            (async function emitData() {
+                while (!isAborted) {
+                    await delay();
+                    emitter.emit("abort", i++);
+                }
+            })().then(resolve);
+        });
     });
 
     test("应该支持错误处理回调", async () => {
@@ -261,7 +279,10 @@ describe("FastEventIterator 辅助函数", () => {
 
     test("slidingIterator 应该创建滑动窗口的迭代器", async () => {
         const emitter = new FastEvent();
-        const iterator = createAsyncEventIterator<number>(emitter, "slide", { overflow: "slide" });
+        const iterator = createAsyncEventIterator<number>(emitter, "slide", {
+            overflow: "slide",
+            size: 3,
+        });
         iterator.create();
         for (let i = 0; i < 5; i++) {
             emitter.emit("slide", i);

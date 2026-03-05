@@ -1,26 +1,37 @@
 type Expand<T> = T extends infer O ? { [K in keyof O]: O[K] } : never;
 
 // 判断是否包含通配符
-type ContainsWildcard<T extends string> = T extends `${string}/*/${string}` ? true : T extends `${string}/*` ? true : T extends `*/${string}` ? true : T extends `*` ? true : false;
+type ContainsWildcard<T extends string> = T extends `${string}/*/${string}`
+    ? true
+    : T extends `${string}/*`
+      ? true
+      : T extends `*/${string}`
+        ? true
+        : T extends `*`
+          ? true
+          : false;
 
 // 将通配符替换为 ${string}
 type ReplaceWildcard<T extends string> = T extends `*${infer Rest}`
     ? `${string}${ReplaceWildcard<Rest>}`
     : T extends `${infer Head}*${infer Rest}`
-    ? `${Head}${string}${ReplaceWildcard<Rest>}`
-    : T;
+      ? `${Head}${string}${ReplaceWildcard<Rest>}`
+      : T;
 
 // 提取所有包含通配符的键
-type WildcardKeys<T> = {
+export type WildcardKeys<T> = {
     [K in keyof T]: K extends string ? (ContainsWildcard<K> extends true ? K : never) : never;
 }[keyof T];
 
 // 展开通配符键
 export type ExpandWildcard<T extends Record<string, any>> = Expand<
     // 保留原始键值对
-    T & {
+    {
         // 为每个通配符键创建映射类型
         [K in WildcardKeys<T> as ReplaceWildcard<K>]: T[K];
+    } & {
+        // 获取所有不属于 WildcardKeys<T> 的键
+        [K in Exclude<keyof T, WildcardKeys<T>>]: T[K];
     }
 >;
 

@@ -1,42 +1,67 @@
 /* eslint-disable no-unused-vars */
-import { describe, test, expect } from 'vitest';
-import type { Equal, Expect } from '@type-challenges/utils';
-import { FastEvent } from '../../event';
-import { FastEventScope, FastEventScopeMeta } from '../../scope';
-import { FastEventMeta } from '../../types';
-import { FastEventIterator } from '../../utils/eventIterator';
+import { describe, test, expect } from "vitest";
+import type { Equal, Expect } from "@type-challenges/utils";
+import { FastEvent } from "../../event";
+import {
+    ClosestWildcardEvents,
+    NotPayload,
+    PickPayload,
+    PickTransformedEvents,
+    OmitTransformedEvents,
+    RecordValues,
+    WildcardKeys,
+} from "../../types";
+import { FastEventIterator } from "../../utils/eventIterator";
 
 // 辅助类型：提取 FastEventIterator 的消息类型
 type IteratorMessage<T> = T extends FastEventIterator<infer M> ? M : never;
 
- 
-
-describe('使用异步迭代器监听事件类型系统测试', () => {
+describe("FastEvent 使用异步迭代器监听事件类型系统测试", () => {
     // 定义测试用的事件类型
     interface CustomEvents {
         a: boolean;
         b: number;
         c: string;
-        'x/y/z/a': 1;
-        'x/y/z/b': 2;
-        'x/y/z/c': 3;
+        "x/y/z/a": 1;
+        "x/y/z/b": 2;
+        "x/y/z/c": 3;
     }
 
     interface WildcardEvents {
-        'users/*/online': { name: string; status?: number };
-        'users/*/offline': boolean;
-        'users/*/*': string;
-        'posts/*/view': number;
-        'posts/*/comment': string;
-        'posts/**': { title: string; views: number };
-        'devices/*/status': 'online' | 'offline';
-        'devices/**': number;
-        '*': string; // 全局通配符
-        '**': any; // 双星通配符
+        "users/*/online": { name: string; status?: number };
+        "users/*/offline": boolean;
+        "users/*/*": string;
+        "posts/*/view": number;
+        "posts/*/comment": string;
+        "posts/**": { title: string; views: number };
+        "devices/*/status": "online" | "offline";
+        "devices/**": number;
+        "*": string; // 全局通配符
+        "**": any; // 双星通配符
+    }
+    interface TransformedCustomEvents {
+        a: NotPayload<boolean>;
+        b: NotPayload<number>;
+        c: NotPayload<string>;
+        "x/y/z/a": NotPayload<1>;
+        "x/y/z/b": NotPayload<2>;
+        "x/y/z/c": NotPayload<3>;
+    }
+    interface TransformedWildcardEvents {
+        "users/*/online": NotPayload<{ name: string; status?: number }>;
+        "users/*/offline": NotPayload<boolean>;
+        "users/*/*": NotPayload<string>;
+        "posts/*/view": NotPayload<number>;
+        "posts/*/comment": NotPayload<string>;
+        "posts/**": NotPayload<{ title: string; views: number }>;
+        "devices/*/status": NotPayload<"online" | "offline">;
+        "devices/**": NotPayload<number>;
+        "*": NotPayload<string>; // 全局通配符
+        "**": NotPayload<any>; // 双星通配符
     }
 
-    describe('FastEvent - 不含通配符事件', () => {
-        test('基本事件类型的异步迭代器消息类型', () => {
+    describe("FastEvent - 不含通配符事件", () => {
+        test("基本事件类型的异步迭代器消息类型", () => {
             const emitter = new FastEvent<CustomEvents>({
                 meta: {
                     x: 1,
@@ -44,111 +69,162 @@ describe('使用异步迭代器监听事件类型系统测试', () => {
                 },
             });
 
-            const messages = emitter.on('a');
+            const messages = emitter.on("a");
             type MessageType = IteratorMessage<typeof messages>;
             type cases = [
-                Expect<Equal<MessageType['type'], 'a'>>,
-                Expect<Equal<MessageType['payload'], boolean>>, 
+                Expect<Equal<MessageType["type"], "a">>,
+                Expect<Equal<MessageType["payload"], boolean>>,
             ];
         });
 
-        test('多层级路径事件的异步迭代器消息类型', () => {
+        test("多层级路径事件的异步迭代器消息类型", () => {
             const emitter = new FastEvent<CustomEvents>();
 
-            const messages = emitter.on('x/y/z/a');
+            const messages = emitter.on("x/y/z/a");
             type MessageType = IteratorMessage<typeof messages>;
             type cases = [
-                Expect<Equal<MessageType['type'], 'x/y/z/a'>>,
-                Expect<Equal<MessageType['payload'], 1>>,
+                Expect<Equal<MessageType["type"], "x/y/z/a">>,
+                Expect<Equal<MessageType["payload"], 1>>,
             ];
         });
 
-        test('不同事件类型的异步迭代器返回不同payload类型', () => {
+        test("不同事件类型的异步迭代器返回不同payload类型", () => {
             const emitter = new FastEvent<CustomEvents>();
 
-            const aMessages = emitter.on('a');
-            const bMessages = emitter.on('b');
-            const cMessages = emitter.on('c');
+            const aMessages = emitter.on("a");
+            const bMessages = emitter.on("b");
+            const cMessages = emitter.on("c");
 
             type AMessageType = IteratorMessage<typeof aMessages>;
             type BMessageType = IteratorMessage<typeof bMessages>;
             type CMessageType = IteratorMessage<typeof cMessages>;
 
             type aCases = [
-                Expect<Equal<AMessageType['type'], 'a'>>,
-                Expect<Equal<AMessageType['payload'], boolean>>,
+                Expect<Equal<AMessageType["type"], "a">>,
+                Expect<Equal<AMessageType["payload"], boolean>>,
             ];
 
             type bCases = [
-                Expect<Equal<BMessageType['type'], 'b'>>,
-                Expect<Equal<BMessageType['payload'], number>>,
+                Expect<Equal<BMessageType["type"], "b">>,
+                Expect<Equal<BMessageType["payload"], number>>,
             ];
 
             type cCases = [
-                Expect<Equal<CMessageType['type'], 'c'>>,
-                Expect<Equal<CMessageType['payload'], string>>,
+                Expect<Equal<CMessageType["type"], "c">>,
+                Expect<Equal<CMessageType["payload"], string>>,
             ];
         });
     });
+    describe("FastEvent - 启用事件转换", () => {
+        test("基本事件类型的异步迭代器消息类型", () => {
+            const emitter = new FastEvent<TransformedCustomEvents>({
+                meta: {
+                    x: 1,
+                    y: true,
+                },
+            });
 
-    describe('FastEvent - 含通配符事件', () => {
-        test('单星通配符(*)事件的异步迭代器消息类型', () => {
-            const emitter = new FastEvent<WildcardEvents>();
-
-            const messages = emitter.on('users/*/online');
+            const messages = emitter.on("a");
+            type d = PickTransformedEvents<TransformedCustomEvents>;
             type MessageType = IteratorMessage<typeof messages>;
-            type cases = [
-                Expect<Equal<MessageType['type'], 'users/*/online'>>,
-                Expect<Equal<MessageType['payload'], { name: string; status?: number }>>,
-            ];
+            type cases = [Expect<Equal<MessageType, boolean>>];
         });
 
-        test('双星通配符(**)事件的异步迭代器消息类型', () => {
-            const emitter = new FastEvent<WildcardEvents>();
+        test("多层级路径事件的异步迭代器消息类型", () => {
+            const emitter = new FastEvent<TransformedCustomEvents>();
 
-            const messages = emitter.on('posts/**');
+            const messages = emitter.on("x/y/z/a");
             type MessageType = IteratorMessage<typeof messages>;
-            type cases = [
-                Expect<Equal<MessageType['type'], 'posts/**'>>,
-                Expect<Equal<MessageType['payload'], { title: string; views: number }>>,
-            ];
+            type cases = [Expect<Equal<MessageType, 1>>];
         });
 
-        test('全局单星通配符(*)事件的异步迭代器消息类型', () => {
-            const emitter = new FastEvent<WildcardEvents>();
+        test("不同事件类型的异步迭代器返回不同payload类型", () => {
+            const emitter = new FastEvent<TransformedCustomEvents>();
 
-            const messages = emitter.on('*');
+            const aMessages = emitter.on("a");
+            const bMessages = emitter.on("b");
+            const cMessages = emitter.on("c");
+
+            type AMessageType = IteratorMessage<typeof aMessages>;
+            type BMessageType = IteratorMessage<typeof bMessages>;
+            type CMessageType = IteratorMessage<typeof cMessages>;
+
+            type aCases = [Expect<Equal<AMessageType, boolean>>];
+            type bCases = [Expect<Equal<BMessageType, number>>];
+            type cCases = [Expect<Equal<CMessageType, string>>];
+        });
+        test("单星通配符(*)事件的异步迭代器消息类型", () => {
+            const emitter = new FastEvent<TransformedWildcardEvents>();
+
+            const messages = emitter.on("users/*/online");
             type MessageType = IteratorMessage<typeof messages>;
-            type cases = [
-                Expect<Equal<MessageType['type'], '*'>>,
-                Expect<Equal<MessageType['payload'], string>>,
-            ];
+            type cases = [Expect<Equal<MessageType, { name: string; status?: number }>>];
         });
 
-        test('全局双星通配符(**)事件的异步迭代器消息类型', async () => {
-            const emitter = new FastEvent<WildcardEvents>();
+        test("双星通配符(**)事件的异步迭代器消息类型", () => {
+            const emitter = new FastEvent<TransformedWildcardEvents>();
 
-            const messages = emitter.on('**');
-            // for await ( const message of messages ){
-            //     message.type
-            // }
+            // "posts/**": NotPayload<{ title: string; views: number }>;
+            const messages = emitter.on("posts/x/y/z");
+            type MessageType = IteratorMessage<typeof messages>;
+            type cases = [Expect<Equal<MessageType, any>>];
+        });
+
+        test("全局单星通配符(*)事件的异步迭代器消息类型", () => {
+            const emitter = new FastEvent<TransformedWildcardEvents>();
+
+            const messages = emitter.on("*");
+            type MessageType = IteratorMessage<typeof messages>;
+            type cases = [Expect<Equal<MessageType, string>>];
+        });
+
+        test("全局双星通配符(**)事件的异步迭代器消息类型", async () => {
+            const emitter = new FastEvent<TransformedWildcardEvents>();
+
+            const messages = emitter.on("**");
             type MessageType = IteratorMessage<typeof messages>;
             // type  d = keyof MessageType['type']
             type cases = [
-                Expect<Equal<MessageType['type'], "**" | "users/*/online" | "users/*/offline" | "users/*/*" | "posts/*/view" | "posts/*/comment" | "posts/**" | "devices/*/status" | "devices/**" | "*">>,
-                Expect<Equal<MessageType['payload'], any>>,
-            ]; 
+                Expect<
+                    Equal<
+                        MessageType["type"],
+                        | "**"
+                        | "users/*/online"
+                        | "users/*/offline"
+                        | "users/*/*"
+                        | "posts/*/view"
+                        | "posts/*/comment"
+                        | "posts/**"
+                        | "devices/*/status"
+                        | "devices/**"
+                        | "*"
+                    >
+                >,
+                Expect<Equal<MessageType, any>>,
+            ];
         });
 
-        test('多层级通配符事件的异步迭代器消息类型', () => {
-            const emitter = new FastEvent<WildcardEvents>();
-
-            const messages = emitter.on('users/*/*');
+        test("多层级通配符事件的异步迭代器消息类型", () => {
+            const emitter = new FastEvent<TransformedWildcardEvents>();
+            type P = PickPayload<
+                RecordValues<
+                    ClosestWildcardEvents<
+                        TransformedWildcardEvents,
+                        Exclude<"users/a/b", number | symbol>
+                    >
+                >
+            >;
+            const messages = emitter.oon("users/a/b");
+            type dd = FastEventIterator<{ "users/*/*": string }>;
+            type d1 = PickTransformedEvents<TransformedWildcardEvents>;
+            type isMatched = ["users/a/b"];
+            type WKeys = WildcardKeys<TransformedWildcardEvents>;
+            type d2 = ClosestWildcardEvents<
+                TransformedWildcardEvents,
+                Exclude<"users/a/b", number | symbol>
+            >;
             type MessageType = IteratorMessage<typeof messages>;
-            type cases = [
-                Expect<Equal<MessageType['type'], 'users/*/*'>>,
-                Expect<Equal<MessageType['payload'], string>>,
-            ];
+            type cases = [Expect<Equal<MessageType, string>>];
         });
     });
 
@@ -357,3 +433,5 @@ describe('使用异步迭代器监听事件类型系统测试', () => {
     //     });
     // });
 });
+
+describe("FastEventScop 使用异步迭代器监听事件类型系统测试", () => {});

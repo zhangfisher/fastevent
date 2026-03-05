@@ -521,7 +521,7 @@ export type AssertFastMessage<M> = {
     __IS_FAST_MESSAGE__: true;
 };
 
-export type NotPayload<M> = AssertFastMessage<M>;
+export type NotPayload<M> = FastMessagePayload<M>;
 
 export type PickPayload<M> = M extends FastMessagePayload ? M["type"] : M;
 
@@ -530,7 +530,7 @@ export type AtPayloads<Events extends Record<string, any>> = {
 };
 
 export type PickTransformedEvents<T extends Record<string, any>> = ExpandWildcard<{
-    [key in keyof T as T[key] extends FastMessagePayload ? key : never]: T[key];
+    [key in keyof T as T[key] extends FastMessagePayload<any> ? key : never]: T[key];
 }>;
 export type OmitTransformedEvents<T extends Record<string, any>> = {
     [key in keyof T as T[key] extends FastMessagePayload ? never : key]: T[key];
@@ -546,3 +546,19 @@ export * from "./ExpandWildcard";
 export * from "./Keys";
 
 export type Class = (new (...args: any[]) => any) | (abstract new (...args: any[]) => any);
+
+interface TransformedWildcardEvents {
+    "users/*/online": NotPayload<{ name: string; status?: number }>;
+    "users/*/offline": NotPayload<boolean>;
+    "users/*/*": NotPayload<string>;
+    "posts/*/view": NotPayload<number>;
+    "posts/*/comment": NotPayload<string>;
+    "posts/**": NotPayload<{ title: string; views: number }>;
+    "devices/*/status": NotPayload<"online" | "offline">;
+    "devices/**": NotPayload<number>;
+    "*": NotPayload<string>; // 全局通配符
+    "**": NotPayload<any>; // 双星通配符
+}
+type TEvents = PickTransformedEvents<TransformedWildcardEvents>;
+type TEventsK = keyof TEvents;
+type NotTEvents = OmitTransformedEvents<TransformedWildcardEvents>;
