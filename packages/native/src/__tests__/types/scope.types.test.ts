@@ -393,7 +393,7 @@ describe("作用域上下文类型系统", () => {
 
         jack.login("");
         jack.logout();
-
+        
         jack.on("online", (message) => {
             type cases = [
                 Expect<Equal<typeof message.type, "online">>,
@@ -433,7 +433,7 @@ describe("作用域上下文类型系统", () => {
         a1.on("");
         type a1Kyes = keyof typeof a1.types.events;
         const b1 = a1.scope("b1");
-        b1.on("");
+        b1.on("c1/d1/e1/f1");
         type b1Kyes = keyof typeof b1.types.events;
         const c1 = b1.scope("c1");
         c1.on("");

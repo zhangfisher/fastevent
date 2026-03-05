@@ -26,6 +26,7 @@ import {
     OmitTransformedEvents,
     ClosestWildcardEvents,
     Class,
+    IsTransformedKey,
 } from "./types";
 import { parseEmitArgs } from "./utils/parseEmitArgs";
 import { isPathMatched } from "./utils/isPathMatched";
@@ -281,28 +282,7 @@ export class FastEvent<
                 return r;
             }
         }
-    }
-    public oon<T extends keyof PickTransformedEvents<AllEvents>>(
-        type: T,
-        options?: FastEventListenOptions<AllEvents, Meta>,
-    ): FastEventIterator<
-        PickPayload<
-            RecordValues<
-                ClosestWildcardEvents<PickTransformedEvents<AllEvents>, Exclude<T, number | symbol>>
-            >
-        >
-    > {
-        return null as unknown as FastEventIterator<
-            PickPayload<
-                RecordValues<
-                    ClosestWildcardEvents<
-                        PickTransformedEvents<AllEvents>,
-                        Exclude<T, number | symbol>
-                    >
-                >
-            >
-        >;
-    }
+    } 
     /**
      * 注册事件监听器
      * @param type - 事件类型，支持以下格式：
@@ -326,28 +306,21 @@ export class FastEvent<
      * // 限制触发次数
      * emitter.on('event', handler, { count: 3 });
      * ```
-     */
-    public on<T extends keyof PickTransformedEvents<AllEvents>>(
-        type: T,
-        options?: FastEventListenOptions<AllEvents, Meta>,
-    ): FastEventIterator<
-        PickPayload<RecordValues<ClosestWildcardEvents<AllEvents, Exclude<T, number | symbol>>>>
-    >;
-    public on<T extends keyof OmitTransformedEvents<AllEvents>>(
-        type: T,
-        options?: FastEventListenOptions<AllEvents, Meta>,
-    ): FastEventIterator<
-        TypedFastEventMessage<Record<T, OmitTransformedEvents<AllEvents>[T]>, Meta>
-    >;
-    public on<T extends string>(
-        type: T,
-        options?: FastEventListenOptions<AllEvents, Meta>,
-    ): FastEventIterator<TypedFastEventMessage<Record<T, AllEvents[T]>, Meta>>;
-    public on(
-        type: "**",
-        options?: FastEventListenOptions<AllEvents, Meta>,
-    ): FastEventIterator<TypedFastEventMessage<AllEvents, Meta>>;
+     */ 
+     
+   
 
+    public on<T extends string = Exclude<keyof AllEvents,number | symbol>>(
+        type: T,
+        options?: FastEventListenOptions<AllEvents, Meta>,
+     ): T extends IsTransformedKey<AllEvents, T> 
+        ? FastEventIterator<PickPayload<RecordValues<ClosestWildcardEvents<AllEvents, Exclude<T, number | symbol>>>>>
+        : FastEventIterator<TypedFastEventMessage<Record<T, AllEvents[T]>, Meta>>;
+        
+    public on (
+        type: '**',
+        options?: FastEventListenOptions<AllEvents, Meta>,
+    ):  FastEventIterator<TypedFastEventMessage<AllEvents , Meta>>;
     // 处理标准事件类型
     public on<T extends keyof OmitTransformedEvents<AllEvents>>(
         type: T,

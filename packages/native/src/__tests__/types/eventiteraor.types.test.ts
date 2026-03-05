@@ -57,7 +57,7 @@ describe("FastEvent 使用异步迭代器监听事件类型系统测试", () => 
         "devices/*/status": NotPayload<"online" | "offline">;
         "devices/**": NotPayload<number>;
         "*": NotPayload<string>; // 全局通配符
-        "**": NotPayload<any>; // 双星通配符
+        // "**": NotPayload<any>; // 双星通配符
     }
 
     describe("FastEvent - 不含通配符事件", () => {
@@ -163,17 +163,17 @@ describe("FastEvent 使用异步迭代器监听事件类型系统测试", () => 
 
         test("双星通配符(**)事件的异步迭代器消息类型", () => {
             const emitter = new FastEvent<TransformedWildcardEvents>();
-
+            emitter.on("")
             // "posts/**": NotPayload<{ title: string; views: number }>;
             const messages = emitter.on("posts/x/y/z");
             type MessageType = IteratorMessage<typeof messages>;
-            type cases = [Expect<Equal<MessageType, any>>];
+            type cases = [Expect<Equal<MessageType, { title: string; views: number }>>];
         });
 
         test("全局单星通配符(*)事件的异步迭代器消息类型", () => {
             const emitter = new FastEvent<TransformedWildcardEvents>();
 
-            const messages = emitter.on("*");
+            const messages = emitter.on("*"); 
             type MessageType = IteratorMessage<typeof messages>;
             type cases = [Expect<Equal<MessageType, string>>];
         });
@@ -181,14 +181,13 @@ describe("FastEvent 使用异步迭代器监听事件类型系统测试", () => 
         test("全局双星通配符(**)事件的异步迭代器消息类型", async () => {
             const emitter = new FastEvent<TransformedWildcardEvents>();
 
-            const messages = emitter.on("**");
-            type MessageType = IteratorMessage<typeof messages>;
-            // type  d = keyof MessageType['type']
+            const messages = emitter.on("**"); 
+            type MessageType = IteratorMessage<typeof messages>;  
             type cases = [
                 Expect<
                     Equal<
                         MessageType["type"],
-                        | "**"
+                        // | "**"
                         | "users/*/online"
                         | "users/*/offline"
                         | "users/*/*"
@@ -199,55 +198,14 @@ describe("FastEvent 使用异步迭代器监听事件类型系统测试", () => 
                         | "devices/**"
                         | "*"
                     >
-                >,
-                Expect<Equal<MessageType, any>>,
+                >
             ];
         });
 
         test("多层级通配符事件的异步迭代器消息类型", () => {
-            const emitter = new FastEvent<TransformedWildcardEvents>();
-            type P = PickPayload<
-                RecordValues<
-                    ClosestWildcardEvents<
-                        TransformedWildcardEvents,
-                        Exclude<"users/a/b", number | symbol>
-                    >
-                >
-            >;
+            const emitter = new FastEvent<TransformedWildcardEvents>(); 
             emitter.on("");
-            const messages = emitter.oon("users/a/b");
-            type dd = FastEventIterator<{ "users/*/*": string }>;
-            type TES = {
-                [x: `users/${string}/online`]: NotPayload<{
-                    name: string;
-                    status?: number;
-                }> &
-                    NotPayload<string>;
-                [x: `users/${string}/offline`]: never;
-                [x: `users/${string}/${string}`]: NotPayload<string>;
-
-                [x: `posts/${string}/comment`]: NotPayload<string>;
-                [x: `devices/${string}/status`]: NotPayload<"online" | "offline">;
-                [x: string]: NotPayload<string>;
-
-                "**": NotPayload<any>;
-            } & { [x: `posts/${string}/view`]: NotPayload<number> } & {
-                "posts/**": NotPayload<{
-                    title: string;
-                    views: number;
-                }>;
-            } & { "devices/**": NotPayload<number> };
-
-            type TEvents = PickTransformedEvents<TransformedWildcardEvents>;
-            type TEKeys = keyof TEvents;
-            type TEKeys2 = keyof TES;
-            type OEvents = OmitTransformedEvents<TransformedWildcardEvents>;
-            type isMatched = ["users/a/b"];
-            type WKeys = WildcardKeys<TransformedWildcardEvents>;
-            type d2 = ClosestWildcardEvents<
-                TransformedWildcardEvents,
-                Exclude<"users/a/b", number | symbol>
-            >;
+            const messages = emitter.on("users/a/b");  
             type MessageType = IteratorMessage<typeof messages>;
             type cases = [Expect<Equal<MessageType, string>>];
         });

@@ -549,9 +549,16 @@ export * from "./Keys";
 export type Class = (new (...args: any[]) => any) | (abstract new (...args: any[]) => any);
 
 interface TransformedWildcardEvents {
+     a: boolean;
+        b: number;
+        c: string;
+        "x/y/z/a": 1;
+        "x/y/z/b": 2;
+        "x/y/z/c": 3;
     "users/*/online": NotPayload<{ name: string; status?: number }>;
     "users/*/offline": NotPayload<boolean>;
-    "users/*/*": NotPayload<string>;
+    "users/*/*": NotPayload<string>; 
+    // "users/a/b": string; 
     "posts/*/view": NotPayload<number>;
     "posts/*/comment": NotPayload<string>;
     "posts/**": NotPayload<{ title: string; views: number }>;
@@ -559,20 +566,22 @@ interface TransformedWildcardEvents {
     "devices/**": NotPayload<number>;
     "*": NotPayload<string>; // 全局通配符
     "**": NotPayload<any>; // 双星通配符
-}
-type TEvents = PickTransformedEvents<TransformedWildcardEvents>;
-type TEventsK = keyof TEvents;
-type NotTEvents = OmitTransformedEvents<TransformedWildcardEvents>;
-
+} 
 /**
  * Checks if the given key T matches any wildcard pattern in Events
  * It excludes cases that only match global wildcards (* and **)
  */
-type IsTransformedKey<Events extends Record<string, any>, T extends string> =
-    // If WildcardEvents<Events, T> contains keys other than global wildcards (* and **)
-    // then T matches a specific wildcard pattern, return T
-    // Otherwise return never
-    Exclude<keyof WildcardEvents<Events, T>, "*" | "**"> extends never ? never : T;
+export type IsTransformedKey<Events extends Record<string, any>, T extends string> =
+    // 优先检查：如果 T 是 Events 的精确键，其值必须扩展 FastMessagePayload
+    T extends keyof Events
+        ? Events[T] extends FastMessagePayload<any>
+            ? T
+            : never
+        : // 如果不是精确键，检查是否匹配通配符模式（排除全局通配符）
+        Exclude<keyof WildcardEvents<Events, T>, "*" | "**"> extends never
+            ? never
+            : T;
+            
 
 // 调试类型：验证 WildcardEvents 的行为
 type d = WildcardEvents<TransformedWildcardEvents, "users/a/b">;
@@ -584,25 +593,31 @@ type IsTransformedKeyTest1 = IsTransformedKey<TransformedWildcardEvents, "users/
 type IsTransformedKeyTest2 = IsTransformedKey<TransformedWildcardEvents, "xa/b">; // 应该是 never（只匹配 "*"）
 type IsTransformedKeyTest3 = IsTransformedKey<TransformedWildcardEvents, "users/123/online">; // 应该是 "users/123/online"
 type IsTransformedKeyTest4 = IsTransformedKey<TransformedWildcardEvents, "posts/1/view">; // 应该是 "posts/1/view"
+type IsTransformedKeyTest5 = IsTransformedKey<TransformedWildcardEvents, "posts/1/view">; // 应该是 "posts/1/view"
+type IsTransformedKeyTest6 = IsTransformedKey<TransformedWildcardEvents, "**">; // 应该是  **
+type IsTransformedKeyTest7 = IsTransformedKey<TransformedWildcardEvents, "*">; // 应该是  * 
+type IsTransformedKeyTest8 = IsTransformedKey<TransformedWildcardEvents, "a">; // 应该是  never
 
-type GetTransformedKey<Events extends Record<string, any>, T extends string> =
+export type GetTransformedKey<Events extends Record<string, any>, T extends string> =
     T extends IsTransformedKey<Events, T> ? ClosestWildcardEvents<Events, T> : never;
 
 function test<T extends string = keyof TransformedWildcardEvents>(
     type: T,
 ): T extends IsTransformedKey<TransformedWildcardEvents, T>
-    ? ClosestWildcardEvents<TransformedWildcardEvents, T>
+    ? RecordValues<ClosestWildcardEvents<TransformedWildcardEvents, T>>
     : 2 {
     return 1 as any;
 }
-
+type userV = RecordValues<ClosestWildcardEvents<TransformedWildcardEvents, "users/a/b">> 
+type userEvent = PickPayload<RecordValues<ClosestWildcardEvents<TransformedWildcardEvents, "users/a/b">>>
 // 测试用例
-
+type f = IsTransformedKey<TransformedWildcardEvents, "posts/x/y/z">
 const a = test("users/a/b"); // 预期类型: 1 (匹配 "users/*/*")
-type dd = keyof typeof a;
+const d = test("a"); // 预期类型: 1 (匹配 "users/*/*")
+type dd = keyof typeof d;
 const b = test("xa/b"); // 预期类型: 2 (只匹配 "*"，被排除)
 const c = test("users/123/online"); // 预期类型: 1 (匹配 "users/*/online")
-const d_test = test("posts/1/view"); // 预期类型: 1 (匹配 "posts/*/view")
+const d_test = test("posts/x/y/z"); // 预期类型: 1 (匹配 "posts/*/view")
 
 // 验证类型：
 // typeof a 应该是 1
