@@ -5,17 +5,8 @@
 import { describe, test, expect } from "vitest";
 import type { Equal, Expect, NotAny } from "@type-challenges/utils";
 import { FastEvent } from "../../event";
-import { FastEventScope, FastEventScopeExtend, FastEventScopeMeta } from "../../scope";
-import {
-    ChangeFieldType,
-    Expand,
-    FastEventMeta,
-    FastEvents,
-    RequiredItems,
-    ScopeEvents,
-    TypedFastEventListener,
-} from "../../types";
-import { a1 } from "vitest/dist/chunks/reporters.d.BFLkQcL6.js";
+import { FastEventScope, FastEventScopeMeta } from "../../scope";
+import { FastEventMeta, ScopeEvents } from "../../types";
 
 describe("事件作用域类型测试", () => {
     type CustomEvents = {
@@ -186,7 +177,7 @@ describe("作用域上下文类型系统", () => {
         const emitter = new FastEvent<Events>();
         emitter.on("x/posts/fisher/online", (message) => {
             type cases = [
-                Expect<Equal<typeof message.type, "x/posts/*/online">>,
+                Expect<Equal<typeof message.type, `x/posts/${string}/online`>>,
                 Expect<Equal<typeof message.payload, string>>,
             ];
         });
@@ -195,25 +186,26 @@ describe("作用域上下文类型系统", () => {
         const scope = emitter.scope("x");
 
         type scopEvents = typeof scope.types.events;
+        type xScopeEvents = ScopeEvents<Events, "x">;
 
         type cases = [Expect<Equal<scopEvents, ScopeEvents<Events, "x">>>];
 
         scope.on("users/x/online", (message) => {
             type cases = [
-                Expect<Equal<typeof message.type, "users/*/online">>,
+                Expect<Equal<typeof message.type, `users/${string}/online`>>,
                 Expect<Equal<typeof message.payload, { name: string; status?: number }>>,
             ];
         });
         scope.on("users/x/y", (message) => {
             type cases = [
-                Expect<Equal<typeof message.type, "users/*/*">>,
+                Expect<Equal<typeof message.type, `users/${string}/${string}`>>,
                 Expect<Equal<typeof message.payload, 1>>,
             ];
         });
 
         scope.on("posts/fisher/online", (message) => {
             type cases = [
-                Expect<Equal<typeof message.type, "posts/*/online">>,
+                Expect<Equal<typeof message.type, `posts/${string}/online`>>,
                 Expect<Equal<typeof message.payload, string>>,
             ];
         });
@@ -385,15 +377,28 @@ describe("作用域上下文类型系统", () => {
             },
             "rooms/x"
         >;
+        useScope.on("**", (message) => {
+            type cases = [
+                Expect<
+                    Equal<
+                        typeof message.type,
+                        | "users/online"
+                        | `users/${string}/online`
+                        | `users/${string}/offline`
+                        | `posts/${string}${string}`
+                        | (`posts/${string}${string}` & `posts/${string}/online`)
+                    >
+                >,
+            ];
+        });
 
         const jack = useScope.scope("users/jack", new User());
-        type jEevents = ScopeEvents<uEevents, "users/jack">;
+        type jEevents = ScopeEvents<uEevents & Record<string, any>, "users/jack">;
         type jEeventNames = keyof jEevents;
         type jackEvents = typeof jack.types.events;
-
         jack.login("");
         jack.logout();
-        
+        jack.on("**");
         jack.on("online", (message) => {
             type cases = [
                 Expect<Equal<typeof message.type, "online">>,
@@ -429,11 +434,10 @@ describe("作用域上下文类型系统", () => {
         };
         const emitter = new FastEvent<Events>();
         const a1 = emitter.scope("a1");
-        type d = keyof Parameters<typeof a1.on>[1];
-        a1.on("");
+        a1.on("b1/c1/d1/e1/f2");
         type a1Kyes = keyof typeof a1.types.events;
         const b1 = a1.scope("b1");
-        b1.on("c1/d1/e1/f1");
+        b1.on("c2/d1/e1/f1");
         type b1Kyes = keyof typeof b1.types.events;
         const c1 = b1.scope("c1");
         c1.on("");
@@ -537,4 +541,61 @@ describe("作用域上下文类型系统", () => {
     //         >,
     //     ];
     // });
+});
+
+describe("事件作用域含通配符的类型测试", () => {
+    type CustomEvents = {
+        "click/*": { x: number; y: number };
+        "div/*/click": [number, number];
+        "div/*/mousemove": boolean;
+        "div/*/scroll": number;
+        "div/focus": string;
+    };
+    const emitter = new FastEvent<CustomEvents>();
+    test("scope事件类型测试", () => {
+        const scope = emitter.scope("div");
+
+        type scopeEvents = typeof scope.types.events;
+
+        scope.on("x", (message) => {
+            message.meta;
+            type cases = [
+                Expect<Equal<typeof message.type, "x">>,
+                Expect<Equal<typeof message.payload, any>>,
+            ];
+        });
+        scope.on("aaa/click", (message) => {
+            message.meta;
+            type cases = [
+                Expect<Equal<typeof message.type, `${string}/click`>>,
+                Expect<Equal<typeof message.payload, [number, number]>>,
+            ];
+        });
+        scope.on("**", (message) => {
+            // message.type = "sss/click";
+            // message.payload = 1;
+            type ff = ScopeEvents<
+                {
+                    "click/*": {
+                        x: number;
+                        y: number;
+                    };
+                    "div/*/click": [number, number];
+                    "div/*/mousemove": boolean;
+                    "div/*/scroll": number;
+                    "div/focus": string;
+                },
+                "div"
+            >;
+            type cases = [
+                Expect<
+                    Equal<
+                        typeof message.type,
+                        "focus" | `${string}/click` | `${string}/mousemove` | `${string}/scroll`
+                    >
+                >,
+                Expect<Equal<typeof message.payload, string | number | boolean | [number, number]>>,
+            ];
+        });
+    });
 });

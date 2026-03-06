@@ -39,10 +39,10 @@ export interface FastEventIteratorOptions<T = FastEventMessage> {
     signal?: AbortSignal;
 }
 
-export class FastEventIterator<T> implements AsyncIterableIterator<T> {
+export class FastEventIterator<T = any> implements AsyncIterableIterator<T> {
     // 使用 [message, timestamp] 元组存储，支持 lifetime 机制
     private buffer: [T, number][] = [];
-    private resolvers: Array<(value: IteratorResult<T>) => void> = [];
+    private resolvers: Array<(value: IteratorResult<any>) => void> = [];
     private errorResolvers: Array<(error: Error) => void> = [];
     private isStopped = false;
     private error: Error | null = null;

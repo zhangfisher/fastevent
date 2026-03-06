@@ -1,4 +1,3 @@
-import { NotPayload } from "../eventbus";
 import { Keys } from "./Keys";
 
 // MergeUnion<{ a: 1 } | { b: 2 }> === { a: 1, b: 2 }

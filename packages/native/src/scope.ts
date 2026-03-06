@@ -1,3 +1,4 @@
+// oxlint-disable no-unused-vars
 import { FastEventDirectives, UnboundError } from "./consts";
 import type { FastEvent } from "./event";
 import { FastListenerExecutor } from "./executors/types";
@@ -22,13 +23,17 @@ import {
     PickTransformedEvents,
     FastEventMessage,
     ClosestWildcardEvents,
-    FastEventListeners,
+    IsTransformedKey,
+    ExtendWildcardEvents,
+    MutableRecord,
+    FastEventCommonListener,
 } from "./types";
 import { parseEmitArgs } from "./utils/parseEmitArgs";
 import { parseScopeArgs } from "./utils/parseScopeArgs";
 import { renameFn } from "./utils/renameFn";
 import { PickPayload, AtPayloads } from "./types/index";
 import { isFunction } from "./utils/isFunction";
+import { FastEventIterator } from "./utils/eventIterator";
 
 export type FastEventScopeOptions<Meta = Record<string, any>, Context = never> = {
     meta: FastEventScopeMeta & FastEventMeta & Meta;
@@ -52,6 +57,14 @@ export interface FastEventScopeMeta {
     scope: string;
 }
 
+export interface IFastEventScope<
+    Events extends Record<string, any> = Record<string, any>,
+    Meta extends Record<string, any> = Record<string, any>,
+    Context = never,
+> {
+    __FastEventScope__: boolean;
+}
+
 export class FastEventScope<
     Events extends Record<string, any> = Record<string, any>,
     Meta extends Record<string, any> = Record<string, any>,
@@ -60,6 +73,10 @@ export class FastEventScope<
     FinalMeta extends Record<string, any> = FastEventMeta & FastEventScopeMeta & Meta,
 > {
     __FastEventScope__: boolean = true;
+    // 添加类型标记
+    readonly __events__!: Events;
+    readonly __meta__!: Meta & FastEventScopeMeta;
+    readonly __context__!: Context;
     private _options: DeepPartial<FastEventScopeOptions<FinalMeta, Context>> = {};
 
     // types = {
@@ -155,10 +172,9 @@ export class FastEventScope<
         const scopePrefix = this.prefix;
         if (scopePrefix.length === 0) return listener;
         // 如果没有指定监听器，则使用onMessage作为监听器
-        if (!listener)
-            listener = (this._options.onMessage || this.onMessage).bind(
-                this,
-            ) as TypedFastEventListener;
+        if (!listener) {
+            throw new Error();
+        }
         const scopeThis = this;
         const scopeListener = renameFn(function (
             message: TypedFastEventMessage,
@@ -186,72 +202,80 @@ export class FastEventScope<
     private _fixScopeType(type: string) {
         return type.startsWith(this.prefix) ? type.substring(this.prefix.length) : type;
     }
-    // 标准事件类型
-    public on<T extends keyof OmitTransformedEvents<Events>>(
-        type: T,
-        listener: TypedFastEventListener<
-            Exclude<T, number | symbol>,
-            Events[T],
-            FinalMeta,
-            Fallback<Context, typeof this>
-        >,
-        options?: FastEventListenOptions,
-    ): FastEventSubscriber;
 
-    // 处理使用 NotPayload 标识的事件类型，即经过转换的事件消息
-    public on<T extends keyof PickTransformedEvents<Events>>(
+    // 返回事件迭代器
+    public on<T extends string = Exclude<keyof Events, number | symbol>>(
         type: T,
-        listener: (
-            message: PickPayload<
-                RecordValues<ClosestWildcardEvents<Events, Exclude<T, number | symbol>>>
-            >,
-            args: FastEventListenerArgs<FinalMeta>,
-        ) => any | Promise<any>,
-        options?: FastEventListenOptions<Events, FinalMeta>,
-    ): FastEventSubscriber;
-
-    // 处理通配符事件类型
-    public on<T extends Exclude<string, Types>>(
-        type: T,
-        listener: TypedFastEventAnyListener<
-            ClosestWildcardEvents<Events, T>,
-            FinalMeta,
-            Fallback<Context, typeof this>
-        >,
-        options?: FastEventListenOptions,
-    ): FastEventSubscriber;
-    public on<T extends Exclude<string, Types>>(
-        type: T,
-        listener: TypedFastEventAnyListener<
-            ClosestWildcardEvents<Events, T>,
-            Meta,
-            Fallback<Context, typeof this>
-        >,
         options?: FastEventListenOptions<Events, Meta>,
+    ): T extends IsTransformedKey<Events, T>
+        ? // 转换后
+          FastEventIterator<
+              PickPayload<RecordValues<ClosestWildcardEvents<Events, Exclude<T, number | symbol>>>>
+          >
+        : FastEventIterator<
+              TypedFastEventMessage<T extends "**" ? Events : Record<T, Events[T]>, Meta>
+          >;
+
+    // 使用标准监听器
+    public on<T extends string = Exclude<keyof Events, number | symbol>>(
+        type: T,
+        listener: FastEventCommonListener<
+            T extends IsTransformedKey<Events, T>
+                ? PickPayload<
+                      RecordValues<ClosestWildcardEvents<Events, Exclude<T, number | symbol>>>
+                  >
+                : TypedFastEventMessage<T extends "**" ? Events : Record<T, Events[T]>, FinalMeta>,
+            FinalMeta,
+            Fallback<Context, typeof this>
+        >,
+        options?: FastEventListenOptions,
     ): FastEventSubscriber;
+    // public on<T extends keyof OmitTransformedEvents<Events>>(
+    //     type: T,
+    //     listener: TypedFastEventListener<
+    //         Exclude<T, number | symbol>,
+    //         Events[T],
+    //         FinalMeta,
+    //         Fallback<Context, typeof this>
+    //     >,
+    //     options?: FastEventListenOptions,
+    // ): FastEventSubscriber;
+    // // 处理通配符事件类型
+    // public on<T extends Exclude<string, Types>>(
+    //     type: T,
+    //     listener: TypedFastEventAnyListener<
+    //         ClosestWildcardEvents<Events, T>,
+    //         FinalMeta,
+    //         Fallback<Context, typeof this>
+    //     >,
+    //     options?: FastEventListenOptions,
+    // ): FastEventSubscriber;
+    // public on<T extends Exclude<string, Types> = Exclude<string, Types>>(
+    //     type: T,
+    //     listener: TypedFastEventAnyListener<
+    //         ClosestWildcardEvents<Events, T>,
+    //         Meta,
+    //         Fallback<Context, typeof this>
+    //     >,
+    //     options?: FastEventListenOptions<Events, Meta>,
+    // ): FastEventSubscriber;
     public on(
         type: "**",
         listener: TypedFastEventAnyListener<Events, FinalMeta, Fallback<Context, typeof this>>,
         options?: FastEventListenOptions,
     ): FastEventSubscriber;
-    // 返回异步迭代器
-    public on<T extends Types = Types>(
-        type: T,
-        options?: FastEventListenOptions<Events, FinalMeta>,
-    ): FastEventSubscriber;
-    public on<T extends Exclude<string, Types>>(
-        type: T,
-        options?: FastEventListenOptions<Events, FinalMeta>,
-    ): FastEventSubscriber;
-    public on(type: "**", options?: FastEventListenOptions<Events, FinalMeta>): FastEventSubscriber;
-    public on(): FastEventSubscriber {
+    public on(): FastEventSubscriber | FastEventIterator<any> {
         if (!this.emitter) throw new UnboundError();
         const args = [...arguments] as [any, any, any];
         args[0] = this._getScopeType(args[0]);
         args[1] = this._getScopeListener(args[1]);
         return this.emitter.on(...args);
     }
-
+    /**
+     * 只订阅一次
+     * @param type
+     * @param options
+     */
     public once<T extends Types = Types>(
         type: T,
         options?: FastEventListenOptions<Events, FinalMeta>,
@@ -298,7 +322,9 @@ export class FastEventScope<
         return this.on(arguments[0], arguments[1], Object.assign({}, arguments[2], { count: 1 }));
     }
 
-    onAny(options?: Pick<FastEventListenOptions, "prepend">): FastEventSubscriber;
+    onAny(
+        options?: Pick<FastEventListenOptions, "prepend">,
+    ): FastEventIterator<TypedFastEventMessage<Events, FinalMeta>>;
     onAny<P = any>(
         listener: TypedFastEventAnyListener<
             { [K: string]: P },
@@ -307,9 +333,10 @@ export class FastEventScope<
         >,
         options?: Pick<FastEventListenOptions, "prepend">,
     ): FastEventSubscriber;
-    onAny(): FastEventSubscriber {
-        return this.on("**" as any, ...(arguments as any));
+    onAny() {
+        return this.on("**" as any, ...(arguments as any)) as any;
     }
+
     off(listener: TypedFastEventListener<any, any, any>): void;
     off(type: string, listener: TypedFastEventListener<any, any, any>): void;
     off(type: Types, listener: TypedFastEventListener<any, any, any>): void;
@@ -486,7 +513,8 @@ export class FastEventScope<
      * profileScope.emit('update', { name: 'John' });
      * ```
      */
-    public scope<
+
+    scope<
         E extends Record<string, any> = Record<string, any>,
         P extends string = string,
         M extends Record<string, any> = Record<string, any>,
@@ -495,21 +523,12 @@ export class FastEventScope<
         prefix: P,
         options?: DeepPartial<FastEventScopeOptions<Partial<FinalMeta> & M, C>>,
     ): FastEventScope<ScopeEvents<Events & E, P>, FinalMeta & M, C>;
-    // scope<
-    //     P extends string = string,
-    //     C = Context,
-    //     ScopeInstance extends FastEventScope<any, any, any> = FastEventScope<any, any, any>,
-    // >(
-    //     prefix: P,
-    //     scopeObj: ScopeInstance,
-    //     options?: DeepPartial<FastEventScopeOptions<Meta>>,
-    // ): FastEventScopeExtend<Events, P, ScopeInstance, Meta>;
     scope<
         E extends Record<string, any> = Record<string, any>,
         P extends string = string,
         M extends Record<string, any> = Record<string, any>,
         C = Context,
-        ScopeInstance extends FastEventScope<Record<string, any>, any, any> = FastEventScope<
+        ScopeInstance extends IFastEventScope<Record<string, any>, any, any> = FastEventScope<
             Record<string, any>,
             any,
             any
@@ -524,7 +543,7 @@ export class FastEventScope<
         P extends string = string,
         M extends Record<string, any> = Record<string, any>,
         C = Context,
-    >() {
+    >(): any {
         const [prefix, scopeObj, options] = parseScopeArgs(
             arguments,
             this.options.meta,
@@ -539,36 +558,19 @@ export class FastEventScope<
         scope.bind(this.emitter as any, this.prefix + prefix, options);
         return scope;
     }
-    /**
-     * 当on/once/onAny未指定监听器时,此为默认监听器
-     * @param message
-     */
-    //  eslint-disable-next-line
-    onMessage(
-        message: TypedFastEventMessage<Events, FinalMeta>,
-        args: FastEventListenerArgs<FinalMeta>,
-    ) {}
 }
 
-// 从 FastEventScope 实例中提取事件类型
-type ExtractScopeEvents<T> =
-    T extends FastEventScope<infer Events, any, any> ? Events : Record<string, any>;
-
-// 从 FastEventScope 实例中提取 Meta 类型
-type ExtractScopeMeta<T> =
-    T extends FastEventScope<any, infer Meta, any> ? Meta : Record<string, any>;
-
-// 从 FastEventScope 实例中提取 Context 类型
-type ExtractScopeContext<T> = T extends FastEventScope<any, any, infer Context> ? Context : never;
-
+type ExtractScopeMeta<T> = T extends { __meta__: infer Meta } ? Meta : Record<string, any>;
+type ExtractScopeEvents<T> = T extends { __events__: infer Events } ? Events : Record<string, any>;
+type ExtractScopeContext<T> = T extends { __context__: infer Context } ? Context : never;
 export type FastEventScopeExtend<
     Events extends Record<string, any>,
     Prefix extends string,
-    T extends FastEventScope<any, any, any> = FastEventScope<any, any, any>,
+    T extends IFastEventScope = FastEventScope<any, any, any>,
     EmitterMeta extends Record<string, any> = Record<string, any>,
 > = FastEventScope<
     ScopeEvents<Events, Prefix> & ExtractScopeEvents<T>,
-    EmitterMeta & ExtractScopeMeta<T>,
+    EmitterMeta & ExtractScopeMeta<T> & FastEventScopeMeta,
     ExtractScopeContext<T>
 > &
     Omit<T, keyof FastEventScope>;

@@ -1,3 +1,4 @@
+// oxlint-disable no-unused-expressions
 /* eslint-disable no-unused-vars */
 
 import { describe, test } from "vitest";
@@ -28,6 +29,7 @@ describe("继承FastEvent类型系统", () => {
         }
 
         const myemitter1 = new MyEvent();
+        myemitter1.types.events;
         myemitter1.on("test", function (this, message) {
             type cases = [
                 Expect<Equal<typeof this, MyEvent>>,
@@ -226,7 +228,6 @@ describe("继承FastEventScope类型系统", () => {
         type events = typeof myScope.types.events;
 
         myScope.test(1);
-        myScope.on("a");
 
         myScope.on("a", (message) => {
             // message.meta.root = "1";
@@ -294,11 +295,13 @@ describe("继承FastEventScope类型系统", () => {
         const myScope = emitter.scope("modules/my", new MyScope());
 
         type cases = [Expect<Equal<Parameters<typeof myScope.test>[0], number>>];
+        type TestMeta = typeof myScope.types.meta;
 
         myScope.test(1);
 
         myScope.on("a", (message) => {
             // message.meta.root = 1;
+            message.meta;
             type cases = [
                 Expect<Equal<typeof message.type, "a">>,
                 Expect<Equal<typeof message.payload, number>>,

@@ -41,6 +41,16 @@ describe("类型系统测试", () => {
                 >,
             ];
         });
+        test("应正确支持通配符的事件类型", () => {
+            interface CustomEvents {
+                a: boolean;
+                b: number;
+                c: string;
+                "x/*/z/a": 1;
+                "x/y/*/b": 2;
+                "x/y/z/*": 3;
+            }
+        });
     });
 
     describe("FastEvent基础类型检查", () => {
@@ -304,7 +314,7 @@ describe("类型系统测试", () => {
                 Expect<
                     Equal<
                         typeof scope.options.meta,
-                        FastEventScopeMeta & FastEventMeta & CustomMeta
+                        FastEventScopeMeta & FastEventMeta & CustomMeta & Record<string, any>
                     >
                 >,
             ];

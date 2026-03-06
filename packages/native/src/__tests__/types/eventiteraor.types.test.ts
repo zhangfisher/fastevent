@@ -163,7 +163,7 @@ describe("FastEvent 使用异步迭代器监听事件类型系统测试", () => 
 
         test("双星通配符(**)事件的异步迭代器消息类型", () => {
             const emitter = new FastEvent<TransformedWildcardEvents>();
-            emitter.on("")
+            emitter.on("");
             // "posts/**": NotPayload<{ title: string; views: number }>;
             const messages = emitter.on("posts/x/y/z");
             type MessageType = IteratorMessage<typeof messages>;
@@ -173,7 +173,7 @@ describe("FastEvent 使用异步迭代器监听事件类型系统测试", () => 
         test("全局单星通配符(*)事件的异步迭代器消息类型", () => {
             const emitter = new FastEvent<TransformedWildcardEvents>();
 
-            const messages = emitter.on("*"); 
+            const messages = emitter.on("*");
             type MessageType = IteratorMessage<typeof messages>;
             type cases = [Expect<Equal<MessageType, string>>];
         });
@@ -181,31 +181,30 @@ describe("FastEvent 使用异步迭代器监听事件类型系统测试", () => 
         test("全局双星通配符(**)事件的异步迭代器消息类型", async () => {
             const emitter = new FastEvent<TransformedWildcardEvents>();
 
-            const messages = emitter.on("**"); 
-            type MessageType = IteratorMessage<typeof messages>;  
+            const messages = emitter.on("**");
+            type MessageType = IteratorMessage<typeof messages>;
             type cases = [
                 Expect<
                     Equal<
                         MessageType["type"],
-                        // | "**"
-                        | "users/*/online"
-                        | "users/*/offline"
-                        | "users/*/*"
-                        | "posts/*/view"
-                        | "posts/*/comment"
-                        | "posts/**"
-                        | "devices/*/status"
-                        | "devices/**"
-                        | "*"
+                        | `users/${string}/online`
+                        | `users/${string}/offline`
+                        | `users/${string}/${string}`
+                        | `posts/${string}/view`
+                        | `posts/${string}/comment`
+                        | `posts/${string}`
+                        | `devices/${string}/status`
+                        | `devices/${string}`
+                        | `${string}`
                     >
-                >
+                >,
             ];
         });
 
         test("多层级通配符事件的异步迭代器消息类型", () => {
-            const emitter = new FastEvent<TransformedWildcardEvents>(); 
+            const emitter = new FastEvent<TransformedWildcardEvents>();
             emitter.on("");
-            const messages = emitter.on("users/a/b");  
+            const messages = emitter.on("users/a/b");
             type MessageType = IteratorMessage<typeof messages>;
             type cases = [Expect<Equal<MessageType, string>>];
         });

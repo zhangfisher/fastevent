@@ -1,7 +1,9 @@
 import type { FastListenerExecutor } from "../executors/types";
 import { type FastListenerPipe } from "../pipes/types";
-import { ExpandWildcard } from "./ExpandWildcard";
-import { ClosestWildcardEvents, WildcardEvents } from "./WildcardEvents";
+import { ExpandWildcard, ReplaceWildcard } from "./ExpandWildcard";
+import { IsAny } from "./utils";
+import { WildcardEvents } from "./WildcardEvents";
+
 // 用来扩展全局Meta类型
 export interface FastEventMeta {}
 export interface FastEventMessageExtends {}
@@ -19,13 +21,23 @@ export type FastEventMessage<
 export type TypedFastEventMessage<
     Events extends Record<string, any> = Record<string, any>,
     M = any,
-> = {
-    [K in keyof Events]: {
+> = ({
+    // 处理通配符键
+    [K in keyof Events as K extends `${string}*${string}` | `*`
+        ? ReplaceWildcard<K & string>
+        : never]: {
+        type: ReplaceWildcard<K & string>;
+        payload: Events[K];
+        meta: FastEventMeta & M & Record<string, any>;
+    };
+} & {
+    // 处理非通配符键
+    [K in keyof Events as K extends `${string}*${string}` | `*` ? never : K]: {
         type: Exclude<K, number | symbol>;
         payload: Events[K];
         meta: FastEventMeta & M & Record<string, any>;
     };
-}[Exclude<keyof Events, number | symbol>] &
+})[Exclude<keyof Events, number | symbol>] &
     FastEventMessageExtends;
 
 // 用于构建消息时使用，meta是可选的
@@ -59,6 +71,46 @@ export type FastMessagePayload<P = any> = {
     __IS_FAST_MESSAGE__: true;
 };
 
+/**
+ * 通用事件消息类型
+ * @description 根据 Events 类型生成联合类型，每个成员包含 type 和 payload 字段
+ *
+ * @example
+ * type Events = {
+ *     userCreated: { id: number; name: string };
+ *     userDeleted: number;
+ *     statusChanged: 'active' | 'inactive';
+ * };
+ *
+ * type Message = FastEventCommonMessage<Events>;
+ * // 等价于:
+ * // type Message = {
+ * //     type: 'userCreated';
+ * //     payload: { id: number; name: string };
+ * // } | {
+ * //     type: 'userDeleted';
+ * //     payload: number;
+ * // } | {
+ * //     type: 'statusChanged';
+ * //     payload: 'active' | 'inactive';
+ * // }
+ */
+export type FastEventCommonMessage<Events extends Record<string, any>> = {
+    [K in keyof Events]: {
+        type: Exclude<K, number | symbol>;
+        payload: Events[K];
+    };
+}[Exclude<keyof Events, number | symbol>];
+
+/**
+ * 支持通配符的通用事件消息类型
+ * @description 创建一个消息类型，type 可以是任意字符串，payload 类型根据 type 匹配的通配符模式自动推导
+ */
+export type FastEventWildcardMessage<Events extends Record<string, any>, T extends string> = {
+    type: T;
+    payload: PickPayload<RecordValues<WildcardEvents<Events, T>>>;
+};
+
 // 只针对指定类型
 export type TypedFastEventListener<T extends string = string, P = any, M = any, C = any> = (
     this: C,
@@ -85,11 +137,19 @@ export type FastEventListeners<
     [K in keyof Events]: TypedFastEventListener<Exclude<K, number | symbol>, Events[K], M, C>;
 };
 
+// 标准监听器
 export type FastEventListener<
     P = any,
     M extends Record<string, any> = Record<string, any>,
     T extends string = string,
 > = (message: FastEventMessage<P, M, T>, args: FastEventListenerArgs<M>) => any | Promise<any>;
+
+// 通用监听器， 允许指定消息类型
+export type FastEventCommonListener<
+    Message = FastEventMessage,
+    Meta extends Record<string, any> = Record<string, any>,
+    Context = any,
+> = (this: Context, message: Message, args: FastEventListenerArgs<Meta>) => any | Promise<any>;
 
 /**
  * [
@@ -100,12 +160,18 @@ export type FastEventListener<
  *      标识
  * ]
  */
-export type FastListenerMeta = [TypedFastEventListener<any, any>, number, number, string, number];
+export type FastEventListenerMeta = [
+    TypedFastEventListener<any, any>,
+    number,
+    number,
+    string,
+    number,
+];
 
-export type FastListenerNode = {
-    __listeners: FastListenerMeta[];
+export type FastEventListenerNode = {
+    __listeners: FastEventListenerMeta[];
 } & {
-    [key: string]: FastListenerNode;
+    [key: string]: FastEventListenerNode;
 };
 
 /**
@@ -179,7 +245,7 @@ export type FastEventSubscriber = {
     _close?: () => void;
 };
 
-export type FastListeners = FastListenerNode;
+export type FastListeners = FastEventListenerNode;
 
 export type FastEventOptions<Meta = Record<string, any>, Context = never> = {
     id: string;
@@ -218,7 +284,7 @@ export type FastEventOptions<Meta = Record<string, any>, Context = never> = {
     onAfterExecuteListener?: (
         message: TypedFastEventMessage<any, Meta>,
         returns: any[],
-        listeners: FastListenerNode[],
+        listeners: FastEventListenerNode[],
     ) => void;
     /**
      * 全局执行器
@@ -530,6 +596,27 @@ export type AtPayloads<Events extends Record<string, any>> = {
     [K in keyof Events]: PickPayload<Events[K]>;
 };
 
+type RemoveEmptyObject<T extends Record<string, any>> = T extends (infer O) & {} ? O : T;
+
+/**
+ * 扩展通配符事件类型
+ * @description 将包含通配符的事件键扩展为模板字面量类型
+ *
+ * 优先级：非通配符键 > 单级通配符 > 多级通配符
+ * 使用交叉类型实现，确保精确键优先匹配
+ */
+export type ExtendWildcardEvents<Events extends Record<string, any>> = RemoveEmptyObject<
+    {
+        // 第一优先级：非通配符键（精确匹配）
+        [K in keyof Events as K extends `${string}*${string}` | `*` ? never : K]: Events[K];
+    } & {
+        // 第二优先级：通配符键扩展
+        [K in keyof Events as K extends `${string}*${string}` | `*`
+            ? ReplaceWildcard<K & string>
+            : never]: Events[K];
+    }
+>;
+
 export type PickTransformedEvents<T extends Record<string, any>> = ExpandWildcard<{
     [key in keyof T as T[key] extends FastMessagePayload<any> ? key : never]: T[key];
 }>;
@@ -538,89 +625,73 @@ export type OmitTransformedEvents<T extends Record<string, any>> = {
 };
 
 export type TransformedEvents<Events extends Record<string, any>> = {
-    [K in keyof Events]: NotPayload<Events[K]>;
+    [K in keyof ExtendWildcardEvents<Events>]: NotPayload<ExtendWildcardEvents<Events>[K]>;
 };
 
 export * from "./WildcardEvents";
 export * from "./ScopeEvents";
 export * from "./ExpandWildcard";
 export * from "./Keys";
+export * from "./utils";
 
 export type Class = (new (...args: any[]) => any) | (abstract new (...args: any[]) => any);
 
-interface TransformedWildcardEvents {
-     a: boolean;
-        b: number;
-        c: string;
-        "x/y/z/a": 1;
-        "x/y/z/b": 2;
-        "x/y/z/c": 3;
-    "users/*/online": NotPayload<{ name: string; status?: number }>;
-    "users/*/offline": NotPayload<boolean>;
-    "users/*/*": NotPayload<string>; 
-    // "users/a/b": string; 
-    "posts/*/view": NotPayload<number>;
-    "posts/*/comment": NotPayload<string>;
-    "posts/**": NotPayload<{ title: string; views: number }>;
-    "devices/*/status": NotPayload<"online" | "offline">;
-    "devices/**": NotPayload<number>;
-    "*": NotPayload<string>; // 全局通配符
-    "**": NotPayload<any>; // 双星通配符
-} 
 /**
  * Checks if the given key T matches any wildcard pattern in Events
  * It excludes cases that only match global wildcards (* and **)
  */
+/**
+ * 检查通配符匹配的事件是否有 FastMessagePayload 类型的值
+ * 当所有匹配的键都是 FastMessagePayload 时才返回 T
+ */
+type CheckWildcardMatch<
+    MatchedEvents extends Record<string, any>,
+    T extends string,
+> = keyof MatchedEvents extends infer MatchedKeys
+    ? Exclude<MatchedKeys, "*" | "**"> extends infer NonGlobalKeys
+        ? NonGlobalKeys extends never
+            ? never
+            : NonGlobalKeys extends string
+              ? // 检查：所有非全局通配符匹配的值都必须是 FastMessagePayload（且不能是 any）
+                {
+                    [K in NonGlobalKeys]: IsAny<MatchedEvents[K]> extends true
+                        ? never
+                        : MatchedEvents[K] extends FastMessagePayload<any>
+                          ? K
+                          : never;
+                }[NonGlobalKeys] extends infer Result
+                  ? [Result] extends [never]
+                      ? never
+                      : T
+                  : never
+              : never
+        : never
+    : never;
+
 export type IsTransformedKey<Events extends Record<string, any>, T extends string> =
     // 优先检查：如果 T 是 Events 的精确键，其值必须扩展 FastMessagePayload
     T extends keyof Events
-        ? Events[T] extends FastMessagePayload<any>
-            ? T
-            : never
-        : // 如果不是精确键，检查是否匹配通配符模式（排除全局通配符）
-        Exclude<keyof WildcardEvents<Events, T>, "*" | "**"> extends never
+        ? IsAny<Events[T]> extends true
             ? never
-            : T;
-            
+            : Events[T] extends FastMessagePayload<any>
+              ? T
+              : never
+        : // 如果不是精确键，检查通配符匹配
+          WildcardEvents<Events, T> extends infer MatchedEvents
+          ? MatchedEvents extends Record<string, any>
+              ? // 获取所有非全局通配符的匹配键
+                Exclude<keyof MatchedEvents, "*" | "**"> extends infer NonGlobalKeys
+                  ? NonGlobalKeys extends never
+                      ? // 如果没有非全局通配符匹配，检查全局通配符
+                        keyof MatchedEvents extends "*" | "**"
+                          ? MatchedEvents[keyof MatchedEvents] extends FastMessagePayload<any>
+                              ? T
+                              : never
+                          : never
+                      : // 如果有非全局通配符匹配，检查它们的值类型
+                        CheckWildcardMatch<MatchedEvents, T>
+                  : never
+              : never
+          : never;
 
-// 调试类型：验证 WildcardEvents 的行为
-type d = WildcardEvents<TransformedWildcardEvents, "users/a/b">;
-type dKeys = keyof d; // 应该包含 "users/*/*" 和其他匹配的模式
-type dKeysExcluded = Exclude<dKeys, "*" | "**">; // 排除全局通配符
-
-// 测试 IsTransformedKey
-type IsTransformedKeyTest1 = IsTransformedKey<TransformedWildcardEvents, "users/a/b">; // 应该是 "users/a/b"
-type IsTransformedKeyTest2 = IsTransformedKey<TransformedWildcardEvents, "xa/b">; // 应该是 never（只匹配 "*"）
-type IsTransformedKeyTest3 = IsTransformedKey<TransformedWildcardEvents, "users/123/online">; // 应该是 "users/123/online"
-type IsTransformedKeyTest4 = IsTransformedKey<TransformedWildcardEvents, "posts/1/view">; // 应该是 "posts/1/view"
-type IsTransformedKeyTest5 = IsTransformedKey<TransformedWildcardEvents, "posts/1/view">; // 应该是 "posts/1/view"
-type IsTransformedKeyTest6 = IsTransformedKey<TransformedWildcardEvents, "**">; // 应该是  **
-type IsTransformedKeyTest7 = IsTransformedKey<TransformedWildcardEvents, "*">; // 应该是  * 
-type IsTransformedKeyTest8 = IsTransformedKey<TransformedWildcardEvents, "a">; // 应该是  never
-
-export type GetTransformedKey<Events extends Record<string, any>, T extends string> =
-    T extends IsTransformedKey<Events, T> ? ClosestWildcardEvents<Events, T> : never;
-
-function test<T extends string = keyof TransformedWildcardEvents>(
-    type: T,
-): T extends IsTransformedKey<TransformedWildcardEvents, T>
-    ? RecordValues<ClosestWildcardEvents<TransformedWildcardEvents, T>>
-    : 2 {
-    return 1 as any;
-}
-type userV = RecordValues<ClosestWildcardEvents<TransformedWildcardEvents, "users/a/b">> 
-type userEvent = PickPayload<RecordValues<ClosestWildcardEvents<TransformedWildcardEvents, "users/a/b">>>
-// 测试用例
-type f = IsTransformedKey<TransformedWildcardEvents, "posts/x/y/z">
-const a = test("users/a/b"); // 预期类型: 1 (匹配 "users/*/*")
-const d = test("a"); // 预期类型: 1 (匹配 "users/*/*")
-type dd = keyof typeof d;
-const b = test("xa/b"); // 预期类型: 2 (只匹配 "*"，被排除)
-const c = test("users/123/online"); // 预期类型: 1 (匹配 "users/*/online")
-const d_test = test("posts/x/y/z"); // 预期类型: 1 (匹配 "posts/*/view")
-
-// 验证类型：
-// typeof a 应该是 1
-// typeof b 应该是 2
-// typeof c 应该是 1
-// typeof d_test 应该是 1
+export type { IsAny } from "./utils";

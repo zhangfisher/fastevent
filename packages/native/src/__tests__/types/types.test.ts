@@ -10,6 +10,7 @@ import {
     AssertFastMessage as NotPayload,
     Expand,
     FastEventMeta,
+    ExtendWildcardEvents,
 } from "../../types";
 
 describe("types", () => {
@@ -168,13 +169,22 @@ describe("types", () => {
                 age: 18,
                 address: "beijing",
             },
-        });    
-        type Meta = Expand<Record<string, any> & FastEventMeta & CustomMeta >
+        });
+        type Meta = Expand<Record<string, any> & FastEventMeta & CustomMeta>;
+        type fff = ExtendWildcardEvents<{
+            click: {
+                x: number;
+                y: number;
+            };
+            mousemove: boolean;
+            scroll: number;
+            focus: string;
+        }>;
         type cases = [
             Expect<Equal<typeof emitter.types.events, CustomEvents>>,
             Expect<
                 Equal<
-                      typeof emitter.types.meta,
+                    typeof emitter.types.meta,
                     {
                         [x: string]: any;
                         x: number;
@@ -187,7 +197,6 @@ describe("types", () => {
         ];
     });
 });
-
 
 // class A{
 //     types = null as unknown as {

@@ -12,7 +12,7 @@ type ContainsWildcard<T extends string> = T extends `${string}/*/${string}`
           : false;
 
 // 将通配符替换为 ${string}
-type ReplaceWildcard<T extends string> = T extends `*${infer Rest}`
+export type ReplaceWildcard<T extends string> = T extends `*${infer Rest}`
     ? `${string}${ReplaceWildcard<Rest>}`
     : T extends `${infer Head}*${infer Rest}`
       ? `${Head}${string}${ReplaceWildcard<Rest>}`

@@ -1,9 +1,14 @@
-import { FastEventScope, FastEventScopeExtend, type FastEventScopeOptions } from "./scope";
+import {
+    FastEventScope,
+    FastEventScopeExtend,
+    IFastEventScope,
+    type FastEventScopeOptions,
+} from "./scope";
 import {
     TypedFastEventListener,
     FastEventOptions,
     FastListeners,
-    FastListenerNode,
+    FastEventListenerNode,
     FastEventSubscriber,
     FastEventListenOptions,
     TypedFastEventMessage,
@@ -11,7 +16,7 @@ import {
     Fallback,
     FastEventEmitMessage,
     FastEventListenerArgs,
-    FastListenerMeta,
+    FastEventListenerMeta,
     FastEvents,
     DeepPartial,
     FastEventMeta,
@@ -27,6 +32,9 @@ import {
     ClosestWildcardEvents,
     Class,
     IsTransformedKey,
+    ExtendWildcardEvents,
+    MutableEvents,
+    FastEventCommonListener,
 } from "./types";
 import { parseEmitArgs } from "./utils/parseEmitArgs";
 import { isPathMatched } from "./utils/isPathMatched";
@@ -34,9 +42,8 @@ import { removeItem } from "./utils/removeItem";
 import { renameFn } from "./utils/renameFn";
 import { isFunction } from "./utils/isFunction";
 import { ScopeEvents } from "./types";
-import { FastListenerPipe, queue } from "./pipes";
+import { FastListenerPipe } from "./pipes";
 import { AbortError, CancelError, FastEventDirectives } from "./consts";
-import { FastEventSubscriberClass } from "./subscriber";
 import { parseScopeArgs } from "./utils/parseScopeArgs";
 import { FastListenerExecutor, parallel } from "./executors";
 import { expandEmitResults } from "./utils/expandEmitResults";
@@ -84,7 +91,7 @@ export class FastEvent<
 
     // 子类通过：declare types : { } & typeof FastEvent.types  扩展类型
     types = null as unknown as {
-        events: AllEvents;
+        events: ExtendWildcardEvents<AllEvents>;
         meta: Expand<Record<string, any> & FastEventMeta & Meta>;
         context: Expand<Fallback<Context, FastEvent<AllEvents, Meta, Context>>>;
         message: TypedFastEventMessageOptional<
@@ -171,7 +178,7 @@ export class FastEvent<
         parts: string[],
         listener: TypedFastEventListener<any, any>,
         options: Required<FastEventListenOptions>,
-    ): [FastListenerNode | undefined, number] {
+    ): [FastEventListenerNode | undefined, number] {
         const { count, prepend } = options;
         let index: number = 0;
         const node = this._forEachNodes(parts, (node) => {
@@ -181,7 +188,7 @@ export class FastEvent<
                 0,
                 options.tag,
                 options.flags,
-            ] as unknown as FastListenerMeta;
+            ] as unknown as FastEventListenerMeta;
             if (prepend) {
                 node.__listeners.splice(0, 0, newListener);
                 index = 0;
@@ -210,8 +217,8 @@ export class FastEvent<
      */
     private _forEachNodes(
         parts: string[],
-        callback: (node: FastListenerNode, parent: FastListenerNode) => void,
-    ): FastListenerNode | undefined {
+        callback: (node: FastEventListenerNode, parent: FastEventListenerNode) => void,
+    ): FastEventListenerNode | undefined {
         if (parts.length === 0) return;
         let current = this.listeners;
         for (let i = 0; i < parts.length; i++) {
@@ -240,7 +247,7 @@ export class FastEvent<
      * @description 遍历节点的监听器列表,移除所有匹配的监听器。支持移除普通函数和数组形式的监听器
      */
     private _removeListener(
-        node: FastListenerNode,
+        node: FastEventListenerNode,
         path: string[],
         listener: TypedFastEventListener<any, any, any>,
     ): void {
@@ -282,7 +289,7 @@ export class FastEvent<
                 return r;
             }
         }
-    } 
+    }
     /**
      * 注册事件监听器
      * @param type - 事件类型，支持以下格式：
@@ -306,66 +313,96 @@ export class FastEvent<
      * // 限制触发次数
      * emitter.on('event', handler, { count: 3 });
      * ```
-     */ 
-     
-   
-
-    public on<T extends string = Exclude<keyof AllEvents,number | symbol>>(
+     */
+    // 返回迭代器
+    public on<T extends string = Exclude<keyof AllEvents, number | symbol>>(
         type: T,
         options?: FastEventListenOptions<AllEvents, Meta>,
-     ): T extends IsTransformedKey<AllEvents, T> 
-        ? FastEventIterator<PickPayload<RecordValues<ClosestWildcardEvents<AllEvents, Exclude<T, number | symbol>>>>>
+    ): T extends IsTransformedKey<AllEvents, T>
+        ? FastEventIterator<
+              PickPayload<
+                  RecordValues<ClosestWildcardEvents<AllEvents, Exclude<T, number | symbol>>>
+              >
+          >
         : FastEventIterator<TypedFastEventMessage<Record<T, AllEvents[T]>, Meta>>;
-        
-    public on (
-        type: '**',
-        options?: FastEventListenOptions<AllEvents, Meta>,
-    ):  FastEventIterator<TypedFastEventMessage<AllEvents , Meta>>;
-    // 处理标准事件类型
-    public on<T extends keyof OmitTransformedEvents<AllEvents>>(
-        type: T,
-        listener: TypedFastEventListener<
-            Exclude<T, number | symbol>,
-            AllEvents[T],
-            Meta,
-            Fallback<Context, typeof this>
-        >,
-        options?: FastEventListenOptions<AllEvents, Meta>,
-    ): FastEventSubscriber;
 
-    // 处理使用 NotPayload 标识的事件类型
-    public on<T extends keyof PickTransformedEvents<AllEvents>>(
-        type: T,
-        listener: (
-            message: PickPayload<
-                RecordValues<ClosestWildcardEvents<AllEvents, Exclude<T, number | symbol>>>
-            >,
-            args: FastEventListenerArgs<Meta>,
-        ) => any | Promise<any>,
-        options?: FastEventListenOptions<AllEvents, Meta>,
-    ): FastEventSubscriber;
-
-    // 处理通配符事件类型
-    public on<T extends Exclude<string, Types>>(
-        type: T,
-        listener: TypedFastEventAnyListener<
-            ClosestWildcardEvents<AllEvents, T>,
-            Meta,
-            Fallback<Context, typeof this>
-        >,
-        options?: FastEventListenOptions<AllEvents, Meta>,
-    ): FastEventSubscriber;
-
-    // 处理全局监听
     public on(
         type: "**",
-        listener: TypedFastEventAnyListener<
-            Record<string, any>,
+        options?: FastEventListenOptions<AllEvents, Meta>,
+    ): FastEventIterator<TypedFastEventMessage<MutableEvents<AllEvents>, Meta>>;
+
+    // 指定监听器
+    public on<T extends string = Exclude<keyof AllEvents, number | symbol>>(
+        type: T,
+        listener: FastEventCommonListener<
+            T extends IsTransformedKey<AllEvents, T>
+                ? PickPayload<
+                      RecordValues<ClosestWildcardEvents<AllEvents, Exclude<T, number | symbol>>>
+                  >
+                : TypedFastEventMessage<T extends "**" ? AllEvents : Record<T, AllEvents[T]>, Meta>,
             Meta,
             Fallback<Context, typeof this>
         >,
-        options?: FastEventListenOptions<AllEvents, Meta>,
+        options?: FastEventListenOptions,
     ): FastEventSubscriber;
+    public on<T extends string = string>(
+        type: T,
+        listener: FastEventCommonListener<
+            T extends IsTransformedKey<AllEvents, T>
+                ? PickPayload<
+                      RecordValues<ClosestWildcardEvents<AllEvents, Exclude<T, number | symbol>>>
+                  >
+                : TypedFastEventMessage<T extends "**" ? AllEvents : Record<T, AllEvents[T]>, Meta>,
+            Meta,
+            Fallback<Context, typeof this>
+        >,
+        options?: FastEventListenOptions,
+    ): FastEventSubscriber;
+    // // 处理标准事件类型
+    // public on<T extends keyof OmitTransformedEvents<AllEvents>>(
+    //     type: T,
+    //     listener: TypedFastEventListener<
+    //         Exclude<T, number | symbol>,
+    //         AllEvents[T],
+    //         Meta,
+    //         Fallback<Context, typeof this>
+    //     >,
+    //     options?: FastEventListenOptions<AllEvents, Meta>,
+    // ): FastEventSubscriber;
+
+    // // 处理使用 NotPayload 标识的事件类型
+    // public on<T extends keyof PickTransformedEvents<AllEvents>>(
+    //     type: T,
+    //     listener: (
+    //         message: PickPayload<
+    //             RecordValues<ClosestWildcardEvents<AllEvents, Exclude<T, number | symbol>>>
+    //         >,
+    //         args: FastEventListenerArgs<Meta>,
+    //     ) => any | Promise<any>,
+    //     options?: FastEventListenOptions<AllEvents, Meta>,
+    // ): FastEventSubscriber;
+
+    // // 处理通配符事件类型
+    // public on<T extends Exclude<string, Types>>(
+    //     type: T,
+    //     listener: TypedFastEventAnyListener<
+    //         ClosestWildcardEvents<AllEvents, T>,
+    //         Meta,
+    //         Fallback<Context, typeof this>
+    //     >,
+    //     options?: FastEventListenOptions<AllEvents, Meta>,
+    // ): FastEventSubscriber;
+
+    // // 处理全局监听
+    // public on(
+    //     type: "**",
+    //     listener: TypedFastEventAnyListener<
+    //         Record<string, any>,
+    //         Meta,
+    //         Fallback<Context, typeof this>
+    //     >,
+    //     options?: FastEventListenOptions<AllEvents, Meta>,
+    // ): FastEventSubscriber;
     public on(): any {
         const type = arguments[0] as string;
 
@@ -689,7 +726,7 @@ export class FastEvent<
      */
     private _emitRetainMessage(
         type: string,
-        listenerNode: FastListenerNode | undefined,
+        listenerNode: FastEventListenerNode | undefined,
         index: number,
     ) {
         let messages = [] as TypedFastEventMessage[];
@@ -729,9 +766,9 @@ export class FastEvent<
      * - 多层通配: 'a.**'
      */
     private _traverseToPath(
-        node: FastListenerNode,
+        node: FastEventListenerNode,
         parts: string[],
-        callback: (node: FastListenerNode) => void,
+        callback: (node: FastEventListenerNode) => void,
         index: number = 0,
         lastFollowing?: boolean,
     ): void {
@@ -760,11 +797,11 @@ export class FastEvent<
     }
 
     private _traverseListeners(
-        node: FastListenerNode,
+        node: FastEventListenerNode,
         entry: string[],
-        callback: (path: string[], node: FastListenerNode) => void,
+        callback: (path: string[], node: FastEventListenerNode) => void,
     ): void {
-        let entryNode: FastListenerNode = node;
+        let entryNode: FastEventListenerNode = node;
         // 如果指定了entry路径，则按照路径遍历
         if (entry && entry.length > 0) {
             this._traverseToPath(node, entry, (node) => {
@@ -772,15 +809,18 @@ export class FastEvent<
             });
         }
         const traverseNodes = (
-            node: FastListenerNode,
-            callback: (path: string[], node: FastListenerNode) => void,
+            node: FastEventListenerNode,
+            callback: (path: string[], node: FastEventListenerNode) => void,
             parentPath: string[],
         ) => {
             callback(parentPath, node);
             for (let [key, childNode] of Object.entries(node)) {
                 if (key.startsWith("__")) continue;
                 if (childNode) {
-                    traverseNodes(childNode as FastListenerNode, callback, [...parentPath, key]);
+                    traverseNodes(childNode as FastEventListenerNode, callback, [
+                        ...parentPath,
+                        key,
+                    ]);
                 }
             }
         };
@@ -887,14 +927,14 @@ export class FastEvent<
      * 3. 更新监听器的执行次数,并移除达到执行次数限制的监听器
      */
     private _executeListeners(
-        nodes: FastListenerNode[],
+        nodes: FastEventListenerNode[],
         message: TypedFastEventMessage,
         args: FastEventListenerArgs<Meta>,
-        filter?: (listener: FastListenerMeta, node: FastListenerNode) => boolean,
+        filter?: (listener: FastEventListenerMeta, node: FastEventListenerNode) => boolean,
     ): any[] {
         if (!nodes || nodes.length === 0) return [];
         // 1. 遍历所有监听器任务,即需要执行的监听器函数[]
-        const listeners = nodes.reduce<[FastListenerMeta, number, FastListenerMeta[]][]>(
+        const listeners = nodes.reduce<[FastEventListenerMeta, number, FastEventListenerMeta[]][]>(
             (result, node) => {
                 return result.concat(
                     node.__listeners
@@ -904,9 +944,9 @@ export class FastEvent<
                         })
                         .map((listener, i) => {
                             return [listener, i, node.__listeners] as [
-                                FastListenerMeta,
+                                FastEventListenerMeta,
                                 number,
-                                FastListenerMeta[],
+                                FastEventListenerMeta[],
                             ];
                         }),
                 );
@@ -945,10 +985,10 @@ export class FastEvent<
      * 减少侦听器的执行次数
      * @param listeners
      */
-    _decListenerExecCount(listeners: [FastListenerMeta, number, FastListenerMeta[]][]) {
+    _decListenerExecCount(listeners: [FastEventListenerMeta, number, FastEventListenerMeta[]][]) {
         // 由于可能涉及到删除修改__listeners，所以需要倒序， 从后往前删除
         for (let i = listeners.length - 1; i >= 0; i--) {
-            const meta = listeners[i][0] as FastListenerMeta;
+            const meta = listeners[i][0] as FastEventListenerMeta;
             meta[2]++; // 实际执行的次数
             // =0不限执行次数，>0时代表执行次数限制
             if (meta[1] > 0 && meta[1] <= meta[2]) {
@@ -962,9 +1002,9 @@ export class FastEvent<
      * @param type - 事件类型，必须是 AllEvents 的键
      * @returns 包含指定类型的所有监听器元数据的数组
      */
-    getListeners(type: keyof AllEvents): FastListenerMeta[];
-    getListeners(type: string): FastListenerMeta[] {
-        const nodes: FastListenerNode[] = [];
+    getListeners(type: keyof AllEvents): FastEventListenerMeta[];
+    getListeners(type: string): FastEventListenerMeta[] {
+        const nodes: FastEventListenerNode[] = [];
         const parts = type.split(this._delimiter);
         this._traverseToPath(this.listeners, parts, (node) => {
             nodes.push(node);
@@ -1094,7 +1134,7 @@ export class FastEvent<
             this.retainedMessages.set(message.type, message);
         }
         const results: any[] = [];
-        const nodes: FastListenerNode[] = [];
+        const nodes: FastEventListenerNode[] = [];
 
         this._traverseToPath(this.listeners, parts, (node) => {
             nodes.push(node);
@@ -1268,12 +1308,12 @@ export class FastEvent<
             let subscriber: FastEventSubscriber;
             const listener = (message: TypedFastEventMessage<AllEvents, Meta>) => {
                 clearTimeout(tid);
-                subscriber && subscriber.off();
+                subscriber?.off();
                 resolve(message);
             };
             if (timeout && timeout > 0) {
                 tid = setTimeout(() => {
-                    subscriber && subscriber.off();
+                    subscriber?.off();
                     reject(new Error("wait for event<" + type + "> is timeout"));
                 }, timeout);
             }
@@ -1327,19 +1367,18 @@ export class FastEvent<
     // 不会创建新的类型实例，而是通过 bind 方法将实例绑定到 FastEvent
     scope<
         P extends string = string,
-        ScopeObject extends FastEventScope<any, any, any> = FastEventScope<any, any, any>,
+        ScopeObject extends IFastEventScope<Record<string, any>, any, any> = FastEventScope<
+            Record<string, any>,
+            any,
+            any
+        >,
     >(
         prefix: P,
         scopeObj: ScopeObject,
         options?: DeepPartial<FastEventScopeOptions<Meta>>,
     ): FastEventScopeExtend<AllEvents, P, ScopeObject, Meta>;
-    scope<P extends string>(
-        prefix: P,
-        options?: DeepPartial<FastEventScopeOptions<Meta, Context>>,
-    ): FastEventScope<ScopeEvents<AllEvents, P>, Meta, Context>;
-
     scope<
-        E extends Record<string, any> = Record<string, any>,
+        E = unknown, //用于扩展事件
         P extends string = string,
         M extends Record<string, any> = Record<string, any>,
         C = Context,
@@ -1347,7 +1386,6 @@ export class FastEvent<
         prefix: P,
         options?: DeepPartial<FastEventScopeOptions<Meta & M, C>>,
     ): FastEventScope<ScopeEvents<AllEvents, P> & E, Meta & M, C>;
-
     scope() {
         const [prefix, scopeObj, options] = parseScopeArgs(
             arguments,
