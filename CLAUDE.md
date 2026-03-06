@@ -49,6 +49,9 @@ cd packages/native && bun run build
 
 ### 测试
 
+- 单元测试使用Bun Test API
+- 类型测试使用@type-challenges/utils断言库，保存在@packages\native\src\__tests__\types
+
 ```bash
 # 运行所有测试
 bun run test

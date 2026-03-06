@@ -11,13 +11,43 @@ type ContainsWildcard<T extends string> = T extends `${string}/*/${string}`
           ? true
           : false;
 
-// 将通配符替换为 ${string}
-export type ReplaceWildcard<T extends string> = T extends `*${infer Rest}`
-    ? `${string}${ReplaceWildcard<Rest>}`
-    : T extends `${infer Head}*${infer Rest}`
-      ? `${Head}${string}${ReplaceWildcard<Rest>}`
-      : T;
+// 辅助类型：分割字符串为数组
+type Split<S extends string, Delimiter extends string = '/'> =
+    S extends `${infer Head}${Delimiter}${infer Tail}`
+        ? [Head, ...Split<Tail, Delimiter>]
+        : [S];
 
+// 辅助类型：处理单个段，如果是 * 则替换为 ${string}
+type ProcessSegment<S extends string> = S extends '*' ? `${string}` : S;
+
+// 辅助类型：处理数组中的每一项
+type ProcessSegments<Arr extends string[]> =
+    Arr extends []
+        ? []
+        : Arr extends [infer First extends string, ...infer Rest extends string[]]
+          ? [ProcessSegment<First>, ...ProcessSegments<Rest>]
+          : [];
+
+// 辅助类型：将数组合并为字符串
+type Join<Arr extends string[], Delimiter extends string = '/'> =
+    Arr extends []
+        ? ''
+        : Arr extends [infer First extends string]
+          ? First
+          : Arr extends [infer First extends string, ...infer Rest extends string[]]
+            ? `${First}${Delimiter}${Join<Rest, Delimiter>}`
+            : string;
+
+// 将通配符替换为 ${string}
+// 新思路：
+// 1. 先处理 **（多级通配符）
+// 2. 然后按 / 分割，对每一段检查，如果是 * 则替换为 ${string}
+// 3. 最后合并回去
+export type ReplaceWildcard<T extends string> =
+    T extends `${infer Head}**${infer Rest}`
+        ? `${ReplaceWildcard<Head>}${string}${ReplaceWildcard<Rest>}`
+        : Join<ProcessSegments<Split<T>>>;
+  
 // 提取所有包含通配符的键
 export type WildcardKeys<T> = {
     [K in keyof T]: K extends string ? (ContainsWildcard<K> extends true ? K : never) : never;

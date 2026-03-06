@@ -625,7 +625,7 @@ export type OmitTransformedEvents<T extends Record<string, any>> = {
 };
 
 export type TransformedEvents<Events extends Record<string, any>> = {
-    [K in keyof ExtendWildcardEvents<Events>]: NotPayload<ExtendWildcardEvents<Events>[K]>;
+    [K in keyof Events]: NotPayload<Events[K]>;
 };
 
 export * from "./WildcardEvents";
