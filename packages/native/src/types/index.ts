@@ -18,9 +18,6 @@ export type FastEventMessage<
     meta?: M & Partial<FastEventMeta>;
 } & FastEventMessageExtends;
 
-type EnsureDefault<T> = T extends FastEventMessageExtends
-    ? FastEventMessageExtends & Record<string, any>
-    : T;
 export type TypedFastEventMessage<
     Events extends Record<string, any> = Record<string, any>,
     M = any,
@@ -591,7 +588,7 @@ export type AssertFastMessage<M> = {
     __IS_FAST_MESSAGE__: true;
 };
 
-export type NotPayload<M> = FastMessagePayload<M>;
+export type NotPayload<M> = M extends FastMessagePayload ? M : FastMessagePayload<M>;
 
 export type PickPayload<M> = M extends FastMessagePayload ? M["type"] : M;
 

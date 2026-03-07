@@ -335,11 +335,9 @@ export class FastEvent<
         type: T,
         listener: FastEventCommonListener<
             T extends IsTransformedKey<AllEvents, T>
-                ? PickPayload<
-                      RecordValues<GetClosestEvents<AllEvents, Exclude<T, number | symbol>>>
-                  >
+                ? PickPayload<RecordValues<GetClosestEvents<Events, T>>>
                 : TypedFastEventMessage<
-                      T extends "**" ? Events : GetClosestEvents<Events, T>,
+                      T extends "**" ? Events : GetClosestEvents<Events, T, Record<T, any>>,
                       Meta
                   >,
             Meta,

@@ -57,12 +57,6 @@ type MatchPatternArray<InputArr extends string[], PatternArr extends string[]> =
 export type MatchPattern<T extends string, Pattern extends string> =
     MatchPatternArray<Split<T>, Split<Pattern>> extends true ? { [K in Pattern]: any } : never;
 
-type Fallback<T, F> = [T] extends [never]
-    ? F // 处理never情况
-    : T extends undefined
-      ? F // 处理undefined情况
-      : T; // 否则返回原类型
-
 /**
  *
  * 返回所有匹配事件的类型
@@ -87,8 +81,6 @@ type FirstObjectItem<T extends Record<string, any>> = Pick<
     T,
     Keys<T> extends any[] ? Keys<T>[0] : never
 >;
-
-type isEmpty<T extends Record<string, any>> = keyof T extends never ? true : false;
 
 // 获取包含通配符的键
 type GetWildcardItems<T extends Record<string, any>> = {
@@ -194,8 +186,15 @@ type GetKeysWithFixedSegments<T extends Record<string, any>, N extends number> =
     [K in keyof T as PathFixedSegmentsCount<K & string> extends N ? K : never]: T[K];
 };
 
+type UseDefault<T, D extends Record<string, any>> = [T] extends [never] ? D : T;
 // 只返回最相近匹配的事件类型
 export type GetClosestEvents<
     Events extends Record<string, any>,
     T extends string,
-> = SelectByMaxFixedSegments<MergeUnion<GetMatchedEvents<Events, T>>>;
+    Default extends Record<string, any> = never,
+> = UseDefault<
+    GetMatchedEvents<Events, T> extends never
+        ? never
+        : SelectByMaxFixedSegments<MergeUnion<GetMatchedEvents<Events, T>>>,
+    Default
+>;
