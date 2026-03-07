@@ -2,7 +2,7 @@ import type { FastListenerExecutor } from "../executors/types";
 import { type FastListenerPipe } from "../pipes/types";
 import { ExpandWildcard, ReplaceWildcard } from "./ExpandWildcard";
 import { IsAny } from "./utils";
-import { WildcardEvents } from "./WildcardEvents";
+import { GetMatchedEvents } from "./WildcardEvents";
 
 // 用来扩展全局Meta类型
 export interface FastEventMeta {}
@@ -18,6 +18,9 @@ export type FastEventMessage<
     meta?: M & Partial<FastEventMeta>;
 } & FastEventMessageExtends;
 
+type EnsureDefault<T> = T extends FastEventMessageExtends
+    ? FastEventMessageExtends & Record<string, any>
+    : T;
 export type TypedFastEventMessage<
     Events extends Record<string, any> = Record<string, any>,
     M = any,
@@ -108,7 +111,7 @@ export type FastEventCommonMessage<Events extends Record<string, any>> = {
  */
 export type FastEventWildcardMessage<Events extends Record<string, any>, T extends string> = {
     type: T;
-    payload: PickPayload<RecordValues<WildcardEvents<Events, T>>>;
+    payload: PickPayload<RecordValues<GetMatchedEvents<Events, T>>>;
 };
 
 // 只针对指定类型
@@ -596,7 +599,7 @@ export type AtPayloads<Events extends Record<string, any>> = {
     [K in keyof Events]: PickPayload<Events[K]>;
 };
 
-type RemoveEmptyObject<T extends Record<string, any>> = T extends (infer O) & {} ? O : T;
+type RemoveEmptyObject<T extends Record<string, any>> = T extends {} & (infer O) ? O : T;
 
 /**
  * 扩展通配符事件类型
@@ -616,7 +619,6 @@ export type ExtendWildcardEvents<Events extends Record<string, any>> = RemoveEmp
             : never]: Events[K];
     }
 >;
-
 export type PickTransformedEvents<T extends Record<string, any>> = ExpandWildcard<{
     [key in keyof T as T[key] extends FastMessagePayload<any> ? key : never]: T[key];
 }>;
@@ -624,9 +626,35 @@ export type OmitTransformedEvents<T extends Record<string, any>> = {
     [key in keyof T as T[key] extends FastMessagePayload ? never : key]: T[key];
 };
 
+// 将事件类型所有成员转换为NotPayload ExtendWildcardEvents
 export type TransformedEvents<Events extends Record<string, any>> = {
     [K in keyof Events]: NotPayload<Events[K]>;
 };
+
+// 从 TransformedEvents 中获取事件类型（支持通配符匹配）
+export type GetEventType<TransformedEvents extends Record<string, any>, T extends string> =
+    // 使用 WildcardEvents 来匹配事件键
+    GetMatchedEvents<TransformedEvents, T> extends infer Matched
+        ? Matched extends Record<string, any>
+            ? // 单个匹配对象，提取值类型
+              Matched[keyof Matched]
+            : // 联合类型，使用分发来提取每个成员的值
+              Matched extends any
+              ? Matched extends { [key: string]: infer Value }
+                  ? Value
+                  : never
+              : never
+        : never;
+
+// 专用的类型查询工具，使用原始事件类型
+export type GetMatchedEventPayload<Events extends Record<string, any>, T extends string> =
+    // 使用 WildcardEvents 来匹配事件，返回原始类型
+    GetMatchedEvents<Events, T> extends infer Matched
+        ? Matched extends { [key: string]: any }
+            ? // 匹配对象类型，提取值类型（会自动分发联合类型）
+              Matched[keyof Matched]
+            : never
+        : never;
 
 export * from "./WildcardEvents";
 export * from "./ScopeEvents";
@@ -677,7 +705,7 @@ export type IsTransformedKey<Events extends Record<string, any>, T extends strin
               ? T
               : never
         : // 如果不是精确键，检查通配符匹配
-          WildcardEvents<Events, T> extends infer MatchedEvents
+          GetMatchedEvents<Events, T> extends infer MatchedEvents
           ? MatchedEvents extends Record<string, any>
               ? // 获取所有非全局通配符的匹配键
                 Exclude<keyof MatchedEvents, "*" | "**"> extends infer NonGlobalKeys

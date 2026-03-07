@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 import { describe, test, expect } from "vitest";
 import type { Equal, Expect, NotAny } from "@type-challenges/utils";
-import { WildcardEvents, ClosestWildcardEvents } from "../../types";
+import { GetMatchedEvents, GetClosestEvents } from "../../types";
 import { FastEvent } from "../../event";
 
 describe("事件通配符匹配", () => {
@@ -12,9 +12,9 @@ describe("事件通配符匹配", () => {
             "c/c1/c2": boolean;
         };
         type cases = [
-            Expect<Equal<WildcardEvents<Events, "a">, { a: string }>>,
-            Expect<Equal<WildcardEvents<Events, "b/b1">, { "b/b1": number }>>,
-            Expect<Equal<WildcardEvents<Events, "c/c1/c2">, { "c/c1/c2": boolean }>>,
+            Expect<Equal<GetMatchedEvents<Events, "a">, { a: string }>>,
+            Expect<Equal<GetMatchedEvents<Events, "b/b1">, { "b/b1": number }>>,
+            Expect<Equal<GetMatchedEvents<Events, "c/c1/c2">, { "c/c1/c2": boolean }>>,
         ];
     });
     test("不匹配的情况", () => {
@@ -24,7 +24,7 @@ describe("事件通配符匹配", () => {
             "c/c1/c2": boolean;
         };
 
-        type cases = [Expect<Equal<WildcardEvents<Events, "a">, { a: any }>>];
+        type cases = [Expect<Equal<GetMatchedEvents<Events, "a">, { a: any }>>];
     });
     test("单层通配符匹配", () => {
         type Events = {
@@ -35,15 +35,15 @@ describe("事件通配符匹配", () => {
             "c/*": boolean;
         };
         type cases = [
-            Expect<Equal<WildcardEvents<Events, "a">, { a: any }>>,
-            Expect<Equal<WildcardEvents<Events, "a/x">, { "a/*": string }>>,
-            Expect<Equal<WildcardEvents<Events, "a/y">, { "a/*": string }>>,
-            Expect<Equal<WildcardEvents<Events, "a/z/x">, { "a/*/x": string }>>,
+            Expect<Equal<GetMatchedEvents<Events, "a">, { a: any }>>,
+            Expect<Equal<GetMatchedEvents<Events, "a/x">, { "a/*": string }>>,
+            Expect<Equal<GetMatchedEvents<Events, "a/y">, { "a/*": string }>>,
+            Expect<Equal<GetMatchedEvents<Events, "a/z/x">, { "a/*/x": string }>>,
 
-            Expect<Equal<WildcardEvents<Events, "b">, { b: any }>>,
-            Expect<Equal<WildcardEvents<Events, "b/x">, { "b/*": number }>>,
-            Expect<Equal<WildcardEvents<Events, "b/y">, { "b/*": number }>>,
-            Expect<Equal<WildcardEvents<Events, "b/z/y">, { "b/*/y": number }>>,
+            Expect<Equal<GetMatchedEvents<Events, "b">, { b: any }>>,
+            Expect<Equal<GetMatchedEvents<Events, "b/x">, { "b/*": number }>>,
+            Expect<Equal<GetMatchedEvents<Events, "b/y">, { "b/*": number }>>,
+            Expect<Equal<GetMatchedEvents<Events, "b/z/y">, { "b/*/y": number }>>,
         ];
     });
     test("同时多个匹配的情况", () => {
@@ -51,13 +51,13 @@ describe("事件通配符匹配", () => {
             "rooms/*/join": string;
             "rooms/*/*": number;
         };
-        type a = ClosestWildcardEvents<Events, "rooms/a/join">;
-        type b = ClosestWildcardEvents<Events, "rooms/a/xx">;
+        type a = GetClosestEvents<Events, "rooms/a/join">;
+        type b = GetClosestEvents<Events, "rooms/a/xx">;
 
         type cases = [
             Expect<
                 Equal<
-                    ClosestWildcardEvents<Events, "rooms/a/join">,
+                    GetClosestEvents<Events, "rooms/a/join">,
                     {
                         "rooms/*/join": string;
                     }
@@ -65,7 +65,7 @@ describe("事件通配符匹配", () => {
             >,
             Expect<
                 Equal<
-                    ClosestWildcardEvents<Events, "rooms/b/x">,
+                    GetClosestEvents<Events, "rooms/b/x">,
                     {
                         "rooms/*/*": number;
                     }
@@ -82,12 +82,12 @@ describe("事件通配符匹配", () => {
             "a/*/x/*/x/*/x": 4;
         };
         type cases = [
-            Expect<Equal<WildcardEvents<Events, "a">, { a: any }>>,
-            Expect<Equal<WildcardEvents<Events, "a/1">, { "a/*": 1 }>>,
-            Expect<Equal<WildcardEvents<Events, "a/1/x">, { "a/*/x": 2 }>>,
-            Expect<Equal<WildcardEvents<Events, "a/1/2/x">, { "a/*/*/x": 2 }>>,
-            Expect<Equal<WildcardEvents<Events, "a/1/x/2/x">, { "a/*/x/*/x": 3 }>>,
-            Expect<Equal<WildcardEvents<Events, "a/1/x/2/x/3/x">, { "a/*/x/*/x/*/x": 4 }>>,
+            Expect<Equal<GetMatchedEvents<Events, "a">, { a: any }>>,
+            Expect<Equal<GetMatchedEvents<Events, "a/1">, { "a/*": 1 }>>,
+            Expect<Equal<GetMatchedEvents<Events, "a/1/x">, { "a/*/x": 2 }>>,
+            Expect<Equal<GetMatchedEvents<Events, "a/1/2/x">, { "a/*/*/x": 2 }>>,
+            Expect<Equal<GetMatchedEvents<Events, "a/1/x/2/x">, { "a/*/x/*/x": 3 }>>,
+            Expect<Equal<GetMatchedEvents<Events, "a/1/x/2/x/3/x">, { "a/*/x/*/x/*/x": 4 }>>,
         ];
     });
     test("未尾通配符匹配", () => {
@@ -100,13 +100,13 @@ describe("事件通配符匹配", () => {
             "a/*/*/*/*/*/*": 6;
         };
         type cases = [
-            Expect<Equal<WildcardEvents<Events, "a">, { a: any }>>,
-            Expect<Equal<WildcardEvents<Events, "a/1">, { "a/*": 1 }>>,
-            Expect<Equal<WildcardEvents<Events, "a/1/2">, { "a/*/*": 2 }>>,
-            Expect<Equal<WildcardEvents<Events, "a/1/2/3">, { "a/*/*/*": 3 }>>,
-            Expect<Equal<WildcardEvents<Events, "a/1/2/3/4">, { "a/*/*/*/*": 4 }>>,
-            Expect<Equal<WildcardEvents<Events, "a/1/2/3/4/5">, { "a/*/*/*/*/*": 5 }>>,
-            Expect<Equal<WildcardEvents<Events, "a/1/2/3/4/5/6">, { "a/*/*/*/*/*/*": 6 }>>,
+            Expect<Equal<GetMatchedEvents<Events, "a">, { a: any }>>,
+            Expect<Equal<GetMatchedEvents<Events, "a/1">, { "a/*": 1 }>>,
+            Expect<Equal<GetMatchedEvents<Events, "a/1/2">, { "a/*/*": 2 }>>,
+            Expect<Equal<GetMatchedEvents<Events, "a/1/2/3">, { "a/*/*/*": 3 }>>,
+            Expect<Equal<GetMatchedEvents<Events, "a/1/2/3/4">, { "a/*/*/*/*": 4 }>>,
+            Expect<Equal<GetMatchedEvents<Events, "a/1/2/3/4/5">, { "a/*/*/*/*/*": 5 }>>,
+            Expect<Equal<GetMatchedEvents<Events, "a/1/2/3/4/5/6">, { "a/*/*/*/*/*/*": 6 }>>,
         ];
     });
     test("多级通配符匹配", () => {
@@ -119,14 +119,14 @@ describe("事件通配符匹配", () => {
             "a/b/c/d/e/**": 5;
         };
 
-        type s = WildcardEvents<Events, "a/b/c1/x">;
+        type s = GetMatchedEvents<Events, "a/b/c1/x">;
 
         type cases = [
-            Expect<Equal<WildcardEvents<Events, "a">, { a: any }>>,
-            Expect<Equal<WildcardEvents<Events, "a/x">, { "a/*": 1 }>>,
-            Expect<Equal<WildcardEvents<Events, "a/b/x">, { "a/b/**": 2 }>>,
-            Expect<Equal<WildcardEvents<Events, "a/b/x/y">, { "a/b/**": 2 }>>,
-            Expect<Equal<WildcardEvents<Events, "a/b/x/y/z">, { "a/b/**": 2 }>>,
+            Expect<Equal<GetMatchedEvents<Events, "a">, { a: any }>>,
+            Expect<Equal<GetMatchedEvents<Events, "a/x">, { "a/*": 1 }>>,
+            Expect<Equal<GetMatchedEvents<Events, "a/b/x">, { "a/b/**": 2 }>>,
+            Expect<Equal<GetMatchedEvents<Events, "a/b/x/y">, { "a/b/**": 2 }>>,
+            Expect<Equal<GetMatchedEvents<Events, "a/b/x/y/z">, { "a/b/**": 2 }>>,
         ];
     });
     test("订阅通配符事件", () => {

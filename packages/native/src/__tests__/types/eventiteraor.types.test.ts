@@ -3,7 +3,7 @@ import { describe, test, expect } from "vitest";
 import type { Equal, Expect } from "@type-challenges/utils";
 import { FastEvent } from "../../event";
 import {
-    ClosestWildcardEvents,
+    GetClosestEvents,
     NotPayload,
     PickPayload,
     PickTransformedEvents,
@@ -57,7 +57,6 @@ describe("FastEvent 使用异步迭代器监听事件类型系统测试", () => 
         "devices/*/status": NotPayload<"online" | "offline">;
         "devices/**": NotPayload<number>;
         "*": NotPayload<string>; // 全局通配符
-        // "**": NotPayload<any>; // 双星通配符
     }
 
     describe("FastEvent - 不含通配符事件", () => {

@@ -6,8 +6,18 @@
  */
 
 /**
- * 分割路径为数组
- *  
+ * 分割路径为数组（支持没有 / 的情况）
+ *
+ * 处理逻辑：
+ * - 如果有 /，按 / 分割成多段数组
+ * - 如果没有 /，返回包含单个元素的数组 [原字符串]
+ * - 空字符串会返回 [""]
+ *
+ * @example
+ * - SplitPath<"a/b/c"> => ["a", "b", "c"]
+ * - SplitPath<"click"> => ["click"]
+ * - SplitPath<"*"> => ["*"]
+ * - SplitPath<""> => [""]
  */
 type SplitPath<T extends string> = T extends `${infer Head}/${infer Tail}`
     ? [Head, ...SplitPath<Tail>]
@@ -43,20 +53,36 @@ type CountFixedSegmentsAcc<Arr extends string[], Acc extends any[]> = Arr extend
         : Acc['length'];
 
 /**
- * 判断是否为半通配符（既有固定段又有通配符）
- * 半通配符的固定段数量 ≥ 1 且包含通配符 
+ * 判断是否为半通配符（既有固定段又有独立的通配符段）
+ *
+ * 判断逻辑：
+ * 1. 使用 SplitPath 将路径分割成段数组（自动处理没有斜杠的情况）
+ * 2. 检查是否有固定段（非通配符段）且至少有一个独立的通配符段
+ * 3. 独立的通配符段是指完全等于星号或双星号的段
+ *
+ * 详细示例请参考测试文件 WildcardPriority.test.ts
  */
 export type IsSemiWildcard<T extends string> =
     CountFixedSegments<T> extends 0
         ? false  // 没有固定段 → 全通配符
-        : T extends `${string}*${string}` | `*`
-            ? true  // 有固定段且有通配符 → 半通配符
-            : false;  // 没有通配符 → 精确匹配
+        : CountWildcardSegments<T> extends 0
+            ? false  // 没有通配符段 → 精确匹配
+            : true;  // 有固定段且有通配符段 → 半通配符
 
-// Count wildcard segments in a path
+/**
+ * 计算路径中通配符段的数量
+ *
+ * 通配符段是指完全等于星号或双星号的段
+ * 使用 SplitPath 分割路径后，统计通配符段的数量
+ */
 type CountWildcardSegments<T extends string> = CountWildcardSegmentsAcc<SplitPath<T>, []>;
 
-// Helper implementation for counting wildcard segments
+/**
+ * CountWildcardSegments 的辅助实现
+ * 使用累加器模式计算通配符段数量
+ * @param Arr - 路径段数组
+ * @param Acc - 累加器（元组），长度即为当前计数
+ */
 type CountWildcardSegmentsAcc<Arr extends string[], Acc extends any[]> = Arr extends []
     ? Acc['length']
     : Arr extends [infer First extends string, ...infer Rest extends string[]]
@@ -65,17 +91,22 @@ type CountWildcardSegmentsAcc<Arr extends string[], Acc extends any[]> = Arr ext
             : CountWildcardSegmentsAcc<Rest, Acc>
         : Acc['length'];
 
-// Check if pattern is a full wildcard
-// Full wildcards: no fixed segments (e.g. *, **) OR only 1 fixed segment with 1 wildcard (e.g. rooms/*)
+/**
+ * 检查是否为全通配符模式
+ *
+ * 全通配符定义：
+ * 1. 没有固定段，只有通配符段（如单星号、双星号）
+ * 2. 或者只有1个固定段和1个通配符段（如 rooms/单星号）
+ *
+ * 详细示例请参考测试文件 WildcardPriority.test.ts
+ */
 export type IsFullWildcard<T extends string> =
     CountFixedSegments<T> extends 0
-        ? T extends `${string}*${string}` | `*`
-            ? true
-            : false
+        ? CountWildcardSegments<T> extends 0
+            ? false  // 没有固定段也没有通配符段 → 不可能
+            : true  // 没有固定段但有通配符段 → 全通配符
         : CountFixedSegments<T> extends 1
             ? CountWildcardSegments<T> extends 1
-                ? T extends `${string}*${string}` | `*`
-                    ? true
-                    : false
+                ? true  // 1个固定段和1个通配符段 → 全通配符
                 : false
             : false;

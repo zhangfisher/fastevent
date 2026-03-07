@@ -9,7 +9,7 @@ import {
     PickTransformedEvents,
     TransformedEvents,
     RecordValues,
-    ClosestWildcardEvents,
+    GetClosestEvents,
     TypedFastEventMessage,
 } from "../../types";
 
@@ -262,8 +262,8 @@ describe("启用Transform时的类型支持", () => {
         const scope = emitter.scope("rooms/test");
         type ScopeEvents = typeof scope.types.events;
         type JoinEvents = ScopeEvents["$join"]["type"];
-        type SJoinEventss = ClosestWildcardEvents<ScopeEvents, "$join">;
-        type JoinEventss = RecordValues<ClosestWildcardEvents<ScopeEvents, "$join">>;
+        type SJoinEventss = GetClosestEvents<ScopeEvents, "$join">;
+        type JoinEventss = RecordValues<GetClosestEvents<ScopeEvents, "$join">>;
 
         scope.on("$join", (message) => {
             message.room;

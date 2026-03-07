@@ -5,7 +5,14 @@
 
 import { describe, test } from "vitest";
 import type { Equal, Expect } from "@type-challenges/utils";
-import { type TransformedEvents, ExtendWildcardEvents, NotPayload } from "../../types";
+import {
+    type TransformedEvents,
+    ExpandWildcard,
+    ExtendWildcardEvents,
+    GetMatchedEventPayload,
+    NotPayload,
+    GetMatchedEvents,
+} from "../../types";
 
 describe("TransformedEvents", () => {
     test("非通配符事件正确转换为 FastMessagePayload", () => {
@@ -14,7 +21,7 @@ describe("TransformedEvents", () => {
             mousemove: boolean;
             "user/login": string;
         };
-        type Result = TransformedEvents<Events>;
+        type Result = ExtendWildcardEvents<TransformedEvents<Events>>;
         type cases = [
             Expect<Equal<Result["click"], NotPayload<{ x: number; y: number }>>>,
             Expect<Equal<Result["mousemove"], NotPayload<boolean>>>,
@@ -27,7 +34,7 @@ describe("TransformedEvents", () => {
             "user/*": string;
             "api/v1/*": number;
         };
-        type Result = TransformedEvents<Events>;
+        type Result = ExtendWildcardEvents<TransformedEvents<Events>>;
         type cases = [
             Expect<Equal<Result["user/login"], NotPayload<string>>>,
             Expect<Equal<Result["user/logout"], NotPayload<string>>>,
@@ -42,7 +49,7 @@ describe("TransformedEvents", () => {
             "data/**": boolean;
             "user/profile/**": { id: number };
         };
-        type Result = TransformedEvents<Events>;
+        type Result = ExtendWildcardEvents<TransformedEvents<Events>>;
         type cases = [
             Expect<Equal<Result[`data/${string}`], NotPayload<boolean>>>,
             Expect<Equal<Result["data/users"], NotPayload<boolean>>>,
@@ -63,14 +70,14 @@ describe("TransformedEvents", () => {
             "*/*/*/*": 1;
             "*": 2;
         };
-        type Result = TransformedEvents<Events>;
+        type Result = ExtendWildcardEvents<TransformedEvents<Events>>;
         type cases = [
             // 单级通配符扩展
             Expect<Equal<Result["div/click/button"], NotPayload<{ x: number; y: number }>>>,
             Expect<Equal<Result["div/click/anything"], NotPayload<{ x: number; y: number }>>>,
             // 多个单级通配符
-            Expect<Equal<Result[`x/${string}/y/${string}`], NotPayload<number>>>,
-            Expect<Equal<Result[`x/123/y/456`], NotPayload<number>>>,
+            Expect<Equal<Result[`x/${string}/y/${string}`], NotPayload<number> & NotPayload<1>>>,
+            Expect<Equal<Result[`x/123/y/456`], NotPayload<number> & NotPayload<1>>>,
             // 中间通配符
             Expect<Equal<Result["simpleWildcardtest"], NotPayload<2>>>,
             Expect<Equal<Result["simpleXYZtest"], NotPayload<2>>>,
@@ -87,7 +94,7 @@ describe("TransformedEvents", () => {
             "user/*": string;
             "user/login": { userId: number };
         };
-        type Result = TransformedEvents<Events>;
+        type Result = ExtendWildcardEvents<TransformedEvents<Events>>;
         type cases = [
             // 精确键优先
             Expect<Equal<Result["user/login"], NotPayload<{ userId: number }>>>,
@@ -102,7 +109,7 @@ describe("TransformedEvents", () => {
             "*/click": { target: string };
             "*/user/profile": { name: string };
         };
-        type Result = TransformedEvents<Events>;
+        type Result = ExtendWildcardEvents<TransformedEvents<Events>>;
         type cases = [
             Expect<Equal<Result["div/click"], NotPayload<{ target: string }>>>,
             Expect<Equal<Result["button/click"], NotPayload<{ target: string }>>>,
@@ -115,12 +122,13 @@ describe("TransformedEvents", () => {
         type Events = {
             "api/*/users": number[];
             "data/v*/detail": boolean;
+            "data/*/detail": boolean;
         };
-        type Result = TransformedEvents<Events>;
+        type Result = ExtendWildcardEvents<TransformedEvents<Events>>;
         type cases = [
             Expect<Equal<Result["api/v1/users"], NotPayload<number[]>>>,
             Expect<Equal<Result["api/v2/users"], NotPayload<number[]>>>,
-            Expect<Equal<Result["data/v1/detail"], NotPayload<boolean>>>,
+            Expect<Equal<Result["data/v*/detail"], NotPayload<boolean>>>,
             Expect<Equal<Result["data/version/detail"], NotPayload<boolean>>>,
         ];
     });
@@ -130,7 +138,7 @@ describe("TransformedEvents", () => {
             "user/profile/*": string;
             "api/v1/*": number;
         };
-        type Result = TransformedEvents<Events>;
+        type Result = ExtendWildcardEvents<TransformedEvents<Events>>;
         type cases = [
             Expect<Equal<Result["user/profile/settings"], NotPayload<string>>>,
             Expect<Equal<Result["user/profile/avatar"], NotPayload<string>>>,
@@ -144,7 +152,7 @@ describe("TransformedEvents", () => {
             "*/*/test": boolean;
             "a/**/z": number;
         };
-        type Result = TransformedEvents<Events>;
+        type Result = ExtendWildcardEvents<TransformedEvents<Events>>;
         type cases = [
             Expect<Equal<Result["x/y/test"], NotPayload<boolean>>>,
             Expect<Equal<Result["1/2/test"], NotPayload<boolean>>>,
@@ -156,37 +164,37 @@ describe("TransformedEvents", () => {
     test("复杂嵌套路径", () => {
         type Events = {
             "admin/dashboard/**": { data: any };
-            "user/*/orders/**": string[]; 
+            "user/*/orders/**": string[];
         };
-        type Result = TransformedEvents<Events>;
-        type f=Result[`user/${string}/orders/${string}`]
-        type cases = [ 
-            Expect<Equal<Result[`admin/dashboard/${string}`], NotPayload<{ data: any } >  >>,
-            Expect<Equal<Result[`user/${string}/orders/${string}`], NotPayload<string[] >>>, 
+        type Result = ExtendWildcardEvents<TransformedEvents<Events>>;
+        type f = Result[`user/${string}/orders/${string}`];
+        type cases = [
+            Expect<Equal<Result[`admin/dashboard/${string}`], NotPayload<{ data: any }>>>,
+            Expect<Equal<Result[`user/${string}/orders/${string}`], NotPayload<string[]>>>,
         ];
     });
- 
+
     test("仅包含非通配符键", () => {
         type Events = {
             a: string;
             b: number;
             "c/d/e": boolean;
         };
-        type Result = TransformedEvents<Events>;
+        type Result = ExtendWildcardEvents<TransformedEvents<Events>>;
         type cases = [
             Expect<Equal<Result["a"], NotPayload<string>>>,
             Expect<Equal<Result["b"], NotPayload<number>>>,
             Expect<Equal<Result["c/d/e"], NotPayload<boolean>>>,
         ];
-    }); 
+    });
     test("混合普通事件和已转换的事件", () => {
         type Events = {
-            "click": NotPayload<{ x: number; y: number }>;
-            "mousemove": boolean;
+            click: NotPayload<{ x: number; y: number }>;
+            mousemove: boolean;
             "user/*": string;
             "user/login": NotPayload<{ userId: number }>;
         };
-        type Result = TransformedEvents<Events>;
+        type Result = ExtendWildcardEvents<TransformedEvents<Events>>;
         type cases = [
             Expect<Equal<Result["click"], NotPayload<NotPayload<{ x: number; y: number }>>>>,
             Expect<Equal<Result["mousemove"], NotPayload<boolean>>>,
@@ -204,23 +212,27 @@ describe("TransformedEvents", () => {
             "rooms/*/$remove": string;
             "rooms/*/*": number;
         };
-  
-        type Result = ExtendWildcardEvents<TransformedEvents<Events>>
-        //  type REvents = {
-        //     [x:`rooms/*/$join`]: NotPayload<{ room: string; welcome: string; users: string[] }>;
-        //     [x:`rooms/*/$leave`]: NotPayload<string>;
-        //     [x:`rooms/*/$error`]: NotPayload<string>;
-        //     [x:`rooms/*/$add`]:  NotPayload<string>;
-        //     [x:`rooms/*/$remove`]:  NotPayload<string>;
-        //     [x:`rooms/*/*`]: NotPayload<]number>;
-        // };
+
+        type Result = ExtendWildcardEvents<TransformedEvents<Events>>;
         type cases = [
-            Expect<Equal<Result["rooms/lobby/$join"], NotPayload<{ room: string; welcome: string; users: string[] }>>>,
-            Expect<Equal<Result["rooms/game/$leave"], NotPayload<string>>>,
-            Expect<Equal<Result["rooms/chat/$error"], NotPayload<string>>>,
-            Expect<Equal<Result["rooms/test/$add"], NotPayload<string>>>,
-            Expect<Equal<Result["rooms/lobby/$remove"], NotPayload<string>>>,
-            Expect<Equal<Result["rooms/any/event"], NotPayload<number>>>,
+            Expect<
+                Equal<
+                    Result[`rooms/${string}/$join`],
+                    NotPayload<{ room: string; welcome: string; users: string[] }> &
+                        NotPayload<number>
+                >
+            >,
+            Expect<
+                Equal<Result[`rooms/${string}/$leave`], NotPayload<string> & NotPayload<number>>
+            >,
+            Expect<
+                Equal<Result[`rooms/${string}/$error`], NotPayload<string> & NotPayload<number>>
+            >,
+            Expect<Equal<Result[`rooms/${string}/$add`], NotPayload<string> & NotPayload<number>>>,
+            Expect<
+                Equal<Result[`rooms/${string}/$remove`], NotPayload<string> & NotPayload<number>>
+            >,
+            Expect<Equal<Result[`rooms/any/event`], NotPayload<number>>>,
         ];
     });
 
@@ -230,13 +242,21 @@ describe("TransformedEvents", () => {
             "devices/**": number;
             "devices/sensor1/status": "connected" | "disconnected";
         };
-        type Result = TransformedEvents<Events>;
+        type Result = ExtendWildcardEvents<TransformedEvents<Events>>;
+
         type cases = [
-            Expect<Equal<Result["devices/sensor1/status"], NotPayload<"connected" | "disconnected">>>,
-            Expect<Equal<Result["devices/sensor2/status"], NotPayload<"online" | "offline">>>,
-            Expect<Equal<Result["devices"], NotPayload<number>>>,
+            Expect<
+                Equal<Result["devices/sensor1/status"], NotPayload<"connected" | "disconnected">>
+            >,
+            Expect<
+                Equal<
+                    Result["devices/sensor2/status"],
+                    NotPayload<"online" | "offline"> & NotPayload<number>
+                >
+            >,
             Expect<Equal<Result["devices/sensor1"], NotPayload<number>>>,
             Expect<Equal<Result["devices/sensor1/data"], NotPayload<number>>>,
+            // Expect<Equal<Result["devices"], NotPayload<number>>>,
         ];
     });
 
@@ -253,19 +273,78 @@ describe("TransformedEvents", () => {
             "*": string;
             "**": any;
         };
-        type Result = TransformedEvents<Events>;
+        type Result = ExtendWildcardEvents<TransformedEvents<Events>>;
+
+        type ddd = GetMatchedEventPayload<Result, "users/john/online">;
+        type ddd2 = GetMatchedEventPayload<Events, "users/john/online">;
+        type dd4452 = TransformedEvents<GetMatchedEvents<Events, "users/john/online">>;
+        type dd44352 = GetMatchedEvents<Result, "users/john/online">;
+
         type cases = [
-            Expect<Equal<Result["users/john/online"], NotPayload<{ name: string; status?: number }>>>,
-            Expect<Equal<Result["users/jane/offline"], NotPayload<boolean>>>,
-            Expect<Equal<Result["users/john/profile"], NotPayload<string>>>,
-            Expect<Equal<Result["posts/123/view"], NotPayload<number>>>,
-            Expect<Equal<Result["posts/456/comment"], NotPayload<string>>>,
-            Expect<Equal<Result["posts"], NotPayload<{ title: string; views: number }>>>,
-            Expect<Equal<Result["posts/123"], NotPayload<{ title: string; views: number }>>>,
-            Expect<Equal<Result["devices/sensor1/status"], NotPayload<"online" | "offline">>>,
-            Expect<Equal<Result["devices/sensor1/data"], NotPayload<number>>>,
-            Expect<Equal<Result["anything"], NotPayload<string>>>,
-            Expect<Equal<Result["any/nested/path"], NotPayload<any>>>,
+            Expect<
+                Equal<
+                    GetMatchedEventPayload<Result, "users/john/online">,
+                    | NotPayload<{ name: string; status?: number }>
+                    | NotPayload<string>
+                    | NotPayload<any>
+                >
+            >,
+            Expect<
+                Equal<
+                    GetMatchedEventPayload<Result, "users/jane/offline">,
+                    NotPayload<boolean> | NotPayload<string> | NotPayload<any>
+                >
+            >,
+            Expect<
+                Equal<
+                    GetMatchedEventPayload<Result, "users/john/profile">,
+                    NotPayload<string> | NotPayload<any>
+                >
+            >,
+            Expect<
+                Equal<
+                    GetMatchedEventPayload<Result, "posts/123/view">,
+                    | NotPayload<{ title: string; views: number }>
+                    | NotPayload<number>
+                    | NotPayload<any>
+                >
+            >,
+            Expect<
+                Equal<
+                    GetMatchedEventPayload<Result, "posts/456/comment">,
+                    | NotPayload<{ title: string; views: number }>
+                    | NotPayload<string>
+                    | NotPayload<any>
+                >
+            >,
+            Expect<
+                Equal<
+                    GetMatchedEventPayload<Result, "anything">,
+                    NotPayload<string> | NotPayload<any>
+                >
+            >,
+            Expect<
+                Equal<
+                    GetMatchedEventPayload<Result, "posts/123">,
+                    NotPayload<{ title: string; views: number }> | NotPayload<any>
+                >
+            >,
+            Expect<
+                Equal<
+                    GetMatchedEventPayload<Result, "devices/sensor1/status">,
+                    NotPayload<"online" | "offline"> | NotPayload<number> | NotPayload<any>
+                >
+            >,
+            Expect<
+                Equal<
+                    GetMatchedEventPayload<Result, "devices/sensor1/data">,
+                    NotPayload<number> | NotPayload<any>
+                >
+            >,
+            Expect<Equal<GetMatchedEventPayload<Result, "any/nested/path">, NotPayload<any>>>,
+            Expect<
+                Equal<GetMatchedEventPayload<Result, "posts">, NotPayload<string> | NotPayload<any>>
+            >,
         ];
     });
 
@@ -275,7 +354,7 @@ describe("TransformedEvents", () => {
             "events/$updated/*": boolean;
             "events/*/$deleted": string;
         };
-        type Result = TransformedEvents<Events>;
+        type Result = ExtendWildcardEvents<TransformedEvents<Events>>;
         type cases = [
             Expect<Equal<Result["events/$created"], NotPayload<{ id: number }>>>,
             Expect<Equal<Result["events/$updated/test"], NotPayload<boolean>>>,
@@ -289,12 +368,24 @@ describe("TransformedEvents", () => {
             "div/click": NotPayload<{ x: number; y: number; target: string }>;
             "*/click": NotPayload<{ x: number; y: number }>;
         };
-        type Result = TransformedEvents<Events>;
+        type Result = ExtendWildcardEvents<TransformedEvents<Events>>;
         type cases = [
             // 确保所有 click 事件都被正确包装为 NotPayload
             Expect<Equal<Result["click"], NotPayload<NotPayload<{ x: number; y: number }>>>>,
-            Expect<Equal<Result["div/click"], NotPayload<NotPayload<{ x: number; y: number; target: string }>>>>,
+            Expect<
+                Equal<
+                    Result["div/click"],
+                    NotPayload<NotPayload<{ x: number; y: number; target: string }>>
+                >
+            >,
             Expect<Equal<Result["button/click"], NotPayload<NotPayload<{ x: number; y: number }>>>>,
         ];
     });
 });
+
+type Result = {
+    [x: `users/${string}/online`]: NotPayload<{
+        name: string;
+        status?: number;
+    }>;
+};

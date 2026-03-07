@@ -1,4 +1,5 @@
 import { Keys } from "./Keys";
+import { CountFixedSegments } from "./WildcardPriority";
 
 // MergeUnion<{ a: 1 } | { b: 2 }> === { a: 1, b: 2 }
 export type MergeUnion<T> = (T extends any ? (x: T) => void : never) extends (x: infer U) => void
@@ -26,26 +27,34 @@ type MatchPatternArray<InputArr extends string[], PatternArr extends string[]> =
 ]
     ? PatternArr extends [infer PatternHead extends string, ...infer PatternTail extends string[]]
         ? PatternHead extends "**"
-            ? // 双星通配符可以匹配0个或多个段
-              MatchPatternArray<InputTail, PatternTail> extends true
+            ? // 双星通配符匹配逻辑
+              // 1. 尝试让 ** 匹配 0 个段（跳过 **）
+              MatchPatternArray<InputArr, PatternTail> extends true
                 ? true
-                : MatchPatternArray<InputTail, PatternArr> extends true
-                  ? true
-                  : MatchPatternArray<InputArr, PatternTail> extends true
-                    ? true
-                    : false
+                : // 2. ** 至少匹配一个段（贪婪匹配）
+                  InputArr extends [infer First, ...infer Rest extends string[]]
+                  ? MatchPatternArray<Rest, PatternTail> extends true
+                      ? true
+                      : MatchPatternArray<Rest, PatternArr> extends true
+                        ? true
+                        : false
+                  : false
             : MatchSegment<InputHead, PatternHead> extends true
               ? MatchPatternArray<InputTail, PatternTail>
               : false
         : false // 输入还有剩余但模式已用完
     : PatternArr extends [infer PatternHead extends string, ...infer PatternTail extends string[]]
-      ? PatternHead extends "**"
-          ? MatchPatternArray<InputArr, PatternTail> // 双星可以匹配0个段
+      ? // 输入为空，检查模式
+        PatternHead extends "**"
+          ? // ** 不能匹配空输入（除非是路径开头）
+            PatternTail extends []
+              ? false // 模式只有 **，没有其他内容，不匹配
+              : MatchPatternArray<InputArr, PatternTail> // 尝试跳过 ** 匹配剩余
           : false // 模式还有剩余但输入已用完
       : true; // 两者都匹配完毕
 
 // 主匹配函数
-type MatchPattern<T extends string, Pattern extends string> =
+export type MatchPattern<T extends string, Pattern extends string> =
     MatchPatternArray<Split<T>, Split<Pattern>> extends true ? { [K in Pattern]: any } : never;
 
 type Fallback<T, F> = [T] extends [never]
@@ -65,22 +74,11 @@ type Fallback<T, F> = [T] extends [never]
  * @returns
  *
  */
-export type WildcardEvents<Events extends Record<string, any>, T extends string> = MergeUnion<
-    Fallback<
-        {
-            [K in keyof Events]: MatchPattern<T, K & string> extends never
-                ? never
-                : { [P in K]: Events[K] };
-        }[keyof Events] extends infer Result
-            ? Result extends Record<string, any>
-                ? Result
-                : Record<string, any>
-            : Record<string, any>,
-        {
-            [K in T]: any;
-        }
-    >
->;
+export type GetMatchedEvents<Events extends Record<string, any>, T extends string> = {
+    [K in keyof Events]: MatchPattern<T, K & string> extends never
+        ? never
+        : { [P in K]: Events[K] };
+}[keyof Events];
 
 /**
  * 保留对象中第一项
@@ -148,8 +146,56 @@ type GetWildcardsByPriority<T extends Record<string, any>> =
 
 export type GetFirstMatchedItem<T extends Record<string, any>> = GetWildcardsByPriority<T>;
 
+/**
+ * 计算路径中的固定段数量（非通配符的段）
+ * 用于确定通配符模式的精确程度，固定段越多越精确
+ */
+type PathFixedSegmentsCount<T extends string> = CountFixedSegments<T>;
+
+/**
+ * 从匹配的事件中选择固定段数量最多的模式
+ *
+ * 优先级规则：
+ * 1. 固定段数量越多越优先（更精确）
+ * 2. 固定段数量相同时，使用原有逻辑（通配符少的优先）
+ */
+type SelectByMaxFixedSegments<T extends Record<string, any>> = T extends { [K: string]: any }
+    ? SelectByFixedSegmentCount<T, 4, 3, 2, 1, 0>
+    : never;
+
+/**
+ * 按固定段数量优先级选择，从高到低依次检查
+ * 4段 > 3段 > 2段 > 1段 > 0段
+ */
+type SelectByFixedSegmentCount<
+    T extends Record<string, any>,
+    N4 extends number,
+    N3 extends number,
+    N2 extends number,
+    N1 extends number,
+    N0 extends number,
+> =
+    IsEmptyObject<GetKeysWithFixedSegments<T, N4>> extends true
+        ? IsEmptyObject<GetKeysWithFixedSegments<T, N3>> extends true
+            ? IsEmptyObject<GetKeysWithFixedSegments<T, N2>> extends true
+                ? IsEmptyObject<GetKeysWithFixedSegments<T, N1>> extends true
+                    ? IsEmptyObject<GetKeysWithFixedSegments<T, N0>> extends true
+                        ? FirstObjectItem<T>
+                        : FirstObjectItem<GetKeysWithFixedSegments<T, N0>>
+                    : FirstObjectItem<GetKeysWithFixedSegments<T, N1>>
+                : FirstObjectItem<GetKeysWithFixedSegments<T, N2>>
+            : FirstObjectItem<GetKeysWithFixedSegments<T, N3>>
+        : FirstObjectItem<GetKeysWithFixedSegments<T, N4>>;
+
+/**
+ * 获取包含特定数量固定段的键
+ */
+type GetKeysWithFixedSegments<T extends Record<string, any>, N extends number> = {
+    [K in keyof T as PathFixedSegmentsCount<K & string> extends N ? K : never]: T[K];
+};
+
 // 只返回最相近匹配的事件类型
-export type ClosestWildcardEvents<
+export type GetClosestEvents<
     Events extends Record<string, any>,
     T extends string,
-> = GetFirstMatchedItem<WildcardEvents<Events, T>>;
+> = SelectByMaxFixedSegments<MergeUnion<GetMatchedEvents<Events, T>>>;

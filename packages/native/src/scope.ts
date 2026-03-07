@@ -17,12 +17,12 @@ import {
     Dict,
     TypedFastEventMessageOptional,
     RecordValues,
-    WildcardEvents,
+    GetMatchedEvents,
     FastEventListenerFlags,
     OmitTransformedEvents,
     PickTransformedEvents,
     FastEventMessage,
-    ClosestWildcardEvents,
+    GetClosestEvents,
     IsTransformedKey,
     ExtendWildcardEvents,
     MutableRecord,
@@ -210,7 +210,7 @@ export class FastEventScope<
     ): T extends IsTransformedKey<Events, T>
         ? // 转换后
           FastEventIterator<
-              PickPayload<RecordValues<ClosestWildcardEvents<Events, Exclude<T, number | symbol>>>>
+              PickPayload<RecordValues<GetClosestEvents<Events, Exclude<T, number | symbol>>>>
           >
         : FastEventIterator<
               TypedFastEventMessage<T extends "**" ? Events : Record<T, Events[T]>, Meta>
@@ -221,9 +221,7 @@ export class FastEventScope<
         type: T,
         listener: FastEventCommonListener<
             T extends IsTransformedKey<Events, T>
-                ? PickPayload<
-                      RecordValues<ClosestWildcardEvents<Events, Exclude<T, number | symbol>>>
-                  >
+                ? PickPayload<RecordValues<GetClosestEvents<Events, Exclude<T, number | symbol>>>>
                 : TypedFastEventMessage<T extends "**" ? Events : Record<T, Events[T]>, FinalMeta>,
             FinalMeta,
             Fallback<Context, typeof this>
@@ -302,7 +300,7 @@ export class FastEventScope<
         type: T,
         listener: (
             message: PickPayload<
-                RecordValues<ClosestWildcardEvents<Events, Exclude<T, number | symbol>>>
+                RecordValues<GetClosestEvents<Events, Exclude<T, number | symbol>>>
             >,
             args: FastEventListenerArgs<FinalMeta>,
         ) => any | Promise<any>,
@@ -312,7 +310,7 @@ export class FastEventScope<
     public once<T extends Exclude<string, Types>>(
         type: T,
         listener: TypedFastEventAnyListener<
-            ClosestWildcardEvents<Events, T>,
+            GetClosestEvents<Events, T>,
             FinalMeta,
             Fallback<Context, typeof this>
         >,
@@ -366,14 +364,14 @@ export class FastEventScope<
     public emit<R = any, T extends string = string>(
         type: T,
         payload?: PickPayload<
-            T extends Types ? Events[T] : RecordValues<WildcardEvents<Events, T>>
+            T extends Types ? Events[T] : RecordValues<GetMatchedEvents<Events, T>>
         >,
         retain?: boolean,
     ): R[];
     public emit<R = any, T extends string = string>(
         type: T,
         payload?: PickPayload<
-            T extends Types ? Events[T] : RecordValues<WildcardEvents<Events, T>>
+            T extends Types ? Events[T] : RecordValues<GetMatchedEvents<Events, T>>
         >,
         options?: FastEventListenerArgs<FinalMeta>,
     ): R[];

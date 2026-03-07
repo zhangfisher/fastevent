@@ -23,18 +23,19 @@ import {
     Expand,
     TypedFastEventMessageOptional,
     FastEventListeners,
-    WildcardEvents,
+    GetMatchedEvents,
     RecordValues,
     PickPayload,
     FastEventListenerFlags,
     PickTransformedEvents,
     OmitTransformedEvents,
-    ClosestWildcardEvents,
+    GetClosestEvents,
     Class,
     IsTransformedKey,
     ExtendWildcardEvents,
     MutableEvents,
     FastEventCommonListener,
+    KeyOf,
 } from "./types";
 import { parseEmitArgs } from "./utils/parseEmitArgs";
 import { isPathMatched } from "./utils/isPathMatched";
@@ -314,95 +315,39 @@ export class FastEvent<
      * emitter.on('event', handler, { count: 3 });
      * ```
      */
+    // public on(
+    //     type: "**",
+    //     options?: FastEventListenOptions<AllEvents, Meta>,
+    // ): FastEventIterator<TypedFastEventMessage<MutableEvents<AllEvents>, Meta>>;
+
     // 返回迭代器
-    public on<T extends string = Exclude<keyof AllEvents, number | symbol>>(
+    public on<T extends string = KeyOf<Events> | "**">(
         type: T,
         options?: FastEventListenOptions<AllEvents, Meta>,
     ): T extends IsTransformedKey<AllEvents, T>
         ? FastEventIterator<
-              PickPayload<
-                  RecordValues<ClosestWildcardEvents<AllEvents, Exclude<T, number | symbol>>>
-              >
+              PickPayload<RecordValues<GetClosestEvents<AllEvents, Exclude<T, number | symbol>>>>
           >
         : FastEventIterator<TypedFastEventMessage<Record<T, AllEvents[T]>, Meta>>;
 
-    public on(
-        type: "**",
-        options?: FastEventListenOptions<AllEvents, Meta>,
-    ): FastEventIterator<TypedFastEventMessage<MutableEvents<AllEvents>, Meta>>;
-
     // 指定监听器
-    public on<T extends string = Exclude<keyof AllEvents, number | symbol>>(
+    public on<T extends string = KeyOf<Events> | "**">(
         type: T,
         listener: FastEventCommonListener<
             T extends IsTransformedKey<AllEvents, T>
                 ? PickPayload<
-                      RecordValues<ClosestWildcardEvents<AllEvents, Exclude<T, number | symbol>>>
+                      RecordValues<GetClosestEvents<AllEvents, Exclude<T, number | symbol>>>
                   >
-                : TypedFastEventMessage<T extends "**" ? AllEvents : Record<T, AllEvents[T]>, Meta>,
+                : TypedFastEventMessage<
+                      T extends "**" ? Events : GetClosestEvents<Events, T>,
+                      Meta
+                  >,
             Meta,
             Fallback<Context, typeof this>
         >,
         options?: FastEventListenOptions,
     ): FastEventSubscriber;
-    public on<T extends string = string>(
-        type: T,
-        listener: FastEventCommonListener<
-            T extends IsTransformedKey<AllEvents, T>
-                ? PickPayload<
-                      RecordValues<ClosestWildcardEvents<AllEvents, Exclude<T, number | symbol>>>
-                  >
-                : TypedFastEventMessage<T extends "**" ? AllEvents : Record<T, AllEvents[T]>, Meta>,
-            Meta,
-            Fallback<Context, typeof this>
-        >,
-        options?: FastEventListenOptions,
-    ): FastEventSubscriber;
-    // // 处理标准事件类型
-    // public on<T extends keyof OmitTransformedEvents<AllEvents>>(
-    //     type: T,
-    //     listener: TypedFastEventListener<
-    //         Exclude<T, number | symbol>,
-    //         AllEvents[T],
-    //         Meta,
-    //         Fallback<Context, typeof this>
-    //     >,
-    //     options?: FastEventListenOptions<AllEvents, Meta>,
-    // ): FastEventSubscriber;
 
-    // // 处理使用 NotPayload 标识的事件类型
-    // public on<T extends keyof PickTransformedEvents<AllEvents>>(
-    //     type: T,
-    //     listener: (
-    //         message: PickPayload<
-    //             RecordValues<ClosestWildcardEvents<AllEvents, Exclude<T, number | symbol>>>
-    //         >,
-    //         args: FastEventListenerArgs<Meta>,
-    //     ) => any | Promise<any>,
-    //     options?: FastEventListenOptions<AllEvents, Meta>,
-    // ): FastEventSubscriber;
-
-    // // 处理通配符事件类型
-    // public on<T extends Exclude<string, Types>>(
-    //     type: T,
-    //     listener: TypedFastEventAnyListener<
-    //         ClosestWildcardEvents<AllEvents, T>,
-    //         Meta,
-    //         Fallback<Context, typeof this>
-    //     >,
-    //     options?: FastEventListenOptions<AllEvents, Meta>,
-    // ): FastEventSubscriber;
-
-    // // 处理全局监听
-    // public on(
-    //     type: "**",
-    //     listener: TypedFastEventAnyListener<
-    //         Record<string, any>,
-    //         Meta,
-    //         Fallback<Context, typeof this>
-    //     >,
-    //     options?: FastEventListenOptions<AllEvents, Meta>,
-    // ): FastEventSubscriber;
     public on(): any {
         const type = arguments[0] as string;
 
@@ -549,7 +494,7 @@ export class FastEvent<
         type: T,
         listener: (
             message: PickPayload<
-                RecordValues<ClosestWildcardEvents<AllEvents, Exclude<T, number | symbol>>>
+                RecordValues<GetClosestEvents<AllEvents, Exclude<T, number | symbol>>>
             >,
             args: FastEventListenerArgs<Meta>,
         ) => any | Promise<any>,
@@ -560,7 +505,7 @@ export class FastEvent<
     public once<T extends Exclude<string, Types>>(
         type: T,
         listener: TypedFastEventAnyListener<
-            ClosestWildcardEvents<AllEvents, T>,
+            GetClosestEvents<AllEvents, T>,
             Meta,
             Fallback<Context, typeof this>
         >,
@@ -593,19 +538,23 @@ export class FastEvent<
      *
      * // 取消监听
      * subscriber.off();
-     * ```listener: FastEventAnyListener<AllEvents, Meta, Fallback<Context, typeof this>>): FastEventSubscriber
+     * ```
      */
-    onAny(options?: Omit<FastEventListenOptions<AllEvents, Meta>, "count">): FastEventSubscriber;
-    onAny<P = any>(
-        listener: TypedFastEventAnyListener<
-            Record<string, P>,
+    // 返回迭代器（不指定监听器时）
+    public onAny(
+        options?: FastEventListenOptions<AllEvents, Meta>,
+    ): FastEventIterator<TypedFastEventMessage<MutableEvents<AllEvents>, Meta>>;
+    // 指定监听器
+    public onAny(
+        listener: FastEventCommonListener<
+            TypedFastEventMessage<AllEvents, Meta>,
             Meta,
             Fallback<Context, typeof this>
         >,
-        options?: Omit<FastEventListenOptions<AllEvents, Meta>, "count">,
+        options?: FastEventListenOptions<AllEvents, Meta>,
     ): FastEventSubscriber;
-    onAny(): FastEventSubscriber {
-        return this.on("**", arguments[0], arguments[1]);
+    public onAny() {
+        return this.on("**", ...arguments);
     }
     /**
      *
@@ -1081,7 +1030,7 @@ export class FastEvent<
     public emit<R = any, T extends string = string>(
         type: T,
         payload: PickPayload<
-            T extends Types ? AllEvents[T] : RecordValues<WildcardEvents<AllEvents, T>>
+            T extends Types ? AllEvents[T] : RecordValues<GetMatchedEvents<AllEvents, T>>
         >,
         retain?: boolean,
     ): R[];
@@ -1099,7 +1048,7 @@ export class FastEvent<
     public emit<R = any, T extends string = string>(
         type: T,
         payload: PickPayload<
-            T extends Types ? AllEvents[T] : RecordValues<WildcardEvents<AllEvents, T>>
+            T extends Types ? AllEvents[T] : RecordValues<GetMatchedEvents<AllEvents, T>>
         >,
         options?: FastEventListenerArgs<Meta>,
     ): R[];
