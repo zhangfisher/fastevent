@@ -77,10 +77,11 @@ export type ScopeEvents<Events extends Record<string, any>, Prefix extends strin
         : never]: Events[K];
 };
 
-export type MutableEvents<Events extends Record<string, any>> = {
+export type MutableEvents<Events extends Record<string, any>, Meta = Record<string, any>> = {
     [K in keyof ExtendWildcardEvents<Events>]: {
         type: Exclude<K, number | symbol>;
         payload: ExtendWildcardEvents<Events>[K];
+        meta: Meta;
     };
 }[keyof ExtendWildcardEvents<Events>]; // // 测试用例
 

@@ -70,6 +70,7 @@ export class FastEvent<
     // 泛型快捷方式
     AllEvents extends Record<string, any> = Expand<Events & FastEvents>,
     Types extends keyof AllEvents = Expand<Exclude<keyof AllEvents, number | symbol>>,
+    AllMeta extends Record<string, any> = FastEventMeta & Meta,
 > {
     __FastEvent__: boolean = true;
     /** 事件监听器树结构，存储所有注册的事件监听器 */
@@ -93,7 +94,7 @@ export class FastEvent<
     // 子类通过：declare types : { } & typeof FastEvent.types  扩展类型
     types = null as unknown as {
         events: ExtendWildcardEvents<AllEvents>;
-        meta: Expand<Record<string, any> & FastEventMeta & Meta>;
+        meta: AllMeta;
         context: Expand<Fallback<Context, FastEvent<AllEvents, Meta, Context>>>;
         message: TypedFastEventMessageOptional<
             AllEvents,
@@ -540,8 +541,8 @@ export class FastEvent<
      */
     // 返回迭代器（不指定监听器时）
     public onAny(
-        options?: FastEventListenOptions<AllEvents, Meta>,
-    ): FastEventIterator<TypedFastEventMessage<MutableEvents<AllEvents>, Meta>>;
+        options?: FastEventListenOptions<AllEvents, AllMeta>,
+    ): FastEventIterator<MutableEvents<AllEvents, AllMeta>>;
     // 指定监听器
     public onAny(
         listener: FastEventCommonListener<
@@ -552,7 +553,7 @@ export class FastEvent<
         options?: FastEventListenOptions<AllEvents, Meta>,
     ): FastEventSubscriber;
     public onAny() {
-        return this.on("**", ...arguments);
+        return this.on("**", ...arguments) as any;
     }
     /**
      *

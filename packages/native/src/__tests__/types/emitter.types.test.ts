@@ -2,7 +2,7 @@
 import { describe, test, expect } from "vitest";
 import type { Equal, Expect, NotAny } from "@type-challenges/utils";
 import { FastEvent } from "../../event";
-import { NotPayload, RecordValues, TransformedEvents } from "../../types/index";
+import { MutableEvents, NotPayload, RecordValues, TransformedEvents } from "../../types/index";
 import {
     GetClosestEvents,
     GetMatchedEventPayload,
@@ -358,7 +358,7 @@ describe("使用监听器的FaseEvent类型系统测试", () => {
     });
 });
 describe("返回迭代器的FaseEvent类型系统测试", () => {
-    test("常规类型测试", () => {
+    test("常规类型测试", async () => {
         interface Events {
             a: boolean;
             b: number;
@@ -370,6 +370,7 @@ describe("返回迭代器的FaseEvent类型系统测试", () => {
         const emitter = new FastEvent<Events>();
         const aMessages = emitter.on("a");
         type A1 = RecordValues<GetClosestEvents<Events, "a">>;
+
         type AMessageType = IteratorMessage<typeof aMessages>;
         type ACases = [
             Expect<Equal<AMessageType["type"], "a">>,
@@ -377,14 +378,20 @@ describe("返回迭代器的FaseEvent类型系统测试", () => {
             Expect<Equal<AMessageType["meta"], FastEventMeta & Record<string, any>>>,
         ];
 
-        emitter.onAny((message) => {
-            type cases = [
-                Expect<
-                    Equal<typeof message.type, "a" | "b" | "c" | "x/y/z/a" | "x/y/z/b" | "x/y/z/c">
-                >,
-                Expect<Equal<typeof message.payload, string | number | boolean>>,
-            ];
-        });
+        const anyMessages = emitter.onAny();
+        type Any1 = MutableEvents<typeof emitter.types.events>;
+        type AnyMeta1 = typeof emitter.types.meta;
+
+        type AnyMessageType = IteratorMessage<typeof anyMessages>;
+        type AnyKeys = AnyMessageType;
+        type cases = [
+            Expect<
+                Equal<
+                    Extract<AnyMessageType, { type: "a" }>,
+                    { type: "a"; payload: boolean; meta: Record<string, any> & FastEventMeta }
+                >
+            >,
+        ];
         type T1 = GetClosestEvents<Events, "x", { a: 1 }>;
         type M1 = TypedFastEventMessage<T1>;
         type fffff = { a: 1 } extends {} ? true : false;
