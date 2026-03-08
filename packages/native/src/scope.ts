@@ -28,6 +28,8 @@ import {
     MutableRecord,
     FastEventCommonListener,
     KeyOf,
+    IsTransformed,
+    PayloadValues,
 } from "./types";
 import { parseEmitArgs } from "./utils/parseEmitArgs";
 import { parseScopeArgs } from "./utils/parseScopeArgs";
@@ -205,18 +207,20 @@ export class FastEventScope<
     }
 
     // 返回事件迭代器
-    public on<T extends string = Exclude<keyof Events, number | symbol>>(
+    public on<T extends string = KeyOf<Events> | "**">(
         type: T,
         options?: FastEventListenOptions<Events, Meta>,
     ): T extends IsTransformedKey<Events, T>
-        ? // 转换后
-          FastEventIterator<
-              PickPayload<RecordValues<GetClosestEvents<Events, Exclude<T, number | symbol>>>>
+        ? FastEventIterator<
+              T extends "**"
+                  ? IsTransformed<Events> extends true
+                      ? PayloadValues<Events>
+                      : any
+                  : PickPayload<RecordValues<GetClosestEvents<Events, T>>>
           >
         : FastEventIterator<
-              TypedFastEventMessage<T extends "**" ? Events : Record<T, Events[T]>, Meta>
+              TypedFastEventMessage<GetClosestEvents<Events, T, Record<T, any>>, Meta>
           >;
-
     // 使用标准监听器
     public on<T extends string = KeyOf<Events> | "**">(
         type: T,

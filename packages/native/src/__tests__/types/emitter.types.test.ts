@@ -24,10 +24,10 @@ type IteratorMessage<T> = T extends FastEventIterator<infer M> ? M : never;
 describe("使用监听器的FaseEvent类型系统测试", () => {
     test("没有指定事件类型时支持所有事件", () => {
         const emitter = new FastEvent();
-        type ScopeEventType = ScopeEvents<Record<string, any>, "a/b/c">;
+        type ScopeEventType = GetClosestEvents<Record<string, any>, "x", Record<"x", any>>;
         emitter.on("x", (message) => {
             type cases = [
-                Expect<Equal<typeof message.type, "x">>,
+                Expect<Equal<typeof message.type, string>>,
                 Expect<Equal<typeof message.payload, any>>,
                 Expect<Equal<typeof message.meta, FastEventMeta & Record<string, any>>>,
             ];

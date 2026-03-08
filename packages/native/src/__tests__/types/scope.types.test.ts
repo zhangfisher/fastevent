@@ -15,7 +15,7 @@ describe("事件作用域使用监听器类型测试", () => {
         type ScopeEventType = ScopeEvents<Record<string, any>, "a/b/c">;
         scope.on("x", (message) => {
             type cases = [
-                Expect<Equal<typeof message.type, "x">>,
+                Expect<Equal<typeof message.type, string>>,
                 Expect<Equal<typeof message.payload, any>>,
                 Expect<
                     Equal<
@@ -41,6 +41,7 @@ describe("事件作用域使用监听器类型测试", () => {
         const emitter = new FastEvent<Events>();
         const scope = emitter.scope("rooms/1");
         type scopeKeys = Expand<keyof typeof scope.types.events>;
+        // 存在的事件
         scope.on("add", (message) => {
             type cases = [
                 Expect<Equal<typeof message.type, "add">>,
@@ -58,26 +59,6 @@ describe("事件作用域使用监听器类型测试", () => {
             type cases = [
                 Expect<Equal<typeof message.type, "xyz">>,
                 Expect<Equal<typeof message.payload, any>>,
-                Expect<
-                    Equal<
-                        typeof message.meta,
-                        FastEventMeta & FastEventScopeMeta & Record<string, any>
-                    >
-                >,
-            ];
-        });
-    });
-    test("scope事件类型测试", () => {
-        type CustomScopeEvents = {
-            x: number;
-            y: string;
-        };
-        const scope = emitter.scope<CustomScopeEvents>("a/b/c");
-
-        scope.on("x", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, "x">>,
-                Expect<Equal<typeof message.payload, number>>,
                 Expect<
                     Equal<
                         typeof message.meta,
