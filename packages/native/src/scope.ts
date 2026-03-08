@@ -27,6 +27,7 @@ import {
     ExtendWildcardEvents,
     MutableRecord,
     FastEventCommonListener,
+    KeyOf,
 } from "./types";
 import { parseEmitArgs } from "./utils/parseEmitArgs";
 import { parseScopeArgs } from "./utils/parseScopeArgs";
@@ -217,51 +218,21 @@ export class FastEventScope<
           >;
 
     // 使用标准监听器
-    public on<T extends string = Exclude<keyof Events, number | symbol>>(
+    public on<T extends string = KeyOf<Events> | "**">(
         type: T,
         listener: FastEventCommonListener<
             T extends IsTransformedKey<Events, T>
-                ? PickPayload<RecordValues<GetClosestEvents<Events, Exclude<T, number | symbol>>>>
-                : TypedFastEventMessage<T extends "**" ? Events : Record<T, Events[T]>, FinalMeta>,
+                ? PickPayload<RecordValues<GetClosestEvents<Events, T>>>
+                : TypedFastEventMessage<
+                      T extends "**" ? Events : GetClosestEvents<Events, T, Record<T, any>>,
+                      FinalMeta
+                  >,
             FinalMeta,
             Fallback<Context, typeof this>
         >,
         options?: FastEventListenOptions,
     ): FastEventSubscriber;
-    // public on<T extends keyof OmitTransformedEvents<Events>>(
-    //     type: T,
-    //     listener: TypedFastEventListener<
-    //         Exclude<T, number | symbol>,
-    //         Events[T],
-    //         FinalMeta,
-    //         Fallback<Context, typeof this>
-    //     >,
-    //     options?: FastEventListenOptions,
-    // ): FastEventSubscriber;
-    // // 处理通配符事件类型
-    // public on<T extends Exclude<string, Types>>(
-    //     type: T,
-    //     listener: TypedFastEventAnyListener<
-    //         ClosestWildcardEvents<Events, T>,
-    //         FinalMeta,
-    //         Fallback<Context, typeof this>
-    //     >,
-    //     options?: FastEventListenOptions,
-    // ): FastEventSubscriber;
-    // public on<T extends Exclude<string, Types> = Exclude<string, Types>>(
-    //     type: T,
-    //     listener: TypedFastEventAnyListener<
-    //         ClosestWildcardEvents<Events, T>,
-    //         Meta,
-    //         Fallback<Context, typeof this>
-    //     >,
-    //     options?: FastEventListenOptions<Events, Meta>,
-    // ): FastEventSubscriber;
-    public on(
-        type: "**",
-        listener: TypedFastEventAnyListener<Events, FinalMeta, Fallback<Context, typeof this>>,
-        options?: FastEventListenOptions,
-    ): FastEventSubscriber;
+
     public on(): FastEventSubscriber | FastEventIterator<any> {
         if (!this.emitter) throw new UnboundError();
         const args = [...arguments] as [any, any, any];

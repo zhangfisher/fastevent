@@ -66,8 +66,11 @@ type Join<T extends string[], Delimiter extends string = "/"> = T extends [
         : `${First}${Delimiter}${Join<Rest, Delimiter>}`
     : "";
 
-// 返回指定前缀的事件
-export type ScopeEvents<Events extends Record<string, any>, Prefix extends string> = {
+// ScopeEvents 内部实现
+type ScopeEventsImpl<
+    Events extends Record<string, any>,
+    Prefix extends string,
+> = {
     [K in keyof Events as K extends string
         ? MatchPatternAndGetRemainder<Split<K, "/">, Split<Prefix, "/">> extends infer Remainder
             ? Remainder extends string[]
@@ -76,6 +79,19 @@ export type ScopeEvents<Events extends Record<string, any>, Prefix extends strin
             : never
         : never]: Events[K];
 };
+
+// 返回指定前缀的事件
+// 当 Prefix = '' 时，直接返回 Events
+// 当没有事件匹配 Prefix 时，返回 Default
+export type ScopeEvents<
+    Events extends Record<string, any>,
+    Prefix extends string,
+    Default extends Record<string, any> = Record<string, any>,
+> = Prefix extends ''
+    ? Events
+    : [keyof ScopeEventsImpl<Events, Prefix>] extends [never]
+      ? Default
+      : ScopeEventsImpl<Events, Prefix>;
 
 export type MutableEvents<Events extends Record<string, any>, Meta = Record<string, any>> = {
     [K in keyof ExtendWildcardEvents<Events>]: {

@@ -6,26 +6,58 @@ import { describe, test, expect } from "vitest";
 import type { Equal, Expect, NotAny } from "@type-challenges/utils";
 import { FastEvent } from "../../event";
 import { FastEventScope, FastEventScopeMeta } from "../../scope";
-import { FastEventMeta, ScopeEvents } from "../../types";
+import { Expand, FastEventMeta, ScopeEvents } from "../../types";
 
-describe("事件作用域类型测试", () => {
-    type CustomEvents = {
-        a: boolean;
-        b: number;
-        c: string;
-    };
-    const emitter = new FastEvent();
-    test("scope事件类型测试", () => {
-        const scope = emitter.scope<{
-            x: number;
-            y: string;
-        }>("a/b/c");
-
+describe("事件作用域使用监听器类型测试", () => {
+    test("没有指定事件类型时支持所有事件", () => {
+        const emitter = new FastEvent();
+        const scope = emitter.scope("a/b/c");
+        type ScopeEventType = ScopeEvents<Record<string, any>, "a/b/c">;
         scope.on("x", (message) => {
-            message.meta;
             type cases = [
                 Expect<Equal<typeof message.type, "x">>,
-                Expect<Equal<typeof message.payload, number>>,
+                Expect<Equal<typeof message.payload, any>>,
+                Expect<
+                    Equal<
+                        typeof message.meta,
+                        FastEventMeta & FastEventScopeMeta & Record<string, any>
+                    >
+                >,
+            ];
+        });
+    });
+
+    test("简单的scope事件类型测试", () => {
+        type Events = {
+            "rooms/1/add": boolean;
+            "rooms/1/join": string;
+            "rooms/1/leave": number;
+            "rooms/2/add": boolean;
+            "rooms/2/remove": number;
+            "rooms/2/join": string;
+            "users/fisher/login": string;
+            "users/fisher/logout": number;
+        };
+        const emitter = new FastEvent<Events>();
+        const scope = emitter.scope("rooms/1");
+        type scopeKeys = Expand<keyof typeof scope.types.events>;
+        scope.on("add", (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, "add">>,
+                Expect<Equal<typeof message.payload, boolean>>,
+                Expect<
+                    Equal<
+                        typeof message.meta,
+                        FastEventMeta & FastEventScopeMeta & Record<string, any>
+                    >
+                >,
+            ];
+        });
+        // 不存在的事件
+        scope.on("xyz", (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, "xyz">>,
+                Expect<Equal<typeof message.payload, any>>,
                 Expect<
                     Equal<
                         typeof message.meta,

@@ -1310,9 +1310,6 @@ export class FastEvent<
      * userEvents.offAll();  // 清理 'user' 前缀下的所有事件
      * ```
      */
-
-    // 处理 FastEventScope 子类，直接返回传入的 ScopeObject 实例
-    // 不会创建新的类型实例，而是通过 bind 方法将实例绑定到 FastEvent
     scope<
         P extends string = string,
         ScopeObject extends IFastEventScope<Record<string, any>, any, any> = FastEventScope<
@@ -1333,7 +1330,7 @@ export class FastEvent<
     >(
         prefix: P,
         options?: DeepPartial<FastEventScopeOptions<Meta & M, C>>,
-    ): FastEventScope<ScopeEvents<AllEvents, P> & E, Meta & M, C>;
+    ): FastEventScope<ScopeEvents<Events, P> & E, Meta & M, C>;
     scope() {
         const [prefix, scopeObj, options] = parseScopeArgs(
             arguments,

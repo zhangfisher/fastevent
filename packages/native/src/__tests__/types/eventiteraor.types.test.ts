@@ -185,6 +185,30 @@ describe("FastEvent 使用异步迭代器监听事件类型系统测试", () => 
             type cases = [
                 Expect<
                     Equal<
+                        MessageType,
+                        | string
+                        | number
+                        | boolean
+                        | {
+                              name: string;
+                              status?: number;
+                          }
+                        | {
+                              title: string;
+                              views: number;
+                          }
+                    >
+                >,
+            ];
+        });
+        test("全局双星通配符(**)事件的异步迭代器消息类型", async () => {
+            const emitter = new FastEvent<CustomEvents>();
+
+            const messages = emitter.on("**");
+            type MessageType = IteratorMessage<typeof messages>;
+            type cases = [
+                Expect<
+                    Equal<
                         MessageType["type"],
                         | `users/${string}/online`
                         | `users/${string}/offline`
@@ -199,7 +223,6 @@ describe("FastEvent 使用异步迭代器监听事件类型系统测试", () => 
                 >,
             ];
         });
-
         test("多层级通配符事件的异步迭代器消息类型", () => {
             const emitter = new FastEvent<TransformedWildcardEvents>();
             emitter.on("");
