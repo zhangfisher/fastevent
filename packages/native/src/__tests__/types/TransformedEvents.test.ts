@@ -273,37 +273,38 @@ describe("TransformedEvents", () => {
             "*": string;
             "**": any;
         };
-        type Result = ExtendWildcardEvents<TransformedEvents<Events>>;
+        type Result = TransformedEvents<Events>;
 
         type ddd = GetMatchedEventPayload<Result, "users/john/online">;
-        type ddd2 = GetMatchedEventPayload<Events, "users/john/online">;
-        type dd4452 = TransformedEvents<GetMatchedEvents<Events, "users/john/online">>;
-        type dd44352 = GetMatchedEvents<Result, "users/john/online">;
+
+        type OnlinePayload = GetMatchedEventPayload<Result, "users/john/online">;
+        type OfflinePayload = GetMatchedEventPayload<Result, "users/john/offline">;
+        type ProfilePayload = GetMatchedEventPayload<Result, "users/john/profile">;
+        type PostsView = GetMatchedEventPayload<Result, "posts/123/view">;
+        type PostsComment = GetMatchedEventPayload<Result, "posts/123/comment">;
+        type Anything = GetMatchedEventPayload<Result, "anything">;
+        type Posts123 = GetMatchedEventPayload<Result, "posts/123">;
+        type DevicesStatus = GetMatchedEventPayload<Result, "devices/sensor1/status">;
+        type DevicesData = GetMatchedEventPayload<Result, "devices/sensor1/data">;
+        type AnyNestedPath = GetMatchedEventPayload<Result, "any/nested/patha">;
+        type Posts = GetMatchedEventPayload<Result, "posts">;
 
         type cases = [
             Expect<
                 Equal<
-                    GetMatchedEventPayload<Result, "users/john/online">,
+                    OnlinePayload,
                     | NotPayload<{ name: string; status?: number }>
                     | NotPayload<string>
                     | NotPayload<any>
                 >
             >,
             Expect<
-                Equal<
-                    GetMatchedEventPayload<Result, "users/jane/offline">,
-                    NotPayload<boolean> | NotPayload<string> | NotPayload<any>
-                >
+                Equal<OfflinePayload, NotPayload<boolean> | NotPayload<string> | NotPayload<any>>
             >,
+            Expect<Equal<ProfilePayload, NotPayload<string> | NotPayload<any>>>,
             Expect<
                 Equal<
-                    GetMatchedEventPayload<Result, "users/john/profile">,
-                    NotPayload<string> | NotPayload<any>
-                >
-            >,
-            Expect<
-                Equal<
-                    GetMatchedEventPayload<Result, "posts/123/view">,
+                    PostsView,
                     | NotPayload<{ title: string; views: number }>
                     | NotPayload<number>
                     | NotPayload<any>
@@ -311,40 +312,23 @@ describe("TransformedEvents", () => {
             >,
             Expect<
                 Equal<
-                    GetMatchedEventPayload<Result, "posts/456/comment">,
+                    PostsComment,
                     | NotPayload<{ title: string; views: number }>
                     | NotPayload<string>
                     | NotPayload<any>
                 >
             >,
+            Expect<Equal<Anything, NotPayload<string> | NotPayload<any>>>,
+            Expect<Equal<Posts123, NotPayload<{ title: string; views: number }> | NotPayload<any>>>,
             Expect<
                 Equal<
-                    GetMatchedEventPayload<Result, "anything">,
-                    NotPayload<string> | NotPayload<any>
-                >
-            >,
-            Expect<
-                Equal<
-                    GetMatchedEventPayload<Result, "posts/123">,
-                    NotPayload<{ title: string; views: number }> | NotPayload<any>
-                >
-            >,
-            Expect<
-                Equal<
-                    GetMatchedEventPayload<Result, "devices/sensor1/status">,
+                    DevicesStatus,
                     NotPayload<"online" | "offline"> | NotPayload<number> | NotPayload<any>
                 >
             >,
-            Expect<
-                Equal<
-                    GetMatchedEventPayload<Result, "devices/sensor1/data">,
-                    NotPayload<number> | NotPayload<any>
-                >
-            >,
-            Expect<Equal<GetMatchedEventPayload<Result, "any/nested/path">, NotPayload<any>>>,
-            Expect<
-                Equal<GetMatchedEventPayload<Result, "posts">, NotPayload<string> | NotPayload<any>>
-            >,
+            Expect<Equal<DevicesData, NotPayload<number> | NotPayload<any>>>,
+            Expect<Equal<AnyNestedPath, NotPayload<any>>>,
+            Expect<Equal<Posts, NotPayload<string> | NotPayload<any>>>,
         ];
     });
 

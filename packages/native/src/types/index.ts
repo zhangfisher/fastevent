@@ -1,7 +1,7 @@
 import type { FastListenerExecutor } from "../executors/types";
 import { type FastListenerPipe } from "../pipes/types";
 import { ExpandWildcard, ReplaceWildcard } from "./ExpandWildcard";
-import { IsAny } from "./utils";
+import { IsAny, KeyOf } from "./utils";
 import { GetClosestEvents, GetMatchedEvents } from "./WildcardEvents";
 
 // 用来扩展全局Meta类型
@@ -590,9 +590,14 @@ export type AssertFastMessage<M> = {
     __IS_FAST_MESSAGE__: true;
 };
 
-export type NotPayload<M> = M extends FastMessagePayload ? M : FastMessagePayload<M>;
+export type NotPayload<M> =
+    IsAny<M> extends true
+        ? FastMessagePayload<any>
+        : [M] extends [FastMessagePayload]
+          ? M
+          : FastMessagePayload<M>;
 
-export type PickPayload<M> = M extends FastMessagePayload ? M["type"] : M;
+export type PickPayload<M> = [M] extends [FastMessagePayload] ? M["type"] : M;
 
 export type AtPayloads<Events extends Record<string, any>> = {
     [K in keyof Events]: PickPayload<Events[K]>;

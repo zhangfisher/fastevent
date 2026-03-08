@@ -111,7 +111,7 @@ export class FastEventScope<
     //     >;
     // };
     declare types: {
-        events: Events;
+        events: ExtendWildcardEvents<Events>;
         meta: FinalMeta;
         message: TypedFastEventMessageOptional<Events, FinalMeta>;
     };
