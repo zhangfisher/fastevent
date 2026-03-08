@@ -210,7 +210,7 @@ describe("使用监听器的FaseEvent类型系统测试", () => {
         });
     });
     test("含*和**通配符事件类型", () => {
-        interface Events {
+        type Events = {
             a: boolean;
             b: number;
             c: string;
@@ -220,11 +220,11 @@ describe("使用监听器的FaseEvent类型系统测试", () => {
             "users/*/*": { name: string; vip: boolean };
             "*": { data: any };
             "**": Record<string, any>;
-        }
+        };
         const emitter = new FastEvent<Events>();
 
         type ResultEvents = typeof emitter.types.events;
-        type ResultKeyEvents = keyof typeof emitter.types.events;
+        type ResultKeyEvents = keyof ResultEvents;
         type f1 = GetMatchedEventPayload<Events, `users/fisher/login`>;
         type f2 = GetMatchedEvents<Events, `users/fisher/login`>;
         type f3 = GetClosestEvents<Events, `users/fisher/login`>;

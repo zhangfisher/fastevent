@@ -94,28 +94,26 @@ describe("事件作用域使用监听器类型测试", () => {
         const emitter = new FastEvent<Events>();
         const scope = emitter.scope("users");
 
-        type UserScopeEvents2 = {
-            "a/b": string;
-        } & {
-            [x: `${string}/login`]: string;
-        } & {
-            [x: `${string}/logout`]: number;
-        } & {
-            [x: `${string}/${string}`]: {
-                name: string;
-                vip: boolean;
-            };
-        };
-
         type UserScopeEvents = typeof scope.types.events;
         type UserScopeEventKeys = keyof UserScopeEvents;
-        type f1 = GetMatchedEventPayload<UserScopeEvents2, `fisher/login`>;
+        type f1 = GetMatchedEventPayload<UserScopeEvents, `fisher/login`>;
         type f2 = GetMatchedEvents<UserScopeEvents, `fisher/login`>;
+        type f22 = GetMatchedEvents<UserScopeEvents, `fisher/login`>;
         type f3 = GetClosestEvents<UserScopeEvents, `fisher/login`>;
-        type f4 = GetMatchedEventPayload<UserScopeEvents, `fisher/login`>;
+        type f41 = GetMatchedEventPayload<UserScopeEvents, `fisher/login`>;
+        type f42 = GetMatchedEventPayload<UserScopeEvents, `fisher/login`>;
         type f5 = UserScopeEvents[`fisher/login`];
 
         type cases = [
+            Expect<
+                Equal<
+                    UserScopeEvents["fisher/login"],
+                    string & {
+                        name: string;
+                        vip: boolean;
+                    }
+                >
+            >,
             Expect<
                 Equal<
                     UserScopeEventKeys,
@@ -142,7 +140,7 @@ describe("事件作用域使用监听器类型测试", () => {
             // `fisher/logout`同时匹配了 */login和 */*，所以负载是string | {name:string,vip:boolean}
             Expect<
                 Equal<
-                    GetMatchedEventPayload<Events, `fisher/logout`>,
+                    GetMatchedEventPayload<UserScopeEvents, `fisher/logout`>,
                     | number
                     | {
                           name: string;

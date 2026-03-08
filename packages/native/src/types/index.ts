@@ -623,6 +623,7 @@ export type ExtendWildcardEvents<Events extends Record<string, any>> = RemoveEmp
             : never]: Events[K];
     }
 >;
+
 export type PickTransformedEvents<T extends Record<string, any>> = ExpandWildcard<{
     [key in keyof T as T[key] extends FastMessagePayload<any> ? key : never]: T[key];
 }>;
@@ -660,6 +661,14 @@ export type GetMatchedEventPayload<Events extends Record<string, any>, T extends
             : never
         : never;
 
+// export type GetMatchedEventPayload<Events extends Record<string, any>, T extends string> =
+//     // 使用 WildcardEvents 来匹配事件，返回原始类型
+//     GetMatchedEvents<Events, T> extends infer Matched
+//         ? Matched extends { [key: string]: any }
+//             ? // 匹配对象类型，提取值类型（会自动分发联合类型）
+//               Matched[keyof Matched]
+//             : never
+//         : never;
 export * from "./WildcardEvents";
 export * from "./ScopeEvents";
 export * from "./ExpandWildcard";
