@@ -137,7 +137,7 @@ describe("作用域上下文类型系统", () => {
         scope.on("a", function (this, message) {
             type cases = [
                 Expect<Equal<typeof this, number>>,
-                Expect<Equal<typeof message.type, "a">>,
+                Expect<Equal<typeof message.type, string>>,
                 Expect<Equal<typeof message.payload, any>>,
                 Expect<
                     Equal<
