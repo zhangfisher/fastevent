@@ -198,3 +198,14 @@ export type GetClosestEvents<
         : SelectByMaxFixedSegments<MergeUnion<GetMatchedEvents<Events, T>>>,
     Default
 >;
+
+export type GetClosestEvents2<
+    Events extends Record<string, any>,
+    T extends string,
+    Default extends Record<string, any> = never,
+> = UseDefault<
+    GetMatchedEvents<Events, T> extends never
+        ? never
+        : SelectByMaxFixedSegments<MergeUnion<GetMatchedEvents<Events, T>>>,
+    Default
+>;

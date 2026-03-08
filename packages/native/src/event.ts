@@ -30,7 +30,6 @@ import {
     PickTransformedEvents,
     OmitTransformedEvents,
     GetClosestEvents,
-    Class,
     IsTransformedKey,
     ExtendWildcardEvents,
     MutableEvents,
@@ -316,11 +315,6 @@ export class FastEvent<
      * emitter.on('event', handler, { count: 3 });
      * ```
      */
-    // public on(
-    //     type: "**",
-    //     options?: FastEventListenOptions<AllEvents, Meta>,
-    // ): FastEventIterator<TypedFastEventMessage<MutableEvents<AllEvents>, Meta>>;
-
     // 返回迭代器
     public on<T extends string = KeyOf<Events> | "**">(
         type: T,
@@ -329,7 +323,12 @@ export class FastEvent<
         ? FastEventIterator<
               PickPayload<RecordValues<GetClosestEvents<AllEvents, Exclude<T, number | symbol>>>>
           >
-        : FastEventIterator<TypedFastEventMessage<Record<T, AllEvents[T]>, Meta>>;
+        : FastEventIterator<
+              TypedFastEventMessage<
+                  GetClosestEvents<AllEvents, Exclude<T, number | symbol>, Record<T, any>>,
+                  Meta
+              >
+          >;
 
     // 指定监听器
     public on<T extends string = KeyOf<Events> | "**">(
@@ -562,8 +561,6 @@ export class FastEvent<
      * 此方法供子类继承
      *
      */
-    //  eslint-disable-next-line
-    onMessage(message: TypedFastEventMessage<AllEvents, Meta>, args: FastEventListenerArgs<Meta>) {}
     off(listener: TypedFastEventListener<any, any, any>): void;
     off(type: string, listener: TypedFastEventListener<any, any, any>): void;
     off(type: Types, listener: TypedFastEventListener<any, any, any>): void;

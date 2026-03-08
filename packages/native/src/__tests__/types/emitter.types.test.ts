@@ -2,7 +2,16 @@
 import { describe, test, expect } from "vitest";
 import type { Equal, Expect, NotAny } from "@type-challenges/utils";
 import { FastEvent } from "../../event";
-import { MutableEvents, NotPayload, RecordValues, TransformedEvents } from "../../types/index";
+import {
+    FastEvents,
+    IsTransformedKey,
+    KeyOf,
+    MutableEvents,
+    NotPayload,
+    PickPayload,
+    RecordValues,
+    TransformedEvents,
+} from "../../types/index";
 import {
     GetClosestEvents,
     GetMatchedEventPayload,
@@ -392,16 +401,15 @@ describe("返回迭代器的FaseEvent类型系统测试", () => {
                 >
             >,
         ];
-        type T1 = GetClosestEvents<Events, "x", { a: 1 }>;
-        type M1 = TypedFastEventMessage<T1>;
-        type fffff = { a: 1 } extends {} ? true : false;
         // 未定义类型的事件
-        emitter.on("x", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, "x">>,
-                Expect<Equal<typeof message.payload, any>>,
-            ];
-        });
+        const xMessages = emitter.on("x");
+        type XMessageType = IteratorMessage<typeof xMessages>;
+
+        type XCases = [
+            Expect<Equal<XMessageType["type"], "x">>,
+            Expect<Equal<XMessageType["payload"], any>>,
+            Expect<Equal<XMessageType["meta"], FastEventMeta & Record<string, any>>>,
+        ];
     });
     test("含通配符事件类型", () => {
         interface Events {
