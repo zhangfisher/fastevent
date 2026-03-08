@@ -152,33 +152,50 @@ type PathFixedSegmentsCount<T extends string> = CountFixedSegments<T>;
  * 2. 固定段数量相同时，使用原有逻辑（通配符少的优先）
  */
 type SelectByMaxFixedSegments<T extends Record<string, any>> = T extends { [K: string]: any }
-    ? SelectByFixedSegmentCount<T, 4, 3, 2, 1, 0>
+    ? SelectByFixedSegmentCount<T, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0>
     : never;
 
-/**
- * 按固定段数量优先级选择，从高到低依次检查
- * 4段 > 3段 > 2段 > 1段 > 0段
- */
 type SelectByFixedSegmentCount<
     T extends Record<string, any>,
+    N10 extends number,
+    N9 extends number,
+    N8 extends number,
+    N7 extends number,
+    N6 extends number,
+    N5 extends number,
     N4 extends number,
     N3 extends number,
     N2 extends number,
     N1 extends number,
     N0 extends number,
 > =
-    IsEmptyObject<GetKeysWithFixedSegments<T, N4>> extends true
-        ? IsEmptyObject<GetKeysWithFixedSegments<T, N3>> extends true
-            ? IsEmptyObject<GetKeysWithFixedSegments<T, N2>> extends true
-                ? IsEmptyObject<GetKeysWithFixedSegments<T, N1>> extends true
-                    ? IsEmptyObject<GetKeysWithFixedSegments<T, N0>> extends true
-                        ? FirstObjectItem<T>
-                        : FirstObjectItem<GetKeysWithFixedSegments<T, N0>>
-                    : FirstObjectItem<GetKeysWithFixedSegments<T, N1>>
-                : FirstObjectItem<GetKeysWithFixedSegments<T, N2>>
-            : FirstObjectItem<GetKeysWithFixedSegments<T, N3>>
-        : FirstObjectItem<GetKeysWithFixedSegments<T, N4>>;
-
+    IsEmptyObject<GetKeysWithFixedSegments<T, N10>> extends true
+        ? IsEmptyObject<GetKeysWithFixedSegments<T, N9>> extends true
+            ? IsEmptyObject<GetKeysWithFixedSegments<T, N8>> extends true
+                ? IsEmptyObject<GetKeysWithFixedSegments<T, N7>> extends true
+                    ? IsEmptyObject<GetKeysWithFixedSegments<T, N6>> extends true
+                        ? IsEmptyObject<GetKeysWithFixedSegments<T, N5>> extends true
+                            ? IsEmptyObject<GetKeysWithFixedSegments<T, N4>> extends true
+                                ? IsEmptyObject<GetKeysWithFixedSegments<T, N3>> extends true
+                                    ? IsEmptyObject<GetKeysWithFixedSegments<T, N2>> extends true
+                                        ? IsEmptyObject<
+                                              GetKeysWithFixedSegments<T, N1>
+                                          > extends true
+                                            ? IsEmptyObject<
+                                                  GetKeysWithFixedSegments<T, N0>
+                                              > extends true
+                                                ? FirstObjectItem<T>
+                                                : FirstObjectItem<GetKeysWithFixedSegments<T, N0>>
+                                            : FirstObjectItem<GetKeysWithFixedSegments<T, N1>>
+                                        : FirstObjectItem<GetKeysWithFixedSegments<T, N2>>
+                                    : FirstObjectItem<GetKeysWithFixedSegments<T, N3>>
+                                : FirstObjectItem<GetKeysWithFixedSegments<T, N4>>
+                            : FirstObjectItem<GetKeysWithFixedSegments<T, N5>>
+                        : FirstObjectItem<GetKeysWithFixedSegments<T, N6>>
+                    : FirstObjectItem<GetKeysWithFixedSegments<T, N7>>
+                : FirstObjectItem<GetKeysWithFixedSegments<T, N8>>
+            : FirstObjectItem<GetKeysWithFixedSegments<T, N9>>
+        : FirstObjectItem<GetKeysWithFixedSegments<T, N10>>;
 /**
  * 获取包含特定数量固定段的键
  */
@@ -193,19 +210,10 @@ export type GetClosestEvents<
     T extends string,
     Default extends Record<string, any> = never,
 > = UseDefault<
-    GetMatchedEvents<Events, T> extends never
+    GetMatchedEvents<Events, Exclude<T, number | symbol>> extends never
         ? never
-        : SelectByMaxFixedSegments<MergeUnion<GetMatchedEvents<Events, T>>>,
-    Default
->;
-
-export type GetClosestEvents2<
-    Events extends Record<string, any>,
-    T extends string,
-    Default extends Record<string, any> = never,
-> = UseDefault<
-    GetMatchedEvents<Events, T> extends never
-        ? never
-        : SelectByMaxFixedSegments<MergeUnion<GetMatchedEvents<Events, T>>>,
+        : SelectByMaxFixedSegments<
+              MergeUnion<GetMatchedEvents<Events, Exclude<T, number | symbol>>>
+          >,
     Default
 >;

@@ -320,14 +320,9 @@ export class FastEvent<
         type: T,
         options?: FastEventListenOptions<AllEvents, Meta>,
     ): T extends IsTransformedKey<AllEvents, T>
-        ? FastEventIterator<
-              PickPayload<RecordValues<GetClosestEvents<AllEvents, Exclude<T, number | symbol>>>>
-          >
+        ? FastEventIterator<PickPayload<RecordValues<GetClosestEvents<AllEvents, T>>>>
         : FastEventIterator<
-              TypedFastEventMessage<
-                  GetClosestEvents<AllEvents, Exclude<T, number | symbol>, Record<T, any>>,
-                  Meta
-              >
+              TypedFastEventMessage<GetClosestEvents<AllEvents, T, Record<T, any>>, Meta>
           >;
 
     // 指定监听器
