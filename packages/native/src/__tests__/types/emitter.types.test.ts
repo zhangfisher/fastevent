@@ -15,7 +15,6 @@ import {
 import {
     GetClosestEvents,
     GetMatchedEventPayload,
-    Overloads,
     GetMatchedEvents,
     FastEventMeta,
     ExtendWildcardEvents,
@@ -299,7 +298,7 @@ describe("使用监听器的FaseEvent类型系统测试", () => {
             ];
         });
         // 未声明式的事件
-        emitter.on("x", (message) => {
+        emitter.on("xyz", (message) => {
             type cases = [
                 Expect<Equal<typeof message.type, string>>,
                 Expect<Equal<typeof message.payload, { data: any }>>,
@@ -529,6 +528,33 @@ describe("返回迭代器的FaseEvent类型系统测试", () => {
             Expect<Equal<XMessageType["type"], "x">>,
             Expect<Equal<XMessageType["payload"], any>>,
             Expect<Equal<XMessageType["meta"], FastEventMeta & Record<string, any>>>,
+        ];
+    });
+    test("含多段通配符事件类型", () => {
+        interface Events {
+            "a/*/c/*/d/*/e/*/g/*": string;
+            "a/*/c/**": NotPayload<number>;
+        }
+        const emitter = new FastEvent<Events>();
+        const messages = emitter.on("a/1/c/2/d/3/e/4/g/5");
+        type MessageType = IteratorMessage<typeof messages>;
+
+        const anyMessages = emitter.on("a/1/c/2/dd/3/ee");
+        type AnyMessageType = IteratorMessage<typeof anyMessages>;
+
+        type T1 = GetClosestEvents<Events, "a/1/c/2/d/3/e/4/g/5">;
+        type T2 = IsTransformedKey<Events, "a/1/c/2/d/3/e/4/g/5">;
+        type Cases = [
+            Expect<Equal<AnyMessageType, number>>,
+            // 没有使用NotPayload
+            Expect<
+                Equal<
+                    MessageType["type"],
+                    `a/${string}/c/${string}/d/${string}/e/${string}/g/${string}`
+                >
+            >,
+            Expect<Equal<MessageType["payload"], string>>,
+            Expect<Equal<MessageType["meta"], FastEventMeta & Record<string, any>>>,
         ];
     });
 });

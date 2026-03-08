@@ -35,6 +35,8 @@ import {
     MutableEvents,
     FastEventCommonListener,
     KeyOf,
+    IsTransformed,
+    PayloadValues,
 } from "./types";
 import { parseEmitArgs } from "./utils/parseEmitArgs";
 import { isPathMatched } from "./utils/isPathMatched";
@@ -320,7 +322,13 @@ export class FastEvent<
         type: T,
         options?: FastEventListenOptions<AllEvents, Meta>,
     ): T extends IsTransformedKey<AllEvents, T>
-        ? FastEventIterator<PickPayload<RecordValues<GetClosestEvents<AllEvents, T>>>>
+        ? FastEventIterator<
+              T extends "**"
+                  ? IsTransformed<Events> extends true
+                      ? PayloadValues<AllEvents>
+                      : any
+                  : PickPayload<RecordValues<GetClosestEvents<AllEvents, T>>>
+          >
         : FastEventIterator<
               TypedFastEventMessage<GetClosestEvents<AllEvents, T, Record<T, any>>, Meta>
           >;

@@ -2,7 +2,7 @@ import type { FastListenerExecutor } from "../executors/types";
 import { type FastListenerPipe } from "../pipes/types";
 import { ExpandWildcard, ReplaceWildcard } from "./ExpandWildcard";
 import { IsAny } from "./utils";
-import { GetMatchedEvents } from "./WildcardEvents";
+import { GetClosestEvents, GetMatchedEvents } from "./WildcardEvents";
 
 // 用来扩展全局Meta类型
 export interface FastEventMeta {}
@@ -541,6 +541,8 @@ export type Overloads<T> = Unique<
 export type Dict<V = any> = Record<Exclude<string, number | symbol>, V>;
 
 export type RecordValues<R extends Record<string, any>> = R[keyof R];
+export type PayloadValues<R extends Record<string, any>> =
+    R[keyof R] extends FastMessagePayload<infer P> ? P : R[keyof R];
 
 export type RecordPrefix<P extends string, R extends Record<string, any>> = {
     [K in keyof R as K extends `${P}/${infer S}` ? S : never]: R[K];
@@ -701,22 +703,62 @@ export type IsTransformedKey<Events extends Record<string, any>, T extends strin
             : Events[T] extends FastMessagePayload<any>
               ? T
               : never
-        : // 如果不是精确键，检查通配符匹配
-          GetMatchedEvents<Events, T> extends infer MatchedEvents
-          ? MatchedEvents extends Record<string, any>
-              ? // 获取所有非全局通配符的匹配键
-                Exclude<keyof MatchedEvents, "*" | "**"> extends infer NonGlobalKeys
-                  ? NonGlobalKeys extends never
-                      ? // 如果没有非全局通配符匹配，检查全局通配符
-                        keyof MatchedEvents extends "*" | "**"
-                          ? MatchedEvents[keyof MatchedEvents] extends FastMessagePayload<any>
-                              ? T
-                              : never
-                          : never
-                      : // 如果有非全局通配符匹配，检查它们的值类型
-                        CheckWildcardMatch<MatchedEvents, T>
-                  : never
+        : // 如果不是精确键，使用 GetClosestEvents 获取最精确的通配符匹配
+          GetClosestEvents<Events, Exclude<T, number | symbol>> extends infer ClosestEvent
+          ? ClosestEvent extends Record<string, any>
+              ? // 检查最精确匹配的值类型是否扩展 FastMessagePayload
+                IsAny<ClosestEvent[keyof ClosestEvent]> extends true
+                  ? never
+                  : ClosestEvent[keyof ClosestEvent] extends FastMessagePayload<any>
+                    ? T
+                    : never
               : never
           : never;
 
-export type { IsAny } from "./utils";
+// export type IsTransformedKey<Events extends Record<string, any>, T extends string> =
+//     // 优先检查：如果 T 是 Events 的精确键，其值必须扩展 FastMessagePayload
+//     T extends keyof Events
+//         ? IsAny<Events[T]> extends true
+//             ? never
+//             : Events[T] extends FastMessagePayload<any>
+//               ? T
+//               : never
+//         : // 如果不是精确键，检查通配符匹配
+//           GetMatchedEvents<Events, T> extends infer MatchedEvents
+//           ? MatchedEvents extends Record<string, any>
+//               ? // 获取所有非全局通配符的匹配键
+//                 Exclude<keyof MatchedEvents, "*" | "**"> extends infer NonGlobalKeys
+//                   ? NonGlobalKeys extends never
+//                       ? // 如果没有非全局通配符匹配，检查全局通配符
+//                         keyof MatchedEvents extends "*" | "**"
+//                           ? MatchedEvents[keyof MatchedEvents] extends FastMessagePayload<any>
+//                               ? T
+//                               : never
+//                           : never
+//                       : // 如果有非全局通配符匹配，检查它们的值类型
+//                         CheckWildcardMatch<MatchedEvents, T>
+//                   : never
+//               : never
+//           : never;
+
+/**
+ * 检查事件对象的所有值是否都为 FastMessagePayload 类型
+ * @description
+ * - 如果 Events 为空对象，返回 false
+ * - 如果所有值都 extends FastMessagePayload，返回 true
+ * - 否则返回 false
+ *
+ * @example
+ * type Test1 = IsTransformed<{ a: FastMessagePayload<string> }>; // true
+ * type Test2 = IsTransformed<{ a: FastMessagePayload<string>; b: number }>; // false
+ * type Test3 = IsTransformed<{}>; // false
+ */
+export type IsTransformed<Events extends Record<string, any>> = keyof Events extends never
+    ? false
+    : {
+            [K in keyof Events]: Events[K] extends FastMessagePayload<any> ? true : false;
+        }[keyof Events] extends infer Result
+      ? [Result] extends [true]
+          ? true
+          : false
+      : false;
