@@ -38,6 +38,7 @@ import {
     IsTransformed,
     PayloadValues,
     GetPayload,
+    MutableMessage,
 } from "./types";
 import { parseEmitArgs } from "./utils/parseEmitArgs";
 import { isPathMatched } from "./utils/isPathMatched";
@@ -1021,26 +1022,26 @@ export class FastEvent<
      * ```
      */
     // 用于清除保留事件
-    public emit<T extends EventNames = EventNames>(type: T, directive: symbol): any[];
-    public emit(type: string, directive: symbol): any[];
+    public emit<T extends EventNames | string = EventNames>(type: T, directive: symbol): [];
+    // public emit(type: string, directive: symbol): any[];
     // 支持retain参数
     public emit<R = any, T extends EventNames = EventNames>(
         type: T,
-        payload?: GetPayload<AllEvents, T extends string ? T : string>,
+        payload?: GetPayload<AllEvents, T>,
         retain?: boolean,
     ): R[];
-    // public emit<R = any, T extends string = string>(
-    //     type: T,
-    //     payload: PickPayload<
-    //         T extends EventNames ? AllEvents[T] : RecordValues<GetMatchedEvents<AllEvents, T>>
-    //     >,
-    //     retain?: boolean,
-    // ): R[];
-    // public emit<R = any, T extends string = string>(
-    //     message: FastEventEmitMessage<{ [K in T]: K extends Types ? AllEvents[K] : any }, Meta>,
-    //     retain?: boolean,
-    // ): R[];
+    public emit<R = any, T extends string = string>(
+        type: T,
+        payload?: GetPayload<AllEvents, T>,
+        retain?: boolean,
+    ): R[];
+
+    public emit<R = any, T extends EventNames = EventNames>(
+        message: MutableMessage<AllEvents, Meta>,
+        retain?: boolean,
+    ): R[];
     // public emit<R = any>(message: FastEventEmitMessage<AllEvents, Meta>, retain?: boolean): R[];
+
     // // 使用完整的配置选项
     // public emit<R = any, T extends EventNames = EventNames>(
     //     type: T,

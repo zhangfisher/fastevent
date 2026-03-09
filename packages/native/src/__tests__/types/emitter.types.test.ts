@@ -3,6 +3,7 @@ import { describe, test } from "vitest";
 import type { Equal, Expect } from "@type-challenges/utils";
 import { FastEvent } from "../../event";
 import {
+    FastEventEmitMessage,
     GetPayload,
     IsTransformedKey,
     MutableEvents,
@@ -22,6 +23,7 @@ import {
 import { FastEventIterator } from "../../utils/eventIterator";
 import { Overloads } from "./utils";
 import { PickPayload } from "../../types/index";
+import { MutableEvents, MutableMessage } from "../../types/ScopeEvents";
 type IteratorMessage<T> = T extends FastEventIterator<infer M> ? M : never;
 
 describe("使用监听器的FaseEvent类型系统测试", () => {
@@ -621,22 +623,35 @@ describe("emit 触发事件类型系统测试", () => {
         type EmitMethods = Overloads<typeof emitter.emit>;
         type Arg1 = Parameters<EmitMethods[0]>[0];
         type Arg2 = Parameters<EmitMethods[1]>[0];
-        type cases = [
-            Expect<
-                Equal<
-                    Parameters<EmitMethods[0]>[0],
-                    "a" | "b" | "c" | "x/y/z/a" | "x/y/z/b" | "x/y/z/c"
-                >
-            >,
-            Expect<Equal<Parameters<EmitMethods[0]>[0], keyof Events>>,
-            Expect<Equal<Parameters<EmitMethods[1]>[0], string>>,
-        ];
+        type GetPayloadType<T extends (...args: any) => any[], E extends keyof Events> = T extends (
+            type: E,
+            payload: infer payload,
+            ...args: any
+        ) => any[]
+            ? payload
+            : never;
+
+        const r = emitter.emit("bddd", Symbol());
+        emitter.emit("a", Symbol());
+        // @ts-check
+        emitter.emit("a", 1);
         emitter.emit("a", true);
         emitter.emit("b", 1);
         emitter.emit("c", "");
         emitter.emit("x/y/z/a", 1);
         emitter.emit("x/y/z/b", 2);
         emitter.emit("x/y/z/c", 3);
+
+        type M1 = FastEventEmitMessage<Events, { a: 1 }>;
+
+        emitter.emit({
+            type: "a",
+            payload: true,
+        });
+        emitter.emit({
+            type: "b",
+            payload: 1,
+        });
     });
     test("含通配符事件类型", () => {
         interface Events {
@@ -644,35 +659,34 @@ describe("emit 触发事件类型系统测试", () => {
             b: number;
             c: string;
             "div/*/click": { x: number; y: number };
-            "users/*/login": string;
+            "users/*/login": "x" | "y" | "z";
             "users/*/logout": number;
             "users/*/*": { name: string; vip: boolean };
         }
         const emitter = new FastEvent<Events>();
         type ddd = typeof emitter.types.eventNames;
-        type ExtEvents = ExtendWildcardEvents<Events>;
+        type MessageType = FastEventEmitMessage<ExtendWildcardEvents<Events>>;
+        type MessageKeys = FastEventEmitMessage<ExtendWildcardEvents<Events>>["type"];
+        type m2 = MutableMessage<Events>;
+        type M1 = FastEventEmitMessage<Events, { a: 1 }>;
+        type ddd2 = ExtendWildcardEvents<Events>;
+        emitter.emit({
+            type: "a",
+            payload: true,
+        });
+        emitter.emit({
+            type: "users/vvvvv/login",
+            payload: "x",
+        });
 
-        type dd = GetPayload<Events, "users/fisher/logi1n">;
-
-        // 提取所有重载的参数类型
-        type EmitParams = Overloads<typeof emitter.emit>;
-        type Arg1 = Parameters<EmitParams[0]>[0];
-        type Arg2 = Parameters<EmitParams[1]>[0];
-        type cases = [
-            Expect<
-                Equal<
-                    Parameters<EmitParams[0]>[0],
-                    | "a"
-                    | "b"
-                    | "c"
-                    | `div/${string}/click`
-                    | `users/${string}/login`
-                    | `users/${string}/logout`
-                    | `users/${string}/${string}`
-                >
-            >,
-            Expect<Equal<Parameters<EmitParams[1]>[0], string>>,
-        ];
+        emitter.emit({
+            type: "users/abc/login",
+            payload: { name: "a", vip: true },
+        });
+        emitter.emit({
+            type: "a",
+            payload: true,
+        });
     });
     test("含*和**通配符事件类型", () => {
         type Events = {

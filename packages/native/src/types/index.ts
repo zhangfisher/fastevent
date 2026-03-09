@@ -783,6 +783,10 @@ export type IsTransformed<Events extends Record<string, any>> = keyof Events ext
 /**
  * 从
  */
-export type GetPayload<Events extends Record<string, any>, T extends string> = PickPayload<
-    RecordValues<ExtendWildcardEvents<GetClosestEvents<Events, T, Record<string, any>>>>
+export type GetPayload<Events extends Record<string, any>, T> = PickPayload<
+    RecordValues<
+        ExtendWildcardEvents<
+            GetClosestEvents<Events, T extends string ? T : string, Record<string, any>>
+        >
+    >
 >;

@@ -1,4 +1,4 @@
-import { ExtendWildcardEvents } from ".";
+import { ExtendWildcardEvents, GetPayload } from ".";
 
 // 分割字符串为元组类型
 type Split<
@@ -67,10 +67,7 @@ type Join<T extends string[], Delimiter extends string = "/"> = T extends [
     : "";
 
 // ScopeEvents 内部实现
-type ScopeEventsImpl<
-    Events extends Record<string, any>,
-    Prefix extends string,
-> = {
+type ScopeEventsImpl<Events extends Record<string, any>, Prefix extends string> = {
     [K in keyof Events as K extends string
         ? MatchPatternAndGetRemainder<Split<K, "/">, Split<Prefix, "/">> extends infer Remainder
             ? Remainder extends string[]
@@ -87,7 +84,7 @@ export type ScopeEvents<
     Events extends Record<string, any>,
     Prefix extends string,
     Default extends Record<string, any> = Record<string, any>,
-> = Prefix extends ''
+> = Prefix extends ""
     ? Events
     : [keyof ScopeEventsImpl<Events, Prefix>] extends [never]
       ? Default
@@ -101,38 +98,41 @@ export type MutableEvents<Events extends Record<string, any>, Meta = Record<stri
     };
 }[keyof ExtendWildcardEvents<Events>]; // // 测试用例
 
-// type Events = MutableEvents<{
-//     a: 1;
-//     "a/*": string;
-//     "a/a1/*": string;
-//     "a/a2": string;
-//     "a/*/x": string;
-//     "b/*": number;
-//     "b/*/y": number;
-//     "c/*": boolean;
-//     "rooms/*/add": boolean;
-//     "rooms/*/join": boolean;
-//     "rooms/*/leave": boolean;
-// }>;
+export type MutableMessage<Events extends Record<string, any>, Meta = Record<string, any>> = {
+    [K in keyof ExtendWildcardEvents<Events>]: {
+        type: Exclude<K, number | symbol>;
+        payload?: GetPayload<Events, Exclude<K, number | symbol>>;
+        meta?: Meta;
+    };
+}[keyof ExtendWildcardEvents<Events>];
 
-// // 测试
-// type Test1 = ScopeEvents<Events, 'a'>;
-// // ^? { '*': string; 'a1/*': string; 'a2': string; '*/x': string; }
+type Events = MutableMessage<{
+    a: 1;
+    "c/*": boolean;
+    "rooms/*/add": boolean;
+    "rooms/*/join": boolean;
+    "rooms/*/leave": boolean;
+    "rooms/*/*": number;
+}>;
 
-// type Test2 = ScopeEvents<Events, 'a/x'>;
-// // ^? { '*': string; '*/x': string; }  // 移除了空字符串key
+const m1: Events = {
+    type: "rooms/x/add",
+    payload: true,
+};
 
-// type Test3 = ScopeEvents<Events, 'b'>;
-// // ^? { '*': number; '*/y': number; }
+// 强制计算类型
+type Eval<T> = T extends any ? { [K in keyof T]: T[K] } : never;
 
-// type Test4 = ScopeEvents<Events, 'c'>;
-// // ^? { '*': boolean; }
+// 处理索引签名
+type HandleIndex<T> = {
+    [K in keyof T]: T[K];
+};
 
-// type Test5 = ScopeEvents<Events, 'rooms/c'>;
-// // ^? { '*/add': boolean; '*/join': boolean; '*/leave': boolean; }
+type ValueOf<T> = HandleIndex<Eval<T>>[keyof HandleIndex<Eval<T>>];
 
-// type Test6 = ScopeEvents<Events, 'rooms'>;
-// // ^? { '*/add': boolean; '*/join': boolean; '*/leave': boolean; }
-
-// type Test7 = ScopeEvents<Events, 'rooms/1'>;
-// // ^? { '*/add': boolean; '*/join': boolean; '*/leave': boolean; }
+// 测试
+type Test5 = ValueOf<
+    { "users/a": 1; b: number; c: boolean } & {
+        [x: `users/${string}`]: "aaaaa";
+    }
+>;
