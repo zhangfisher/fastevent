@@ -70,8 +70,9 @@ export class FastEvent<
     Context = never,
     // 泛型快捷方式
     AllEvents extends Record<string, any> = Expand<Events & FastEvents>,
-    Types extends keyof AllEvents = Expand<Exclude<keyof AllEvents, number | symbol>>,
+    Types extends keyof AllEvents = KeyOf<AllEvents>,
     AllMeta extends Record<string, any> = FastEventMeta & Meta,
+    EventNames = keyof ExtendWildcardEvents<AllEvents>,
 > {
     __FastEvent__: boolean = true;
     /** 事件监听器树结构，存储所有注册的事件监听器 */
@@ -95,6 +96,7 @@ export class FastEvent<
     // 子类通过：declare types : { } & typeof FastEvent.types  扩展类型
     types = null as unknown as {
         events: ExtendWildcardEvents<AllEvents>;
+        eventNames: keyof ExtendWildcardEvents<AllEvents>;
         meta: AllMeta;
         context: Expand<Fallback<Context, FastEvent<AllEvents, Meta, Context>>>;
         message: TypedFastEventMessageOptional<
@@ -1018,10 +1020,10 @@ export class FastEvent<
      * ```
      */
     // 用于清除保留事件
-    public emit<T extends Types = Types>(type: T, directive: symbol): any[];
+    public emit<T extends EventNames = EventNames>(type: T, directive: symbol): any[];
     public emit(type: string, directive: symbol): any[];
     // 支持retain参数
-    public emit<R = any, T extends Types = Types>(
+    public emit<R = any, T extends EventNames = EventNames>(
         type: T,
         payload?: PickPayload<AllEvents[T]>,
         retain?: boolean,
@@ -1029,7 +1031,7 @@ export class FastEvent<
     public emit<R = any, T extends string = string>(
         type: T,
         payload: PickPayload<
-            T extends Types ? AllEvents[T] : RecordValues<GetMatchedEvents<AllEvents, T>>
+            T extends EventNames ? AllEvents[T] : RecordValues<GetMatchedEvents<AllEvents, T>>
         >,
         retain?: boolean,
     ): R[];
@@ -1039,7 +1041,7 @@ export class FastEvent<
     ): R[];
     public emit<R = any>(message: FastEventEmitMessage<AllEvents, Meta>, retain?: boolean): R[];
     // 使用完整的配置选项
-    public emit<R = any, T extends Types = Types>(
+    public emit<R = any, T extends EventNames = EventNames>(
         type: T,
         payload?: PickPayload<AllEvents[T]>,
         options?: FastEventListenerArgs<Meta>,

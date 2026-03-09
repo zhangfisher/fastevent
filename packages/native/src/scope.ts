@@ -112,6 +112,7 @@ export class FastEventScope<
     // };
     declare types: {
         events: ExtendWildcardEvents<Events>;
+        rawEvents: Events;
         meta: FinalMeta;
         message: TypedFastEventMessageOptional<Events, FinalMeta>;
     };
@@ -219,7 +220,7 @@ export class FastEventScope<
                   : PickPayload<RecordValues<GetClosestEvents<Events, T>>>
           >
         : FastEventIterator<
-              TypedFastEventMessage<GetClosestEvents<Events, T, Record<T, any>>, Meta>
+              TypedFastEventMessage<GetClosestEvents<Events, T, Record<T, any>>, FinalMeta>
           >;
     // 使用标准监听器
     public on<T extends string = KeyOf<Events> | "**">(
@@ -328,7 +329,11 @@ export class FastEventScope<
     clear() {
         this.emitter.clear(this.prefix.substring(0, this.prefix.length - 1));
     }
-
+    /**
+     * 触发事件
+     * @param type
+     * @param directive
+     */
     public emit(type: Types, directive: symbol): void;
     public emit(type: string, directive: symbol): void;
     public emit<R = any, T extends Types = Types>(

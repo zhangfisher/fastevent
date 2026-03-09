@@ -74,6 +74,28 @@ export type GetMatchedEvents<Events extends Record<string, any>, T extends strin
         : { [P in K]: Events[K] };
 }[keyof Events];
 
+type ExtEvents = {
+    a: boolean;
+    b: number;
+    c: string;
+} & {
+    [x: `div/${string}/click`]: {
+        x: number;
+        y: number;
+    };
+} & {
+    [x: `users/${string}/login`]: string;
+} & {
+    [x: `users/${string}/logout`]: number;
+} & {
+    [x: `users/${string}/${string}`]: {
+        name: string;
+        vip: boolean;
+    };
+};
+
+type M = GetMatchedEvents<ExtEvents, "users/x/login">;
+
 /**
  * 保留对象中第一项
  */

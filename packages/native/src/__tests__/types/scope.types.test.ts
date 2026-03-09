@@ -9,15 +9,22 @@ import { FastEventScope, FastEventScopeMeta } from "../../scope";
 import {
     Expand,
     ExtendWildcardEvents,
+    FastEventMessageExtends,
     FastEventMeta,
     GetClosestEvents,
     GetMatchedEventPayload,
     GetMatchedEvents,
+    IsTransformedKey,
+    MutableEvents,
     NotPayload,
+    RecordValues,
     ScopeEvents,
     TransformedEvents,
     TypedFastEventMessage,
 } from "../../types";
+import { FastEventIterator } from "../../utils/eventIterator";
+
+type IteratorMessage<T> = T extends FastEventIterator<infer M> ? M : never;
 
 describe("事件作用域使用监听器类型测试", () => {
     test("没有指定事件类型时支持所有事件", () => {
@@ -86,7 +93,6 @@ describe("事件作用域使用监听器类型测试", () => {
             b: number;
             c: string;
             "div/*/click": { x: number; y: number };
-            "users/a/b": string;
             "users/*/login": string;
             "users/*/logout": number;
             "users/*/*": { name: string; vip: boolean };
@@ -94,16 +100,15 @@ describe("事件作用域使用监听器类型测试", () => {
         const emitter = new FastEvent<Events>();
         const scope = emitter.scope("users");
 
+        type UserScopeRawEvents = typeof scope.types.rawEvents;
         type UserScopeEvents = typeof scope.types.events;
-        type UserScopeEventKeys = keyof UserScopeEvents;
-        type f1 = GetMatchedEventPayload<UserScopeEvents, `fisher/login`>;
-        type f2 = GetMatchedEvents<UserScopeEvents, `fisher/login`>;
-        type f22 = GetMatchedEvents<UserScopeEvents, `fisher/login`>;
-        type f3 = GetClosestEvents<UserScopeEvents, `fisher/login`>;
-        type f41 = GetMatchedEventPayload<UserScopeEvents, `fisher/login`>;
-        type f42 = GetMatchedEventPayload<UserScopeEvents, `fisher/login`>;
-        type f5 = UserScopeEvents[`fisher/login`];
-
+        type UserScopeEventKeys = keyof UserScopeRawEvents;
+        type f1 = GetMatchedEventPayload<UserScopeRawEvents, `fisher/login`>;
+        type f2 = GetMatchedEvents<UserScopeRawEvents, `fisher/login`>;
+        type f22 = GetMatchedEvents<UserScopeRawEvents, `fisher/login`>;
+        type f3 = GetClosestEvents<UserScopeRawEvents, `fisher/login`>;
+        type f41 = GetMatchedEventPayload<UserScopeRawEvents, `fisher/login`>;
+        type f42 = GetMatchedEventPayload<UserScopeRawEvents, `fisher/login`>;
         type cases = [
             Expect<
                 Equal<
@@ -116,7 +121,7 @@ describe("事件作用域使用监听器类型测试", () => {
             >,
             Expect<
                 Equal<
-                    UserScopeEventKeys,
+                    keyof UserScopeEvents,
                     `${string}/${string}` | `${string}/login` | `${string}/logout`
                 >
             >,
@@ -126,7 +131,7 @@ describe("事件作用域使用监听器类型测试", () => {
             // `fisher/login`同时匹配了*/login和*/*，所以负载是string | {name:string,vip:boolean}
             Expect<
                 Equal<
-                    GetMatchedEventPayload<UserScopeEvents, `fisher/login`>,
+                    GetMatchedEventPayload<UserScopeRawEvents, `fisher/login`>,
                     | string
                     | {
                           name: string;
@@ -140,7 +145,7 @@ describe("事件作用域使用监听器类型测试", () => {
             // `fisher/logout`同时匹配了 */login和 */*，所以负载是string | {name:string,vip:boolean}
             Expect<
                 Equal<
-                    GetMatchedEventPayload<UserScopeEvents, `fisher/logout`>,
+                    GetMatchedEventPayload<UserScopeRawEvents, `fisher/logout`>,
                     | number
                     | {
                           name: string;
@@ -150,18 +155,133 @@ describe("事件作用域使用监听器类型测试", () => {
             >,
         ];
 
-        const subscriber = emitter.on("a", (message) => {
+        // 不存在的事件
+        const subscriber = scope.on("a", (message) => {
             type EventType = typeof message.type;
             type PayloadType = typeof message.payload;
             type MetaType = typeof message.meta;
 
             type cases = [
                 Expect<Equal<EventType, "a">>,
-                Expect<Equal<PayloadType, boolean>>,
-                Expect<Equal<MetaType, FastEventMeta & Record<string, any>>>,
+                Expect<Equal<PayloadType, any>>,
+                Expect<Equal<MetaType, FastEventMeta & FastEventScopeMeta & Record<string, any>>>,
             ];
         });
-        type T1 = ExtendWildcardEvents<Events>;
+        scope.on("fisher/login", (message) => {
+            type EventType = typeof message.type;
+            type PayloadType = typeof message.payload;
+            type MetaType = typeof message.meta;
+
+            type cases = [
+                Expect<Equal<EventType, `${string}/login`>>,
+                Expect<Equal<PayloadType, string>>,
+                Expect<Equal<MetaType, FastEventMeta & FastEventScopeMeta & Record<string, any>>>,
+            ];
+        });
+        scope.on("fisher/online", (message) => {
+            type EventType = typeof message.type;
+            type PayloadType = typeof message.payload;
+            type MetaType = typeof message.meta;
+            type cases = [
+                Expect<Equal<EventType, `${string}/${string}`>>,
+                Expect<
+                    Equal<
+                        PayloadType,
+                        {
+                            name: string;
+                            vip: boolean;
+                        }
+                    >
+                >,
+                Expect<Equal<MetaType, FastEventMeta & FastEventScopeMeta & Record<string, any>>>,
+            ];
+        });
+        // 不匹配的事件
+        scope.on("fisher/login/xxx", (message) => {
+            type EventType = typeof message.type;
+            type PayloadType = typeof message.payload;
+            type MetaType = typeof message.meta;
+
+            type cases = [
+                Expect<Equal<EventType, "fisher/login/xxx">>,
+                Expect<Equal<PayloadType, any>>,
+                Expect<Equal<MetaType, FastEventMeta & FastEventScopeMeta & Record<string, any>>>,
+            ];
+        });
+        scope.on("x", (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, "x">>,
+                Expect<Equal<typeof message.payload, any>>,
+            ];
+        });
+    });
+    test("含*和**通配符事件类型", () => {
+        interface Events {
+            a: boolean;
+            b: number;
+            c: string;
+            "div/*/click": { x: number; y: number };
+            "users/*/login": string;
+            "users/*/logout": number;
+            "users/*/*": { name: string; vip: boolean };
+            "*": { data: any };
+            "**": Record<string, any>;
+        }
+        const emitter = new FastEvent<Events>();
+        const scope = emitter.scope("users");
+
+        type RawEvents = typeof scope.types.rawEvents;
+        type UserScopeEvents = typeof scope.types.events;
+        type RawEventKeys = keyof RawEvents;
+        type f1 = GetMatchedEventPayload<RawEvents, `fisher/login`>;
+        type f2 = GetMatchedEvents<Events, `fisher/login`>;
+        type f3 = GetClosestEvents<Events, `fisher/login`>;
+        type f4 = UserScopeEvents[`fisher/login`];
+
+        type cases = [
+            //fisher/login
+            Expect<Equal<`fisher/login` extends keyof UserScopeEvents ? true : false, true>>,
+            Expect<Equal<`${string}/login` extends keyof UserScopeEvents ? true : false, true>>,
+            // `fisher/login`同时匹配了*/login，*/*， "**"
+            // 所以负载是string | {name:string,vip:boolean} | Record<string, any>
+            Expect<
+                Equal<
+                    GetMatchedEventPayload<Events, `users/fisher/login`>,
+                    | string
+                    | {
+                          name: string;
+                          vip: boolean;
+                      }
+                    | Record<string, any>
+                >
+            >,
+            //fisher/logout
+            Expect<Equal<`fisher/logout` extends keyof UserScopeEvents ? true : false, true>>,
+            Expect<Equal<`${string}/logout` extends keyof UserScopeEvents ? true : false, true>>,
+            // `fisher/logout`同时匹配了*/login和*/*，所以负载是string | {name:string,vip:boolean}
+            Expect<
+                Equal<
+                    GetMatchedEventPayload<RawEvents, `fisher/logout`>,
+                    | number
+                    | {
+                          name: string;
+                          vip: boolean;
+                      }
+                >
+            >,
+        ];
+
+        const subscriber = scope.on("a", (message) => {
+            type EventType = typeof message.type;
+            type PayloadType = typeof message.payload;
+            type MetaType = typeof message.meta;
+
+            type cases = [
+                Expect<Equal<EventType, "a">>,
+                Expect<Equal<PayloadType, any>>,
+                Expect<Equal<MetaType, FastEventMeta & FastEventScopeMeta & Record<string, any>>>,
+            ];
+        });
         scope.on("fisher/login", (message) => {
             type EventType = typeof message.type;
             type PayloadType = typeof message.payload;
@@ -202,6 +322,90 @@ describe("事件作用域使用监听器类型测试", () => {
                 Expect<Equal<MetaType, FastEventMeta & FastEventScopeMeta & Record<string, any>>>,
             ];
         });
+        // 未声明式的事件
+        scope.on("xyz", (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, "xyz">>,
+                Expect<Equal<typeof message.payload, any>>,
+            ];
+        });
+    });
+    test("含多段通配符事件类型", () => {
+        interface Events {
+            "a/*/c/*/d/*/e/*/g/*": string;
+            "a/*/c/**": number;
+        }
+        const emitter = new FastEvent<Events>();
+
+        const scope = emitter.scope("a");
+        const subscriber = scope.on("1/c/2/d/3/e/4/g/5", (message) => {
+            type cases = [
+                Expect<
+                    Equal<
+                        typeof message.type,
+                        `${string}/c/${string}/d/${string}/e/${string}/g/${string}`
+                    >
+                >,
+                Expect<Equal<typeof message.payload, string>>,
+                Expect<
+                    Equal<
+                        typeof message.meta,
+                        FastEventMeta & FastEventScopeMeta & Record<string, any>
+                    >
+                >,
+            ];
+        });
+    });
+    test("部份事件经过转换", () => {
+        interface Events {
+            "users/a": boolean;
+            "users/b": NotPayload<number>;
+            "users/c": NotPayload<{ x: number; y: number }>;
+        }
+        const emitter = new FastEvent<Events>();
+
+        const scope = emitter.scope("users");
+
+        scope.on("a", (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, "a">>,
+                Expect<Equal<typeof message.payload, boolean>>,
+            ];
+        });
+        // b事件经过转换
+        scope.on("b", (message) => {
+            type MessageType = typeof message;
+            type cases = [Expect<Equal<MessageType, number>>];
+        });
+        // c事件经过转换
+        scope.on("c", (message) => {
+            type MessageType = typeof message;
+            type cases = [Expect<Equal<MessageType, { x: number; y: number }>>];
+        });
+    });
+    test("转换全部事件经过转换", () => {
+        interface Events {
+            "users/a": boolean;
+            "users/b": NotPayload<number>;
+            "users/c": NotPayload<{ x: number; y: number }>;
+        }
+        const emitter = new FastEvent<TransformedEvents<Events>>();
+
+        const scope = emitter.scope("users");
+        // a事件经过转换
+        scope.on("a", (message) => {
+            type cases = [Expect<Equal<typeof message, boolean>>];
+        });
+        // b事件经过转换
+        scope.on("b", (message) => {
+            type cases = [Expect<Equal<typeof message, number>>];
+        });
+        // c事件经过转换
+        scope.on("c", (message) => {
+            type MessageType = typeof message;
+            type cases = [Expect<Equal<MessageType, { x: number; y: number }>>];
+        });
+        // 未定义类型的事件
         scope.on("x", (message) => {
             type cases = [
                 Expect<Equal<typeof message.type, "x">>,
@@ -209,6 +413,131 @@ describe("事件作用域使用监听器类型测试", () => {
             ];
         });
     });
+
+    test("scope发布通配符事件", () => {
+        type Events = {
+            "x/users/online": { name: string; status?: number };
+            "x/users/*/online": { name: string; status?: number };
+            "x/users/*/*": 1;
+            "x/users/*/offline": boolean;
+            "x/posts/*/online": string;
+            "x/posts/**": number;
+        };
+        const emitter = new FastEvent<Events>();
+        emitter.on("x/posts/fisher/online", (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, `x/posts/${string}/online`>>,
+                Expect<Equal<typeof message.payload, string>>,
+            ];
+        });
+
+        // 不需要显式指定类型参数，应该能自动推断
+        const scope = emitter.scope("x");
+
+        type scopEvents = typeof scope.types.events;
+        type xScopeEvents = ScopeEvents<Events, "x">;
+
+        scope.on("users/x/online", (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, `users/${string}/online`>>,
+                Expect<Equal<typeof message.payload, { name: string; status?: number }>>,
+            ];
+        });
+        scope.on("users/x/y", (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, `users/${string}/${string}`>>,
+                Expect<Equal<typeof message.payload, 1>>,
+            ];
+        });
+
+        scope.on("posts/fisher/online", (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, `posts/${string}/online`>>,
+                Expect<Equal<typeof message.payload, string>>,
+            ];
+        });
+
+        // 正确的类型检查
+        scope.emit("users/fisher/online", { name: "string", status: 1 });
+        scope.emit("users/fisher/online", { name: "string" });
+        scope.emit("users/fisher/offline", true);
+        scope.emit("posts/fisher/offline", 1);
+
+        // 类型错误的调用，应该被TypeScript标记为错误
+        // scope.emit('users/fisher/online', 1);
+        // scope.emit('users/fisher/online', 2);
+        // scope.emit('users/fisher/offline', 1);
+        // scope.emit('posts/fisher/offline', '22');
+    });
+});
+describe("事件作用域: 返回迭代器 类型测试", () => {
+    test("常规类型测试", async () => {
+        interface Events {
+            a: boolean;
+            b: number;
+            c: string;
+            "x/y/z/a": 1;
+            "x/y/z/b": 2;
+            "x/y/z/c": 3;
+        }
+        const emitter = new FastEvent<Events>();
+        const scope = emitter.scope("x/y/z");
+        const aMessages = scope.on("a");
+        type A1 = RecordValues<GetClosestEvents<Events, "a">>;
+        type AMessageType = IteratorMessage<typeof aMessages>;
+        type ACases = [
+            Expect<Equal<AMessageType["type"], "a">>,
+            Expect<Equal<AMessageType["payload"], 1>>,
+            Expect<
+                Equal<
+                    AMessageType["meta"],
+                    FastEventMeta & FastEventScopeMeta & Record<string, any>
+                >
+            >,
+        ];
+
+        const anyMessages = scope.onAny();
+        type Any1 = MutableEvents<typeof scope.types.events>;
+        type AnyMeta1 = typeof scope.types.meta;
+        type AnyMessageType = IteratorMessage<typeof anyMessages>;
+        type cases = [
+            Expect<
+                Equal<
+                    Extract<AnyMessageType, { type: "a" }>,
+                    {
+                        type: "a";
+                        payload: 1;
+                        meta: FastEventMeta & FastEventScopeMeta & Record<string, any>;
+                    } & FastEventMessageExtends
+                >
+            >,
+            Expect<
+                Equal<
+                    Extract<AnyMessageType, { type: "b" }>,
+                    {
+                        type: "b";
+                        payload: 2;
+                        meta: FastEventMeta & FastEventScopeMeta & Record<string, any>;
+                    } & FastEventMessageExtends
+                >
+            >,
+        ];
+        // 未定义类型的事件
+        const xMessages = scope.on("xyz");
+        type XMessageType = IteratorMessage<typeof xMessages>;
+
+        type XCases = [
+            Expect<Equal<XMessageType["type"], "xyz">>,
+            Expect<Equal<XMessageType["payload"], any>>,
+            Expect<
+                Equal<
+                    XMessageType["meta"],
+                    FastEventMeta & FastEventScopeMeta & Record<string, any>
+                >
+            >,
+        ];
+    });
+
     test("含*和**通配符事件类型", () => {
         interface Events {
             a: boolean;
@@ -223,193 +552,150 @@ describe("事件作用域使用监听器类型测试", () => {
         }
         const emitter = new FastEvent<Events>();
 
-        type ResultEvents = typeof emitter.types.events;
-        type ResultKeyEvents = keyof typeof emitter.types.events;
-        type f1 = GetMatchedEventPayload<Events, `users/fisher/login`>;
-        type f2 = GetMatchedEvents<Events, `users/fisher/login`>;
-        type f3 = GetClosestEvents<Events, `users/fisher/login`>;
-        type f4 = ResultEvents[`users/fisher/login`];
+        const scope = emitter.scope("users");
+        // 精确匹配
 
-        type cases = [
-            Expect<Equal<ResultEvents["a"], boolean>>,
-            Expect<Equal<ResultEvents["b"], number>>,
-            Expect<Equal<ResultEvents["div/login/click"], { x: number; y: number }>>,
-            Expect<Equal<ResultEvents[`div/${string}/click`], { x: number; y: number }>>,
-            //users/fisher/login
-            Expect<Equal<`users/fisher/login` extends keyof ResultEvents ? true : false, true>>,
-            Expect<Equal<`users/${string}/login` extends keyof ResultEvents ? true : false, true>>,
-            // `users/fisher/login`同时匹配了users/*/login，users/*/*， "**"
-            // 所以负载是string | {name:string,vip:boolean} | Record<string, any>
+        const aMessages = scope.on("fisher/login");
+        type AMessageType = IteratorMessage<typeof aMessages>;
+        type ACases = [
+            Expect<Equal<AMessageType["type"], `${string}/login`>>,
+            Expect<Equal<AMessageType["payload"], string>>,
             Expect<
                 Equal<
-                    GetMatchedEventPayload<Events, `users/fisher/login`>,
-                    | string
-                    | {
-                          name: string;
-                          vip: boolean;
-                      }
-                    | Record<string, any>
-                >
-            >,
-            //users/fisher/logout
-            Expect<Equal<`users/fisher/logout` extends keyof ResultEvents ? true : false, true>>,
-            Expect<Equal<`users/${string}/logout` extends keyof ResultEvents ? true : false, true>>,
-            // `users/fisher/logout`同时匹配了users/*/login和users/*/*，所以负载是string | {name:string,vip:boolean}
-            Expect<
-                Equal<
-                    GetMatchedEventPayload<Events, `users/fisher/logout`>,
-                    | number
-                    | {
-                          name: string;
-                          vip: boolean;
-                      }
-                    | Record<string, any>
+                    AMessageType["meta"],
+                    FastEventMeta & FastEventScopeMeta & Record<string, any>
                 >
             >,
         ];
 
-        const subscriber = emitter.on("a", (message) => {
-            type EventType = typeof message.type;
-            type PayloadType = typeof message.payload;
-            type MetaType = typeof message.meta;
-
-            type cases = [
-                Expect<Equal<EventType, "a">>,
-                Expect<Equal<PayloadType, boolean>>,
-                Expect<Equal<MetaType, FastEventMeta & Record<string, any>>>,
-            ];
-        });
-        type T1 = ExtendWildcardEvents<Events>;
-        emitter.on("users/fisher/login", (message) => {
-            type EventType = typeof message.type;
-            type PayloadType = typeof message.payload;
-            type MetaType = typeof message.meta;
-
-            type cases = [
-                Expect<Equal<EventType, `users/${string}/login`>>,
-                Expect<Equal<PayloadType, string>>,
-                Expect<Equal<MetaType, FastEventMeta & Record<string, any>>>,
-            ];
-        });
-        emitter.on("users/fisher/online", (message) => {
-            type EventType = typeof message.type;
-            type PayloadType = typeof message.payload;
-            type MetaType = typeof message.meta;
-            type cases = [
-                Expect<Equal<EventType, `users/${string}/${string}`>>,
-                Expect<
-                    Equal<
-                        PayloadType,
-                        {
-                            name: string;
-                            vip: boolean;
-                        }
-                    >
-                >,
-                Expect<Equal<MetaType, FastEventMeta & Record<string, any>>>,
-            ];
-        });
-        type T2 = GetClosestEvents<Events, "users/fisher/login/xxx">;
-        type T3 = TypedFastEventMessage<T2>;
-        emitter.on("users/fisher/login/xxx", (message) => {
-            type EventType = typeof message.type;
-            type PayloadType = typeof message.payload;
-            type MetaType = typeof message.meta;
-
-            type cases = [
-                Expect<Equal<EventType, string>>,
-                Expect<Equal<PayloadType, Record<string, any>>>,
-                Expect<Equal<MetaType, FastEventMeta & Record<string, any>>>,
-            ];
-        });
+        const loginMessages = scope.on("fisher/login");
+        type LoginMessageType = IteratorMessage<typeof loginMessages>;
+        type LoginCases = [
+            Expect<Equal<LoginMessageType["type"], `${string}/login`>>,
+            Expect<Equal<LoginMessageType["payload"], string>>,
+            Expect<
+                Equal<
+                    LoginMessageType["meta"],
+                    FastEventMeta & FastEventScopeMeta & Record<string, any>
+                >
+            >,
+        ];
         // 未声明式的事件
-        emitter.on("xyz", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, string>>,
-                Expect<Equal<typeof message.payload, { data: any }>>,
-            ];
-        });
+        const XLoginMessages = scope.on("fisher/login/xxx");
+        type XLoginMessageType = IteratorMessage<typeof XLoginMessages>;
+        type XLoginCases = [
+            Expect<Equal<XLoginMessageType["type"], "fisher/login/xxx">>,
+            Expect<Equal<XLoginMessageType["payload"], any>>,
+            Expect<
+                Equal<
+                    XLoginMessageType["meta"],
+                    FastEventMeta & FastEventScopeMeta & Record<string, any>
+                >
+            >,
+        ];
+        const xMessages = scope.on("xyz");
+        type XMessageType = IteratorMessage<typeof loginMessages>;
+        type XCases = [
+            Expect<Equal<XMessageType["type"], `${string}/login`>>,
+            Expect<Equal<XMessageType["payload"], string>>,
+            Expect<
+                Equal<
+                    XMessageType["meta"],
+                    FastEventMeta & FastEventScopeMeta & Record<string, any>
+                >
+            >,
+        ];
+    });
+    test("部份事件经过转换", () => {
+        interface Events {
+            "users/a": boolean;
+            "users/b": NotPayload<number>;
+            "users/c": NotPayload<{ x: number; y: number }>;
+        }
+        const emitter = new FastEvent<Events>();
+        const scope = emitter.scope("users");
+        const aMessages = scope.on("a");
+        type AMessageType = IteratorMessage<typeof aMessages>;
+        type ACases = [
+            Expect<Equal<AMessageType["type"], `a`>>,
+            Expect<Equal<AMessageType["payload"], boolean>>,
+            Expect<
+                Equal<
+                    AMessageType["meta"],
+                    FastEventMeta & FastEventScopeMeta & Record<string, any>
+                >
+            >,
+        ];
+        // b事件经过转换
+        const bMessages = scope.on("b");
+        type BMessageType = IteratorMessage<typeof bMessages>;
+        type BCases = [Expect<Equal<BMessageType, number>>];
+
+        // c事件经过转换
+        const cMessages = scope.on("c");
+        type CMessageType = IteratorMessage<typeof cMessages>;
+        type CBCases = [Expect<Equal<CMessageType, { x: number; y: number }>>];
+    });
+    test("转换全部事件经过转换", () => {
+        interface Events {
+            "users/a": boolean;
+            "users/b": NotPayload<number>;
+            "users/c": NotPayload<{ x: number; y: number }>;
+        }
+        const emitter = new FastEvent<TransformedEvents<Events>>();
+        const scope = emitter.scope("users");
+        const aMessages = scope.on("a");
+        type AMessageType = IteratorMessage<typeof aMessages>;
+        // b事件经过转换
+        const bMessages = scope.on("b");
+        type BMessageType = IteratorMessage<typeof bMessages>;
+        // c事件经过转换
+        const cMessages = scope.on("c");
+        type CMessageType = IteratorMessage<typeof cMessages>;
+
+        // 未定义类型的事件
+        const xMessages = scope.on("xyz");
+        type XMessageType = IteratorMessage<typeof xMessages>;
+        type Cases = [
+            Expect<Equal<AMessageType, boolean>>,
+            Expect<Equal<BMessageType, number>>,
+            Expect<Equal<CMessageType, { x: number; y: number }>>,
+            // x未声明NotPayload
+            Expect<Equal<XMessageType["type"], "xyz">>,
+            Expect<Equal<XMessageType["payload"], any>>,
+            Expect<
+                Equal<
+                    XMessageType["meta"],
+                    FastEventMeta & FastEventScopeMeta & Record<string, any>
+                >
+            >,
+        ];
     });
     test("含多段通配符事件类型", () => {
         interface Events {
             "a/*/c/*/d/*/e/*/g/*": string;
-            "a/*/c/**": number;
-        }
-        const emitter = new FastEvent<Events>();
-        const subscriber = emitter.on("a/1/c/2/d/3/e/4/g/5", (message) => {
-            type cases = [
-                Expect<
-                    Equal<
-                        typeof message.type,
-                        `a/${string}/c/${string}/d/${string}/e/${string}/g/${string}`
-                    >
-                >,
-                Expect<Equal<typeof message.payload, string>>,
-                Expect<Equal<typeof message.meta, FastEventMeta & Record<string, any>>>,
-            ];
-        });
-    });
-    test("部份事件经过转换", () => {
-        interface Events {
-            a: boolean;
-            b: NotPayload<number>;
-            c: NotPayload<{ x: number; y: number }>;
+            "a/*/c/**": NotPayload<number>;
         }
         const emitter = new FastEvent<Events>();
 
-        type ResultEvents = typeof emitter.types.events;
-        type ResultKeyEvents = keyof typeof emitter.types.events;
+        const scope = emitter.scope("a/users");
+        const messages = scope.on("c/2/d/3/e/4/g/5");
+        type MessageType = IteratorMessage<typeof messages>;
 
-        emitter.on("a", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, "a">>,
-                Expect<Equal<typeof message.payload, boolean>>,
-            ];
-        });
-        // b事件经过转换
-        emitter.on("b", (message) => {
-            type MessageType = typeof message;
-            type cases = [Expect<Equal<MessageType, number>>];
-        });
-        // c事件经过转换
-        emitter.on("c", (message) => {
-            type MessageType = typeof message;
-            type cases = [Expect<Equal<MessageType, { x: number; y: number }>>];
-        });
-    });
-    test("转换全部事件经过转换", () => {
-        interface Events {
-            a: boolean;
-            b: NotPayload<number>;
-            c: NotPayload<{ x: number; y: number }>; // 允许重复使用NotPayload
-        }
-        const emitter = new FastEvent<TransformedEvents<Events>>();
+        const anyMessages = scope.on("c/2/dd/3/ee");
+        type AnyMessageType = IteratorMessage<typeof anyMessages>;
 
-        type ResultEvents = typeof emitter.types.events;
-        type ResultKeyEvents = keyof typeof emitter.types.events;
-
-        emitter.on("a", (message) => {
-            type cases = [Expect<Equal<typeof message, boolean>>];
-        });
-        // b事件经过转换
-        emitter.on("b", (message) => {
-            type cases = [Expect<Equal<typeof message, number>>];
-        });
-        // c事件经过转换
-        emitter.on("c", (message) => {
-            type MessageType = typeof message;
-            type cases = [Expect<Equal<MessageType, { x: number; y: number }>>];
-        });
-        // 未定义类型的事件
-        emitter.on("x", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, "x">>,
-                Expect<Equal<typeof message.payload, any>>,
-            ];
-        });
+        type Cases = [
+            Expect<Equal<AnyMessageType, number>>,
+            // 没有使用NotPayload
+            Expect<Equal<MessageType["type"], `c/${string}/d/${string}/e/${string}/g/${string}`>>,
+            Expect<Equal<MessageType["payload"], string>>,
+            Expect<
+                Equal<MessageType["meta"], FastEventMeta & FastEventScopeMeta & Record<string, any>>
+            >,
+        ];
     });
 });
-
 describe("作用域上下文类型系统", () => {
     test("未指定上下文时应使用默认上下文类型", () => {
         const withoutCtxEmitter = new FastEvent();
@@ -517,63 +803,6 @@ describe("作用域上下文类型系统", () => {
         ];
         scope.emit("a");
         scope.emitAsync("b", 1);
-    });
-    test("scope发布通配符事件", () => {
-        type Events = {
-            "x/users/online": { name: string; status?: number };
-            "x/users/*/online": { name: string; status?: number };
-            "x/users/*/*": 1;
-            "x/users/*/offline": boolean;
-            "x/posts/*/online": string;
-            "x/posts/**": number;
-        };
-        const emitter = new FastEvent<Events>();
-        emitter.on("x/posts/fisher/online", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, `x/posts/${string}/online`>>,
-                Expect<Equal<typeof message.payload, string>>,
-            ];
-        });
-
-        // 不需要显式指定类型参数，应该能自动推断
-        const scope = emitter.scope("x");
-
-        type scopEvents = typeof scope.types.events;
-        type xScopeEvents = ScopeEvents<Events, "x">;
-
-        type cases = [Expect<Equal<scopEvents, ScopeEvents<Events, "x">>>];
-
-        scope.on("users/x/online", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, `users/${string}/online`>>,
-                Expect<Equal<typeof message.payload, { name: string; status?: number }>>,
-            ];
-        });
-        scope.on("users/x/y", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, `users/${string}/${string}`>>,
-                Expect<Equal<typeof message.payload, 1>>,
-            ];
-        });
-
-        scope.on("posts/fisher/online", (message) => {
-            type cases = [
-                Expect<Equal<typeof message.type, `posts/${string}/online`>>,
-                Expect<Equal<typeof message.payload, string>>,
-            ];
-        });
-
-        // 正确的类型检查
-        scope.emit("users/fisher/online", { name: "string", status: 1 });
-        scope.emit("users/fisher/online", { name: "string" });
-        scope.emit("users/fisher/offline", true);
-        scope.emit("posts/fisher/offline", 1);
-
-        // 类型错误的调用，应该被TypeScript标记为错误
-        // scope.emit('users/fisher/online', 1);
-        // scope.emit('users/fisher/online', 2);
-        // scope.emit('users/fisher/offline', 1);
-        // scope.emit('posts/fisher/offline', '22');
     });
     test("继承scope类", () => {
         type Events = {
