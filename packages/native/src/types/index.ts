@@ -605,6 +605,7 @@ export type AtPayloads<Events extends Record<string, any>> = {
 
 type RemoveEmptyObject<T extends Record<string, any>> = T extends {} & (infer O) ? O : T;
 
+type AssertRecord<T> = T extends Record<string, any> ? T : Record<string, any>;
 /**
  * 扩展通配符事件类型
  * @description 将包含通配符的事件键扩展为模板字面量类型
@@ -612,16 +613,18 @@ type RemoveEmptyObject<T extends Record<string, any>> = T extends {} & (infer O)
  * 优先级：非通配符键 > 单级通配符 > 多级通配符
  * 使用交叉类型实现，确保精确键优先匹配
  */
-export type ExtendWildcardEvents<Events extends Record<string, any>> = RemoveEmptyObject<
-    {
-        // 第一优先级：非通配符键（精确匹配）
-        [K in keyof Events as K extends `${string}*${string}` | `*` ? never : K]: Events[K];
-    } & {
-        // 第二优先级：通配符键扩展
-        [K in keyof Events as K extends `${string}*${string}` | `*`
-            ? ReplaceWildcard<K & string>
-            : never]: Events[K];
-    }
+export type ExtendWildcardEvents<Events extends Record<string, any>> = AssertRecord<
+    RemoveEmptyObject<
+        {
+            // 第一优先级：非通配符键（精确匹配）
+            [K in keyof Events as K extends `${string}*${string}` | `*` ? never : K]: Events[K];
+        } & {
+            // 第二优先级：通配符键扩展
+            [K in keyof Events as K extends `${string}*${string}` | `*`
+                ? ReplaceWildcard<K & string>
+                : never]: Events[K];
+        }
+    >
 >;
 
 export type PickTransformedEvents<T extends Record<string, any>> = ExpandWildcard<{
@@ -776,3 +779,10 @@ export type IsTransformed<Events extends Record<string, any>> = keyof Events ext
           ? true
           : false
       : false;
+
+/**
+ * 从
+ */
+export type GetPayload<Events extends Record<string, any>, T extends string> = PickPayload<
+    RecordValues<ExtendWildcardEvents<GetClosestEvents<Events, T, Record<string, any>>>>
+>;

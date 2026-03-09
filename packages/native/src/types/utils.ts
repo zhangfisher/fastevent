@@ -40,7 +40,12 @@ export type MutableRecord<
     | (DefaultKind extends never
           ? never
           : Union<{ [K in KindKey]?: DefaultKind | undefined } & Items[DefaultKind] & Share>);
-export type KeyOf<T extends Record<string, any>> = Exclude<keyof T, number | symbol>;
+
+export type KeyOf<T extends Record<string, any>> = Exclude<keyof T, number | symbol> extends never
+    ? string
+    : Exclude<keyof T, number | symbol>;
+
+// never
 export type Fallback<T, F> = [T] extends [never]
     ? F // 处理never情况
     : T extends undefined

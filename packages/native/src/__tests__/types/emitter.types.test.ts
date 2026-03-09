@@ -3,6 +3,7 @@ import { describe, test } from "vitest";
 import type { Equal, Expect } from "@type-challenges/utils";
 import { FastEvent } from "../../event";
 import {
+    GetPayload,
     IsTransformedKey,
     MutableEvents,
     NotPayload,
@@ -20,6 +21,7 @@ import {
 } from "../../types";
 import { FastEventIterator } from "../../utils/eventIterator";
 import { Overloads } from "./utils";
+import { PickPayload } from "../../types/index";
 type IteratorMessage<T> = T extends FastEventIterator<infer M> ? M : never;
 
 describe("使用监听器的FaseEvent类型系统测试", () => {
@@ -615,14 +617,26 @@ describe("emit 触发事件类型系统测试", () => {
         const emitter = new FastEvent<Events>();
         type event = Parameters<typeof emitter.on>[0];
 
-        // 提取所有重载的参数类型
-        type EmitParams = Overloads<typeof emitter.emit>;
-        type Arg1 = Parameters<EmitParams[0]>[0];
-        type Arg2 = Parameters<EmitParams[1]>[0];
+        // 事件名称类型
+        type EmitMethods = Overloads<typeof emitter.emit>;
+        type Arg1 = Parameters<EmitMethods[0]>[0];
+        type Arg2 = Parameters<EmitMethods[1]>[0];
         type cases = [
-            Expect<Equal<Parameters<EmitParams[0]>[0], keyof Events>>,
-            Expect<Equal<Parameters<EmitParams[1]>[0], string>>,
+            Expect<
+                Equal<
+                    Parameters<EmitMethods[0]>[0],
+                    "a" | "b" | "c" | "x/y/z/a" | "x/y/z/b" | "x/y/z/c"
+                >
+            >,
+            Expect<Equal<Parameters<EmitMethods[0]>[0], keyof Events>>,
+            Expect<Equal<Parameters<EmitMethods[1]>[0], string>>,
         ];
+        emitter.emit("a", true);
+        emitter.emit("b", 1);
+        emitter.emit("c", "");
+        emitter.emit("x/y/z/a", 1);
+        emitter.emit("x/y/z/b", 2);
+        emitter.emit("x/y/z/c", 3);
     });
     test("含通配符事件类型", () => {
         interface Events {
@@ -635,35 +649,30 @@ describe("emit 触发事件类型系统测试", () => {
             "users/*/*": { name: string; vip: boolean };
         }
         const emitter = new FastEvent<Events>();
-        type ExtEvents = ExtendWildcardEvents<Events>
-        type EventNames = keyof ExtEvents
-        type PP1=ExtEvents['a']
-        type PP2=ExtEvents['div/x/click']
-        type PP3=ExtEvents['users/x/login']
-        type XE= GetMatchedEvents<ExtEvents,'users/x/login'>
-        type P1 = GetMatchedEventPayload<ExtEvents,'a'>
-        type P2 = GetMatchedEventPayload<ExtEvents,'div/x/click'>
-        type P3 = GetMatchedEventPayload<ExtEvents,'users/x/click'>
-        type P4 = GetMatchedEventPayload<ExtEvents,'users/x/login'>
+        type ddd = typeof emitter.types.eventNames;
+        type ExtEvents = ExtendWildcardEvents<Events>;
 
-        type event = Parameters<typeof emitter.on>[0];
-        
+        type dd = GetPayload<Events, "users/fisher/logi1n">;
+
         // 提取所有重载的参数类型
         type EmitParams = Overloads<typeof emitter.emit>;
         type Arg1 = Parameters<EmitParams[0]>[0];
         type Arg2 = Parameters<EmitParams[1]>[0];
         type cases = [
-            Expect<Equal<
-                Parameters<EmitParams[0]>[0], 
-                "a" | "b" | "c" 
-                | `div/${string}/click` 
-                | `users/${string}/login` 
-                | `users/${string}/logout` 
-                | `users/${string}/${string}`
-            >>,
+            Expect<
+                Equal<
+                    Parameters<EmitParams[0]>[0],
+                    | "a"
+                    | "b"
+                    | "c"
+                    | `div/${string}/click`
+                    | `users/${string}/login`
+                    | `users/${string}/logout`
+                    | `users/${string}/${string}`
+                >
+            >,
             Expect<Equal<Parameters<EmitParams[1]>[0], string>>,
         ];
-    });
     });
     test("含*和**通配符事件类型", () => {
         type Events = {

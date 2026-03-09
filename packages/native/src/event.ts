@@ -37,6 +37,7 @@ import {
     KeyOf,
     IsTransformed,
     PayloadValues,
+    GetPayload,
 } from "./types";
 import { parseEmitArgs } from "./utils/parseEmitArgs";
 import { isPathMatched } from "./utils/isPathMatched";
@@ -72,7 +73,7 @@ export class FastEvent<
     AllEvents extends Record<string, any> = Expand<Events & FastEvents>,
     Types extends keyof AllEvents = KeyOf<AllEvents>,
     AllMeta extends Record<string, any> = FastEventMeta & Meta,
-    EventNames = keyof ExtendWildcardEvents<AllEvents>,
+    EventNames = KeyOf<ExtendWildcardEvents<AllEvents>>,
 > {
     __FastEvent__: boolean = true;
     /** 事件监听器树结构，存储所有注册的事件监听器 */
@@ -96,7 +97,7 @@ export class FastEvent<
     // 子类通过：declare types : { } & typeof FastEvent.types  扩展类型
     types = null as unknown as {
         events: ExtendWildcardEvents<AllEvents>;
-        eventNames: keyof ExtendWildcardEvents<AllEvents>;
+        eventNames: KeyOf<ExtendWildcardEvents<AllEvents>>;
         meta: AllMeta;
         context: Expand<Fallback<Context, FastEvent<AllEvents, Meta, Context>>>;
         message: TypedFastEventMessageOptional<
@@ -1025,45 +1026,45 @@ export class FastEvent<
     // 支持retain参数
     public emit<R = any, T extends EventNames = EventNames>(
         type: T,
-        payload?: PickPayload<AllEvents[T]>,
+        payload?: GetPayload<AllEvents, T extends string ? T : string>,
         retain?: boolean,
     ): R[];
-    public emit<R = any, T extends string = string>(
-        type: T,
-        payload: PickPayload<
-            T extends EventNames ? AllEvents[T] : RecordValues<GetMatchedEvents<AllEvents, T>>
-        >,
-        retain?: boolean,
-    ): R[];
-    public emit<R = any, T extends string = string>(
-        message: FastEventEmitMessage<{ [K in T]: K extends Types ? AllEvents[K] : any }, Meta>,
-        retain?: boolean,
-    ): R[];
-    public emit<R = any>(message: FastEventEmitMessage<AllEvents, Meta>, retain?: boolean): R[];
-    // 使用完整的配置选项
-    public emit<R = any, T extends EventNames = EventNames>(
-        type: T,
-        payload?: PickPayload<AllEvents[T]>,
-        options?: FastEventListenerArgs<Meta>,
-    ): R[];
-    public emit<R = any, T extends string = string>(
-        type: T,
-        payload: PickPayload<
-            T extends Types ? AllEvents[T] : RecordValues<GetMatchedEvents<AllEvents, T>>
-        >,
-        options?: FastEventListenerArgs<Meta>,
-    ): R[];
-    public emit<R = any, T extends string = string>(
-        message: FastEventEmitMessage<
-            { [K in T]: PickPayload<K extends Types ? AllEvents[K] : any> },
-            Meta
-        >,
-        options?: FastEventListenerArgs<Meta>,
-    ): R[];
-    public emit<R = any>(
-        message: FastEventEmitMessage<AllEvents, Meta>,
-        options?: FastEventListenerArgs<Meta>,
-    ): R[];
+    // public emit<R = any, T extends string = string>(
+    //     type: T,
+    //     payload: PickPayload<
+    //         T extends EventNames ? AllEvents[T] : RecordValues<GetMatchedEvents<AllEvents, T>>
+    //     >,
+    //     retain?: boolean,
+    // ): R[];
+    // public emit<R = any, T extends string = string>(
+    //     message: FastEventEmitMessage<{ [K in T]: K extends Types ? AllEvents[K] : any }, Meta>,
+    //     retain?: boolean,
+    // ): R[];
+    // public emit<R = any>(message: FastEventEmitMessage<AllEvents, Meta>, retain?: boolean): R[];
+    // // 使用完整的配置选项
+    // public emit<R = any, T extends EventNames = EventNames>(
+    //     type: T,
+    //     payload?: GetPayload<AllEvents, T>,
+    //     options?: FastEventListenerArgs<Meta>,
+    // ): R[];
+    // public emit<R = any, T extends string = string>(
+    //     type: T,
+    //     payload: PickPayload<
+    //         T extends Types ? AllEvents[T] : RecordValues<GetMatchedEvents<AllEvents, T>>
+    //     >,
+    //     options?: FastEventListenerArgs<Meta>,
+    // ): R[];
+    // public emit<R = any, T extends string = string>(
+    //     message: FastEventEmitMessage<
+    //         { [K in T]: PickPayload<K extends Types ? AllEvents[K] : any> },
+    //         Meta
+    //     >,
+    //     options?: FastEventListenerArgs<Meta>,
+    // ): R[];
+    // public emit<R = any>(
+    //     message: FastEventEmitMessage<AllEvents, Meta>,
+    //     options?: FastEventListenerArgs<Meta>,
+    // ): R[];
     public emit(): any {
         // 清除保留事件
         if (
