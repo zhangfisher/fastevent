@@ -25,6 +25,12 @@ type SplitPath<T extends string> = T extends `${infer Head}/${infer Tail}`
     : [T];
 
 /**
+ * 计算路径中的固定段数量（非通配符的段）
+ * 使用累加器模式，通过元组长度来表示数字
+ */
+export type CountFixedSegments<T extends string> = CountFixedSegmentsAcc<SplitPath<T>, []>;
+
+/**
  * 判断单个路径段是否为通配符
  *
  * 示例：
@@ -32,12 +38,6 @@ type SplitPath<T extends string> = T extends `${infer Head}/${infer Tail}`
  * - IsWildcardSegment "rooms" → false
  */
 export type IsWildcardSegment<S extends string> = S extends "*" | "**" ? true : false;
-
-/**
- * 计算路径中的固定段数量（非通配符的段）
- * 使用累加器模式，通过元组长度来表示数字
- */
-export type CountFixedSegments<T extends string> = CountFixedSegmentsAcc<SplitPath<T>, []>;
 
 /**
  * CountFixedSegments 的辅助实现

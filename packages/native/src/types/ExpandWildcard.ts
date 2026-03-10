@@ -1,10 +1,10 @@
 // oxlint-disable no-unused-vars
-import { ValueOf } from "./../../../../node_modules/type-fest/source/value-of.d";
 import { ToMessage } from "./ScopeEvents";
-import { Expand, FirstObjectItem, FirstOfUnion, IsMultiWildcard } from "./utils";
-import { UnionToTuple } from "type-fest";
+import { AssertString, Expand, FirstObjectItem, FirstOfUnion, IsMultiWildcard } from "./utils";
+import { UnionToTuple, ValueOf } from "type-fest";
 import { IsWildcardMatched } from "./WildcardEvents";
 import { GetPartCount, GetWildcardCount } from "./WildcardPriority";
+import { ClosestMatch } from "./ClosestMatch";
 
 // 判断是否包含通配符
 type ContainsWildcard<T extends string> = T extends `${string}/*/${string}`
@@ -124,7 +124,7 @@ export type ToWildcardMessage<Events extends Record<string, any>, Meta = Record<
 }[keyof Events];
 
 // 获取最相近的Key
-type _GetClosedEventKeys<Events extends Record<string, any>, T extends string> = {
+export type GetClosedEventKeys<Events extends Record<string, any>, T extends string> = {
     [Key in Exclude<keyof Events, number | symbol> as IsWildcardMatched<T, Key> extends true
         ? IsMultiWildcard<Key> extends true
             ? GetPartCount<Key> extends 9
@@ -167,35 +167,33 @@ type _GetClosedEventKeys<Events extends Record<string, any>, T extends string> =
                                 : never
         : T extends Key
           ? 0
-          : never]: FirstOfUnion<Key>;
+          : never]: ClosestMatch<Key>;
 };
 
-type GetClosedEventKey<Events extends Record<string, any>, T extends string> =
-    _GetClosedEventKeys<Events, T> extends never
+export type GetClosedEventKey<Events extends Record<string, any>, T extends string> =
+    GetClosedEventKeys<Events, T> extends never
         ? never
-        : _GetClosedEventKeys<Events, T> extends { 0: infer V }
+        : GetClosedEventKeys<Events, T> extends { 0: infer V }
           ? V
-          : _GetClosedEventKeys<Events, T> extends { 9: infer V }
+          : GetClosedEventKeys<Events, T> extends { 9: infer V }
             ? V
-            : _GetClosedEventKeys<Events, T> extends { 8: infer V }
+            : GetClosedEventKeys<Events, T> extends { 8: infer V }
               ? V
-              : _GetClosedEventKeys<Events, T> extends { 7: infer V }
+              : GetClosedEventKeys<Events, T> extends { 7: infer V }
                 ? V
-                : _GetClosedEventKeys<Events, T> extends { 6: infer V }
+                : GetClosedEventKeys<Events, T> extends { 6: infer V }
                   ? V
-                  : _GetClosedEventKeys<Events, T> extends { 5: infer V }
+                  : GetClosedEventKeys<Events, T> extends { 5: infer V }
                     ? V
-                    : _GetClosedEventKeys<Events, T> extends { 4: infer V }
+                    : GetClosedEventKeys<Events, T> extends { 4: infer V }
                       ? V
-                      : _GetClosedEventKeys<Events, T> extends { 3: infer V }
+                      : GetClosedEventKeys<Events, T> extends { 3: infer V }
                         ? V
-                        : _GetClosedEventKeys<Events, T> extends { 2: infer V }
+                        : GetClosedEventKeys<Events, T> extends { 2: infer V }
                           ? V
-                          : _GetClosedEventKeys<Events, T> extends { 1: infer V }
+                          : GetClosedEventKeys<Events, T> extends { 1: infer V }
                             ? V
                             : never;
-
-type AssertString<T> = T extends string ? T : string;
 
 export type GetClosedEvents<
     Events extends Record<string, any>,
@@ -231,9 +229,9 @@ type TestList1 = NormalEvents<TestEvents>;
 type TestList = GetWildcardEventList<TestEvents>;
 type M1 = ToWildcardMessage<TestList0>;
 type M2 = ToMessage<TestList1>;
-type E1 = _GetClosedEventKeys<TestEvents, "users/fisher/login">;
-type E2 = _GetClosedEventKeys<TestEvents, "a/b/c">;
-type E3 = _GetClosedEventKeys<TestEvents, "a/b/c">;
+type E1 = GetClosedEventKeys<TestEvents, "users/fisher/login">;
+type E2 = GetClosedEventKeys<TestEvents, "a/b/c">;
+type E3 = GetClosedEventKeys<TestEvents, "a/b/c">;
 type ER1 = GetClosedEventKey<TestEvents, "users/fisher/login">;
 type ER2 = TestEvents[GetClosedEventKey<TestEvents, "users/fisher/login">];
 type ER23 = GetClosedEvents<TestEvents, "users/fisher/login">;
@@ -248,7 +246,7 @@ type TestEvents2 = {
 };
 type dc2 = GetWildcardCount<"admin/dashboard/users/**">;
 type dc = IsWildcardMatched<"admin/dashboard/users/a", "admin/**">;
-type V1 = _GetClosedEventKeys<TestEvents2, "admin/dashboard/users/a">;
+type V1 = GetClosedEventKeys<TestEvents2, "admin/dashboard/users/a">;
 type V2 = GetClosedEventKey<TestEvents2, "admin/dashboard/users/a">;
 type ER25 = GetClosedEvents<TestEvents2, "admin/dashboard/users">;
 type ER2354 = GetClosedEvents<TestEvents2, "admin/dashboard">;

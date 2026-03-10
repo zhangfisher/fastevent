@@ -2,10 +2,14 @@
 
 import { describe, test } from "vitest";
 import type { Equal, Expect } from "@type-challenges/utils";
-import { type GetClosedEvents } from "../../types/ExpandWildcard";
+import {
+    GetClosedEventKey,
+    GetClosedEventKeys,
+    type GetClosedEvents,
+} from "../../types/ExpandWildcard";
 import { UnionToTuple } from "type-fest";
-
-type dd = UnionToTuple<1 | 2 | 3>;
+import { GetWildcardCount } from "../../types/WildcardPriority";
+import { FirstOfUnion } from "../../types";
 
 describe("GetClosedEvents - 精确匹配测试", () => {
     test("精确键匹配：无通配符", () => {
@@ -134,16 +138,21 @@ describe("GetClosedEvents - 通配符数量优先级测试", () => {
 
     test("按固定段数量选择（2个通配符情况）", () => {
         type Events = {
+            "users/*/*": { priority3: boolean };
             "users/*/login": { priority1: number };
             "*/*/login": { priority2: string };
-            "users/*/*": { priority3: boolean };
         };
 
         type Result = GetClosedEvents<Events, "users/123/login">;
+        type ER1 = GetClosedEventKeys<Events, "users/123/loginn">;
+        type ER2 = GetClosedEventKey<Events, "users/123/loginn">;
+        type ER3 = GetWildcardCount<"users/*/*">;
+        type ER4 = GetWildcardCount<"users/*/login">;
+        type ER5 = FirstOfUnion<"users/*/login" | "users/*/*">;
 
         // "users/*/login" 和 "*/*/login" 都有1个通配符
         // 但 "users/*/login" 有更多固定段 (users, login)，所以优先级更高
-        type cases = [Expect<Equal<Result, { "users/*/login": { priority1: number } }>>];
+        type cases = [Expect<Equal<Result, { "users/*/*": { priority3: boolean } }>>];
     });
 
     test("相同通配符数量：选择第一个匹配的", () => {

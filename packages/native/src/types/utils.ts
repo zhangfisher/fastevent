@@ -20,6 +20,7 @@ export type RemoveEmptyObject<T extends Record<string, any>> = T extends {} & (i
 export type AssertRecord<T> = T extends Record<string, any> ? T : Record<string, any>;
 
 export type Union<T> = T extends infer O ? { [K in keyof O]: O[K] } : never;
+export type AssertString<T> = T extends string ? T : string;
 
 /**
  * 将事件映射转换为可变联合类型
