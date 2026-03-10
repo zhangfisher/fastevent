@@ -641,14 +641,9 @@ export type GetEventType<TransformedEvents extends Record<string, any>, T extend
     // 使用 WildcardEvents 来匹配事件键
     GetMatchedEvents<TransformedEvents, T> extends infer Matched
         ? Matched extends Record<string, any>
-            ? // 单个匹配对象，提取值类型
-              Matched[keyof Matched]
-            : // 联合类型，使用分发来提取每个成员的值
-              Matched extends any
-              ? Matched extends { [key: string]: infer Value }
-                  ? Value
-                  : never
-              : never
+            ? // GetMatchedEvents 现在返回交集类型，需要转换为联合类型
+              { [K in keyof Matched]: Matched[K] }[keyof Matched]
+            : never
         : never;
 
 // 专用的类型查询工具，使用原始事件类型
@@ -656,8 +651,9 @@ export type GetMatchedEventPayload<Events extends Record<string, any>, T extends
     // 使用 WildcardEvents 来匹配事件，返回原始类型
     GetMatchedEvents<Events, T> extends infer Matched
         ? Matched extends { [key: string]: any }
-            ? // 匹配对象类型，提取值类型（会自动分发联合类型）
-              Matched[keyof Matched]
+            ? // 匹配对象类型，提取值类型为联合类型
+              // GetMatchedEvents 现在返回交集类型，需要转换为联合类型
+              { [K in keyof Matched]: Matched[K] }[keyof Matched]
             : never
         : never;
 

@@ -117,73 +117,10 @@ export type MutableMessage<Events extends Record<string, any>, Meta = Record<str
     };
 }[keyof ExtendWildcardEvents<Events>];
 
-type Events = {
-    a: 1;
-    "c/*": boolean;
-    "rooms/*/add": boolean;
-    "rooms/*/join": boolean;
-    "rooms/*/leave": boolean;
-    "rooms/*/*": number;
-};
-
-type MEvents = MutableMessage<{
-    a: 1;
-    "c/*": boolean;
-    "rooms/*/add": boolean;
-    "rooms/*/join": boolean;
-    "rooms/*/leave": boolean;
-    "rooms/*/*": number;
-}>;
-
-export type ExtendWildcardEvents2<Events extends Record<string, any>> = AssertRecord<
-    RemoveEmptyObject<
-        {
-            // 第一优先级：非通配符键（精确匹配）
-            [K in keyof Events as K extends `${string}*${string}` | `*` | `**`
-                ? never
-                : K]: Events[K];
-        } & {
-            // 第二优先级：通配符键扩展
-            [K in keyof Events as K extends `${string}*${string}` | `*`
-                ? ReplaceWildcard<K & string>
-                : never]: Events[K];
-        }
-    >
->;
-type ToMessage<Events extends Record<string, any>, Meta = Record<string, any>> = {
+export type ToMessage<Events extends Record<string, any>, Meta = Record<string, any>> = {
     [K in keyof Events]: {
         type: Exclude<K, number | symbol>;
-        payload?: GetPayload<Events, Exclude<K, number | symbol>>;
+        payload?: Events[K];
         meta?: Meta;
     };
 }[keyof Events];
-
-type D3 = ExtendWildcardEvents2<Events>;
-
-type E1 = PickInlcudeDelimiterRecord<D3>;
-type M1 = ToMessage<E1>;
-type EK1 = GetClosestEvents<E1, "rooms/aaa/add">;
-type EX1 = E1["rooms/aaa/add"];
-
-type E2 = PickNotInlcudeDelimiterRecord<D3>;
-type M2 = ToMessage<E2>;
-type m3 = M2 | M1;
-
-function test<T extends keyof E1 = keyof E1>(d: FastEventMessage<E1[T]>): any;
-function test<T extends keyof E2 = keyof E2>(d: FastEventMessage<E2[T]>): any;
-function test(): any {
-    return 1 as any;
-}
-
-test({
-    type: "a",
-    payload: 1,
-});
-test({
-    type: "rooms/sdfds/add",
-    payload: "1",
-});
-test({
-    type: "rooms/sdfds/sss",
-    payload: "true",
-});

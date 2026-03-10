@@ -1,7 +1,8 @@
+// oxlint-disable no-unused-vars
 /**
  * 通配符优先级计算工具
  *
- * 用于区分通配符模式的具体程度，解决 
+ * 用于区分通配符模式的具体程度，解决
  * 核心规则：固定段多的优先级更高
  */
 
@@ -30,7 +31,7 @@ type SplitPath<T extends string> = T extends `${infer Head}/${infer Tail}`
  * - IsWildcardSegment 星号 → true
  * - IsWildcardSegment "rooms" → false
  */
-type IsWildcardSegment<S extends string> = S extends "*" | "**" ? true : false;
+export type IsWildcardSegment<S extends string> = S extends "*" | "**" ? true : false;
 
 /**
  * 计算路径中的固定段数量（非通配符的段）
@@ -45,12 +46,20 @@ export type CountFixedSegments<T extends string> = CountFixedSegmentsAcc<SplitPa
  * @param Acc - 累加器（元组），长度即为当前计数
  */
 type CountFixedSegmentsAcc<Arr extends string[], Acc extends any[]> = Arr extends []
-    ? Acc['length']
+    ? Acc["length"]
     : Arr extends [infer First extends string, ...infer Rest extends string[]]
-        ? IsWildcardSegment<First> extends true
-            ? CountFixedSegmentsAcc<Rest, Acc>
-            : CountFixedSegmentsAcc<Rest, [...Acc, any]>
-        : Acc['length'];
+      ? IsWildcardSegment<First> extends true
+          ? CountFixedSegmentsAcc<Rest, Acc>
+          : CountFixedSegmentsAcc<Rest, [...Acc, any]>
+      : Acc["length"];
+
+export type GetPartCountAcc<Arr extends string[], Acc extends any[]> = Arr extends []
+    ? Acc["length"]
+    : Arr extends [infer _First extends string, ...infer Rest extends string[]]
+      ? GetPartCountAcc<Rest, [...Acc, any]>
+      : Acc["length"];
+
+export type GetPartCount<T extends string> = GetPartCountAcc<SplitPath<T>, []>;
 
 /**
  * 判断是否为半通配符（既有固定段又有独立的通配符段）
@@ -64,10 +73,10 @@ type CountFixedSegmentsAcc<Arr extends string[], Acc extends any[]> = Arr extend
  */
 export type IsSemiWildcard<T extends string> =
     CountFixedSegments<T> extends 0
-        ? false  // 没有固定段 → 全通配符
-        : CountWildcardSegments<T> extends 0
-            ? false  // 没有通配符段 → 精确匹配
-            : true;  // 有固定段且有通配符段 → 半通配符
+        ? false // 没有固定段 → 全通配符
+        : GetWildcardCount<T> extends 0
+          ? false // 没有通配符段 → 精确匹配
+          : true; // 有固定段且有通配符段 → 半通配符
 
 /**
  * 计算路径中通配符段的数量
@@ -75,7 +84,7 @@ export type IsSemiWildcard<T extends string> =
  * 通配符段是指完全等于星号或双星号的段
  * 使用 SplitPath 分割路径后，统计通配符段的数量
  */
-type CountWildcardSegments<T extends string> = CountWildcardSegmentsAcc<SplitPath<T>, []>;
+export type GetWildcardCount<T extends string> = CountWildcardSegmentsAcc<SplitPath<T>, []>;
 
 /**
  * CountWildcardSegments 的辅助实现
@@ -84,12 +93,12 @@ type CountWildcardSegments<T extends string> = CountWildcardSegmentsAcc<SplitPat
  * @param Acc - 累加器（元组），长度即为当前计数
  */
 type CountWildcardSegmentsAcc<Arr extends string[], Acc extends any[]> = Arr extends []
-    ? Acc['length']
+    ? Acc["length"]
     : Arr extends [infer First extends string, ...infer Rest extends string[]]
-        ? IsWildcardSegment<First> extends true
-            ? CountWildcardSegmentsAcc<Rest, [...Acc, any]>
-            : CountWildcardSegmentsAcc<Rest, Acc>
-        : Acc['length'];
+      ? IsWildcardSegment<First> extends true
+          ? CountWildcardSegmentsAcc<Rest, [...Acc, any]>
+          : CountWildcardSegmentsAcc<Rest, Acc>
+      : Acc["length"];
 
 /**
  * 检查是否为全通配符模式
@@ -102,11 +111,11 @@ type CountWildcardSegmentsAcc<Arr extends string[], Acc extends any[]> = Arr ext
  */
 export type IsFullWildcard<T extends string> =
     CountFixedSegments<T> extends 0
-        ? CountWildcardSegments<T> extends 0
-            ? false  // 没有固定段也没有通配符段 → 不可能
-            : true  // 没有固定段但有通配符段 → 全通配符
+        ? GetWildcardCount<T> extends 0
+            ? false // 没有固定段也没有通配符段 → 不可能
+            : true // 没有固定段但有通配符段 → 全通配符
         : CountFixedSegments<T> extends 1
-            ? CountWildcardSegments<T> extends 1
-                ? true  // 1个固定段和1个通配符段 → 全通配符
-                : false
-            : false;
+          ? GetWildcardCount<T> extends 1
+              ? true // 1个固定段和1个通配符段 → 全通配符
+              : false
+          : false;

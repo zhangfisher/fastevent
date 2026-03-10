@@ -1,3 +1,5 @@
+import { UnionToTuple } from "type-fest";
+
 /**
  * 检查类型 T 是否是 any
  * @description 利用 any 在交叉类型中的特殊行为：1 & any = any
@@ -82,3 +84,22 @@ export type PickNotInlcudeDelimiterRecord<R extends Record<string, any>> = {
 export type NotEqual<X, Y> = true extends Equal<X, Y> ? false : true;
 export type Equal<X, Y> =
     (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y ? 1 : 2 ? true : false;
+export type Expand<T> = T extends infer O ? { [K in keyof O]: O[K] } : never;
+
+export type Keys<T extends Record<string, any>> = UnionToTuple<keyof T>;
+
+export type FirstObjectItem<T extends Record<string, any>> = Pick<
+    T,
+    Keys<T> extends any[] ? Keys<T>[0] : never
+>;
+
+type UnionToIntersection<U> = (U extends any ? (k: U) => void : never) extends (k: infer I) => void
+    ? I
+    : never;
+
+export type FirstOfUnion<T> =
+    UnionToIntersection<T extends any ? (x: T) => any : never> extends (x: infer U) => any
+        ? U
+        : never;
+
+export type IsMultiWildcard<T extends string> = T extends `${string}/**` ? true : false;
