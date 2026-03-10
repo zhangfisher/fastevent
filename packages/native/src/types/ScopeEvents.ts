@@ -1,5 +1,16 @@
-import { ExtendWildcardEvents, GetPayload } from ".";
-
+import {
+    ExtendWildcardEvents,
+    FastEventMessage,
+    GetClosestEvents,
+    GetPayload,
+    ReplaceWildcard,
+} from ".";
+import {
+    RemoveEmptyObject,
+    AssertRecord,
+    PickInlcudeDelimiterRecord,
+    PickNotInlcudeDelimiterRecord,
+} from "./utils";
 // 分割字符串为元组类型
 type Split<
     S extends string,
@@ -96,7 +107,7 @@ export type MutableEvents<Events extends Record<string, any>, Meta = Record<stri
         payload: ExtendWildcardEvents<Events>[K];
         meta: Meta;
     };
-}[keyof ExtendWildcardEvents<Events>]; // // 测试用例
+}[keyof ExtendWildcardEvents<Events>];
 
 export type MutableMessage<Events extends Record<string, any>, Meta = Record<string, any>> = {
     [K in keyof ExtendWildcardEvents<Events>]: {
@@ -106,7 +117,16 @@ export type MutableMessage<Events extends Record<string, any>, Meta = Record<str
     };
 }[keyof ExtendWildcardEvents<Events>];
 
-type Events = MutableMessage<{
+type Events = {
+    a: 1;
+    "c/*": boolean;
+    "rooms/*/add": boolean;
+    "rooms/*/join": boolean;
+    "rooms/*/leave": boolean;
+    "rooms/*/*": number;
+};
+
+type MEvents = MutableMessage<{
     a: 1;
     "c/*": boolean;
     "rooms/*/add": boolean;
@@ -115,24 +135,55 @@ type Events = MutableMessage<{
     "rooms/*/*": number;
 }>;
 
-const m1: Events = {
-    type: "rooms/x/add",
-    payload: true,
-};
-
-// 强制计算类型
-type Eval<T> = T extends any ? { [K in keyof T]: T[K] } : never;
-
-// 处理索引签名
-type HandleIndex<T> = {
-    [K in keyof T]: T[K];
-};
-
-type ValueOf<T> = HandleIndex<Eval<T>>[keyof HandleIndex<Eval<T>>];
-
-// 测试
-type Test5 = ValueOf<
-    { "users/a": 1; b: number; c: boolean } & {
-        [x: `users/${string}`]: "aaaaa";
-    }
+export type ExtendWildcardEvents2<Events extends Record<string, any>> = AssertRecord<
+    RemoveEmptyObject<
+        {
+            // 第一优先级：非通配符键（精确匹配）
+            [K in keyof Events as K extends `${string}*${string}` | `*` | `**`
+                ? never
+                : K]: Events[K];
+        } & {
+            // 第二优先级：通配符键扩展
+            [K in keyof Events as K extends `${string}*${string}` | `*`
+                ? ReplaceWildcard<K & string>
+                : never]: Events[K];
+        }
+    >
 >;
+type ToMessage<Events extends Record<string, any>, Meta = Record<string, any>> = {
+    [K in keyof Events]: {
+        type: Exclude<K, number | symbol>;
+        payload?: GetPayload<Events, Exclude<K, number | symbol>>;
+        meta?: Meta;
+    };
+}[keyof Events];
+
+type D3 = ExtendWildcardEvents2<Events>;
+
+type E1 = PickInlcudeDelimiterRecord<D3>;
+type M1 = ToMessage<E1>;
+type EK1 = GetClosestEvents<E1, "rooms/aaa/add">;
+type EX1 = E1["rooms/aaa/add"];
+
+type E2 = PickNotInlcudeDelimiterRecord<D3>;
+type M2 = ToMessage<E2>;
+type m3 = M2 | M1;
+
+function test<T extends keyof E1 = keyof E1>(d: FastEventMessage<E1[T]>): any;
+function test<T extends keyof E2 = keyof E2>(d: FastEventMessage<E2[T]>): any;
+function test(): any {
+    return 1 as any;
+}
+
+test({
+    type: "a",
+    payload: 1,
+});
+test({
+    type: "rooms/sdfds/add",
+    payload: "1",
+});
+test({
+    type: "rooms/sdfds/sss",
+    payload: "true",
+});

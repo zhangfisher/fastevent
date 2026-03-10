@@ -8,6 +8,14 @@
  * type Test4 = IsAny<never>;    // false
  */
 export type IsAny<T> = 0 extends 1 & T ? true : false;
+// MergeUnion<{ a: 1 } | { b: 2 }> === { a: 1, b: 2 }
+export type MergeUnion<T> = (T extends any ? (x: T) => void : never) extends (x: infer U) => void
+    ? { [K in keyof U]: U[K] }
+    : never;
+
+export type RemoveEmptyObject<T extends Record<string, any>> = T extends {} & (infer O) ? O : T;
+
+export type AssertRecord<T> = T extends Record<string, any> ? T : Record<string, any>;
 
 export type Union<T> = T extends infer O ? { [K in keyof O]: O[K] } : never;
 
@@ -52,3 +60,25 @@ export type Fallback<T, F> = [T] extends [never]
       : T; // 否则返回原类型
 
 export type isEmpty<T extends Record<string, any>> = [keyof T] extends [never] ? true : false;
+
+// 提取出精确等于T的记录
+export type PickEqualRecord<R extends Record<string, any>, T extends string> = {
+    [K in keyof R as Equal<K, T> extends true ? K : never]: R[K];
+};
+// 提取出精确不等于T的记录
+export type PickNotEqualRecord<R extends Record<string, any>, T extends string> = {
+    [K in keyof R as Equal<K, T> extends true ? never : K]: R[K];
+};
+
+// 提取出Key中包括分割符的记录
+export type PickInlcudeDelimiterRecord<R extends Record<string, any>> = {
+    [K in keyof R as K extends `${string}/${string}` ? K : never]: R[K];
+};
+
+export type PickNotInlcudeDelimiterRecord<R extends Record<string, any>> = {
+    [K in keyof R as K extends `${string}/${string}` ? never : K]: R[K];
+};
+
+export type NotEqual<X, Y> = true extends Equal<X, Y> ? false : true;
+export type Equal<X, Y> =
+    (<T>() => T extends X ? 1 : 2) extends <T>() => T extends Y ? 1 : 2 ? true : false;

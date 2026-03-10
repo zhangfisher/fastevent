@@ -1,10 +1,6 @@
 import { Keys } from "./Keys";
+import { MergeUnion } from "./utils";
 import { CountFixedSegments } from "./WildcardPriority";
-
-// MergeUnion<{ a: 1 } | { b: 2 }> === { a: 1, b: 2 }
-export type MergeUnion<T> = (T extends any ? (x: T) => void : never) extends (x: infer U) => void
-    ? { [K in keyof U]: U[K] }
-    : never;
 
 type Split<
     S extends string,
@@ -19,7 +15,13 @@ type MatchSegment<Input extends string, Pattern extends string> = Pattern extend
       : Input extends Pattern
         ? true
         : false;
-
+// type MatchSegment<Input extends string, Pattern extends string> = Pattern extends "*"
+//     ? true
+//     : Pattern extends "**"
+//       ? true
+//       : Input extends Pattern
+//         ? true
+//         : false;
 // 递归匹配数组
 type MatchPatternArray<InputArr extends string[], PatternArr extends string[]> = InputArr extends [
     infer InputHead extends string,

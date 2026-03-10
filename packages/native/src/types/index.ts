@@ -1,7 +1,7 @@
 import type { FastListenerExecutor } from "../executors/types";
 import { type FastListenerPipe } from "../pipes/types";
 import { ExpandWildcard, ReplaceWildcard } from "./ExpandWildcard";
-import { IsAny, KeyOf } from "./utils";
+import { AssertRecord, IsAny, KeyOf, RemoveEmptyObject } from "./utils";
 import { GetClosestEvents, GetMatchedEvents } from "./WildcardEvents";
 
 // 用来扩展全局Meta类型
@@ -603,9 +603,6 @@ export type AtPayloads<Events extends Record<string, any>> = {
     [K in keyof Events]: PickPayload<Events[K]>;
 };
 
-type RemoveEmptyObject<T extends Record<string, any>> = T extends {} & (infer O) ? O : T;
-
-type AssertRecord<T> = T extends Record<string, any> ? T : Record<string, any>;
 /**
  * 扩展通配符事件类型
  * @description 将包含通配符的事件键扩展为模板字面量类型
@@ -679,38 +676,6 @@ export * from "./Keys";
 export * from "./utils";
 
 export type Class = (new (...args: any[]) => any) | (abstract new (...args: any[]) => any);
-
-/**
- * Checks if the given key T matches any wildcard pattern in Events
- * It excludes cases that only match global wildcards (* and **)
- */
-/**
- * 检查通配符匹配的事件是否有 FastMessagePayload 类型的值
- * 当所有匹配的键都是 FastMessagePayload 时才返回 T
- */
-type CheckWildcardMatch<
-    MatchedEvents extends Record<string, any>,
-    T extends string,
-> = keyof MatchedEvents extends infer MatchedKeys
-    ? Exclude<MatchedKeys, "*" | "**"> extends infer NonGlobalKeys
-        ? NonGlobalKeys extends never
-            ? never
-            : NonGlobalKeys extends string
-              ? // 检查：所有非全局通配符匹配的值都必须是 FastMessagePayload（且不能是 any）
-                {
-                    [K in NonGlobalKeys]: IsAny<MatchedEvents[K]> extends true
-                        ? never
-                        : MatchedEvents[K] extends FastMessagePayload<any>
-                          ? K
-                          : never;
-                }[NonGlobalKeys] extends infer Result
-                  ? [Result] extends [never]
-                      ? never
-                      : T
-                  : never
-              : never
-        : never
-    : never;
 
 export type IsTransformedKey<Events extends Record<string, any>, T extends string> =
     // 优先检查：如果 T 是 Events 的精确键，其值必须扩展 FastMessagePayload
