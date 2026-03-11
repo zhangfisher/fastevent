@@ -1,4 +1,4 @@
-import { FastEventListenerMeta } from "../types";
+import { FastEventListenerMeta } from "../types/FastEventListeners";
 import { FastListenerExecutor } from "./types";
 
 /**

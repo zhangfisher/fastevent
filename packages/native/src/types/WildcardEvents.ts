@@ -1,11 +1,8 @@
-import { CountFixedSegments } from "./WildcardPriority";
-import { Equal, Keys } from "./utils";
+import { Add } from "./utils/Add";
+import { GetFixedPartCount } from "./wildcards/GetFixedPartCount";
+import { Equal, Keys, Split } from "./utils";
 
-type Split<
-    S extends string,
-    Delimiter extends string = "/",
-> = S extends `${infer Head}${Delimiter}${infer Tail}` ? [Head, ...Split<Tail, Delimiter>] : [S];
-
+ 
 /**
  * 计算两个路径的匹配度（1-9）
  * 规则：将路径分段，逐段比较，只有非通配符段相等时才 +1
@@ -32,11 +29,6 @@ type GetMatchRateImpl<
     : PatternArr extends [string, ...string[]]
       ? Acc
       : Acc;
-
-type Add<A extends number, B extends number> = [...Tuple<A>, ...Tuple<B>]["length"] & number;
-type Tuple<T extends number, R extends unknown[] = []> = R["length"] extends T
-    ? R
-    : Tuple<T, [...R, unknown]>;
 
 /**
  * 判断一个字符串段是否为通配符
@@ -257,7 +249,7 @@ export type GetFirstMatchedItem<T extends Record<string, any>> = GetWildcardsByP
  * 计算路径中的固定段数量（非通配符的段）
  * 用于确定通配符模式的精确程度，固定段越多越精确
  */
-type PathFixedSegmentsCount<T extends string> = CountFixedSegments<T>;
+type PathFixedSegmentsCount<T extends string> = GetFixedPartCount<T>;
 
 /**
  * 从匹配的事件中选择固定段数量最多的模式

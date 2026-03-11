@@ -2,7 +2,7 @@
 
 import { describe, test, expect } from "vitest";
 import type { Equal, Expect } from "@type-challenges/utils";
-import type { ReplaceWildcard } from "../../types/wildcards";
+import type { ReplaceWildcard } from "../../types/wildcards/ReplaceWildcard";
 
 describe("ReplaceWildcard", () => {
     test("通配符在普通字符串中间不应该被替换", () => {

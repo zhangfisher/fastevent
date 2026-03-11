@@ -4,14 +4,12 @@
 import { describe, test, expect } from "vitest";
 import type { Equal, Expect } from "@type-challenges/utils";
 import { FastEvent } from "../../event";
-import {
-    AssertFastMessage as NotPayload,
-    PickTransformedEvents,
-    TransformedEvents,
-    RecordValues,
-    GetClosestEvents,
-    TypedFastEventMessage,
-} from "../../types";
+import { GetClosestEvents } from "../../types";
+import { TypedFastEventMessage } from "../../types/FastEventMessages";
+import { TransformedEvents } from "../../types/transformed/TransformedEvents";
+import { PickTransformedEvents } from "../../types/transformed/PickTransformedEvents";
+import { AssertFastMessage as NotPayload } from "../../types/FastEventMessages";
+import { ValueOf } from "../../types/utils/ValueOf";
 
 describe("启用Transform时的类型支持", () => {
     test("自定义事件转换", () => {
@@ -263,7 +261,7 @@ describe("启用Transform时的类型支持", () => {
         type ScopeEvents = typeof scope.types.events;
         type JoinEvents = ScopeEvents["$join"]["type"];
         type SJoinEventss = GetClosestEvents<ScopeEvents, "$join">;
-        type JoinEventss = RecordValues<GetClosestEvents<ScopeEvents, "$join">>;
+        type JoinEventss = ValueOf<GetClosestEvents<ScopeEvents, "$join">>;
 
         scope.on("$join", (message) => {
             message.room;

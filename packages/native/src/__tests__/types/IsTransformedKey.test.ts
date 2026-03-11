@@ -3,8 +3,10 @@
 
 import { describe, test, expect } from "vitest";
 import type { Equal, Expect } from "@type-challenges/utils";
-import { IsTransformedKey, IsAny, ExtendWildcardEvents } from "../../types";
-import { AssertFastMessage as NotPayload } from "../../types";
+import { IsAny } from "../../types";
+import { IsTransformedKey } from "../../types/transformed/IsTransformedKey";
+import { ExtendWildcardEvents } from "../../types/wildcards/ExtendWildcardEvents";
+import { AssertFastMessage as NotPayload } from "../../types/FastEventMessages";
 
 describe("IsAny", () => {
     test("正确识别 any 类型", () => {

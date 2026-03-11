@@ -3,7 +3,8 @@
 import { describe, test, expect } from "vitest";
 import type { Equal, Expect, NotAny } from "@type-challenges/utils";
 import { FastEvent } from "../../event";
-import { TypedFastEventMessage, FastEventMeta, ScopeEvents } from "../../types";
+import { ScopeEvents } from "../../types";
+import { TypedFastEventMessage, FastEventMeta } from "../../types/FastEventMessages";
 import { FastEventScopeMeta } from "../../scope";
 // declare module "../.." {
 //     interface FastEvents {

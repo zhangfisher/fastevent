@@ -1,6 +1,8 @@
-import { TimeoutError } from "../consts"
-import { TypedFastEventListener, FastEventListenerArgs, TypedFastEventMessage } from "../types"
-import { FastListenerPipe } from "./types"
+import { TimeoutError } from "../consts";
+import { TypedFastEventMessage } from "../types/FastEventMessages";
+import { TypedFastEventListener } from "../types/FastEventListeners";
+import { FastEventListenerArgs } from "../types/FastEvents";
+import { FastListenerPipe } from "./types";
 
 /**
  * 创建一个超时装饰器，限制监听器函数的执行时间
@@ -11,25 +13,25 @@ import { FastListenerPipe } from "./types"
 export const timeout = <T = any>(ms: number, defaultValue?: T): FastListenerPipe => {
     return (listener: TypedFastEventListener): TypedFastEventListener => {
         return async function (message: TypedFastEventMessage, args: FastEventListenerArgs) {
-            let timeoutId: any
+            let timeoutId: any;
 
             const timeoutPromise = new Promise((resolve, reject) => {
                 timeoutId = setTimeout(() => {
                     if (defaultValue !== undefined) {
-                        resolve(defaultValue)
+                        resolve(defaultValue);
                     } else {
-                        reject(new TimeoutError())
+                        reject(new TimeoutError());
                     }
-                }, ms)
-            })
+                }, ms);
+            });
 
-            const listenerPromise = Promise.resolve(listener.call(this, message, args))
+            const listenerPromise = Promise.resolve(listener.call(this, message, args));
 
             try {
-                return await Promise.race([listenerPromise, timeoutPromise])
+                return await Promise.race([listenerPromise, timeoutPromise]);
             } finally {
-                clearTimeout(timeoutId!)
+                clearTimeout(timeoutId!);
             }
-        }
-    }
-}
+        };
+    };
+};

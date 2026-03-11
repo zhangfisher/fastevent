@@ -5,7 +5,11 @@ import { describe, test } from "vitest";
 import type { Equal, Expect } from "@type-challenges/utils";
 import { FastEvent } from "../../event";
 import { FastEventScope, FastEventScopeMeta, FastEventScopeOptions } from "../../scope";
-import { Dict, Expand, FastEventMeta, FastEventOptions, OverrideOptions } from "../../types";
+import { FastEventMeta } from "../../types/FastEventMessages";
+import { FastEventOptions } from "../../types/FastEvents";
+import { Dict } from "../../types/utils/Dict";
+import { Expand } from "../../types/Expand";
+import { OverrideOptions } from "../../types/utils/OverrideOptions";
 
 describe("继承FastEvent类型系统", () => {
     test("默认继承方式", () => {

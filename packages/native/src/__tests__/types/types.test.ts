@@ -3,15 +3,11 @@
 import { describe, test, expect } from "vitest";
 import type { Equal, Expect } from "@type-challenges/utils";
 import { FastEvent } from "../../event";
-import {
-    FastEventMessage,
-    FastEventListener,
-    TypedFastEventListener,
-    AssertFastMessage as NotPayload,
-    Expand,
-    FastEventMeta,
-    ExtendWildcardEvents,
-} from "../../types";
+import { FastEventMessage, FastEventMeta } from "../../types/FastEventMessages";
+import { FastEventListener, TypedFastEventListener } from "../../types/FastEventListeners";
+import { ExtendWildcardEvents } from "../../types/wildcards/ExtendWildcardEvents";
+import { AssertFastMessage as NotPayload } from "../../types/FastEventMessages";
+import { Expand } from "../../types/Expand";
 
 describe("types", () => {
     test("未定义事件类型时就支持任意事件", () => {

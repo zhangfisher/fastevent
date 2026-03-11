@@ -5,14 +5,11 @@
 
 import { describe, test } from "vitest";
 import type { Equal, Expect } from "@type-challenges/utils";
-import {
-    type TransformedEvents,
-    ExpandWildcard,
-    ExtendWildcardEvents,
-    GetMatchedEventPayload,
-    NotPayload,
-    GetMatchedEvents,
-} from "../../types";
+import { ExpandWildcard, GetMatchedEvents } from "../../types";
+import { GetMatchedEventPayload } from "../../types/transformed/GetMatchedEventPayload";
+import { type TransformedEvents } from "../../types/transformed/TransformedEvents";
+import { ExtendWildcardEvents } from "../../types/wildcards/ExtendWildcardEvents";
+import { NotPayload } from "../../types/transformed/NotPayload";
 
 describe("TransformedEvents", () => {
     test("非通配符事件正确转换为 FastMessagePayload", () => {

@@ -2,27 +2,20 @@
 import { describe, test } from "vitest";
 import type { Equal, Expect } from "@type-challenges/utils";
 import { FastEvent } from "../../event";
-import {
-    FastEventEmitMessage,
-    GetPayload,
-    IsTransformedKey,
-    MutableEvents,
-    NotPayload,
-    RecordValues,
-    ScopeEvents,
-    TransformedEvents,
-} from "../../types/index";
-import {
-    GetClosestEvents,
-    GetMatchedEventPayload,
-    GetMatchedEvents,
-    FastEventMeta,
-    ExtendWildcardEvents,
-    TypedFastEventMessage,
-} from "../../types";
+import { MutableEvents, ScopeEvents } from "../../types/index";
+import { FastEventEmitMessage } from "../../types/FastEventMessages";
+import { IsTransformedKey } from "../../types/transformed/IsTransformedKey";
+import { TransformedEvents } from "../../types/transformed/TransformedEvents";
+import { NotPayload } from "../../types/transformed/NotPayload";
+import { ValueOf } from "../../types/utils/ValueOf";
+import { GetPayload } from "../../types/transformed/GetPayload";
+import { GetClosestEvents, GetMatchedEvents } from "../../types";
+import { FastEventMeta, TypedFastEventMessage } from "../../types/FastEventMessages";
+import { GetMatchedEventPayload } from "../../types/transformed/GetMatchedEventPayload";
+import { ExtendWildcardEvents } from "../../types/wildcards/ExtendWildcardEvents";
 import { FastEventIterator } from "../../utils/eventIterator";
 import { Overloads } from "./utils";
-import { PickPayload } from "../../types/index";
+import { PickPayload } from "../../types/transformed/PickPayload";
 import { MutableEvents, MutableMessage } from "../../types/ScopeEvents";
 type IteratorMessage<T> = T extends FastEventIterator<infer M> ? M : never;
 
@@ -426,7 +419,7 @@ describe("返回迭代器的FaseEvent类型系统测试", () => {
         }
         const emitter = new FastEvent<Events>();
         const aMessages = emitter.on("a");
-        type A1 = RecordValues<GetClosestEvents<Events, "a">>;
+        type A1 = ValueOf<GetClosestEvents<Events, "a">>;
 
         type AMessageType = IteratorMessage<typeof aMessages>;
         type ACases = [

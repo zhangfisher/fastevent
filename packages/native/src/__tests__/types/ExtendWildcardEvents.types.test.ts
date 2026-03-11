@@ -2,7 +2,7 @@
 
 import { describe, test } from "vitest";
 import type { Equal, Expect } from "@type-challenges/utils";
-import { type ExtendWildcardEvents } from "../../types";
+import { type ExtendWildcardEvents } from "../../types/wildcards/ExtendWildcardEvents";
 
 describe("ExtendWildcardEvents", () => {
     test("非通配符事件保持不变", () => {
@@ -105,7 +105,7 @@ describe("ExtendWildcardEvents", () => {
         ];
     });
 
-    test("通配符存在覆盖的情况",()=>{
+    test("通配符存在覆盖的情况", () => {
         type Events = {
             "rooms/*/$join": { room: string; welcome: string; users: string[] };
             "rooms/*/$leave": string;
@@ -115,10 +115,8 @@ describe("ExtendWildcardEvents", () => {
             "rooms/*/*": number;
         };
         type Result = ExtendWildcardEvents<Events>;
-        type cases = [
-        ]
-
-    })
+        type cases = [];
+    });
 
     test("通配符在中间", () => {
         type Events = {

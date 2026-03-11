@@ -1,5 +1,5 @@
 import { IfNever, KeyOf } from ".";
-import { ReplaceWildcard } from "./wildcards";
+import { ReplaceWildcard } from "./wildcards/ReplaceWildcard";
 
 export type MutableMessage<Events extends Record<string, any>, Meta = Record<string, any>> = {
     [K in KeyOf<Events>]: {

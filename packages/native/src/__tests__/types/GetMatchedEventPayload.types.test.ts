@@ -2,7 +2,7 @@
 
 import { describe, test } from "vitest";
 import type { Equal, Expect } from "@type-challenges/utils";
-import { type GetMatchedEventPayload } from "../../types";
+import { type GetMatchedEventPayload } from "../../types/transformed/GetMatchedEventPayload";
 
 describe("GetMatchedEventPayload - 独立交叉类型支持", () => {
     test("基本独立交叉类型：多个通配符匹配", () => {
@@ -42,9 +42,7 @@ describe("GetMatchedEventPayload - 独立交叉类型支持", () => {
         type Result = GetMatchedEventPayload<Events, "user/123/profile">;
 
         // 三个模式都匹配
-        type cases = [
-            Expect<Equal<Result, string | { id: number } | boolean>>,
-        ];
+        type cases = [Expect<Equal<Result, string | { id: number } | boolean>>];
     });
 
     test("优先级：精确键覆盖通配符", () => {
@@ -57,9 +55,7 @@ describe("GetMatchedEventPayload - 独立交叉类型支持", () => {
         type Result = GetMatchedEventPayload<Events, "exact/key">;
 
         // 精确键应该优先
-        type cases = [
-            Expect<Equal<Result, { type: "exact" }>>,
-        ];
+        type cases = [Expect<Equal<Result, { type: "exact" }>>];
     });
 
     test("无匹配键返回 never", () => {
@@ -69,9 +65,7 @@ describe("GetMatchedEventPayload - 独立交叉类型支持", () => {
 
         type Result = GetMatchedEventPayload<Events, "invalid/key">;
 
-        type cases = [
-            Expect<Equal<Result, never>>,
-        ];
+        type cases = [Expect<Equal<Result, never>>];
     });
 
     test("复杂嵌套的独立交叉类型", () => {
@@ -123,9 +117,7 @@ describe("GetMatchedEventPayload - 独立交叉类型支持", () => {
 
         type Result = GetMatchedEventPayload<Events, "test/123">;
 
-        type cases = [
-            Expect<Equal<Result, boolean>>,
-        ];
+        type cases = [Expect<Equal<Result, boolean>>];
     });
 
     test("通配符在不同位置", () => {
@@ -160,9 +152,6 @@ describe("GetMatchedEventPayload - 独立交叉类型支持", () => {
         type Result1 = GetMatchedEventPayload<Events, "a/test">;
         type Result2 = GetMatchedEventPayload<Events, "x/test">;
 
-        type cases = [
-            Expect<Equal<Result1, string>>,
-            Expect<Equal<Result2, never>>,
-        ];
+        type cases = [Expect<Equal<Result1, string>>, Expect<Equal<Result2, never>>];
     });
 });

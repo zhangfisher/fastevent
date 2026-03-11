@@ -5,7 +5,9 @@
 
 import type { FastEvent } from "../event";
 import type { FastEventScope } from "../scope";
-import type { FastEventListener, FastEventListenOptions, FastEventMessage } from "../types";
+import type { FastEventMessage } from "../types/FastEventMessages";
+import type { FastEventListener } from "../types/FastEventListeners";
+import type { FastEventListenOptions } from "../types/FastEvents";
 
 // 溢出策略类型
 export type FastQueueOverflows =

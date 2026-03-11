@@ -1,18 +1,33 @@
-import { FastEvent } from '../event';
-import { FastEventListenerArgs, FastEventSubscriber, FastEventOptions, DeepPartial, TypedFastEventListener, FastEventListenOptions } from '../types';
-import { expandable } from '../utils/expandable';
-import { BroadcastEvent, NamespaceDelimiter } from './consts';
-import type { FastEventBus } from './eventbus';
-import { FastEventBusEvents, FastEventBusEventTypes, FastEventBusMessage, FastEventBusNodeIds } from './types';
-import { parseBroadcaseArgs } from './utils';
+import { FastEvent } from "../event";
+import { FastEventSubscriber } from "../types/FastEventSubscribers";
+import { TypedFastEventListener } from "../types/FastEventListeners";
+import {
+    FastEventListenerArgs,
+    FastEventOptions,
+    FastEventListenOptions,
+} from "../types/FastEvents";
+import { DeepPartial } from "../types/utils/DeepPartial";
+import { expandable } from "../utils/expandable";
+import { BroadcastEvent, NamespaceDelimiter } from "./consts";
+import type { FastEventBus } from "./eventbus";
+import {
+    FastEventBusEvents,
+    FastEventBusEventTypes,
+    FastEventBusMessage,
+    FastEventBusNodeIds,
+} from "./types";
+import { parseBroadcaseArgs } from "./utils";
 
-export type FastEventBusNodeOptions<Meta = Record<string, any>, Context = any> = FastEventOptions<Meta, Context> & {};
-
-export class FastEventBusNode<Events extends Record<string, any> = Record<string, any>, Meta extends Record<string, any> = Record<string, any>, Context = never> extends FastEvent<
-    Events,
+export type FastEventBusNodeOptions<Meta = Record<string, any>, Context = any> = FastEventOptions<
     Meta,
     Context
-> {
+> & {};
+
+export class FastEventBusNode<
+    Events extends Record<string, any> = Record<string, any>,
+    Meta extends Record<string, any> = Record<string, any>,
+    Context = never,
+> extends FastEvent<Events, Meta, Context> {
     eventbus?: FastEventBus<any, any, any, any, any>;
     private _subscribers: FastEventSubscriber[] = [];
     constructor(options?: DeepPartial<FastEventBusNodeOptions<Meta, Context>>) {
@@ -21,7 +36,7 @@ export class FastEventBusNode<Events extends Record<string, any> = Record<string
         this.options.onBeforeExecuteListener = this._onBeforeExecuteListener.bind(this);
         this.options.onAddListener = this._onAddListener.bind(this);
         // 订阅发送给自己的消息
-        this._subscribers.push(this.on('data'));
+        this._subscribers.push(this.on("data"));
     }
     /**
      *
@@ -43,12 +58,19 @@ export class FastEventBusNode<Events extends Record<string, any> = Record<string
     private _onBeforeExecuteListener(message: FastEventBusMessage, args: FastEventListenerArgs) {
         // 处理包括名称空间前缀的事件,即emit("<节点id>::<事件名>")
         if (message.type.includes(NamespaceDelimiter)) {
-            message.type = message.type.replace(NamespaceDelimiter, this.eventbus!.options.delimiter);
+            message.type = message.type.replace(
+                NamespaceDelimiter,
+                this.eventbus!.options.delimiter,
+            );
             message.from = this.id;
             return this.eventbus!.emit(message, args);
         }
     }
-    private _onAddListener(type: string, listener: TypedFastEventListener, options: FastEventListenOptions) {
+    private _onAddListener(
+        type: string,
+        listener: TypedFastEventListener,
+        options: FastEventListenOptions,
+    ) {
         // 以::开头代表在其他节点订阅事件
         if (type.includes(NamespaceDelimiter)) {
             const [nodeId, eventName] = type.split(NamespaceDelimiter);
@@ -67,15 +89,18 @@ export class FastEventBusNode<Events extends Record<string, any> = Record<string
             //  所以可以监听此消息，如果节点已连接则马上就可以在目标节点上注册表监听器
             //   如果目标节点还没有注册也可以注销
             let targetSubscriber: FastEventSubscriber | undefined;
-            const subscriber = this.eventbus!.on(`$connect${this.options.delimiter}*`, (message) => {
-                if (message.payload === nodeId) {
-                    const targetNode = this.eventbus!.nodes.get(nodeId);
-                    if (targetNode) {
-                        targetSubscriber = targetNode.on(eventName, listener, options);
+            const subscriber = this.eventbus!.on(
+                `$connect${this.options.delimiter}*`,
+                (message) => {
+                    if (message.payload === nodeId) {
+                        const targetNode = this.eventbus!.nodes.get(nodeId);
+                        if (targetNode) {
+                            targetSubscriber = targetNode.on(eventName, listener, options);
+                        }
+                        subscriber.off();
                     }
-                    subscriber.off();
-                }
-            });
+                },
+            );
             // 动态切换订阅
             return {
                 off: () => (targetSubscriber ? targetSubscriber.off() : subscriber.off()),
@@ -87,11 +112,20 @@ export class FastEventBusNode<Events extends Record<string, any> = Record<string
      * 加入事件总线
      * @param eventBus 要加入的事件总线
      */
-    connect<E extends Record<string, any> = Record<string, any>, M extends Record<string, any> = Record<string, any>, C = any>(eventbus: FastEventBus<E, M, C>): void {
+    connect<
+        E extends Record<string, any> = Record<string, any>,
+        M extends Record<string, any> = Record<string, any>,
+        C = any,
+    >(eventbus: FastEventBus<E, M, C>): void {
         this.eventbus = eventbus;
         this.eventbus.add(this);
         // 订阅广播事件，以便能接收到广播消息
-        this._subscribers.push(this.eventbus.on(`${BroadcastEvent}${this.eventbus.options.delimiter}**`, this.onMessage.bind(this)));
+        this._subscribers.push(
+            this.eventbus.on(
+                `${BroadcastEvent}${this.eventbus.options.delimiter}**`,
+                this.onMessage.bind(this),
+            ),
+        );
         // 订阅点对点发送给当前节点的消息
         this._onSubscribeForNode();
     }
@@ -123,12 +157,20 @@ export class FastEventBusNode<Events extends Record<string, any> = Record<string
      * @param toNodeId 目标节点ID
      * @param message 要发送的消息
      */
-    send<R = any, T extends FastEventBusNodeIds = FastEventBusNodeIds>(toNodeId: T, payload: any, args?: FastEventListenerArgs): R[];
-    send<R = any, T extends string = string>(toNodeId: T, payload: any, args?: FastEventListenerArgs): R[];
+    send<R = any, T extends FastEventBusNodeIds = FastEventBusNodeIds>(
+        toNodeId: T,
+        payload: any,
+        args?: FastEventListenerArgs,
+    ): R[];
+    send<R = any, T extends string = string>(
+        toNodeId: T,
+        payload: any,
+        args?: FastEventListenerArgs,
+    ): R[];
     send<R = any>(toNodeId: string, payload: any, args?: FastEventListenerArgs): R[] {
         this._assertConnected();
         const message: FastEventBusMessage = {
-            type: 'data',
+            type: "data",
             from: this.id,
             to: toNodeId,
             payload,
@@ -138,7 +180,7 @@ export class FastEventBusNode<Events extends Record<string, any> = Record<string
 
     private _assertConnected() {
         if (!this.eventbus) {
-            throw new Error('Node is not connected to any event bus');
+            throw new Error("Node is not connected to any event bus");
         }
     }
 
@@ -149,15 +191,28 @@ export class FastEventBusNode<Events extends Record<string, any> = Record<string
      * @param message 要广播的消息
      */
     broadcast<R = any, T extends FastEventBusEventTypes = FastEventBusEventTypes>(
-        message: FastEventBusMessage<{ [K in T]: K extends FastEventBusEventTypes ? FastEventBusEvents[K] : any }>,
+        message: FastEventBusMessage<{
+            [K in T]: K extends FastEventBusEventTypes ? FastEventBusEvents[K] : any;
+        }>,
         args?: FastEventListenerArgs,
     ): R[];
     broadcast<R = any, T extends string = string>(
-        message: FastEventBusMessage<{ [K in T]: K extends FastEventBusEventTypes ? FastEventBusEvents[K] : any }, Meta>,
+        message: FastEventBusMessage<
+            { [K in T]: K extends FastEventBusEventTypes ? FastEventBusEvents[K] : any },
+            Meta
+        >,
         args?: FastEventListenerArgs,
     ): R[];
-    broadcast<R = any, T extends FastEventBusEventTypes = FastEventBusEventTypes>(type: T, payload: FastEventBusEvents[T], options?: FastEventListenerArgs<Meta>): R[];
-    broadcast<R = any, T extends string = string>(type: T, payload: T extends FastEventBusEventTypes ? FastEventBusEvents[T] : any, options?: FastEventListenerArgs<Meta>): R[];
+    broadcast<R = any, T extends FastEventBusEventTypes = FastEventBusEventTypes>(
+        type: T,
+        payload: FastEventBusEvents[T],
+        options?: FastEventListenerArgs<Meta>,
+    ): R[];
+    broadcast<R = any, T extends string = string>(
+        type: T,
+        payload: T extends FastEventBusEventTypes ? FastEventBusEvents[T] : any,
+        options?: FastEventListenerArgs<Meta>,
+    ): R[];
     broadcast<R = any>(): R[] {
         this._assertConnected();
         const [message, args] = parseBroadcaseArgs(arguments, this.options.delimiter);

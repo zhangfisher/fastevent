@@ -2,15 +2,11 @@
 import { describe, test, expect } from "vitest";
 import type { Equal, Expect } from "@type-challenges/utils";
 import { FastEvent } from "../../event";
-import {
-    GetClosestEvents,
-    NotPayload,
-    PickPayload,
-    PickTransformedEvents,
-    OmitTransformedEvents,
-    RecordValues,
-    WildcardKeys,
-} from "../../types";
+import { GetClosestEvents, WildcardKeys } from "../../types";
+import { PickTransformedEvents } from "../../types/transformed/PickTransformedEvents";
+import { PickPayload } from "../../types/transformed/PickPayload";
+import { NotPayload } from "../../types/transformed/NotPayload";
+import { ValueOf } from "../../types/utils/ValueOf";
 import { FastEventIterator } from "../../utils/eventIterator";
 
 // 辅助类型：提取 FastEventIterator 的消息类型

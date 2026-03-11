@@ -2,39 +2,40 @@
 import { FastEventDirectives, UnboundError } from "./consts";
 import type { FastEvent } from "./event";
 import { FastListenerExecutor } from "./executors/types";
+import { ScopeEvents, GetMatchedEvents, GetClosestEvents, MutableRecord, KeyOf } from "./types";
+import {
+    FastEventEmitMessage,
+    TypedFastEventMessage,
+    FastEventMeta,
+    TypedFastEventMessageOptional,
+    FastEventMessage,
+} from "./types/FastEventMessages";
+import { FastEventSubscriber } from "./types/FastEventSubscribers";
 import {
     TypedFastEventAnyListener,
-    FastEventEmitMessage,
     TypedFastEventListener,
+    FastEventCommonListener,
+} from "./types/FastEventListeners";
+import {
     FastEventListenerArgs,
     FastEventListenOptions,
-    TypedFastEventMessage,
-    FastEventSubscriber,
-    ScopeEvents,
-    FastEventMeta,
-    DeepPartial,
-    Fallback,
-    Dict,
-    TypedFastEventMessageOptional,
-    RecordValues,
-    GetMatchedEvents,
     FastEventListenerFlags,
-    OmitTransformedEvents,
-    PickTransformedEvents,
-    FastEventMessage,
-    GetClosestEvents,
-    IsTransformedKey,
-    ExtendWildcardEvents,
-    MutableRecord,
-    FastEventCommonListener,
-    KeyOf,
-    IsTransformed,
-    PayloadValues,
-} from "./types";
+} from "./types/FastEvents";
+import { IsTransformedKey } from "./types/transformed/IsTransformedKey";
+import { OmitTransformedEvents } from "./types/transformed/OmitTransformedEvents";
+import { PickTransformedEvents } from "./types/transformed/PickTransformedEvents";
+import { ExtendWildcardEvents } from "./types/wildcards/ExtendWildcardEvents";
+import { PayloadValues } from "./types/transformed/PayloadValues";
+import { ValueOf } from "./types/utils/ValueOf";
+import { Dict } from "./types/utils/Dict";
+import { DeepPartial } from "./types/utils/DeepPartial";
+import { Fallback } from "./types/Fallback";
+import { IsAllTransformed } from "./types/transformed/IsAllTransformed";
 import { parseEmitArgs } from "./utils/parseEmitArgs";
 import { parseScopeArgs } from "./utils/parseScopeArgs";
 import { renameFn } from "./utils/renameFn";
-import { PickPayload, AtPayloads } from "./types/index";
+import { AtPayloads } from "./types/transformed/AtPayloads";
+import { PickPayload } from "./types/transformed/PickPayload";
 import { isFunction } from "./utils/isFunction";
 import { FastEventIterator } from "./utils/eventIterator";
 
@@ -214,10 +215,10 @@ export class FastEventScope<
     ): T extends IsTransformedKey<Events, T>
         ? FastEventIterator<
               T extends "**"
-                  ? IsTransformed<Events> extends true
+                  ? IsAllTransformed<Events> extends true
                       ? PayloadValues<Events>
                       : any
-                  : PickPayload<RecordValues<GetClosestEvents<Events, T>>>
+                  : PickPayload<ValueOf<GetClosestEvents<Events, T>>>
           >
         : FastEventIterator<
               TypedFastEventMessage<GetClosestEvents<Events, T, Record<T, any>>, FinalMeta>
@@ -227,7 +228,7 @@ export class FastEventScope<
         type: T,
         listener: FastEventCommonListener<
             T extends IsTransformedKey<Events, T>
-                ? PickPayload<RecordValues<GetClosestEvents<Events, T>>>
+                ? PickPayload<ValueOf<GetClosestEvents<Events, T>>>
                 : TypedFastEventMessage<
                       T extends "**" ? Events : GetClosestEvents<Events, T, Record<T, any>>,
                       FinalMeta
@@ -275,9 +276,7 @@ export class FastEventScope<
     public once<T extends keyof PickTransformedEvents<Events>>(
         type: T,
         listener: (
-            message: PickPayload<
-                RecordValues<GetClosestEvents<Events, Exclude<T, number | symbol>>>
-            >,
+            message: PickPayload<ValueOf<GetClosestEvents<Events, Exclude<T, number | symbol>>>>,
             args: FastEventListenerArgs<FinalMeta>,
         ) => any | Promise<any>,
         options?: FastEventListenOptions<Events, FinalMeta>,
@@ -343,16 +342,12 @@ export class FastEventScope<
     ): R[];
     public emit<R = any, T extends string = string>(
         type: T,
-        payload?: PickPayload<
-            T extends Types ? Events[T] : RecordValues<GetMatchedEvents<Events, T>>
-        >,
+        payload?: PickPayload<T extends Types ? Events[T] : ValueOf<GetMatchedEvents<Events, T>>>,
         retain?: boolean,
     ): R[];
     public emit<R = any, T extends string = string>(
         type: T,
-        payload?: PickPayload<
-            T extends Types ? Events[T] : RecordValues<GetMatchedEvents<Events, T>>
-        >,
+        payload?: PickPayload<T extends Types ? Events[T] : ValueOf<GetMatchedEvents<Events, T>>>,
         options?: FastEventListenerArgs<FinalMeta>,
     ): R[];
     public emit<R = any>(

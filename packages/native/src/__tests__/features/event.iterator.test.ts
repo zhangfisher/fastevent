@@ -3,7 +3,7 @@
 import { describe, test, expect, vi } from "vitest";
 import { FastEvent } from "../../event";
 import { queue, throttle } from "../../pipes";
-import { NotPayload } from "../../types";
+import { NotPayload } from "../../types/transformed/NotPayload";
 
 describe("FastEvent 异步迭代器基础功能", () => {
     test("应该支持 for await...of 语法", async () => {

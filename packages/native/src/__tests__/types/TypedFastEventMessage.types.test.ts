@@ -3,10 +3,7 @@
 import { describe, test, expect } from "vitest";
 import type { Equal, Expect, NotAny } from "@type-challenges/utils";
 import { FastEvent } from "../../event";
-import {
-    TypedFastEventMessage,
-    FastEventMeta,
-} from "../../types";
+import { TypedFastEventMessage, FastEventMeta } from "../../types/FastEventMessages";
 
 /**
  * TypedFastEventMessage 类型单元测试
@@ -289,10 +286,7 @@ describe("TypedFastEventMessage 类型测试", () => {
 
             type TypeTest = [
                 Expect<
-                    Equal<
-                        typeof message.meta,
-                        FastEventMeta & CustomMeta & Record<string, any>
-                    >
+                    Equal<typeof message.meta, FastEventMeta & CustomMeta & Record<string, any>>
                 >,
             ];
         });
@@ -398,17 +392,9 @@ describe("TypedFastEventMessage 类型测试", () => {
             emitter.on("userCreated", (message) => {
                 type TypeChecks = [
                     Expect<Equal<typeof message.type, "userCreated">>,
+                    Expect<Equal<typeof message.payload, { id: number; name: string }>>,
                     Expect<
-                        Equal<
-                            typeof message.payload,
-                            { id: number; name: string }
-                        >
-                    >,
-                    Expect<
-                        Equal<
-                            typeof message.meta,
-                            FastEventMeta & AppMeta & Record<string, any>
-                        >
+                        Equal<typeof message.meta, FastEventMeta & AppMeta & Record<string, any>>
                     >,
                 ];
             });
@@ -432,24 +418,14 @@ describe("TypedFastEventMessage 类型测试", () => {
             roomScope.on("messages/abc", (message) => {
                 type TypeChecks = [
                     Expect<Equal<typeof message.type, "messages/abc">>,
-                    Expect<
-                        Equal<
-                            typeof message.payload,
-                            { content: string; sender: string }
-                        >
-                    >,
+                    Expect<Equal<typeof message.payload, { content: string; sender: string }>>,
                 ];
             });
 
             roomScope.on("users/join", (message) => {
                 type TypeChecks = [
                     Expect<Equal<typeof message.type, "users/join">>,
-                    Expect<
-                        Equal<
-                            typeof message.payload,
-                            { userId: string; username: string }
-                        >
-                    >,
+                    Expect<Equal<typeof message.payload, { userId: string; username: string }>>,
                 ];
             });
         });

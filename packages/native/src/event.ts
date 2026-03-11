@@ -4,42 +4,42 @@ import {
     IFastEventScope,
     type FastEventScopeOptions,
 } from "./scope";
+import { GetMatchedEvents, GetClosestEvents, MutableEvents, KeyOf, MutableMessage } from "./types";
+import {
+    TypedFastEventMessage,
+    FastEventEmitMessage,
+    FastEventMeta,
+    TypedFastEventMessageOptional,
+} from "./types/FastEventMessages";
+import { FastListeners } from "./types/FastEventListeners";
+import { FastEventSubscriber } from "./types/FastEventSubscribers";
 import {
     TypedFastEventListener,
-    FastEventOptions,
-    FastListeners,
     FastEventListenerNode,
-    FastEventSubscriber,
-    FastEventListenOptions,
-    TypedFastEventMessage,
     TypedFastEventAnyListener,
-    Fallback,
-    FastEventEmitMessage,
-    FastEventListenerArgs,
     FastEventListenerMeta,
-    FastEvents,
-    DeepPartial,
-    FastEventMeta,
-    Expand,
-    TypedFastEventMessageOptional,
     FastEventListeners,
-    GetMatchedEvents,
-    RecordValues,
-    PickPayload,
-    FastEventListenerFlags,
-    PickTransformedEvents,
-    OmitTransformedEvents,
-    GetClosestEvents,
-    IsTransformedKey,
-    ExtendWildcardEvents,
-    MutableEvents,
     FastEventCommonListener,
-    KeyOf,
-    IsTransformed,
-    PayloadValues,
-    GetPayload,
-    MutableMessage,
-} from "./types";
+} from "./types/FastEventListeners";
+import {
+    FastEventOptions,
+    FastEventListenOptions,
+    FastEventListenerArgs,
+    FastEvents,
+    FastEventListenerFlags,
+} from "./types/FastEvents";
+import { IsTransformedKey } from "./types/transformed/IsTransformedKey";
+import { OmitTransformedEvents } from "./types/transformed/OmitTransformedEvents";
+import { PickTransformedEvents } from "./types/transformed/PickTransformedEvents";
+import { ExtendWildcardEvents } from "./types/wildcards/ExtendWildcardEvents";
+import { PayloadValues } from "./types/transformed/PayloadValues";
+import { PickPayload } from "./types/transformed/PickPayload";
+import { ValueOf } from "./types/utils/ValueOf";
+import { Expand } from "./types/Expand";
+import { DeepPartial } from "./types/utils/DeepPartial";
+import { Fallback } from "./types/Fallback";
+import { GetPayload } from "./types/transformed/GetPayload";
+import { IsAllTransformed } from "./types/transformed/IsAllTransformed";
 import { parseEmitArgs } from "./utils/parseEmitArgs";
 import { isPathMatched } from "./utils/isPathMatched";
 import { removeItem } from "./utils/removeItem";
@@ -328,10 +328,10 @@ export class FastEvent<
     ): T extends IsTransformedKey<AllEvents, T>
         ? FastEventIterator<
               T extends "**"
-                  ? IsTransformed<Events> extends true
+                  ? IsAllTransformed<Events> extends true
                       ? PayloadValues<AllEvents>
                       : any
-                  : PickPayload<RecordValues<GetClosestEvents<AllEvents, T>>>
+                  : PickPayload<ValueOf<GetClosestEvents<AllEvents, T>>>
           >
         : FastEventIterator<
               TypedFastEventMessage<GetClosestEvents<AllEvents, T, Record<T, any>>, Meta>
@@ -342,7 +342,7 @@ export class FastEvent<
         type: T,
         listener: FastEventCommonListener<
             T extends IsTransformedKey<AllEvents, T>
-                ? PickPayload<RecordValues<GetClosestEvents<Events, T>>>
+                ? PickPayload<ValueOf<GetClosestEvents<Events, T>>>
                 : TypedFastEventMessage<
                       T extends "**" ? Events : GetClosestEvents<Events, T, Record<T, any>>,
                       Meta
@@ -498,9 +498,7 @@ export class FastEvent<
     public once<T extends keyof PickTransformedEvents<AllEvents>>(
         type: T,
         listener: (
-            message: PickPayload<
-                RecordValues<GetClosestEvents<AllEvents, Exclude<T, number | symbol>>>
-            >,
+            message: PickPayload<ValueOf<GetClosestEvents<AllEvents, Exclude<T, number | symbol>>>>,
             args: FastEventListenerArgs<Meta>,
         ) => any | Promise<any>,
         options?: FastEventListenOptions<AllEvents, Meta>,

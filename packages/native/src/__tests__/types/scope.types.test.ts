@@ -6,22 +6,19 @@ import { describe, test, expect } from "vitest";
 import type { Equal, Expect, NotAny } from "@type-challenges/utils";
 import { FastEvent } from "../../event";
 import { FastEventScope, FastEventScopeMeta } from "../../scope";
+import { GetClosestEvents, GetMatchedEvents, MutableEvents, ScopeEvents } from "../../types";
 import {
-    Expand,
-    ExtendWildcardEvents,
     FastEventMessageExtends,
     FastEventMeta,
-    GetClosestEvents,
-    GetMatchedEventPayload,
-    GetMatchedEvents,
-    IsTransformedKey,
-    MutableEvents,
-    NotPayload,
-    RecordValues,
-    ScopeEvents,
-    TransformedEvents,
     TypedFastEventMessage,
-} from "../../types";
+} from "../../types/FastEventMessages";
+import { IsTransformedKey } from "../../types/transformed/IsTransformedKey";
+import { GetMatchedEventPayload } from "../../types/transformed/GetMatchedEventPayload";
+import { TransformedEvents } from "../../types/transformed/TransformedEvents";
+import { ExtendWildcardEvents } from "../../types/wildcards/ExtendWildcardEvents";
+import { NotPayload } from "../../types/transformed/NotPayload";
+import { ValueOf } from "../../types/utils/ValueOf";
+import { Expand } from "../../types/Expand";
 import { FastEventIterator } from "../../utils/eventIterator";
 
 type IteratorMessage<T> = T extends FastEventIterator<infer M> ? M : never;
@@ -483,7 +480,7 @@ describe("事件作用域: 返回迭代器 类型测试", () => {
         const emitter = new FastEvent<Events>();
         const scope = emitter.scope("x/y/z");
         const aMessages = scope.on("a");
-        type A1 = RecordValues<GetClosestEvents<Events, "a">>;
+        type A1 = ValueOf<GetClosestEvents<Events, "a">>;
         type AMessageType = IteratorMessage<typeof aMessages>;
         type ACases = [
             Expect<Equal<AMessageType["type"], "a">>,

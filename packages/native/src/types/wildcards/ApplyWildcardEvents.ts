@@ -1,6 +1,6 @@
 // oxlint-disable no-unused-vars
-import { ReplaceWildcard } from "./wildcards";
-import { IsMultiWildcard, KeyOf } from "./utils";
+import { ReplaceWildcard } from "./ReplaceWildcard";
+import { IsMultiWildcard, KeyOf } from "../utils";
 
 /**
  * 将事件的所有应用通配符

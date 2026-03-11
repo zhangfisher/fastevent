@@ -1,7 +1,8 @@
 import { describe, test } from "vitest";
 import { expectTypeOf } from "vitest";
 import type { Equal, Expect } from "@type-challenges/utils";
-import type { GetMatchedEvents, GetMatchedEventPayload } from "../../types";
+import type { GetMatchedEvents } from "../../types";
+import type { GetMatchedEventPayload } from "../../types/transformed/GetMatchedEventPayload";
 
 describe("GetMatchedEvents - 交集类型修复验证", () => {
     test("多个匹配应该返回交集类型，键的值类型保持独立", () => {
@@ -47,9 +48,7 @@ describe("GetMatchedEvents - 交集类型修复验证", () => {
         type Result = GetMatchedEventPayload<ExtEvents, "users/x/login">;
 
         // payload 应该是联合类型
-        type cases = [
-            Expect<Equal<Result, string | { name: string; vip: boolean }>>,
-        ];
+        type cases = [Expect<Equal<Result, string | { name: string; vip: boolean }>>];
     });
 
     test("单个匹配应该正常工作", () => {
@@ -69,8 +68,6 @@ describe("GetMatchedEvents - 交集类型修复验证", () => {
 
         type Result = GetMatchedEvents<Events, "users/john/profile">;
 
-        type cases = [
-            Expect<Equal<Result, { [x: `users/${string}/profile`]: { id: string } }>>,
-        ];
+        type cases = [Expect<Equal<Result, { [x: `users/${string}/profile`]: { id: string } }>>];
     });
 });

@@ -1,11 +1,13 @@
-import { TypedFastEventListener, FastEventListenerArgs, TypedFastEventMessage } from "../types"
-import { FastListenerPipe } from "./types"
+import { TypedFastEventMessage } from "../types/FastEventMessages";
+import { TypedFastEventListener } from "../types/FastEventListeners";
+import { FastEventListenerArgs } from "../types/FastEvents";
+import { FastListenerPipe } from "./types";
 
 export interface ThrottleOptions {
     /**
      * 当消息被丢弃时的回调函数
      */
-    drop?: (message: TypedFastEventMessage) => void
+    drop?: (message: TypedFastEventMessage) => void;
 }
 
 /**
@@ -16,23 +18,23 @@ export interface ThrottleOptions {
  */
 export const throttle = (interval: number, options?: ThrottleOptions): FastListenerPipe => {
     return (listener: TypedFastEventListener): TypedFastEventListener => {
-        let lastExecutionTime = 0
+        let lastExecutionTime = 0;
 
         return async function (message: TypedFastEventMessage, args: FastEventListenerArgs) {
-            const now = Date.now()
-            const timeSinceLastExecution = now - lastExecutionTime
+            const now = Date.now();
+            const timeSinceLastExecution = now - lastExecutionTime;
 
             // 如果在节流时间内，则丢弃消息
             if (timeSinceLastExecution < interval) {
                 if (options?.drop) {
-                    options.drop(message)
+                    options.drop(message);
                 }
-                return
+                return;
             }
 
             // 更新最后执行时间并执行监听器
-            lastExecutionTime = now
-            return await listener.call(this, message, args)
-        }
-    }
-}
+            lastExecutionTime = now;
+            return await listener.call(this, message, args);
+        };
+    };
+};

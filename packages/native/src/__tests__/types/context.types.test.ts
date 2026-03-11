@@ -1,37 +1,40 @@
 /* eslint-disable no-unused-vars */
-import { describe, test, expect } from 'vitest';
-import type { Equal, Expect, NotAny } from '@type-challenges/utils';
-import { FastEvent } from '../../event';
-import { FastEventScope, FastEventScopeMeta } from '../../scope';
-import { FastEventMeta } from '../../types';
+import { describe, test, expect } from "vitest";
+import type { Equal, Expect, NotAny } from "@type-challenges/utils";
+import { FastEvent } from "../../event";
+import { FastEventScope, FastEventScopeMeta } from "../../scope";
+import { FastEventMeta } from "../../types/FastEventMessages";
 
-describe('类型系统测试', () => {
-    test('未指定上下文时应使用默认上下文类型', () => {
+describe("类型系统测试", () => {
+    test("未指定上下文时应使用默认上下文类型", () => {
         const withoutCtxEmitter = new FastEvent();
         type Ctx1 = Expect<Equal<typeof withoutCtxEmitter.options.context, never>>;
 
-        withoutCtxEmitter.on('xxx', function (this, message) {
+        withoutCtxEmitter.on("xxx", function (this, message) {
             type cases = [Expect<Equal<typeof this, FastEvent>>];
         });
 
-        withoutCtxEmitter.once('xxx', function (this, message) {
+        withoutCtxEmitter.once("xxx", function (this, message) {
             type cases = [Expect<Equal<typeof this, FastEvent>>];
         });
     });
 
-    test('指定上下文时的类型推导', () => {
+    test("指定上下文时的类型推导", () => {
         const emitter = new FastEvent({
             context: {
                 root: true,
             },
         });
-        type Ctx = [Expect<Equal<typeof emitter.options.context, { root: boolean }>>, Expect<Equal<typeof emitter.context, { root: boolean }>>];
+        type Ctx = [
+            Expect<Equal<typeof emitter.options.context, { root: boolean }>>,
+            Expect<Equal<typeof emitter.context, { root: boolean }>>,
+        ];
 
-        emitter.on('xxx', function (this, message) {
+        emitter.on("xxx", function (this, message) {
             type cases = [Expect<Equal<typeof this, { root: boolean }>>];
         });
 
-        emitter.once('xxx', function (this, message) {
+        emitter.once("xxx", function (this, message) {
             type cases = [Expect<Equal<typeof this, { root: boolean }>>];
         });
     });
@@ -52,50 +55,62 @@ describe('类型系统测试', () => {
     //         ]
     //     })
     // })
-    test('作用域继承上下文时的类型推导', () => {
+    test("作用域继承上下文时的类型推导", () => {
         const emitter = new FastEvent({
             context: {
                 root: true,
             },
         });
-        const withoutCtxScope = emitter.scope('x/y/z');
-        type withoutScopeCtx = Expect<Equal<typeof withoutCtxScope.options.context, { root: boolean }>>;
+        const withoutCtxScope = emitter.scope("x/y/z");
+        type withoutScopeCtx = Expect<
+            Equal<typeof withoutCtxScope.options.context, { root: boolean }>
+        >;
 
-        withoutCtxScope.on('xxx', function (this, message) {
+        withoutCtxScope.on("xxx", function (this, message) {
             type cases = [Expect<Equal<typeof this, { root: boolean }>>];
         });
 
-        withoutCtxScope.once('xxx', function (this, message) {
+        withoutCtxScope.once("xxx", function (this, message) {
             type cases = [Expect<Equal<typeof this, { root: boolean }>>];
         });
     });
 
-    test('作用域自定义上下文时的类型推导', () => {
+    test("作用域自定义上下文时的类型推导", () => {
         const emitter = new FastEvent({
             context: {
                 root: true,
             },
         });
-        const scope = emitter.scope('x/y/z', {
+        const scope = emitter.scope("x/y/z", {
             context: 1,
         });
         type scopeCtx = Expect<Equal<typeof scope.options.context, number>>;
 
-        scope.on('a', function (this, message) {
+        scope.on("a", function (this, message) {
             type cases = [
                 Expect<Equal<typeof this, number>>,
-                Expect<Equal<typeof message.type, 'a'>>,
+                Expect<Equal<typeof message.type, "a">>,
                 Expect<Equal<typeof message.payload, any>>,
-                Expect<Equal<typeof message.meta, FastEventMeta & Record<string, any> & FastEventScopeMeta>>,
+                Expect<
+                    Equal<
+                        typeof message.meta,
+                        FastEventMeta & Record<string, any> & FastEventScopeMeta
+                    >
+                >,
             ];
         });
 
-        scope.once('a', function (this, message) {
+        scope.once("a", function (this, message) {
             type cases = [
                 Expect<Equal<typeof this, number>>,
-                Expect<Equal<typeof message.type, 'a'>>,
+                Expect<Equal<typeof message.type, "a">>,
                 Expect<Equal<typeof message.payload, any>>,
-                Expect<Equal<typeof message.meta, FastEventMeta & Record<string, any> & FastEventScopeMeta>>,
+                Expect<
+                    Equal<
+                        typeof message.meta,
+                        FastEventMeta & Record<string, any> & FastEventScopeMeta
+                    >
+                >,
             ];
         });
     });

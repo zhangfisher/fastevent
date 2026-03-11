@@ -20,7 +20,7 @@
 import { legacy_createStore as createStore } from "redux";
 import { WeakObjectMap } from "./utils/WeakObjectMap";
 import { FastEvent } from "./event";
-import { FastEventListenerMeta } from "./types";
+import { FastEventListenerMeta } from "./types/FastEventListeners";
 
 const initialState = {};
 

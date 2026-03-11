@@ -2,7 +2,8 @@
 
 import { describe, test } from "vitest";
 import type { Equal, Expect } from "@type-challenges/utils";
-import { type GetPayload, type FastMessagePayload } from "../../types";
+import { type FastMessagePayload } from "../../types/FastEventMessages";
+import { type GetPayload } from "../../types/transformed/GetPayload";
 
 describe("GetPayload - 基本功能测试", () => {
     test("精确键匹配：提取简单类型 payload", () => {
@@ -104,9 +105,9 @@ describe("GetPayload - FastMessagePayload 处理", () => {
         type Result3 = GetPayload<Events, "event/3">;
 
         type cases = [
-            Expect<Equal<Result1, string>>,
-            Expect<Equal<Result2, number>>,
-            Expect<Equal<Result3, { data: boolean }>>,
+            Expect<Equal<Result1, FastMessagePayload<string>>>,
+            Expect<Equal<Result2, FastMessagePayload<number>>>,
+            Expect<Equal<Result3, FastMessagePayload<{ data: boolean }>>>,
         ];
     });
 
@@ -120,7 +121,7 @@ describe("GetPayload - FastMessagePayload 处理", () => {
         type Result2 = GetPayload<Events, "normal">;
 
         type cases = [
-            Expect<Equal<Result1, { raw: string }>>,
+            Expect<Equal<Result1, FastMessagePayload<{ raw: string }>>>,
             Expect<Equal<Result2, { normal: number }>>,
         ];
     });

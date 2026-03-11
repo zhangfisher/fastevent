@@ -2,16 +2,14 @@
 
 import { describe, test } from "vitest";
 import type { Equal, Expect } from "@type-challenges/utils";
-import {
-    GetRecommendEventKey,
-    GetClosedEventKeys,
-    type GetClosedEvents,
-    GetMatchedEventKeys,
-    GetClosedEventDefine,
-} from "../../types/wildcards";
+import { GetMatchedEventKeys } from "../../types/GetMatchedEventKeys";
+import { GetRecommendEventKey } from "../../types/GetRecommendEventKey";
+import { GetClosedEventDefine } from "../../types/wildcards/GetClosedEventDefine";
+import { type GetClosedEvents } from "../../types/GetClosedEvents";
+import { GetClosedEventKeys } from "../../types/GetClosedEventKeys";
 import { UnionToTuple } from "type-fest";
-import { GetPartCount } from "../../types/WildcardPriority";
-import { GetWildcardCount } from "../../types/GetWildcardCount";
+import { GetPartCount } from "../../types/wildcards/GetPartCount";
+import { GetWildcardCount } from "../../types/wildcards/GetWildcardCount";
 import { FirstOfUnion } from "../../types";
 import { ClosestMatch } from "../../types/ClosestMatch";
 

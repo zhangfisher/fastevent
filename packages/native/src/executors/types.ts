@@ -1,9 +1,6 @@
-import {
-    TypedFastEventListener,
-    FastEventListenerArgs,
-    TypedFastEventMessage,
-    FastEventListenerMeta,
-} from "../types";
+import { TypedFastEventMessage } from "../types/FastEventMessages";
+import { TypedFastEventListener, FastEventListenerMeta } from "../types/FastEventListeners";
+import { FastEventListenerArgs } from "../types/FastEvents";
 
 export type FastListenerExecutor = (
     listeners: FastEventListenerMeta[],

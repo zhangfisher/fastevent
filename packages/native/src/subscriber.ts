@@ -1,4 +1,5 @@
-import { TypedFastEventListener, TypedFastEventMessage } from './types';
+import { TypedFastEventMessage } from "./types/FastEventMessages";
+import { TypedFastEventListener } from "./types/FastEventListeners";
 
 /**
  * FastEvent 订阅者类，支持异步迭代
@@ -23,7 +24,7 @@ export class FastEventSubscriberClass implements AsyncIterable<TypedFastEventMes
 
     constructor(
         public readonly off: () => void,
-        public readonly listener: TypedFastEventListener<any, any, any>
+        public readonly listener: TypedFastEventListener<any, any, any>,
     ) {}
 
     /**
@@ -33,7 +34,7 @@ export class FastEventSubscriberClass implements AsyncIterable<TypedFastEventMes
      */
     async *[Symbol.asyncIterator](): AsyncIterator<TypedFastEventMessage> {
         if (this._isIterating) {
-            throw new TypeError('迭代器已被消费，不能多次并发消费同一个订阅者');
+            throw new TypeError("迭代器已被消费，不能多次并发消费同一个订阅者");
         }
 
         this._isIterating = true;

@@ -2,7 +2,7 @@
 import { describe, test, expect } from "vitest";
 import type { Equal, Expect, NotAny } from "@type-challenges/utils";
 import { FastEvent } from "../../event";
-import { Overloads } from "../../types";
+import { Overloads } from "../../types/utils/Overloads";
 
 describe("emit类型系统测试", () => {
     interface CustomEvents {

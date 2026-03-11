@@ -4,7 +4,7 @@ import { describe, test } from "vitest";
 import type { Equal, Expect } from "@type-challenges/utils";
 import { FastEvent } from "../../event";
 import { FastEventScopeMeta } from "../../scope";
-import { FastEventMeta } from "../../types";
+import { FastEventMeta } from "../../types/FastEventMessages";
 
 describe("FastEvent元数据类型检查", () => {
     interface CustomEvents {
