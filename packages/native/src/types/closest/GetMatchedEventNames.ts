@@ -1,11 +1,28 @@
-import { GetPartCount } from "./wildcards/GetPartCount";
-import { GetWildcardCount } from "./wildcards/GetWildcardCount";
-import { IsMultiWildcard } from "./utils";
-import { IsWildcardMatched } from "./WildcardEvents";
+import { GetPartCount } from "../wildcards/GetPartCount";
+import { GetWildcardCount } from "../wildcards/GetWildcardCount";
+import { IsMultiWildcard } from "../utils";
+import { IsWildcardMatched } from "../WildcardEvents";
 
-// 获取最相近的Key
+/**
+ * 
+ *  列出与T匹配的事件名称
+ * 
+ * {<通配符数量>:<事件名称>}
+ * 
+     type Events = {
+        "users/* /login": { userId: number };
+        "* /* /login": { userId: number };
+        "users/* /profile": { username: string };
+    };
+ 
+    type S2 = GetClosestEventNames<Events, "users/123/login">;
+    {
+        1: "users/* /login";   
+        2: "* /* /login";
+    }
+ */
 
-export type GetClosedEventKeys<Events extends Record<string, any>, T extends string> = {
+export type GetMatchedEventNames<Events extends Record<string, any>, T extends string> = {
     [Key in Exclude<keyof Events, number | symbol> as IsWildcardMatched<T, Key> extends true
         ? IsMultiWildcard<Key> extends true //  以/**结尾
             ? GetPartCount<Key> extends 9

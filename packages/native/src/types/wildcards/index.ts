@@ -14,7 +14,7 @@ export * from "./WildcardKeys";
 export * from "./NormalEvents";
 export * from "./ApplyWildcardEvents";
 export * from "./ExtendWildcardEvents";
-export * from "./GetClosedEventDefine";
+export * from "../closest/GetClosestEventRecord";
 export * from "./GetPartCount";
 export * from "./GetFixedPartCount";
 export * from "./ToFixedCounts";

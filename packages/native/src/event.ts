@@ -4,7 +4,14 @@ import {
     IFastEventScope,
     type FastEventScopeOptions,
 } from "./scope";
-import { GetMatchedEvents, GetClosestEvents, MutableEvents, KeyOf, MutableMessage } from "./types";
+import {
+    GetClosestEvents,
+    KeyOf,
+    MutableMessage,
+    ApplyWildcardEvents,
+    Expand,
+    Fallback,
+} from "./types";
 import {
     TypedFastEventMessage,
     FastEventEmitMessage,
@@ -28,16 +35,14 @@ import {
     FastEvents,
     FastEventListenerFlags,
 } from "./types/FastEvents";
-import { IsTransformedKey } from "./types/transformed/IsTransformedKey";
+import { IsTransformedEvent } from "./types/transformed/IsTransformedEvent";
 import { OmitTransformedEvents } from "./types/transformed/OmitTransformedEvents";
 import { PickTransformedEvents } from "./types/transformed/PickTransformedEvents";
 import { ExtendWildcardEvents } from "./types/wildcards/ExtendWildcardEvents";
 import { PayloadValues } from "./types/transformed/PayloadValues";
 import { PickPayload } from "./types/transformed/PickPayload";
 import { ValueOf } from "./types/utils/ValueOf";
-import { Expand } from "./types/Expand";
 import { DeepPartial } from "./types/utils/DeepPartial";
-import { Fallback } from "./types/Fallback";
 import { GetPayload } from "./types/transformed/GetPayload";
 import { IsAllTransformed } from "./types/transformed/IsAllTransformed";
 import { parseEmitArgs } from "./utils/parseEmitArgs";
@@ -325,7 +330,7 @@ export class FastEvent<
     public on<T extends string = KeyOf<Events> | "**">(
         type: T,
         options?: FastEventListenOptions<AllEvents, Meta>,
-    ): T extends IsTransformedKey<AllEvents, T>
+    ): T extends IsTransformedEvent<AllEvents, T>
         ? FastEventIterator<
               T extends "**"
                   ? IsAllTransformed<Events> extends true
@@ -341,7 +346,7 @@ export class FastEvent<
     public on<T extends string = KeyOf<Events> | "**">(
         type: T,
         listener: FastEventCommonListener<
-            T extends IsTransformedKey<AllEvents, T>
+            T extends IsTransformedEvent<AllEvents, T>
                 ? PickPayload<ValueOf<GetClosestEvents<Events, T>>>
                 : TypedFastEventMessage<
                       T extends "**" ? Events : GetClosestEvents<Events, T, Record<T, any>>,
@@ -546,7 +551,7 @@ export class FastEvent<
     // 返回迭代器（不指定监听器时）
     public onAny(
         options?: FastEventListenOptions<AllEvents, AllMeta>,
-    ): FastEventIterator<MutableEvents<AllEvents, AllMeta>>;
+    ): FastEventIterator<MutableMessage<AllEvents, AllMeta>>;
     // 指定监听器
     public onAny(
         listener: FastEventCommonListener<

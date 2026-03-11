@@ -2,9 +2,9 @@
 
 import { describe, test } from "vitest";
 import type { Equal, Expect } from "@type-challenges/utils";
-import { type GetMatchedEventPayload } from "../../types/transformed/GetMatchedEventPayload";
+import { type GetClosestEventPayload } from "../../types/closest/GetClosestEventPayload";
 
-describe("GetMatchedEventPayload - 独立交叉类型支持", () => {
+describe("GetClosestEventPayload - 独立交叉类型支持", () => {
     test("基本独立交叉类型：多个通配符匹配", () => {
         type UserScopeEvents = {
             "a/b": string;
@@ -19,12 +19,12 @@ describe("GetMatchedEventPayload - 独立交叉类型支持", () => {
             };
         };
 
-        type Result = GetMatchedEventPayload<UserScopeEvents, "fisher/login">;
+        type Result = GetClosestEventPayload<UserScopeEvents, "fisher/login">;
 
         // 应该返回联合类型，而不是交叉类型
         type cases = [
             // 验证返回的是联合类型，包含两个匹配的类型
-            Expect<Equal<Result, string | { name: string; vip: boolean }>>,
+            Expect<Equal<Result, { name: string; vip: boolean }>>,
             // 验证不包含交叉类型
             Expect<Equal<Exclude<Result, string>, { name: string; vip: boolean }>>,
         ];
@@ -39,10 +39,10 @@ describe("GetMatchedEventPayload - 独立交叉类型支持", () => {
             [x: `user/${string}/*`]: boolean;
         };
 
-        type Result = GetMatchedEventPayload<Events, "user/123/profile">;
+        type Result = GetClosestEventPayload<Events, "user/123/profile">;
 
         // 三个模式都匹配
-        type cases = [Expect<Equal<Result, string | { id: number } | boolean>>];
+        type cases = [Expect<Equal<Result, { id: number } | boolean>>];
     });
 
     test("优先级：精确键覆盖通配符", () => {
@@ -52,7 +52,7 @@ describe("GetMatchedEventPayload - 独立交叉类型支持", () => {
             [x: `${string}/*`]: { type: "wild" };
         };
 
-        type Result = GetMatchedEventPayload<Events, "exact/key">;
+        type Result = GetClosestEventPayload<Events, "exact/key">;
 
         // 精确键应该优先
         type cases = [Expect<Equal<Result, { type: "exact" }>>];
@@ -63,7 +63,7 @@ describe("GetMatchedEventPayload - 独立交叉类型支持", () => {
             [x: `user/*`]: string;
         };
 
-        type Result = GetMatchedEventPayload<Events, "invalid/key">;
+        type Result = GetClosestEventPayload<Events, "invalid/key">;
 
         type cases = [Expect<Equal<Result, never>>];
     });
@@ -79,8 +79,8 @@ describe("GetMatchedEventPayload - 独立交叉类型支持", () => {
             [x: `admin/${string}`]: string;
         };
 
-        type Result1 = GetMatchedEventPayload<Events, "admin/dashboard/settings">;
-        type Result2 = GetMatchedEventPayload<Events, "admin/users/settings">;
+        type Result1 = GetClosestEventPayload<Events, "admin/dashboard/settings">;
+        type Result2 = GetClosestEventPayload<Events, "admin/users/settings">;
 
         type cases = [
             // dashboard/settings 匹配三个模式
@@ -99,8 +99,8 @@ describe("GetMatchedEventPayload - 独立交叉类型支持", () => {
             [x: `user/${string}`]: string;
         };
 
-        type Result1 = GetMatchedEventPayload<Events, "user/login">;
-        type Result2 = GetMatchedEventPayload<Events, "user/profile">;
+        type Result1 = GetClosestEventPayload<Events, "user/login">;
+        type Result2 = GetClosestEventPayload<Events, "user/profile">;
 
         type cases = [
             // 精确键优先
@@ -115,7 +115,7 @@ describe("GetMatchedEventPayload - 独立交叉类型支持", () => {
             [x: `test/*`]: boolean;
         };
 
-        type Result = GetMatchedEventPayload<Events, "test/123">;
+        type Result = GetClosestEventPayload<Events, "test/123">;
 
         type cases = [Expect<Equal<Result, boolean>>];
     });
@@ -129,9 +129,9 @@ describe("GetMatchedEventPayload - 独立交叉类型支持", () => {
             [x: `api/v1/*`]: number;
         };
 
-        type Result1 = GetMatchedEventPayload<Events, "div/click">;
-        type Result2 = GetMatchedEventPayload<Events, "admin/user/profile">;
-        type Result3 = GetMatchedEventPayload<Events, "api/v1/users">;
+        type Result1 = GetClosestEventPayload<Events, "div/click">;
+        type Result2 = GetClosestEventPayload<Events, "admin/user/profile">;
+        type Result3 = GetClosestEventPayload<Events, "api/v1/users">;
 
         type cases = [
             Expect<Equal<Result1, { x: number; y: number }>>,
@@ -149,8 +149,8 @@ describe("GetMatchedEventPayload - 独立交叉类型支持", () => {
             [x: `c/*`]: boolean;
         };
 
-        type Result1 = GetMatchedEventPayload<Events, "a/test">;
-        type Result2 = GetMatchedEventPayload<Events, "x/test">;
+        type Result1 = GetClosestEventPayload<Events, "a/test">;
+        type Result2 = GetClosestEventPayload<Events, "x/test">;
 
         type cases = [Expect<Equal<Result1, string>>, Expect<Equal<Result2, never>>];
     });

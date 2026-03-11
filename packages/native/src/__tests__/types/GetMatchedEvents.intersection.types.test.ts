@@ -2,7 +2,7 @@ import { describe, test } from "vitest";
 import { expectTypeOf } from "vitest";
 import type { Equal, Expect } from "@type-challenges/utils";
 import type { GetMatchedEvents } from "../../types";
-import type { GetMatchedEventPayload } from "../../types/transformed/GetMatchedEventPayload";
+import type { GetClosestEventPayload } from "../../types/closest/GetClosestEventPayload";
 
 describe("GetMatchedEvents - 交集类型修复验证", () => {
     test("多个匹配应该返回交集类型，键的值类型保持独立", () => {
@@ -45,7 +45,7 @@ describe("GetMatchedEvents - 交集类型修复验证", () => {
             };
         };
 
-        type Result = GetMatchedEventPayload<ExtEvents, "users/x/login">;
+        type Result = GetClosestEventPayload<ExtEvents, "users/x/login">;
 
         // payload 应该是联合类型
         type cases = [Expect<Equal<Result, string | { name: string; vip: boolean }>>];

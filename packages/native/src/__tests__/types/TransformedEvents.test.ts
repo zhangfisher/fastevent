@@ -6,7 +6,7 @@
 import { describe, test } from "vitest";
 import type { Equal, Expect } from "@type-challenges/utils";
 import { ExpandWildcard, GetMatchedEvents } from "../../types";
-import { GetMatchedEventPayload } from "../../types/transformed/GetMatchedEventPayload";
+import { GetClosestEventPayload } from "../../types/closest/GetClosestEventPayload";
 import { type TransformedEvents } from "../../types/transformed/TransformedEvents";
 import { ExtendWildcardEvents } from "../../types/wildcards/ExtendWildcardEvents";
 import { NotPayload } from "../../types/transformed/NotPayload";
@@ -272,19 +272,19 @@ describe("TransformedEvents", () => {
         };
         type Result = TransformedEvents<Events>;
 
-        type ddd = GetMatchedEventPayload<Result, "users/john/online">;
+        type ddd = GetClosestEventPayload<Result, "users/john/online">;
 
-        type OnlinePayload = GetMatchedEventPayload<Result, "users/john/online">;
-        type OfflinePayload = GetMatchedEventPayload<Result, "users/john/offline">;
-        type ProfilePayload = GetMatchedEventPayload<Result, "users/john/profile">;
-        type PostsView = GetMatchedEventPayload<Result, "posts/123/view">;
-        type PostsComment = GetMatchedEventPayload<Result, "posts/123/comment">;
-        type Anything = GetMatchedEventPayload<Result, "anything">;
-        type Posts123 = GetMatchedEventPayload<Result, "posts/123">;
-        type DevicesStatus = GetMatchedEventPayload<Result, "devices/sensor1/status">;
-        type DevicesData = GetMatchedEventPayload<Result, "devices/sensor1/data">;
-        type AnyNestedPath = GetMatchedEventPayload<Result, "any/nested/patha">;
-        type Posts = GetMatchedEventPayload<Result, "posts">;
+        type OnlinePayload = GetClosestEventPayload<Result, "users/john/online">;
+        type OfflinePayload = GetClosestEventPayload<Result, "users/john/offline">;
+        type ProfilePayload = GetClosestEventPayload<Result, "users/john/profile">;
+        type PostsView = GetClosestEventPayload<Result, "posts/123/view">;
+        type PostsComment = GetClosestEventPayload<Result, "posts/123/comment">;
+        type Anything = GetClosestEventPayload<Result, "anything">;
+        type Posts123 = GetClosestEventPayload<Result, "posts/123">;
+        type DevicesStatus = GetClosestEventPayload<Result, "devices/sensor1/status">;
+        type DevicesData = GetClosestEventPayload<Result, "devices/sensor1/data">;
+        type AnyNestedPath = GetClosestEventPayload<Result, "any/nested/patha">;
+        type Posts = GetClosestEventPayload<Result, "posts">;
 
         type cases = [
             Expect<

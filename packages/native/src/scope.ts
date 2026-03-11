@@ -21,7 +21,7 @@ import {
     FastEventListenOptions,
     FastEventListenerFlags,
 } from "./types/FastEvents";
-import { IsTransformedKey } from "./types/transformed/IsTransformedKey";
+import { IsTransformedEvent } from "./types/transformed/IsTransformedEvent";
 import { OmitTransformedEvents } from "./types/transformed/OmitTransformedEvents";
 import { PickTransformedEvents } from "./types/transformed/PickTransformedEvents";
 import { ExtendWildcardEvents } from "./types/wildcards/ExtendWildcardEvents";
@@ -212,7 +212,7 @@ export class FastEventScope<
     public on<T extends string = KeyOf<Events> | "**">(
         type: T,
         options?: FastEventListenOptions<Events, Meta>,
-    ): T extends IsTransformedKey<Events, T>
+    ): T extends IsTransformedEvent<Events, T>
         ? FastEventIterator<
               T extends "**"
                   ? IsAllTransformed<Events> extends true
@@ -227,7 +227,7 @@ export class FastEventScope<
     public on<T extends string = KeyOf<Events> | "**">(
         type: T,
         listener: FastEventCommonListener<
-            T extends IsTransformedKey<Events, T>
+            T extends IsTransformedEvent<Events, T>
                 ? PickPayload<ValueOf<GetClosestEvents<Events, T>>>
                 : TypedFastEventMessage<
                       T extends "**" ? Events : GetClosestEvents<Events, T, Record<T, any>>,

@@ -3,10 +3,15 @@
 
 import { describe, test, expect } from "vitest";
 import type { Equal, Expect } from "@type-challenges/utils";
-import { IsAny } from "../../types";
-import { IsTransformedKey } from "../../types/transformed/IsTransformedKey";
+import {
+    GetClosestEventNameTuple,
+    GetClosestEventPayload,
+    GetClosestEvents,
+    IsAny,
+} from "../../types";
+import { IsTransformedEvent } from "../../types/transformed/IsTransformedEvent";
 import { ExtendWildcardEvents } from "../../types/wildcards/ExtendWildcardEvents";
-import { AssertFastMessage as NotPayload } from "../../types/FastEventMessages";
+import { FastMessagePayload, AssertFastMessage as NotPayload } from "../../types/FastEventMessages";
 
 describe("IsAny", () => {
     test("正确识别 any 类型", () => {
@@ -36,7 +41,7 @@ describe("IsAny", () => {
 describe("IsTransformedKey", () => {
     test("正确处理 any 类型", () => {
         // any 不应该被视为 FastMessagePayload
-        type dd = IsTransformedKey<Record<string, any>, "test">;
+        type dd = IsTransformedEvent<Record<string, any>, "test">;
         type cases = [Expect<Equal<dd, never>>];
     });
 
@@ -44,7 +49,7 @@ describe("IsTransformedKey", () => {
         type Events1 = {
             test: NotPayload<string>;
         };
-        type result1 = IsTransformedKey<Events1, "test">;
+        type result1 = IsTransformedEvent<Events1, "test">;
         type cases1 = [Expect<Equal<result1, "test">>];
     });
 
@@ -52,7 +57,7 @@ describe("IsTransformedKey", () => {
         type Events2 = {
             test: string;
         };
-        type result2 = IsTransformedKey<Events2, "test">;
+        type result2 = IsTransformedEvent<Events2, "test">;
         type cases2 = [Expect<Equal<result2, never>>];
     });
 
@@ -60,7 +65,7 @@ describe("IsTransformedKey", () => {
         type Events3 = {
             "*": any;
         };
-        type result3 = IsTransformedKey<Events3, "test">;
+        type result3 = IsTransformedEvent<Events3, "test">;
         type cases3 = [Expect<Equal<result3, never>>];
     });
 
@@ -68,7 +73,7 @@ describe("IsTransformedKey", () => {
         type Events4 = ExtendWildcardEvents<{
             "*": NotPayload<string>;
         }>;
-        type result4 = IsTransformedKey<Events4, "test">;
+        type result4 = IsTransformedEvent<Events4, "test">;
         type cases4 = [Expect<Equal<result4, "test">>];
     });
 
@@ -80,14 +85,14 @@ describe("IsTransformedKey", () => {
         };
 
         // NotPayload 事件应该被识别
-        type result5a = IsTransformedKey<Events5, "click">;
+        type result5a = IsTransformedEvent<Events5, "click">;
         type cases5a = [Expect<Equal<result5a, "click">>];
 
         // 普通事件不应该被识别
-        type result5b = IsTransformedKey<Events5, "mousemove">;
+        type result5b = IsTransformedEvent<Events5, "mousemove">;
         type cases5b = [Expect<Equal<result5b, never>>];
 
-        type result5c = IsTransformedKey<Events5, "scroll">;
+        type result5c = IsTransformedEvent<Events5, "scroll">;
         type cases5c = [Expect<Equal<result5c, never>>];
     });
 
@@ -95,7 +100,7 @@ describe("IsTransformedKey", () => {
         type Events6 = {
             existing: string;
         };
-        type result6 = IsTransformedKey<Events6, "nonexistent">;
+        type result6 = IsTransformedEvent<Events6, "nonexistent">;
         type cases6 = [Expect<Equal<result6, never>>];
     });
     test("通配符中不存在的键应该返回 never", () => {
@@ -105,7 +110,7 @@ describe("IsTransformedKey", () => {
             "post/*": number;
             a: boolean;
         };
-        type result6 = IsTransformedKey<Events, "users/fisher/online">;
+        type result6 = IsTransformedEvent<Events, "users/fisher/online">;
         type cases6 = [Expect<Equal<result6, never>>];
     });
     test("通配符中匹配时", () => {
@@ -115,7 +120,21 @@ describe("IsTransformedKey", () => {
             "post/*": number;
             a: boolean;
         }>;
-        type result6 = IsTransformedKey<Events, "users/fisher/online">;
+        type result6 = IsTransformedEvent<Events, "users/fisher/online">;
         type cases6 = [Expect<Equal<result6, "users/fisher/online">>];
+    });
+    test("通配符中包括**匹配时", () => {
+        interface Events {
+            "a/*/c/*/d/*/e/*/g/*": string;
+            "a/*/c/**": NotPayload<number>;
+        }
+        type E1 = GetClosestEvents<Events, "a/1/c/x/y/x">;
+        type E12 = GetClosestEventNameTuple<Events, "a/1/c/x/y/x">;
+        type P1 = GetClosestEventPayload<Events, "a/1/c/x/y/x">;
+        type IS = P1 extends FastMessagePayload ? true : false;
+
+        type P2 = GetClosestEventPayload<Events, "a">;
+        type IS2 = P1 extends FastMessagePayload ? true : false;
+        type T2 = IsTransformedEvent<Events, "a/1/c/x/y/x">;
     });
 });

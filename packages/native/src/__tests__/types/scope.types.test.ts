@@ -12,8 +12,8 @@ import {
     FastEventMeta,
     TypedFastEventMessage,
 } from "../../types/FastEventMessages";
-import { IsTransformedKey } from "../../types/transformed/IsTransformedKey";
-import { GetMatchedEventPayload } from "../../types/transformed/GetMatchedEventPayload";
+import { IsTransformedEvent } from "../../types/transformed/IsTransformedEvent";
+import { GetClosestEventPayload } from "../../types/closest/GetClosestEventPayload";
 import { TransformedEvents } from "../../types/transformed/TransformedEvents";
 import { ExtendWildcardEvents } from "../../types/wildcards/ExtendWildcardEvents";
 import { NotPayload } from "../../types/transformed/NotPayload";
@@ -100,12 +100,12 @@ describe("事件作用域使用监听器类型测试", () => {
         type UserScopeRawEvents = typeof scope.types.rawEvents;
         type UserScopeEvents = typeof scope.types.events;
         type UserScopeEventKeys = keyof UserScopeRawEvents;
-        type f1 = GetMatchedEventPayload<UserScopeRawEvents, `fisher/login`>;
+        type f1 = GetClosestEventPayload<UserScopeRawEvents, `fisher/login`>;
         type f2 = GetMatchedEvents<UserScopeRawEvents, `fisher/login`>;
         type f22 = GetMatchedEvents<UserScopeRawEvents, `fisher/login`>;
         type f3 = GetClosestEvents<UserScopeRawEvents, `fisher/login`>;
-        type f41 = GetMatchedEventPayload<UserScopeRawEvents, `fisher/login`>;
-        type f42 = GetMatchedEventPayload<UserScopeRawEvents, `fisher/login`>;
+        type f41 = GetClosestEventPayload<UserScopeRawEvents, `fisher/login`>;
+        type f42 = GetClosestEventPayload<UserScopeRawEvents, `fisher/login`>;
         type cases = [
             Expect<
                 Equal<
@@ -128,7 +128,7 @@ describe("事件作用域使用监听器类型测试", () => {
             // `fisher/login`同时匹配了*/login和*/*，所以负载是string | {name:string,vip:boolean}
             Expect<
                 Equal<
-                    GetMatchedEventPayload<UserScopeRawEvents, `fisher/login`>,
+                    GetClosestEventPayload<UserScopeRawEvents, `fisher/login`>,
                     | string
                     | {
                           name: string;
@@ -142,7 +142,7 @@ describe("事件作用域使用监听器类型测试", () => {
             // `fisher/logout`同时匹配了 */login和 */*，所以负载是string | {name:string,vip:boolean}
             Expect<
                 Equal<
-                    GetMatchedEventPayload<UserScopeRawEvents, `fisher/logout`>,
+                    GetClosestEventPayload<UserScopeRawEvents, `fisher/logout`>,
                     | number
                     | {
                           name: string;
@@ -230,7 +230,7 @@ describe("事件作用域使用监听器类型测试", () => {
         type RawEvents = typeof scope.types.rawEvents;
         type UserScopeEvents = typeof scope.types.events;
         type RawEventKeys = keyof RawEvents;
-        type f1 = GetMatchedEventPayload<RawEvents, `fisher/login`>;
+        type f1 = GetClosestEventPayload<RawEvents, `fisher/login`>;
         type f2 = GetMatchedEvents<Events, `fisher/login`>;
         type f3 = GetClosestEvents<Events, `fisher/login`>;
         type f4 = UserScopeEvents[`fisher/login`];
@@ -243,7 +243,7 @@ describe("事件作用域使用监听器类型测试", () => {
             // 所以负载是string | {name:string,vip:boolean} | Record<string, any>
             Expect<
                 Equal<
-                    GetMatchedEventPayload<Events, `users/fisher/login`>,
+                    GetClosestEventPayload<Events, `users/fisher/login`>,
                     | string
                     | {
                           name: string;
@@ -258,7 +258,7 @@ describe("事件作用域使用监听器类型测试", () => {
             // `fisher/logout`同时匹配了*/login和*/*，所以负载是string | {name:string,vip:boolean}
             Expect<
                 Equal<
-                    GetMatchedEventPayload<RawEvents, `fisher/logout`>,
+                    GetClosestEventPayload<RawEvents, `fisher/logout`>,
                     | number
                     | {
                           name: string;

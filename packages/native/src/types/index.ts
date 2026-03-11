@@ -1,4 +1,3 @@
-export * from "./WildcardEvents";
 export * from "./ScopeEvents";
 export * from "./wildcards";
 export * from "./utils";
@@ -8,3 +7,4 @@ export * from "./FastEventMessages";
 export * from "./FastEventSubscribers";
 export * from "./FastEvents";
 export * from "./transformed";
+export * from "./closest";

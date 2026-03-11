@@ -2,16 +2,13 @@
 
 import { describe, test } from "vitest";
 import type { Equal, Expect } from "@type-challenges/utils";
-import { GetMatchedEventKeys } from "../../types/GetMatchedEventKeys";
-import { GetRecommendEventKey } from "../../types/GetRecommendEventKey";
-import { GetClosedEventDefine } from "../../types/wildcards/GetClosedEventDefine";
-import { type GetClosedEvents } from "../../types/GetClosedEvents";
-import { GetClosedEventKeys } from "../../types/GetClosedEventKeys";
-import { UnionToTuple } from "type-fest";
-import { GetPartCount } from "../../types/wildcards/GetPartCount";
+import { GetClosestEventNameTuple } from "../../types/closest/GetClosestEventNameTuple";
+import { GetClosestEventName } from "../../types/closest/GetClosestEventName";
+import { GetClosestEventTuple } from "../../types/closest/GetClosestEventRecord";
+import { type GetClosestEvents } from "../../types/closest/GetClosestEvents";
+import { GetMatchedEventNames } from "../../types/closest/GetMatchedEventNames";
 import { GetWildcardCount } from "../../types/wildcards/GetWildcardCount";
-import { FirstOfUnion } from "../../types";
-import { ClosestMatch } from "../../types/ClosestMatch";
+import { ClosestMatch } from "../../types/closest/ClosestMatch";
 
 describe("GetClosedEvents - 精确匹配测试", () => {
     test("精确键匹配：无通配符", () => {
@@ -21,9 +18,9 @@ describe("GetClosedEvents - 精确匹配测试", () => {
             "status/change": "active" | "inactive";
         };
 
-        type Result1 = GetClosedEvents<Events, "user/login">;
-        type Result2 = GetClosedEvents<Events, "user/logout">;
-        type Result3 = GetClosedEvents<Events, "status/change">;
+        type Result1 = GetClosestEvents<Events, "user/login">;
+        type Result2 = GetClosestEvents<Events, "user/logout">;
+        type Result3 = GetClosestEvents<Events, "status/change">;
 
         type cases = [
             Expect<Equal<Result1, { "user/login": { userId: number; username: string } }>>,
@@ -37,8 +34,8 @@ describe("GetClosedEvents - 精确匹配测试", () => {
             "user/login": { userId: number };
         };
 
-        type Result1 = GetClosedEvents<Events, "invalid/event">;
-        type Result2 = GetClosedEvents<Events, "invalid/event", { default: string }>;
+        type Result1 = GetClosestEvents<Events, "invalid/event">;
+        type Result2 = GetClosestEvents<Events, "invalid/event", { default: string }>;
 
         type cases = [
             Expect<Equal<Result1, Record<string, any>>>,
@@ -51,12 +48,17 @@ describe("GetClosedEvents - 单级通配符 * 测试", () => {
     test("单级通配符匹配", () => {
         type Events = {
             "users/*/login": { userId: number };
+            "*/*/login": { userId: number };
             "users/*/profile": { username: string };
         };
 
-        type Result1 = GetClosedEvents<Events, "users/123/login">;
-        type Result2 = GetClosedEvents<Events, "users/456/profile">;
-        type Result3 = GetClosedEvents<Events, "users/789/settings">;
+        type Result1 = GetClosestEvents<Events, "users/123/login">;
+        type S1 = GetClosestEventName<Events, "users/123/login">;
+        type S2 = GetMatchedEventNames<Events, "users/123/login">;
+        type S3 = GetClosestEventNameTuple<Events, "users/123/login">;
+
+        type Result2 = GetClosestEvents<Events, "users/456/profile">;
+        type Result3 = GetClosestEvents<Events, "users/789/settings">;
 
         type cases = [
             Expect<Equal<Result1, { "users/*/login": { userId: number } }>>,
@@ -71,7 +73,7 @@ describe("GetClosedEvents - 单级通配符 * 测试", () => {
             "users/*/action": { type: "wild" };
         };
 
-        type Result = GetClosedEvents<Events, "exact/key">;
+        type Result = GetClosestEvents<Events, "exact/key">;
 
         type cases = [Expect<Equal<Result, { "exact/key": { type: "exact" } }>>];
     });
@@ -83,7 +85,7 @@ describe("GetClosedEvents - 单级通配符 * 测试", () => {
             "admin/*/*": { admin: boolean };
         };
 
-        type Result = GetClosedEvents<Events, "users/123/login">;
+        type Result = GetClosestEvents<Events, "users/123/login">;
 
         type cases = [Expect<Equal<Result, { "users/*/login": { one: number } }>>];
     });
@@ -95,9 +97,9 @@ describe("GetClosedEvents - 多级通配符 ** 测试", () => {
             "user/**": { userId: number; action: string };
         };
 
-        type Result1 = GetClosedEvents<Events, "user/profile">;
-        type Result2 = GetClosedEvents<Events, "user/settings/privacy/update">;
-        type Result3 = GetClosedEvents<Events, "user/a/b/c/d/e">;
+        type Result1 = GetClosestEvents<Events, "user/profile">;
+        type Result2 = GetClosestEvents<Events, "user/settings/privacy/update">;
+        type Result3 = GetClosestEvents<Events, "user/a/b/c/d/e">;
 
         type cases = [
             Expect<Equal<Result1, { "user/**": { userId: number; action: string } }>>,
@@ -113,9 +115,9 @@ describe("GetClosedEvents - 多级通配符 ** 测试", () => {
             "user/*/settings": { singleWild: string };
         };
 
-        type Result1 = GetClosedEvents<Events, "user/profile/settings/advanced">;
-        type Result2 = GetClosedEvents<Events, "user/profile/other">;
-        type Result3 = GetClosedEvents<Events, "user/test/settings">;
+        type Result1 = GetClosestEvents<Events, "user/profile/settings/advanced">;
+        type Result2 = GetClosestEvents<Events, "user/profile/other">;
+        type Result3 = GetClosestEvents<Events, "user/test/settings">;
 
         type cases = [
             Expect<Equal<Result1, { "user/profile/settings/advanced": { exact: true } }>>,
@@ -133,10 +135,10 @@ describe("GetClosedEvents - 通配符数量优先级测试", () => {
             "admin/**": { admin3: string };
         };
 
-        type Result = GetClosedEvents<Events, "admin/dashboard/users/list">;
+        type Result = GetClosestEvents<Events, "admin/dashboard/users/list">;
 
-        type Keys = GetClosedEventKeys<Events, "admin/dashboard/users/list">;
-        type Key = GetRecommendEventKey<Events, "admin/dashboard/users/list">;
+        type Keys = GetMatchedEventNames<Events, "admin/dashboard/users/list">;
+        type Key = GetClosestEventName<Events, "admin/dashboard/users/list">;
         type cases = [Expect<Equal<Result, { "admin/dashboard/users/**": { admin1: true } }>>];
     });
 
@@ -148,9 +150,9 @@ describe("GetClosedEvents - 通配符数量优先级测试", () => {
             "*/*/login": { value: 4 };
         };
 
-        type Result = GetClosedEvents<Events, "users/fisher/login">;
-        type ER1 = GetClosedEventKeys<Events, "users/fisher/login">;
-        type ER2 = GetRecommendEventKey<Events, "users/fisher/login">;
+        type Result = GetClosestEvents<Events, "users/fisher/login">;
+        type ER1 = GetMatchedEventNames<Events, "users/fisher/login">;
+        type ER2 = GetClosestEventName<Events, "users/fisher/login">;
 
         type ER22 = ClosestMatch<"users/*/login" | "users/*/*">;
 
@@ -165,8 +167,8 @@ describe("GetClosedEvents - 通配符数量优先级测试", () => {
             "a/*/d": { second: string };
         };
 
-        type Result1 = GetClosedEvents<Events, "a/x/c">;
-        type Result2 = GetClosedEvents<Events, "a/y/d">;
+        type Result1 = GetClosestEvents<Events, "a/x/c">;
+        type Result2 = GetClosestEvents<Events, "a/y/d">;
 
         type cases = [
             Expect<Equal<Result1, { "a/*/c": { first: number } }>>,
@@ -184,14 +186,14 @@ describe("GetClosedEvents - 复杂场景测试", () => {
             "a/b/c/**": { deeper: "semi-wild" };
         };
 
-        type Result1 = GetClosedEvents<Events, "a/b/c/d/e">;
-        type Result2 = GetClosedEvents<Events, "a/x/y/z">;
-        type Result3 = GetClosedEvents<Events, "a/b/x/y">;
-        type Keys1 = GetClosedEventKeys<Events, "a/b/x/y">;
-        type Keys2 = GetMatchedEventKeys<Events, "a/b/c/x/y">;
+        type Result1 = GetClosestEvents<Events, "a/b/c/d/e">;
+        type Result2 = GetClosestEvents<Events, "a/x/y/z">;
+        type Result3 = GetClosestEvents<Events, "a/b/x/y">;
+        type Keys1 = GetMatchedEventNames<Events, "a/b/x/y">;
+        type Keys2 = GetClosestEventNameTuple<Events, "a/b/c/x/y">;
         type Keys21 = ClosestMatch<Keys2>;
         type dd = GetWildcardCount<"**">;
-        type Keys3 = GetRecommendEventKey<Events, "a/b/x/y">;
+        type Keys3 = GetClosestEventName<Events, "a/b/x/y">;
 
         type cases = [
             Expect<Equal<Result1, { "a/b/c/d/e": { deep: "exact" } }>>,
@@ -208,13 +210,13 @@ describe("GetClosedEvents - 复杂场景测试", () => {
             "x/*/y/*": { nested: number };
         };
 
-        type Result1 = GetClosedEvents<Events, "users/123/login">;
-        type R1 = GetClosedEventKeys<Events, "users/123/login">;
+        type Result1 = GetClosestEvents<Events, "users/123/login">;
+        type R1 = GetMatchedEventNames<Events, "users/123/login">;
 
-        type Result2 = GetClosedEvents<Events, "admin/456/login">;
-        type Result3 = GetClosedEvents<Events, "div/click/button">;
-        type Result4 = GetClosedEvents<Events, "x/1/y/2">;
-        type Define1 = GetClosedEventDefine<Result4, "x/1/y/2">;
+        type Result2 = GetClosestEvents<Events, "admin/456/login">;
+        type Result3 = GetClosestEvents<Events, "div/click/button">;
+        type Result4 = GetClosestEvents<Events, "x/1/y/2">;
+        type Define1 = GetClosestEventTuple<Result4, "x/1/y/2">;
         type cases = [
             Expect<Equal<Result1, { "users/*/login": { specific: { userId: number } } }>>,
             Expect<Equal<Result2, { "*/*/login": { generic: string } }>>,
@@ -228,7 +230,7 @@ describe("GetClosedEvents - 边界情况测试", () => {
     test("空事件对象", () => {
         type Events = {};
 
-        type Result = GetClosedEvents<Events, "any/event">;
+        type Result = GetClosestEvents<Events, "any/event">;
 
         type cases = [Expect<Equal<Result, Record<string, any>>>];
     });
@@ -239,8 +241,8 @@ describe("GetClosedEvents - 边界情况测试", () => {
             "event/b": string;
         };
 
-        type Result1 = GetClosedEvents<Events, "event/a">;
-        type Result2 = GetClosedEvents<Events, "event/c">;
+        type Result1 = GetClosestEvents<Events, "event/a">;
+        type Result2 = GetClosestEvents<Events, "event/c">;
 
         type cases = [
             Expect<Equal<Result1, { "event/a": number }>>,
@@ -253,8 +255,8 @@ describe("GetClosedEvents - 边界情况测试", () => {
             [x: `test/${string}`]: boolean;
         };
 
-        type Result1 = GetClosedEvents<Events, "test/123">;
-        type Result2 = GetClosedEvents<Events, "other/123">;
+        type Result1 = GetClosestEvents<Events, "test/123">;
+        type Result2 = GetClosestEvents<Events, "other/123">;
 
         type cases = [
             Expect<Equal<Result1, { [x: `test/${string}`]: boolean }>>,
@@ -267,8 +269,8 @@ describe("GetClosedEvents - 边界情况测试", () => {
             "*": { catchAll: true };
         };
 
-        type Result1 = GetClosedEvents<Events, "anything">;
-        type Result2 = GetClosedEvents<Events, "deep/nested/path">;
+        type Result1 = GetClosestEvents<Events, "anything">;
+        type Result2 = GetClosestEvents<Events, "deep/nested/path">;
 
         type cases = [
             Expect<Equal<Result1, { "*": { catchAll: true } }>>,
@@ -283,7 +285,7 @@ describe("GetClosedEvents - 复杂类型 payload 测试", () => {
             "event/union": string | number | boolean;
         };
 
-        type Result = GetClosedEvents<Events, "event/union">;
+        type Result = GetClosestEvents<Events, "event/union">;
 
         type cases = [Expect<Equal<Result, { "event/union": string | number | boolean }>>];
     });
@@ -294,8 +296,8 @@ describe("GetClosedEvents - 复杂类型 payload 测试", () => {
             "event/tuple": [string, number];
         };
 
-        type Result1 = GetClosedEvents<Events, "event/array">;
-        type Result2 = GetClosedEvents<Events, "event/tuple">;
+        type Result1 = GetClosestEvents<Events, "event/array">;
+        type Result2 = GetClosestEvents<Events, "event/tuple">;
 
         type cases = [
             Expect<Equal<Result1, { "event/array": number[] }>>,
@@ -308,7 +310,7 @@ describe("GetClosedEvents - 复杂类型 payload 测试", () => {
             "event/function": (data: string) => void;
         };
 
-        type Result = GetClosedEvents<Events, "event/function">;
+        type Result = GetClosestEvents<Events, "event/function">;
 
         type cases = [Expect<Equal<Result, { "event/function": (data: string) => void }>>];
     });
@@ -327,7 +329,7 @@ describe("GetClosedEvents - 复杂类型 payload 测试", () => {
             };
         };
 
-        type Result = GetClosedEvents<Events, "user/create">;
+        type Result = GetClosestEvents<Events, "user/create">;
 
         type cases = [
             Expect<
@@ -357,8 +359,8 @@ describe("GetClosedEvents - 默认值测试", () => {
             "existing/event": string;
         };
 
-        type Result1 = GetClosedEvents<Events, "existing/event", { fallback: number }>;
-        type Result2 = GetClosedEvents<Events, "non/existing", { fallback: number }>;
+        type Result1 = GetClosestEvents<Events, "existing/event", { fallback: number }>;
+        type Result2 = GetClosestEvents<Events, "non/existing", { fallback: number }>;
 
         type cases = [
             Expect<Equal<Result1, { "existing/event": string }>>,
@@ -371,7 +373,7 @@ describe("GetClosedEvents - 默认值测试", () => {
             "some/event": boolean;
         };
 
-        type Result = GetClosedEvents<Events, "other/event", {}>;
+        type Result = GetClosestEvents<Events, "other/event", {}>;
 
         type cases = [Expect<Equal<Result, {}>>];
     });
@@ -384,7 +386,7 @@ describe("GetClosedEvents - 默认值测试", () => {
             timestamp: number;
         };
 
-        type Result = GetClosedEvents<Events, "any/event", DefaultType>;
+        type Result = GetClosestEvents<Events, "any/event", DefaultType>;
 
         type cases = [
             Expect<

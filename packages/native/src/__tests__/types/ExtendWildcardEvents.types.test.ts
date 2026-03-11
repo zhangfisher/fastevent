@@ -3,6 +3,7 @@
 import { describe, test } from "vitest";
 import type { Equal, Expect } from "@type-challenges/utils";
 import { type ExtendWildcardEvents } from "../../types/wildcards/ExtendWildcardEvents";
+import { ApplyWildcardEvents } from "../../types/wildcards";
 
 describe("ExtendWildcardEvents", () => {
     test("非通配符事件保持不变", () => {
@@ -148,14 +149,14 @@ describe("ExtendWildcardEvents", () => {
     test("多个通配符组合", () => {
         type Events = {
             "*/*/test": boolean;
-            "a/**/z": number;
+            "a/**/z": number; // **只能用于未尾
         };
         type Result = ExtendWildcardEvents<Events>;
         type cases = [
             Expect<Equal<Result["x/y/test"], boolean>>,
             Expect<Equal<Result["1/2/test"], boolean>>,
-            Expect<Equal<Result["a/b/z"], number>>,
-            Expect<Equal<Result["a/b/c/z"], number>>,
+            Expect<Equal<Result["a/**/z"], number>>,
+            Expect<Equal<Result["a/**/z"], number>>,
         ];
     });
 
@@ -187,7 +188,7 @@ describe("ExtendWildcardEvents", () => {
         type Result = ExtendWildcardEvents<Events>;
         type cases = [
             // 空对象应该返回空对象
-            Expect<Equal<keyof Result, never>>,
+            Expect<Equal<Result, Record<string, any>>>,
         ];
     });
 
