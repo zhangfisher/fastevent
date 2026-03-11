@@ -1,5 +1,3 @@
-import { UnionToTuple } from "type-fest";
-
 /**
  * 检查类型 T 是否是 any
  * @description 利用 any 在交叉类型中的特殊行为：1 & any = any
@@ -21,6 +19,17 @@ export type AssertRecord<T> = T extends Record<string, any> ? T : Record<string,
 
 export type Union<T> = T extends infer O ? { [K in keyof O]: O[K] } : never;
 export type AssertString<T> = T extends string ? T : string;
+
+// 将联合类型转换为元组类型
+type UnionToTuple<T> = UnionToTupleRec<T, []>;
+
+type UnionToTupleRec<T, R extends any[]> = [T] extends [never]
+    ? R
+    : UnionToTupleRec<Exclude<T, LastOfUnion<T>>, [LastOfUnion<T>, ...R]>;
+
+// 获取联合类型的最后一个成员
+type LastOfUnion<T> =
+    UnionToIntersection<T extends any ? (x: T) => 0 : never> extends (x: infer L) => 0 ? L : never;
 
 /**
  * 将事件映射转换为可变联合类型
@@ -103,4 +112,20 @@ export type FirstOfUnion<T> =
         ? U
         : never;
 
-export type IsMultiWildcard<T extends string> = T extends `${string}/**` ? true : false;
+export type IsMultiWildcard<T extends string> = T extends `${string}/**` | "**" ? true : false;
+
+/**
+ * 在数字前面追加数字
+ */
+export type PrefixNumber<
+    T extends number,
+    P extends number,
+> = `${P}${T}` extends `${infer R extends number}` ? R : never;
+
+export type ExpandRecord<T extends Record<string, any>> = {
+    [K in keyof T]: [K, T[K]];
+}[keyof T];
+
+export type IsNever<T> = [T] extends [never] ? true : false;
+
+export type IfNever<T, Default> = IsNever<T> extends true ? Default : T;

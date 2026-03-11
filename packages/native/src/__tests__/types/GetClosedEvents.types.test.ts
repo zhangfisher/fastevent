@@ -3,13 +3,17 @@
 import { describe, test } from "vitest";
 import type { Equal, Expect } from "@type-challenges/utils";
 import {
-    GetClosedEventKey,
+    GetRecommendEventKey,
     GetClosedEventKeys,
     type GetClosedEvents,
-} from "../../types/ExpandWildcard";
+    GetMatchedEventKeys,
+    GetClosedEventDefine,
+} from "../../types/wildcards";
 import { UnionToTuple } from "type-fest";
-import { GetWildcardCount } from "../../types/WildcardPriority";
+import { GetPartCount } from "../../types/WildcardPriority";
+import { GetWildcardCount } from "../../types/GetWildcardCount";
 import { FirstOfUnion } from "../../types";
+import { ClosestMatch } from "../../types/ClosestMatch";
 
 describe("GetClosedEvents - 精确匹配测试", () => {
     test("精确键匹配：无通配符", () => {
@@ -133,26 +137,28 @@ describe("GetClosedEvents - 通配符数量优先级测试", () => {
 
         type Result = GetClosedEvents<Events, "admin/dashboard/users/list">;
 
+        type Keys = GetClosedEventKeys<Events, "admin/dashboard/users/list">;
+        type Key = GetRecommendEventKey<Events, "admin/dashboard/users/list">;
         type cases = [Expect<Equal<Result, { "admin/dashboard/users/**": { admin1: true } }>>];
     });
 
     test("按固定段数量选择（2个通配符情况）", () => {
         type Events = {
-            "users/*/*": { priority3: boolean };
-            "users/*/login": { priority1: number };
-            "*/*/login": { priority2: string };
+            "users/*/*": { value: 1 };
+            "users/*/login": { value: 2 };
+            "*/fisher/*": { value: 3 };
+            "*/*/login": { value: 4 };
         };
 
-        type Result = GetClosedEvents<Events, "users/123/login">;
-        type ER1 = GetClosedEventKeys<Events, "users/123/loginn">;
-        type ER2 = GetClosedEventKey<Events, "users/123/loginn">;
-        type ER3 = GetWildcardCount<"users/*/*">;
-        type ER4 = GetWildcardCount<"users/*/login">;
-        type ER5 = FirstOfUnion<"users/*/login" | "users/*/*">;
+        type Result = GetClosedEvents<Events, "users/fisher/login">;
+        type ER1 = GetClosedEventKeys<Events, "users/fisher/login">;
+        type ER2 = GetRecommendEventKey<Events, "users/fisher/login">;
+
+        type ER22 = ClosestMatch<"users/*/login" | "users/*/*">;
 
         // "users/*/login" 和 "*/*/login" 都有1个通配符
         // 但 "users/*/login" 有更多固定段 (users, login)，所以优先级更高
-        type cases = [Expect<Equal<Result, { "users/*/*": { priority3: boolean } }>>];
+        type cases = [Expect<Equal<Result, { "users/*/login": { value: 2 } }>>];
     });
 
     test("相同通配符数量：选择第一个匹配的", () => {
@@ -177,11 +183,17 @@ describe("GetClosedEvents - 复杂场景测试", () => {
             "a/b/c/d/e": { deep: "exact" };
             "a/**": { deep: "wild" };
             "a/b/**": { deeper: "semi-wild" };
+            "a/b/c/**": { deeper: "semi-wild" };
         };
 
         type Result1 = GetClosedEvents<Events, "a/b/c/d/e">;
         type Result2 = GetClosedEvents<Events, "a/x/y/z">;
         type Result3 = GetClosedEvents<Events, "a/b/x/y">;
+        type Keys1 = GetClosedEventKeys<Events, "a/b/x/y">;
+        type Keys2 = GetMatchedEventKeys<Events, "a/b/c/x/y">;
+        type Keys21 = ClosestMatch<Keys2>;
+        type dd = GetWildcardCount<"**">;
+        type Keys3 = GetRecommendEventKey<Events, "a/b/x/y">;
 
         type cases = [
             Expect<Equal<Result1, { "a/b/c/d/e": { deep: "exact" } }>>,
@@ -192,17 +204,19 @@ describe("GetClosedEvents - 复杂场景测试", () => {
 
     test("复杂通配符组合", () => {
         type Events = {
-            "div/click/*": { click: boolean };
-            "x/*/y/*": { nested: number };
             "*/*/login": { generic: string };
             "users/*/login": { specific: { userId: number } };
+            "div/click/*": { click: boolean };
+            "x/*/y/*": { nested: number };
         };
 
         type Result1 = GetClosedEvents<Events, "users/123/login">;
+        type R1 = GetClosedEventKeys<Events, "users/123/login">;
+
         type Result2 = GetClosedEvents<Events, "admin/456/login">;
         type Result3 = GetClosedEvents<Events, "div/click/button">;
         type Result4 = GetClosedEvents<Events, "x/1/y/2">;
-
+        type Define1 = GetClosedEventDefine<Result4, "x/1/y/2">;
         type cases = [
             Expect<Equal<Result1, { "users/*/login": { specific: { userId: number } } }>>,
             Expect<Equal<Result2, { "*/*/login": { generic: string } }>>,
@@ -218,7 +232,7 @@ describe("GetClosedEvents - 边界情况测试", () => {
 
         type Result = GetClosedEvents<Events, "any/event">;
 
-        type cases = [Expect<Equal<Result, any>>];
+        type cases = [Expect<Equal<Result, Record<string, any>>>];
     });
 
     test("只有精确键，无通配符", () => {
@@ -230,7 +244,10 @@ describe("GetClosedEvents - 边界情况测试", () => {
         type Result1 = GetClosedEvents<Events, "event/a">;
         type Result2 = GetClosedEvents<Events, "event/c">;
 
-        type cases = [Expect<Equal<Result1, { "event/a": number }>>, Expect<Equal<Result2, any>>];
+        type cases = [
+            Expect<Equal<Result1, { "event/a": number }>>,
+            Expect<Equal<Result2, Record<string, any>>>,
+        ];
     });
 
     test("只有通配符键", () => {
@@ -243,7 +260,7 @@ describe("GetClosedEvents - 边界情况测试", () => {
 
         type cases = [
             Expect<Equal<Result1, { [x: `test/${string}`]: boolean }>>,
-            Expect<Equal<Result2, any>>,
+            Expect<Equal<Result2, Record<string, any>>>,
         ];
     });
 
@@ -257,7 +274,7 @@ describe("GetClosedEvents - 边界情况测试", () => {
 
         type cases = [
             Expect<Equal<Result1, { "*": { catchAll: true } }>>,
-            Expect<Equal<Result2, { "*": { catchAll: true } }>>,
+            Expect<Equal<Result2, Record<string, any>>>,
         ];
     });
 });

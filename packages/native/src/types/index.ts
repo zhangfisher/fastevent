@@ -1,6 +1,6 @@
 import type { FastListenerExecutor } from "../executors/types";
 import { type FastListenerPipe } from "../pipes/types";
-import { ExpandWildcard, ReplaceWildcard } from "./ExpandWildcard";
+import { ExpandWildcard, GetClosedEventDefine, ReplaceWildcard } from "./wildcards";
 import { AssertRecord, IsAny, KeyOf, RemoveEmptyObject } from "./utils";
 import { GetClosestEvents, GetMatchedEvents } from "./WildcardEvents";
 
@@ -657,18 +657,9 @@ export type GetMatchedEventPayload<Events extends Record<string, any>, T extends
             : never
         : never;
 
-// export type GetMatchedEventPayload<Events extends Record<string, any>, T extends string> =
-//     // 使用 WildcardEvents 来匹配事件，返回原始类型
-//     GetMatchedEvents<Events, T> extends infer Matched
-//         ? Matched extends { [key: string]: any }
-//             ? // 匹配对象类型，提取值类型（会自动分发联合类型）
-//               Matched[keyof Matched]
-//             : never
-//         : never;
 export * from "./WildcardEvents";
 export * from "./ScopeEvents";
-export * from "./ExpandWildcard";
-export * from "./Keys";
+export * from "./wildcards";
 export * from "./utils";
 
 export type Class = (new (...args: any[]) => any) | (abstract new (...args: any[]) => any);
@@ -692,32 +683,6 @@ export type IsTransformedKey<Events extends Record<string, any>, T extends strin
                     : never
               : never
           : never;
-
-// export type IsTransformedKey<Events extends Record<string, any>, T extends string> =
-//     // 优先检查：如果 T 是 Events 的精确键，其值必须扩展 FastMessagePayload
-//     T extends keyof Events
-//         ? IsAny<Events[T]> extends true
-//             ? never
-//             : Events[T] extends FastMessagePayload<any>
-//               ? T
-//               : never
-//         : // 如果不是精确键，检查通配符匹配
-//           GetMatchedEvents<Events, T> extends infer MatchedEvents
-//           ? MatchedEvents extends Record<string, any>
-//               ? // 获取所有非全局通配符的匹配键
-//                 Exclude<keyof MatchedEvents, "*" | "**"> extends infer NonGlobalKeys
-//                   ? NonGlobalKeys extends never
-//                       ? // 如果没有非全局通配符匹配，检查全局通配符
-//                         keyof MatchedEvents extends "*" | "**"
-//                           ? MatchedEvents[keyof MatchedEvents] extends FastMessagePayload<any>
-//                               ? T
-//                               : never
-//                           : never
-//                       : // 如果有非全局通配符匹配，检查它们的值类型
-//                         CheckWildcardMatch<MatchedEvents, T>
-//                   : never
-//               : never
-//           : never;
 
 /**
  * 检查事件对象的所有值是否都为 FastMessagePayload 类型
@@ -744,10 +709,16 @@ export type IsTransformed<Events extends Record<string, any>> = keyof Events ext
 /**
  * 从
  */
-export type GetPayload<Events extends Record<string, any>, T> = PickPayload<
+export type GetPayload1<Events extends Record<string, any>, T> = PickPayload<
     RecordValues<
         ExtendWildcardEvents<
             GetClosestEvents<Events, T extends string ? T : string, Record<string, any>>
         >
     >
 >;
+export type GetPayload<Events extends Record<string, any>, T extends string> = GetClosedEventDefine<
+    Events,
+    T
+>[1];
+
+export * from "./MutableMessage";

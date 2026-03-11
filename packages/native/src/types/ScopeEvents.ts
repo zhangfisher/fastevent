@@ -1,16 +1,5 @@
-import {
-    ExtendWildcardEvents,
-    FastEventMessage,
-    GetClosestEvents,
-    GetPayload,
-    ReplaceWildcard,
-} from ".";
-import {
-    RemoveEmptyObject,
-    AssertRecord,
-    PickInlcudeDelimiterRecord,
-    PickNotInlcudeDelimiterRecord,
-} from "./utils";
+import { ExtendWildcardEvents, GetPayload, GetRecommendEventKey } from ".";
+import { AssertString } from "./utils";
 // 分割字符串为元组类型
 type Split<
     S extends string,
@@ -100,27 +89,3 @@ export type ScopeEvents<
     : [keyof ScopeEventsImpl<Events, Prefix>] extends [never]
       ? Default
       : ScopeEventsImpl<Events, Prefix>;
-
-export type MutableEvents<Events extends Record<string, any>, Meta = Record<string, any>> = {
-    [K in keyof ExtendWildcardEvents<Events>]: {
-        type: Exclude<K, number | symbol>;
-        payload: ExtendWildcardEvents<Events>[K];
-        meta: Meta;
-    };
-}[keyof ExtendWildcardEvents<Events>];
-
-export type MutableMessage<Events extends Record<string, any>, Meta = Record<string, any>> = {
-    [K in keyof ExtendWildcardEvents<Events>]: {
-        type: Exclude<K, number | symbol>;
-        payload?: GetPayload<Events, Exclude<K, number | symbol>>;
-        meta?: Meta;
-    };
-}[keyof ExtendWildcardEvents<Events>];
-
-export type ToMessage<Events extends Record<string, any>, Meta = Record<string, any>> = {
-    [K in keyof Events]: {
-        type: Exclude<K, number | symbol>;
-        payload?: Events[K];
-        meta?: Meta;
-    };
-}[keyof Events];

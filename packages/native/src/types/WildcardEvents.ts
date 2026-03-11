@@ -1,6 +1,5 @@
-import { Keys } from "./Keys";
 import { CountFixedSegments } from "./WildcardPriority";
-import { Equal } from "./utils";
+import { Equal, Keys } from "./utils";
 
 type Split<
     S extends string,

@@ -6,6 +6,8 @@
  * 核心规则：固定段多的优先级更高
  */
 
+import { GetWildcardCount } from "./GetWildcardCount";
+
 /**
  * 分割路径为数组（支持没有 / 的情况）
  *
@@ -20,7 +22,7 @@
  * - SplitPath<"*"> => ["*"]
  * - SplitPath<""> => [""]
  */
-type SplitPath<T extends string> = T extends `${infer Head}/${infer Tail}`
+export type SplitPath<T extends string> = T extends `${infer Head}/${infer Tail}`
     ? [Head, ...SplitPath<Tail>]
     : [T];
 
@@ -79,20 +81,12 @@ export type IsSemiWildcard<T extends string> =
           : true; // 有固定段且有通配符段 → 半通配符
 
 /**
- * 计算路径中通配符段的数量
- *
- * 通配符段是指完全等于星号或双星号的段
- * 使用 SplitPath 分割路径后，统计通配符段的数量
- */
-export type GetWildcardCount<T extends string> = CountWildcardSegmentsAcc<SplitPath<T>, []>;
-
-/**
  * CountWildcardSegments 的辅助实现
  * 使用累加器模式计算通配符段数量
  * @param Arr - 路径段数组
  * @param Acc - 累加器（元组），长度即为当前计数
  */
-type CountWildcardSegmentsAcc<Arr extends string[], Acc extends any[]> = Arr extends []
+export type CountWildcardSegmentsAcc<Arr extends string[], Acc extends any[]> = Arr extends []
     ? Acc["length"]
     : Arr extends [infer First extends string, ...infer Rest extends string[]]
       ? IsWildcardSegment<First> extends true
