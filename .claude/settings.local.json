@@ -39,7 +39,8 @@
       "Bash(bun test types/GetWildcardEventList.types.test.ts)",
       "Bash(npx vitest run \"packages/native/src/__tests__/types/GetClosedEvents.types.test.ts\")",
       "Bash(bun test packages/native/src/__tests__/types/MutableMessage.types.test.ts)",
-      "Bash(bun test packages/native/src/__tests__/types/MutableMessage.debug.test.ts)"
+      "Bash(bun test packages/native/src/__tests__/types/MutableMessage.debug.test.ts)",
+      "Bash(npx vitest:*)"
     ]
   }
 }

@@ -11,6 +11,7 @@ import {
     ApplyWildcardEvents,
     Expand,
     Fallback,
+    AssertString,
 } from "./types";
 import {
     TypedFastEventMessage,
@@ -1026,11 +1027,10 @@ export class FastEvent<
      */
     // 用于清除保留事件
     public emit<T extends EventNames | string = EventNames>(type: T, directive: symbol): [];
-    // public emit(type: string, directive: symbol): any[];
     // 支持retain参数
     public emit<R = any, T extends EventNames = EventNames>(
         type: T,
-        payload?: GetPayload<AllEvents, T>,
+        payload?: GetPayload<AllEvents, AssertString<T>>,
         retain?: boolean,
     ): R[];
     public emit<R = any, T extends string = string>(
@@ -1039,10 +1039,7 @@ export class FastEvent<
         retain?: boolean,
     ): R[];
 
-    public emit<R = any, T extends EventNames = EventNames>(
-        message: MutableMessage<AllEvents, Meta>,
-        retain?: boolean,
-    ): R[];
+    public emit<R = any>(message: MutableMessage<AllEvents, Meta>, retain?: boolean): R[];
     // public emit<R = any>(message: FastEventEmitMessage<AllEvents, Meta>, retain?: boolean): R[];
 
     // // 使用完整的配置选项

@@ -1,12 +1,58 @@
+import { AssertString } from "./../../types/utils/AssertString";
 /* eslint-disable no-unused-vars */
 
 import { describe, test } from "vitest";
 import type { Equal, Expect } from "@type-challenges/utils";
-import { ToMessage } from "../../types/ScopeEvents";
 import { MutableMessage } from "../../types/MutableMessage";
-import { KeyOf } from "../../types";
+import { IsMatchEventName, KeyOf } from "../../types";
+
+type PickByType<E, T extends string> = E extends {
+    type: infer Type;
+    payload: infer P;
+    meta?: infer M;
+}
+    ? IsMatchEventName<T, AssertString<Type>> extends true
+        ? {
+              type: T;
+              payload: P;
+              meta?: M;
+          }
+        : never
+    : never;
 
 describe("MutableMessage - 基本事件类型测试", () => {
+    test("简单事件类型2", () => {
+        type Events = {
+            a: boolean;
+            b: number;
+            c: string;
+        };
+
+        type Message = MutableMessage<Events>;
+        type M1 = Extract<Message, { type: "a" }>;
+
+        type cases = [
+            // 每个事件都应该生成对应的消息类型
+            Expect<
+                Equal<
+                    Extract<Message, { type: "a" }>,
+                    { type: "a"; payload: boolean; meta?: Record<string, any> | undefined }
+                >
+            >,
+            Expect<
+                Equal<
+                    Extract<Message, { type: "b" }>,
+                    { type: "b"; payload: number; meta?: Record<string, any> }
+                >
+            >,
+            Expect<
+                Equal<
+                    Extract<Message, { type: "c" }>,
+                    { type: "c"; payload: string; meta?: Record<string, any> }
+                >
+            >,
+        ];
+    });
     test("简单事件类型", () => {
         type Events = {
             a: boolean;
@@ -172,6 +218,14 @@ describe("MutableMessage - 通配符事件类型测试", () => {
 
         type Message = MutableMessage<Events>;
 
+        type M1 = PickByType<Message, "users/*/login">;
+        type M2 = PickByType<Message, "users/asss/login">;
+        type dd =
+            | "users/*/login"
+            | Omit<`users/${string}/login`, `users/*/login`> extends "users/*/login"
+            ? true
+            : false;
+
         type cases = [
             // 通配符 * 应该被展开为模板字符串类型
             Expect<
@@ -205,6 +259,10 @@ describe("MutableMessage - 通配符事件类型测试", () => {
                 >
             >,
         ];
+        const M1: Message = {
+            type: "div/login/click",
+            payload: { userId: 1, timestamp: 2 },
+        };
     });
 
     test("多级通配符 ** 事件", () => {
@@ -216,7 +274,7 @@ describe("MutableMessage - 通配符事件类型测试", () => {
         };
 
         type Message = MutableMessage<Events>;
-
+        type M1 = Extract<Message, { type: `user/${string}` }>;
         type cases = [
             Expect<
                 Equal<
@@ -282,6 +340,10 @@ describe("MutableMessage - 通配符事件类型测试", () => {
                 >
             >,
         ];
+        const M1: Message = {
+            type: "users/*/login",
+            payload: { userId: 1 },
+        };
     });
 });
 

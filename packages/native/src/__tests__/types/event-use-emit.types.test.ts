@@ -55,8 +55,13 @@ describe("emit 触发事件类型系统测试", () => {
 
         // 事件名称类型
         type EmitMethods = Overloads<typeof emitter.emit>;
-        type Arg1 = Parameters<EmitMethods[0]>[0];
-        type Arg2 = Parameters<EmitMethods[1]>[0];
+        type EmitCount = EmitMethods["length"];
+
+        type Arg1 = Parameters<EmitMethods[0]>[0]; //string
+        type Arg2 = Parameters<EmitMethods[1]>[0]; // keyof Events
+        type Arg3 = Parameters<EmitMethods[2]>[0]; // string
+        type Arg4 = Parameters<EmitMethods[3]>[0]; // message
+
         type GetPayloadType<T extends (...args: any) => any[], E extends keyof Events> = T extends (
             type: E,
             payload: infer payload,
@@ -67,9 +72,6 @@ describe("emit 触发事件类型系统测试", () => {
 
         const r = emitter.emit("bddd", Symbol());
         emitter.emit("a", Symbol());
-
-        // @ts-check
-        emitter.emit("a", 1);
         emitter.emit("a", true);
         emitter.emit("b", 1);
         emitter.emit("c", "");
@@ -85,7 +87,10 @@ describe("emit 触发事件类型系统测试", () => {
         });
         emitter.emit({
             type: "b",
-            payload: 1,
+            payload: 11,
+        });
+        emitter.emit({
+            type: "",
         });
     });
     test("含通配符事件类型", () => {

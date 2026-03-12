@@ -19,3 +19,4 @@ export * from "./GetPartCount";
 export * from "./GetFixedPartCount";
 export * from "./ToFixedCounts";
 export * from "./ToKeyPrioritys";
+export * from "./IsMatchEventName";
