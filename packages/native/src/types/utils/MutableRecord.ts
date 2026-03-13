@@ -9,10 +9,12 @@
  *   b: boolean;
  * };
  *
- * type Result = MutableEvents<Events>;
+ * type Result = MutableRecord<Events>;
  * // Result = { type: "a"; payload: number } | { type: "b"; payload: boolean }
  * ```
  */
+import { Union } from "./Union";
+
 export type MutableRecord<
     Items,
     KindKey extends string = "type",
@@ -26,5 +28,3 @@ export type MutableRecord<
     | (DefaultKind extends never
           ? never
           : Union<{ [K in KindKey]?: DefaultKind | undefined } & Items[DefaultKind] & Share>);
-
-import { Union } from "./Union";

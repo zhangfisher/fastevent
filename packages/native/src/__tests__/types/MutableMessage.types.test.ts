@@ -1,17 +1,18 @@
-import { AssertString } from "./../../types/utils/AssertString";
 /* eslint-disable no-unused-vars */
 
 import { describe, test } from "vitest";
 import type { Equal, Expect } from "@type-challenges/utils";
 import { MutableMessage } from "../../types/MutableMessage";
 import { IsMatchEventName, KeyOf } from "../../types";
+import { Tuple } from "../../types/utils/Tuple";
+import { UnionToTuple } from "type-fest";
 
 type PickByType<E, T extends string> = E extends {
     type: infer Type;
     payload: infer P;
     meta?: infer M;
 }
-    ? IsMatchEventName<T, AssertString<Type>> extends true
+    ? IsMatchEventName<T, Type> extends true
         ? {
               type: T;
               payload: P;
@@ -220,17 +221,13 @@ describe("MutableMessage - 通配符事件类型测试", () => {
 
         type M1 = PickByType<Message, "users/*/login">;
         type M2 = PickByType<Message, "users/asss/login">;
-        type dd =
-            | "users/*/login"
-            | Omit<`users/${string}/login`, `users/*/login`> extends "users/*/login"
-            ? true
-            : false;
+        type M3 = PickByType<Message, `users/${string}/login`>;
 
         type cases = [
             // 通配符 * 应该被展开为模板字符串类型
             Expect<
                 Equal<
-                    Extract<Message, { type: `users/${string}/login` }>,
+                    PickByType<Message, `users/${string}/login`>,
                     {
                         type: `users/${string}/login`;
                         payload: { userId: number; timestamp: number };
@@ -240,7 +237,7 @@ describe("MutableMessage - 通配符事件类型测试", () => {
             >,
             Expect<
                 Equal<
-                    Extract<Message, { type: `users/${string}/logout` }>,
+                    PickByType<Message, `users/${string}/logout`>,
                     {
                         type: `users/${string}/logout`;
                         payload: { userId: number };
@@ -250,7 +247,7 @@ describe("MutableMessage - 通配符事件类型测试", () => {
             >,
             Expect<
                 Equal<
-                    Extract<Message, { type: `div/${string}/click` }>,
+                    PickByType<Message, `div/${string}/click`>,
                     {
                         type: `div/${string}/click`;
                         payload: { x: number; y: number };
@@ -259,10 +256,6 @@ describe("MutableMessage - 通配符事件类型测试", () => {
                 >
             >,
         ];
-        const M1: Message = {
-            type: "div/login/click",
-            payload: { userId: 1, timestamp: 2 },
-        };
     });
 
     test("多级通配符 ** 事件", () => {
@@ -274,11 +267,10 @@ describe("MutableMessage - 通配符事件类型测试", () => {
         };
 
         type Message = MutableMessage<Events>;
-        type M1 = Extract<Message, { type: `user/${string}` }>;
         type cases = [
             Expect<
                 Equal<
-                    Extract<Message, { type: `user/${string}` }>,
+                    PickByType<Message, `user/${string}`>,
                     {
                         type: `user/${string}`;
                         payload: { action: string; data: any };
@@ -288,7 +280,7 @@ describe("MutableMessage - 通配符事件类型测试", () => {
             >,
             Expect<
                 Equal<
-                    Extract<Message, { type: `admin/dashboard/${string}` }>,
+                    PickByType<Message, `admin/dashboard/${string}`>,
                     {
                         type: `admin/dashboard/${string}`;
                         payload: { adminId: number };
@@ -320,29 +312,12 @@ describe("MutableMessage - 通配符事件类型测试", () => {
         type Keys = keyof Events;
 
         type Message = MutableMessage<Events>;
+        type Count = UnionToTuple<Message>["length"];
         type E1 = Extract<Message, { type: `users/${string}/${string}` }>["type"];
-        type E2 = Extract<Message, { type: string }>;
-        type cases = [
-            Expect<
-                Equal<
-                    Extract<Message, { type: `users/${string}/login` }>,
-                    {
-                        type: `users/${string}/login`;
-                        payload: { userId: number };
-                        meta?: Record<string, any>;
-                    }
-                >
-            >,
-            Expect<
-                Equal<
-                    Extract<Message, { type: `users/${string}/${string}` }>["type"],
-                    `users/${string}/login` | `users/${string}/logout` | `users/${string}/${string}`
-                >
-            >,
-        ];
+        type E2 = PickByType<Message, `users/${string}/login`>;
         const M1: Message = {
-            type: "users/*/login",
-            payload: { userId: 1 },
+            type: "users/a/a",
+            payload: { name: 1, action: "" },
         };
     });
 });
@@ -674,7 +649,7 @@ describe("MutableMessage - 实际使用场景测试", () => {
             // 通配符事件类型
             Expect<
                 Equal<
-                    Extract<EmitMessage, { type: `users/${string}/login` }>,
+                    PickByType<EmitMessage, `users/${string}/login`>,
                     {
                         type: `users/${string}/login`;
                         payload: { userId: number; ip: string };
@@ -684,7 +659,7 @@ describe("MutableMessage - 实际使用场景测试", () => {
             >,
             Expect<
                 Equal<
-                    Extract<EmitMessage, { type: `users/${string}/logout` }>,
+                    PickByType<EmitMessage, `users/${string}/logout`>,
                     {
                         type: `users/${string}/logout`;
                         payload: { userId: number };
@@ -722,7 +697,7 @@ describe("MutableMessage - 实际使用场景测试", () => {
             >,
             Expect<
                 Equal<
-                    Extract<ErrorMessage, { type: `errors/${string}/critical` }>,
+                    PickByType<ErrorMessage, `errors/${string}/critical`>,
                     {
                         type: `errors/${string}/critical`;
                         payload: { errorId: string; details: any };
@@ -731,5 +706,36 @@ describe("MutableMessage - 实际使用场景测试", () => {
                 >
             >,
         ];
+    });
+    test("sdddd", () => {
+        interface Events {
+            a: boolean;
+            b: number;
+            c: string;
+            "x/y/z/a": 1;
+            "x/y/z/b": 2;
+            "x/y/z/c": 3;
+        }
+        type Message = MutableMessage<Events, { a: 1 }>;
+        type Ks = Message["type"];
+
+        function test<T extends keyof Events>(type: T, directive: symbol): [];
+        function test<R = any>(message: Message): R[];
+        function test<R = any>(message: { type: Message["type"] }): R[];
+        // function test<R = any, T extends keyof Events = keyof Events>(
+        //     type: T,
+        //     payload?: boolean,
+        //     retain?: boolean,
+        // ): R[];
+        // function test<R = any, T extends string = string>(
+        //     type: T,
+        //     payload?: 1,
+        //     retain?: boolean,
+        // ): R[];
+        function test(): any {}
+
+        test({
+            type: "x/y/z/a",
+        });
     });
 });

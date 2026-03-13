@@ -80,16 +80,24 @@ type MatchDoubleStar<T extends string[], P extends string[]> = T extends []
         : false;
 
 // 内部实现：处理单个模式
-type IsMatchEventNameImpl<T extends string, P extends string> =
-    ContainsWildcard<P> extends false
-        ? T extends P
-            ? true
-            : false // 不包含通配符，精确匹配
-        : IsMultiWildcard<P> extends true
-          ? MatchWithDoubleStar<SplitPath<T>, SplitPath<P>> // 包含 **，使用多级通配符匹配
-          : MatchSingleStar<SplitPath<T>, SplitPath<P>>; // 仅含 *，使用单级通配符匹配
+type IsMatchEventNameImpl<T extends string, P> =
+    P extends string
+        ? ContainsWildcard<P> extends false
+            ? T extends P
+                ? true
+                : false // 不包含通配符，精确匹配
+            : IsMultiWildcard<P> extends true
+              ? MatchWithDoubleStar<SplitPath<T>, SplitPath<P>> // 包含 **，使用多级通配符匹配
+              : MatchSingleStar<SplitPath<T>, SplitPath<P>> // 仅含 *，使用单级通配符匹配
+        : false; // P 不是字符串类型，不匹配
+
+// 联合类型分发：对 P 的每个成员分别匹配
+type IsMatchEventNameDistributed<T extends string, P> =
+    P extends any ? IsMatchEventNameImpl<T, P> : never;
 
 // 导出类型：支持 P 为联合类型
 // 当 P 是联合类型时，会对每个成员分别进行匹配，只要有一个匹配就返回 true
-export type IsMatchEventName<T extends string, P extends string> =
-    P extends any ? IsMatchEventNameImpl<T, P> : never;
+// 结果总是 true 或 false，而不是 boolean
+// P 可以是 string 或其子类型（如模板字符串类型、Omit 结果等）
+export type IsMatchEventName<T extends string, P> =
+    true extends IsMatchEventNameDistributed<T, P> ? true : false;

@@ -8,10 +8,14 @@ import {
     GetClosestEvents,
     KeyOf,
     MutableMessage,
-    ApplyWildcardEvents,
     Expand,
     Fallback,
     AssertString,
+    ReplaceWildcard,
+    GetClosestEventTuple,
+    IsMatchEventName,
+    ContainsWildcard,
+    UnTransformedEvents,
 } from "./types";
 import {
     TypedFastEventMessage,
@@ -64,6 +68,7 @@ import {
     FastEventIterator,
     FastEventIteratorOptions,
 } from "./utils/eventIterator";
+import { InMatchedEvent } from "./types/wildcards/InMatchedEvent";
 
 /**
  * FastEvent 事件发射器类
@@ -107,6 +112,7 @@ export class FastEvent<
         eventNames: KeyOf<ExtendWildcardEvents<AllEvents>>;
         meta: AllMeta;
         context: Expand<Fallback<Context, FastEvent<AllEvents, Meta, Context>>>;
+        messages: MutableMessage<AllEvents, Meta>;
         message: TypedFastEventMessageOptional<
             AllEvents,
             Expand<FastEventMeta & Meta & Record<string, any>>
@@ -968,6 +974,17 @@ export class FastEvent<
         return nodes[0].__listeners;
     }
     /**
+     * 清除所有事件或指定事件的保留消息
+     * @param type
+     */
+    clearRetainMessages(type?: EventNames) {
+        if (type) {
+            this.retainedMessages.delete(type as string);
+        } else {
+            this.retainedMessages.clear();
+        }
+    }
+    /**
      * 触发事件并执行对应的监听器
      *
      * @param type - 事件类型字符串或包含事件信息的对象
@@ -1024,58 +1041,42 @@ export class FastEvent<
      * emitter.emit("user/login")
      *
      * ```
+     *
+     * 为什么事件要使用UnTransformedEvents？
+     *
+     * 因为如果事件使用NotPayload，则会进行转换
+     *
      */
-    // 用于清除保留事件
-    public emit<T extends EventNames | string = EventNames>(type: T, directive: symbol): [];
-    // 支持retain参数
-    public emit<R = any, T extends EventNames = EventNames>(
+    public emit<R = any, T extends Types = Types>(
         type: T,
-        payload?: GetPayload<AllEvents, AssertString<T>>,
+        payload?: UnTransformedEvents<AllEvents>[T],
         retain?: boolean,
     ): R[];
     public emit<R = any, T extends string = string>(
-        type: T,
-        payload?: GetPayload<AllEvents, T>,
+        type: ReplaceWildcard<T> | Types,
+        payload?: InMatchedEvent<Events, T> extends true
+            ? GetPayload<UnTransformedEvents<AllEvents>, T>
+            : any,
         retain?: boolean,
     ): R[];
-
+    public emit<R = any, T extends KeyOf<AllEvents> = KeyOf<AllEvents>>(
+        message: {
+            type: T;
+            payload: UnTransformedEvents<AllEvents>[T];
+        },
+        retain?: boolean,
+    ): R[];
     public emit<R = any>(message: MutableMessage<AllEvents, Meta>, retain?: boolean): R[];
-    // public emit<R = any>(message: FastEventEmitMessage<AllEvents, Meta>, retain?: boolean): R[];
+    public emit<R = any, T extends string = string>(
+        type: T,
+        payload?: InMatchedEvent<Events, T> extends true
+            ? GetPayload<UnTransformedEvents<AllEvents>, T>
+            : any,
+        retain?: boolean,
+    ): R[];
+    // 以上的触发经过转换发的事件
 
-    // // 使用完整的配置选项
-    // public emit<R = any, T extends EventNames = EventNames>(
-    //     type: T,
-    //     payload?: GetPayload<AllEvents, T>,
-    //     options?: FastEventListenerArgs<Meta>,
-    // ): R[];
-    // public emit<R = any, T extends string = string>(
-    //     type: T,
-    //     payload: PickPayload<
-    //         T extends Types ? AllEvents[T] : RecordValues<GetMatchedEvents<AllEvents, T>>
-    //     >,
-    //     options?: FastEventListenerArgs<Meta>,
-    // ): R[];
-    // public emit<R = any, T extends string = string>(
-    //     message: FastEventEmitMessage<
-    //         { [K in T]: PickPayload<K extends Types ? AllEvents[K] : any> },
-    //         Meta
-    //     >,
-    //     options?: FastEventListenerArgs<Meta>,
-    // ): R[];
-    // public emit<R = any>(
-    //     message: FastEventEmitMessage<AllEvents, Meta>,
-    //     options?: FastEventListenerArgs<Meta>,
-    // ): R[];
     public emit(): any {
-        // 清除保留事件
-        if (
-            arguments.length === 2 &&
-            typeof arguments[0] === "string" &&
-            arguments[1] === FastEventDirectives.clearRetain
-        ) {
-            this.retainedMessages.delete(arguments[0]);
-            return [];
-        }
         const [message, args] = parseEmitArgs<AllEvents, Meta>(arguments, this.options.meta);
 
         if (isFunction(args.parseArgs)) {

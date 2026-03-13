@@ -8,4 +8,4 @@ export type * from "./PickPayload";
 export type * from "./PickTransformedEvents";
 export type * from "./TransformedEvents";
 export type * from "./AtPayloads";
-export type * from "../closest/GetClosestEventPayload";
+export type * from "./UnTransformedEvents";

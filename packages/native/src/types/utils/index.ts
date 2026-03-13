@@ -1,3 +1,4 @@
+import { AllowCall } from "./AllowCall";
 export type { IsAny } from "./IsAny";
 export type { RemoveEmptyObject } from "./RemoveEmptyObject";
 export type { AssertRecord } from "./AssertRecord";
@@ -47,3 +48,5 @@ export type { Dict } from "./Dict";
 export type { ValueOf } from "./ValueOf";
 export type { OptionalItems } from "./OptionalItems";
 export type { Tuple } from "./Tuple";
+export type { MergeStrings } from "./MergeStrings";
+export type { AllowCall as IsValidCall } from "./AllowCall";

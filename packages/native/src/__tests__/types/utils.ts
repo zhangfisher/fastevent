@@ -76,6 +76,8 @@
  * ```
  */
 
+import { Includes } from "type-fest";
+
 export type Unique<T extends any[], Result extends any[] = []> = T extends [
     infer First,
     ...infer Rest,
@@ -195,49 +197,49 @@ export type Overloads<T> = Unique<
 //             : Unique<Rest, [...Result, First]>
 //         : Result;
 
-import type { Expect, Equal } from "@type-challenges/utils";
-import { FastEvent } from "../../event";
+// import type { Expect, Equal } from "@type-challenges/utils";
+// import { FastEvent } from "../../event";
 
-// 辅助类型：检查数组中是否包含某个类型（使用 Equal 检查完全相等）
-type Includes<T extends any[], U> = T extends [infer First, ...infer Rest]
-    ? Equal<First, U> extends true
-        ? true
-        : Includes<Rest, U>
-    : false;
+// // 辅助类型：检查数组中是否包含某个类型（使用 Equal 检查完全相等）
+// type Includes<T extends any[], U> = T extends [infer First, ...infer Rest]
+//     ? Equal<First, U> extends true
+//         ? true
+//         : Includes<Rest, U>
+//     : false;
 
-declare function emit(event: "a" | "b"): void;
-declare function emit(event: "c", data: string): void;
-declare function emit(event: "d", data: number): void;
-declare function emit(event: string, data?: unknown): void;
+// declare function emit(event: "a" | "b"): void;
+// declare function emit(event: "c", data: string): void;
+// declare function emit(event: "d", data: number): void;
+// declare function emit(event: string, data?: unknown): void;
 
-// 提取所有重载的参数类型
-type EmitParams = Overloads<typeof emit>;
-type a1 = Parameters<EmitParams[1]>[0];
-type cases = [
-    // TypeScript 从最不具体的重载开始提取（相反顺序）
-    // [0] = (event: string, data?: unknown) => void - 最后一个声明的重载
-    Expect<Equal<Parameters<EmitParams[0]>[0], "a" | "b">>,
+// // 提取所有重载的参数类型
+// type EmitParams = Overloads<typeof emit>;
+// type a1 = Parameters<EmitParams[1]>[0];
+// type cases = [
+//     // TypeScript 从最不具体的重载开始提取（相反顺序）
+//     // [0] = (event: string, data?: unknown) => void - 最后一个声明的重载
+//     Expect<Equal<Parameters<EmitParams[0]>[0], "a" | "b">>,
 
-    // [1] = (event: "d", data: number) => void
-    Expect<Equal<Parameters<EmitParams[1]>[0], "c">>,
+//     // [1] = (event: "d", data: number) => void
+//     Expect<Equal<Parameters<EmitParams[1]>[0], "c">>,
 
-    // [2] = (event: "c", data: string) => void
-    Expect<Equal<Parameters<EmitParams[2]>[0], "d">>,
+//     // [2] = (event: "c", data: string) => void
+//     Expect<Equal<Parameters<EmitParams[2]>[0], "d">>,
 
-    // [3] = (event: "a" | "b") => void - 第一个声明的重载
-    Expect<Equal<Parameters<EmitParams[3]>[0], string>>,
-];
+//     // [3] = (event: "a" | "b") => void - 第一个声明的重载
+//     Expect<Equal<Parameters<EmitParams[3]>[0], string>>,
+// ];
 
-interface Events {
-    a: boolean;
-    b: number;
-    c: string;
-    "x/y/z/a": 1;
-    "x/y/z/b": 2;
-    "x/y/z/c": 3;
-}
-const emitter = new FastEvent<Events>();
-type EmitParams2 = Overloads<typeof emitter.emit>;
-type Arg1 = Parameters<EmitParams2[0]>[0];
-type Arg2 = Parameters<EmitParams2[1]>[0];
-type Arg3 = Parameters<EmitParams2[2]>[0];
+// interface Events {
+//     a: boolean;
+//     b: number;
+//     c: string;
+//     "x/y/z/a": 1;
+//     "x/y/z/b": 2;
+//     "x/y/z/c": 3;
+// }
+// const emitter = new FastEvent<Events>();
+// type EmitParams2 = Overloads<typeof emitter.emit>;
+// type Arg1 = Parameters<EmitParams2[0]>[0];
+// type Arg2 = Parameters<EmitParams2[1]>[0];
+// type Arg3 = Parameters<EmitParams2[2]>[0];

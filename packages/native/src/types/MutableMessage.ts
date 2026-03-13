@@ -12,16 +12,28 @@ import { ReplaceWildcard } from "./wildcards/ReplaceWildcard";
  *
  */
 type EnsureEventType<K extends string> =
-    ContainsWildcard<K> extends true ? K | Omit<ReplaceWildcard<K>, K> : K;
+    ContainsWildcard<K> extends true ? K | ReplaceWildcard<K> : K;
+// type EnsureEventType<K extends string> =
+//     ContainsWildcard<K> extends true ? K | Omit<ReplaceWildcard<K>, K> : K;
 
 export type MutableMessage<Events extends Record<string, any>, Meta = Record<string, any>> = {
     [K in KeyOf<Events>]: {
-        type: K extends "*" ? string : EnsureEventType<K>;
+        type: ReplaceWildcard<K extends "*" ? string : EnsureEventType<K>>;
         payload: IfNever<Events[K], any>;
         meta?: Meta;
     };
 }[KeyOf<Events>];
 
+// export type MutableWildcardMessage<
+//     Events extends Record<string, any>,
+//     Meta = Record<string, any>,
+// > = {
+//     [K in KeyOf<Events>]: {
+//         type: ReplaceWildcard<K extends "*" ? string : EnsureEventType<K>>;
+//         payload: IfNever<Events[K], any>;
+//         meta?: Meta;
+//     };
+// }[KeyOf<Events>];
 // export type MutableMessage<Events extends Record<string, any>, Meta = Record<string, any>> = {
 //     [K in KeyOf<Events>]: {
 //         type: K extends "*" ? string : K | Omit<ReplaceWildcard<K>, K>;

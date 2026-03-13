@@ -18,11 +18,21 @@ export type ProcessSegments<Arr extends string[]> = Arr extends []
 // 2. 然后按 / 分割，对每一段检查，如果是 * 则替换为 ${string}
 // 3. 最后合并回去
 
-export type ReplaceWildcard<T extends string> =
-    IsMultiWildcard<T> extends true
+export type ReplaceWildcard<T> = T extends string
+    ? IsMultiWildcard<T> extends true
         ? T extends "**"
             ? `${string}`
             : T extends `${infer Head}/**`
               ? `${ReplaceWildcard<Head>}/${string}`
               : T
-        : Join<ProcessSegments<Split<T>>>;
+        : Join<ProcessSegments<Split<T>>>
+    : T;
+
+// export type ReplaceWildcard<T extends string> =
+// IsMultiWildcard<T> extends true
+//     ? T extends "**"
+//         ? `${string}`
+//         : T extends `${infer Head}/**`
+//           ? `${ReplaceWildcard<Head>}/${string}`
+//           : T
+//     : Join<ProcessSegments<Split<T>>>;
