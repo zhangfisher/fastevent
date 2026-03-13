@@ -1,7 +1,7 @@
 // oxlint-disable no-unused-vars
 import { describe, test } from "vitest";
 import type { Equal, Expect } from "@type-challenges/utils";
-import type { IsWildcardMatched } from "../../types";
+import { IsWildcardMatched } from "../../types/WildcardEvents";
 
 describe("IsWildcardMatched 类型测试", () => {
     test("单星通配符匹配", () => {

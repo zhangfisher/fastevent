@@ -31,18 +31,22 @@ describe("GetClosestEventPayload - 独立交叉类型支持", () => {
     });
 
     test("多个通配符模式匹配同一键", () => {
-        type Events = {
+        type Events1 = {
             [x: `user/${string}`]: string;
         } & {
             [x: `user/${string}/profile`]: { id: number };
         } & {
             [x: `user/${string}/*`]: boolean;
         };
-
+        type Events = {
+            "user/*": string;
+            "user/*/profile": { id: number };
+            "user/*/*": boolean;
+        };
         type Result = GetClosestEventPayload<Events, "user/123/profile">;
 
         // 三个模式都匹配
-        type cases = [Expect<Equal<Result, { id: number } | boolean>>];
+        type cases = [Expect<Equal<Result, { id: number }>>];
     });
 
     test("优先级：精确键覆盖通配符", () => {

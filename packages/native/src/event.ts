@@ -16,6 +16,8 @@ import {
     IsMatchEventName,
     ContainsWildcard,
     UnTransformedEvents,
+    FastEventMessage,
+    GetClosestEventPayload,
 } from "./types";
 import {
     TypedFastEventMessage,
@@ -1060,13 +1062,16 @@ export class FastEvent<
         retain?: boolean,
     ): R[];
     public emit<R = any, T extends KeyOf<AllEvents> = KeyOf<AllEvents>>(
-        message: {
-            type: T;
-            payload: UnTransformedEvents<AllEvents>[T];
-        },
+        message: FastEventMessage<T, UnTransformedEvents<AllEvents>[T], Meta>,
         retain?: boolean,
     ): R[];
     public emit<R = any>(message: MutableMessage<AllEvents, Meta>, retain?: boolean): R[];
+    public emit<R = any>(
+        message: {
+            type: keyof AllEvents;
+        },
+        retain?: boolean,
+    ): R[];
     public emit<R = any, T extends string = string>(
         type: T,
         payload?: InMatchedEvent<Events, T> extends true
@@ -1074,8 +1079,6 @@ export class FastEvent<
             : any,
         retain?: boolean,
     ): R[];
-    // 以上的触发经过转换发的事件
-
     public emit(): any {
         const [message, args] = parseEmitArgs<AllEvents, Meta>(arguments, this.options.meta);
 
@@ -1157,47 +1160,36 @@ export class FastEvent<
      */
     public async emitAsync<R = any, T extends Types = Types>(
         type: T,
-        payload?: PickPayload<AllEvents[T]>,
+        payload?: UnTransformedEvents<AllEvents>[T],
         retain?: boolean,
     ): Promise<[R | Error][]>;
     public async emitAsync<R = any, T extends string = string>(
-        type: T,
-        payload?: PickPayload<T extends Types ? AllEvents[T] : any>,
+        type: ReplaceWildcard<T> | Types,
+        payload?: InMatchedEvent<Events, T> extends true
+            ? GetPayload<UnTransformedEvents<AllEvents>, T>
+            : any,
         retain?: boolean,
     ): Promise<[R | Error][]>;
-
-    public async emitAsync<R = any, T extends string = string>(
-        message: FastEventEmitMessage<
-            { [K in T]: PickPayload<K extends Types ? AllEvents[K] : any> },
-            Meta
-        >,
+    public async emitAsync<R = any, T extends KeyOf<AllEvents> = KeyOf<AllEvents>>(
+        message: FastEventMessage<T, UnTransformedEvents<AllEvents>[T], Meta>,
         retain?: boolean,
     ): Promise<[R | Error][]>;
     public async emitAsync<R = any>(
-        message: FastEventEmitMessage<AllEvents, Meta>,
+        message: MutableMessage<AllEvents, Meta>,
         retain?: boolean,
     ): Promise<[R | Error][]>;
-    // ---
-    public async emitAsync<R = any, T extends string = string>(
-        type: T,
-        payload?: PickPayload<T extends Types ? AllEvents[T] : any>,
-        options?: FastEventListenerArgs<Meta>,
-    ): Promise<[R | Error][]>;
-    public async emitAsync<R = any, T extends Types = Types>(
-        type: T,
-        payload?: PickPayload<AllEvents[T]>,
-        options?: FastEventListenerArgs<Meta>,
-    ): Promise<[R | Error][]>;
-    public async emitAsync<R = any, T extends string = string>(
-        message: FastEventEmitMessage<
-            { [K in T]: PickPayload<K extends Types ? AllEvents[K] : any> },
-            Meta
-        >,
-        options?: FastEventListenerArgs<Meta>,
-    ): Promise<[R | Error][]>;
     public async emitAsync<R = any>(
-        message: FastEventEmitMessage<AllEvents, Meta>,
-        options?: FastEventListenerArgs<Meta>,
+        message: {
+            type: keyof AllEvents;
+        },
+        retain?: boolean,
+    ): Promise<[R | Error][]>;
+    public async emitAsync<R = any, T extends string = string>(
+        type: T,
+        payload?: InMatchedEvent<Events, T> extends true
+            ? GetPayload<UnTransformedEvents<AllEvents>, T>
+            : any,
+        retain?: boolean,
     ): Promise<[R | Error][]>;
 
     public async emitAsync<R = any>(): Promise<[R | Error][]> {
@@ -1244,16 +1236,13 @@ export class FastEvent<
      *
      * ```
      */
-    public waitFor<T extends Types>(
+    public waitFor<T extends string = KeyOf<AllEvents>>(
         type: T,
         timeout?: number,
-    ): Promise<TypedFastEventMessage<{ [key in T]: AllEvents[T] }, Meta>>;
+    ): Promise<FastEventMessage<T, GetClosestEventPayload<AllEvents, T>, Meta>>;
     public waitFor(type: string, timeout?: number): Promise<TypedFastEventMessage<AllEvents, Meta>>;
-    public waitFor<P = any>(
-        type: string,
-        timeout?: number,
-    ): Promise<TypedFastEventMessage<{ [key: string]: P }, Meta>>;
-    public waitFor(): Promise<TypedFastEventMessage<AllEvents, Meta>> {
+
+    public waitFor(): Promise<any> {
         const type = arguments[0] as any;
         const timeout = arguments[1] as number;
         return new Promise<TypedFastEventMessage<AllEvents, Meta>>((resolve, reject) => {

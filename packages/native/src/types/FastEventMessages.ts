@@ -13,9 +13,9 @@ export interface FastEventMeta {}
 export interface FastEventMessageExtends {}
 
 export type FastEventMessage<
+    T extends string = string,
     P = any,
     M extends Record<string, any> = Record<string, any>,
-    T extends string = string,
 > = {
     type: T;
     payload: P;
@@ -31,16 +31,17 @@ export type TypedFastEventMessage<
         : never]: {
         type: ReplaceWildcard<K & string>;
         payload: Events[K];
-        meta: FastEventMeta & M & Record<string, any>;
+        meta?: Partial<FastEventMeta> & M & Record<string, any>;
     };
 } & {
     [K in keyof Events as K extends `${string}*${string}` | `*` ? never : K]: {
         type: Exclude<K, number | symbol>;
         payload: Events[K];
-        meta: FastEventMeta & M & Record<string, any>;
+        meta?: Partial<FastEventMeta> & M & Record<string, any>;
     };
 })[Exclude<keyof Events, number | symbol>] &
     FastEventMessageExtends;
+
 // 用于构建消息时使用，meta是可选的
 
 export type TypedFastEventMessageOptional<
