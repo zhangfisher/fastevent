@@ -21,7 +21,9 @@ describe("emit 触发事件类型系统测试", () => {
             type cases = [
                 Expect<Equal<typeof message.type, string>>,
                 Expect<Equal<typeof message.payload, any>>,
-                Expect<Equal<typeof message.meta, FastEventMeta & Record<string, any>>>,
+                Expect<
+                    Equal<typeof message.meta, (FastEventMeta & Record<string, any>) | undefined>
+                >,
             ];
         });
         const aSubscriber = emitter.emit("a");

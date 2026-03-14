@@ -21,10 +21,12 @@ export type ProcessSegments<Arr extends string[]> = Arr extends []
 export type ReplaceWildcard<T> = T extends string
     ? IsMultiWildcard<T> extends true
         ? T extends "**"
-            ? `${string}`
-            : T extends `${infer Head}/**`
-              ? `${ReplaceWildcard<Head>}/${string}`
-              : T
+            ? `${string}/${string}`
+            : T extends "*"
+              ? string
+              : T extends `${infer Head}/**`
+                ? `${ReplaceWildcard<Head>}/${string}`
+                : T
         : Join<ProcessSegments<Split<T>>>
     : T;
 

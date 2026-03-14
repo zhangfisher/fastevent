@@ -71,6 +71,7 @@ import {
     FastEventIteratorOptions,
 } from "./utils/eventIterator";
 import { InMatchedEvent } from "./types/wildcards/InMatchedEvent";
+import { GetClosestMessage } from "./types/closest/GetClosestMessage";
 
 /**
  * FastEvent 事件发射器类
@@ -357,10 +358,9 @@ export class FastEvent<
         listener: FastEventCommonListener<
             T extends IsTransformedEvent<AllEvents, T>
                 ? PickPayload<ValueOf<GetClosestEvents<Events, T>>>
-                : TypedFastEventMessage<
-                      T extends "**" ? Events : GetClosestEvents<Events, T, Record<T, any>>,
-                      Meta
-                  >,
+                : T extends "**"
+                  ? TypedFastEventMessage<Events>
+                  : GetClosestMessage<Events, T, Meta>,
             Meta,
             Fallback<Context, typeof this>
         >,
@@ -487,46 +487,19 @@ export class FastEvent<
      * });
      * ```
      */
-    public once<T extends Types = Types>(
+    public once<T extends string = KeyOf<Events> | "**">(
         type: T,
-        options?: FastEventListenOptions<AllEvents, Meta>,
-    ): FastEventSubscriber;
-    public once<T extends string>(
-        type: T,
-        options?: FastEventListenOptions<AllEvents, Meta>,
-    ): FastEventSubscriber;
-
-    // 处理标准事件类型
-    public once<T extends keyof OmitTransformedEvents<AllEvents>>(
-        type: T,
-        listener: TypedFastEventListener<
-            Exclude<T, number | symbol>,
-            AllEvents[T],
+        listener: FastEventCommonListener<
+            T extends IsTransformedEvent<AllEvents, T>
+                ? PickPayload<ValueOf<GetClosestEvents<Events, T>>>
+                : TypedFastEventMessage<
+                      T extends "**" ? Events : GetClosestEvents<Events, T, Record<T, any>>,
+                      Meta
+                  >,
             Meta,
             Fallback<Context, typeof this>
         >,
-        options?: FastEventListenOptions<AllEvents, Meta>,
-    ): FastEventSubscriber;
-
-    // 处理使用 NotPayload 标识的事件类型
-    public once<T extends keyof PickTransformedEvents<AllEvents>>(
-        type: T,
-        listener: (
-            message: PickPayload<ValueOf<GetClosestEvents<AllEvents, Exclude<T, number | symbol>>>>,
-            args: FastEventListenerArgs<Meta>,
-        ) => any | Promise<any>,
-        options?: FastEventListenOptions<AllEvents, Meta>,
-    ): FastEventSubscriber;
-
-    // 处理通配符事件类型
-    public once<T extends Exclude<string, Types>>(
-        type: T,
-        listener: TypedFastEventAnyListener<
-            GetClosestEvents<AllEvents, T>,
-            Meta,
-            Fallback<Context, typeof this>
-        >,
-        options?: FastEventListenOptions<AllEvents, Meta>,
+        options?: FastEventListenOptions,
     ): FastEventSubscriber;
     public once(): FastEventSubscriber {
         if (isFunction(arguments[1])) {
@@ -564,11 +537,11 @@ export class FastEvent<
     // 指定监听器
     public onAny(
         listener: FastEventCommonListener<
-            TypedFastEventMessage<AllEvents, Meta>,
+            MutableMessage<AllEvents, AllMeta>,
             Meta,
             Fallback<Context, typeof this>
         >,
-        options?: FastEventListenOptions<AllEvents, Meta>,
+        options?: FastEventListenOptions<AllEvents, AllMeta>,
     ): FastEventSubscriber;
     public onAny() {
         return this.on("**", ...arguments) as any;
@@ -1239,16 +1212,23 @@ export class FastEvent<
     public waitFor<T extends string = KeyOf<AllEvents>>(
         type: T,
         timeout?: number,
-    ): Promise<FastEventMessage<T, GetClosestEventPayload<AllEvents, T>, Meta>>;
-    public waitFor(type: string, timeout?: number): Promise<TypedFastEventMessage<AllEvents, Meta>>;
+    ): Promise<
+        T extends IsTransformedEvent<AllEvents, T>
+            ? PickPayload<ValueOf<GetClosestEvents<Events, T>>>
+            : FastEventMessage<T, GetClosestEventPayload<AllEvents, T>, Meta>
+    >;
+    public waitFor<T extends string = string>(
+        type: T,
+        timeout?: number,
+    ): Promise<TypedFastEventMessage<AllEvents, Meta>>;
 
     public waitFor(): Promise<any> {
         const type = arguments[0] as any;
         const timeout = arguments[1] as number;
-        return new Promise<TypedFastEventMessage<AllEvents, Meta>>((resolve, reject) => {
+        return new Promise<any>((resolve, reject) => {
             let tid: any;
             let subscriber: FastEventSubscriber;
-            const listener = (message: TypedFastEventMessage<AllEvents, Meta>) => {
+            const listener = (message: any) => {
                 clearTimeout(tid);
                 subscriber?.off();
                 resolve(message);

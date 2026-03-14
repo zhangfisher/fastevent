@@ -22,25 +22,66 @@ export type FastEventMessage<
     meta?: M & Partial<FastEventMeta>;
 } & FastEventMessageExtends;
 
+export type WildcardStyle =
+    | `*`
+    | `**`
+    | `${string}/*`
+    | `*/${string}`
+    | `${string}/*/${string}`
+    | `${string}/**`;
+
 export type TypedFastEventMessage<
     Events extends Record<string, any> = Record<string, any>,
     M = any,
 > = ({
-    [K in keyof Events as K extends `${string}*${string}` | `*`
-        ? ReplaceWildcard<K & string>
-        : never]: {
-        type: ReplaceWildcard<K & string>;
+    [K in keyof Events as K extends WildcardStyle ? ReplaceWildcard<K> : never]: {
+        type: ReplaceWildcard<K>;
         payload: Events[K];
         meta?: Partial<FastEventMeta> & M & Record<string, any>;
     };
 } & {
-    [K in keyof Events as K extends `${string}*${string}` | `*` ? never : K]: {
+    [K in keyof Events as K extends WildcardStyle ? never : K]: {
         type: Exclude<K, number | symbol>;
         payload: Events[K];
         meta?: Partial<FastEventMeta> & M & Record<string, any>;
     };
 })[Exclude<keyof Events, number | symbol>] &
     FastEventMessageExtends;
+
+type Events = {
+    a: boolean;
+    b: number;
+    c: string;
+    "div/*/click": { x: number; y: number };
+    "users/*/login": string;
+    "users/*/logout": number;
+    "users/*/*": { name: string; vip: boolean };
+    "*": { data: any };
+    "**": Record<string, any>;
+};
+
+type GetIncludeWidcardEvents<Events extends Record<string, any>, M = any> = {
+    [K in keyof Events as K extends WildcardStyle ? ReplaceWildcard<K> : never]: {
+        type: ReplaceWildcard<K>;
+        payload: Events[K];
+        meta?: Partial<FastEventMeta> & M & Record<string, any>;
+    };
+}[ReplaceWildcard<keyof Events>];
+
+type GetIncludeNoWidcardEvents<Events extends Record<string, any>, M = any> = {
+    [K in keyof Events as K extends WildcardStyle ? never : K]: {
+        type: ReplaceWildcard<K>;
+        payload: Events[K];
+        meta?: Partial<FastEventMeta> & M & Record<string, any>;
+    };
+};
+
+type WEvents = GetIncludeWidcardEvents<{
+    "**": Record<string, any>;
+}>;
+type NEvents = GetIncludeNoWidcardEvents<Events>;
+type WEvents1 = GetIncludeWidcardEvents<Record<"**", 1>>;
+type NEvents2 = GetIncludeNoWidcardEvents<Record<"**", 1>>;
 
 // 用于构建消息时使用，meta是可选的
 
