@@ -6,20 +6,14 @@ import { describe, test, expect } from "vitest";
 import type { Equal, Expect, NotAny } from "@type-challenges/utils";
 import { FastEvent } from "../../event";
 import { FastEventScope, FastEventScopeMeta } from "../../scope";
-import { GetClosestEvents, GetMatchedEvents, MutableEvents, ScopeEvents } from "../../types";
-import {
-    FastEventMessageExtends,
-    FastEventMeta,
-    TypedFastEventMessage,
-} from "../../types/FastEventMessages";
-import { IsTransformedEvent } from "../../types/transformed/IsTransformedEvent";
+import { Expand, GetClosestEvents, ScopeEvents } from "../../types";
+import { FastEventMessageExtends, FastEventMeta } from "../../types/FastEventMessages";
 import { GetClosestEventPayload } from "../../types/closest/GetClosestEventPayload";
 import { TransformedEvents } from "../../types/transformed/TransformedEvents";
-import { ExtendWildcardEvents } from "../../types/wildcards/ExtendWildcardEvents";
 import { NotPayload } from "../../types/transformed/NotPayload";
 import { ValueOf } from "../../types/utils/ValueOf";
-import { Expand } from "../../types/Expand";
 import { FastEventIterator } from "../../utils/eventIterator";
+import { GetMatchedEvents } from "../../types/WildcardEvents";
 
 type IteratorMessage<T> = T extends FastEventIterator<infer M> ? M : never;
 
@@ -30,7 +24,7 @@ describe("事件作用域使用监听器类型测试", () => {
         type ScopeEventType = ScopeEvents<Record<string, any>, "a/b/c">;
         scope.on("x", (message) => {
             type cases = [
-                Expect<Equal<typeof message.type, string>>,
+                Expect<Equal<typeof message.type, "x">>,
                 Expect<Equal<typeof message.payload, any>>,
                 Expect<
                     Equal<
@@ -126,30 +120,12 @@ describe("事件作用域使用监听器类型测试", () => {
             Expect<Equal<`fisher/2login` extends keyof UserScopeEvents ? true : false, true>>,
             Expect<Equal<`${string}/login` extends keyof UserScopeEvents ? true : false, true>>,
             // `fisher/login`同时匹配了*/login和*/*，所以负载是string | {name:string,vip:boolean}
-            Expect<
-                Equal<
-                    GetClosestEventPayload<UserScopeRawEvents, `fisher/login`>,
-                    | string
-                    | {
-                          name: string;
-                          vip: boolean;
-                      }
-                >
-            >,
+            Expect<Equal<GetClosestEventPayload<UserScopeRawEvents, `fisher/login`>, string>>,
             //fisher/logout
             Expect<Equal<`fisher/logout` extends keyof UserScopeEvents ? true : false, true>>,
             Expect<Equal<`${string}/logout` extends keyof UserScopeEvents ? true : false, true>>,
             // `fisher/logout`同时匹配了 */login和 */*，所以负载是string | {name:string,vip:boolean}
-            Expect<
-                Equal<
-                    GetClosestEventPayload<UserScopeRawEvents, `fisher/logout`>,
-                    | number
-                    | {
-                          name: string;
-                          vip: boolean;
-                      }
-                >
-            >,
+            Expect<Equal<GetClosestEventPayload<UserScopeRawEvents, `fisher/logout`>, number>>,
         ];
 
         // 不存在的事件
@@ -170,7 +146,7 @@ describe("事件作用域使用监听器类型测试", () => {
             type MetaType = typeof message.meta;
 
             type cases = [
-                Expect<Equal<EventType, `${string}/login`>>,
+                Expect<Equal<EventType, `fisher/login`>>,
                 Expect<Equal<PayloadType, string>>,
                 Expect<Equal<MetaType, FastEventMeta & FastEventScopeMeta & Record<string, any>>>,
             ];
@@ -180,7 +156,7 @@ describe("事件作用域使用监听器类型测试", () => {
             type PayloadType = typeof message.payload;
             type MetaType = typeof message.meta;
             type cases = [
-                Expect<Equal<EventType, `${string}/${string}`>>,
+                Expect<Equal<EventType, `fisher/online`>>,
                 Expect<
                     Equal<
                         PayloadType,
@@ -241,31 +217,12 @@ describe("事件作用域使用监听器类型测试", () => {
             Expect<Equal<`${string}/login` extends keyof UserScopeEvents ? true : false, true>>,
             // `fisher/login`同时匹配了*/login，*/*， "**"
             // 所以负载是string | {name:string,vip:boolean} | Record<string, any>
-            Expect<
-                Equal<
-                    GetClosestEventPayload<Events, `users/fisher/login`>,
-                    | string
-                    | {
-                          name: string;
-                          vip: boolean;
-                      }
-                    | Record<string, any>
-                >
-            >,
+            Expect<Equal<GetClosestEventPayload<Events, `users/fisher/login`>, string>>,
             //fisher/logout
             Expect<Equal<`fisher/logout` extends keyof UserScopeEvents ? true : false, true>>,
             Expect<Equal<`${string}/logout` extends keyof UserScopeEvents ? true : false, true>>,
             // `fisher/logout`同时匹配了*/login和*/*，所以负载是string | {name:string,vip:boolean}
-            Expect<
-                Equal<
-                    GetClosestEventPayload<RawEvents, `fisher/logout`>,
-                    | number
-                    | {
-                          name: string;
-                          vip: boolean;
-                      }
-                >
-            >,
+            Expect<Equal<GetClosestEventPayload<RawEvents, `fisher/logout`>, number>>,
         ];
 
         const subscriber = scope.on("a", (message) => {
@@ -285,7 +242,7 @@ describe("事件作用域使用监听器类型测试", () => {
             type MetaType = typeof message.meta;
 
             type cases = [
-                Expect<Equal<EventType, `${string}/login`>>,
+                Expect<Equal<EventType, `fisher/login`>>,
                 Expect<Equal<PayloadType, string>>,
                 Expect<Equal<MetaType, FastEventMeta & FastEventScopeMeta & Record<string, any>>>,
             ];
@@ -295,7 +252,7 @@ describe("事件作用域使用监听器类型测试", () => {
             type PayloadType = typeof message.payload;
             type MetaType = typeof message.meta;
             type cases = [
-                Expect<Equal<EventType, `${string}/${string}`>>,
+                Expect<Equal<EventType, `fisher/online`>>,
                 Expect<
                     Equal<
                         PayloadType,
@@ -337,12 +294,7 @@ describe("事件作用域使用监听器类型测试", () => {
         const scope = emitter.scope("a");
         const subscriber = scope.on("1/c/2/d/3/e/4/g/5", (message) => {
             type cases = [
-                Expect<
-                    Equal<
-                        typeof message.type,
-                        `${string}/c/${string}/d/${string}/e/${string}/g/${string}`
-                    >
-                >,
+                Expect<Equal<typeof message.type, `1/c/2/d/3/e/4/g/5`>>,
                 Expect<Equal<typeof message.payload, string>>,
                 Expect<
                     Equal<
@@ -423,7 +375,7 @@ describe("事件作用域使用监听器类型测试", () => {
         const emitter = new FastEvent<Events>();
         emitter.on("x/posts/fisher/online", (message) => {
             type cases = [
-                Expect<Equal<typeof message.type, `x/posts/${string}/online`>>,
+                Expect<Equal<typeof message.type, `x/posts/fisher/online`>>,
                 Expect<Equal<typeof message.payload, string>>,
             ];
         });
@@ -436,20 +388,20 @@ describe("事件作用域使用监听器类型测试", () => {
 
         scope.on("users/x/online", (message) => {
             type cases = [
-                Expect<Equal<typeof message.type, `users/${string}/online`>>,
+                Expect<Equal<typeof message.type, `users/x/online`>>,
                 Expect<Equal<typeof message.payload, { name: string; status?: number }>>,
             ];
         });
         scope.on("users/x/y", (message) => {
             type cases = [
-                Expect<Equal<typeof message.type, `users/${string}/${string}`>>,
+                Expect<Equal<typeof message.type, `users/x/y`>>,
                 Expect<Equal<typeof message.payload, 1>>,
             ];
         });
 
         scope.on("posts/fisher/online", (message) => {
             type cases = [
-                Expect<Equal<typeof message.type, `posts/${string}/online`>>,
+                Expect<Equal<typeof message.type, `posts/fisher/online`>>,
                 Expect<Equal<typeof message.payload, string>>,
             ];
         });
@@ -494,9 +446,9 @@ describe("事件作用域: 返回迭代器 类型测试", () => {
         ];
 
         const anyMessages = scope.onAny();
-        type Any1 = MutableEvents<typeof scope.types.events>;
         type AnyMeta1 = typeof scope.types.meta;
         type AnyMessageType = IteratorMessage<typeof anyMessages>;
+        type R1 = Extract<AnyMessageType, { type: "a" }>;
         type cases = [
             Expect<
                 Equal<

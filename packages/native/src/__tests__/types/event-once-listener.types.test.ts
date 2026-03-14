@@ -18,14 +18,9 @@ describe("使用once监听器的FaseEvent类型系统测试", () => {
         type ScopeEventType = GetClosestEvents<Record<string, any>, "x", Record<"x", any>>;
         emitter.once("x", (message) => {
             type cases = [
-                Expect<Equal<typeof message.type, string>>,
+                Expect<Equal<typeof message.type, "x">>,
                 Expect<Equal<typeof message.payload, any>>,
-                Expect<
-                    Equal<
-                        typeof message.meta,
-                        (Partial<FastEventMeta> & Record<string, any>) | undefined
-                    >
-                >,
+                Expect<Equal<typeof message.meta, FastEventMeta & Record<string, any>>>,
             ];
         });
     });
@@ -137,19 +132,41 @@ describe("使用once监听器的FaseEvent类型系统测试", () => {
             type cases = [
                 Expect<Equal<EventType, "a">>,
                 Expect<Equal<PayloadType, boolean>>,
-                Expect<Equal<MetaType, (Partial<FastEventMeta> & Record<string, any>) | undefined>>,
+                Expect<Equal<MetaType, FastEventMeta & Record<string, any>>>,
             ];
         });
-        type T1 = ExtendWildcardEvents<Events>;
+        emitter.once("**", (message) => {
+            if (message.type === "a") {
+                type cases = [Expect<Equal<typeof message.payload, boolean>>];
+            } else if (message.type === "b") {
+                type cases = [Expect<Equal<typeof message.payload, number>>];
+            } else if (message.type === "c") {
+                type cases = [Expect<Equal<typeof message.payload, string>>];
+            } else if (message.type === "div/buy/click") {
+                type cases = [Expect<Equal<typeof message.payload, { x: number; y: number }>>];
+            } else if (message.type === "users/fisher/login") {
+                type cases = [
+                    Expect<Equal<typeof message.payload, string | { name: string; vip: boolean }>>,
+                ];
+            } else if (message.type === "users/fisher/logout") {
+                type cases = [
+                    Expect<Equal<typeof message.payload, number | { name: string; vip: boolean }>>,
+                ];
+            } else if (message.type === "users/x/y") {
+                type cases = [
+                    Expect<Equal<typeof message.payload, { name: string; vip: boolean }>>,
+                ];
+            }
+        });
         emitter.once("users/fisher/login", (message) => {
             type EventType = typeof message.type;
             type PayloadType = typeof message.payload;
             type MetaType = typeof message.meta;
 
             type cases = [
-                Expect<Equal<EventType, `users/${string}/login`>>,
+                Expect<Equal<EventType, `users/fisher/login`>>,
                 Expect<Equal<PayloadType, string>>,
-                Expect<Equal<MetaType, (Partial<FastEventMeta> & Record<string, any>) | undefined>>,
+                Expect<Equal<MetaType, FastEventMeta & Record<string, any>>>,
             ];
         });
         emitter.once("users/fisher/online", (message) => {
@@ -157,7 +174,7 @@ describe("使用once监听器的FaseEvent类型系统测试", () => {
             type PayloadType = typeof message.payload;
             type MetaType = typeof message.meta;
             type cases = [
-                Expect<Equal<EventType, `users/${string}/${string}`>>,
+                Expect<Equal<EventType, `users/fisher/online`>>,
                 Expect<
                     Equal<
                         PayloadType,
@@ -167,7 +184,7 @@ describe("使用once监听器的FaseEvent类型系统测试", () => {
                         }
                     >
                 >,
-                Expect<Equal<MetaType, (Partial<FastEventMeta> & Record<string, any>) | undefined>>,
+                Expect<Equal<MetaType, FastEventMeta & Record<string, any>>>,
             ];
         });
         type T2 = GetClosestEvents<Events, "users/fisher/login/xxx">;
@@ -180,7 +197,7 @@ describe("使用once监听器的FaseEvent类型系统测试", () => {
             type cases = [
                 Expect<Equal<EventType, "users/fisher/login/xxx">>,
                 Expect<Equal<PayloadType, any>>,
-                Expect<Equal<MetaType, (Partial<FastEventMeta> & Record<string, any>) | undefined>>,
+                Expect<Equal<MetaType, FastEventMeta & Record<string, any>>>,
             ];
         });
         emitter.once("x", (message) => {
@@ -210,14 +227,25 @@ describe("使用once监听器的FaseEvent类型系统测试", () => {
         type f2 = GetMatchedEventNames<Events, `users/fisher/login`>;
         type f3 = GetClosestEvents<Events, `users/fisher/login`>;
         type f4 = ResultEvents[`users/fisher/login`];
+        type f41 = ResultEvents["div/login/click"];
         type f5 = GetClosestEventPayload<Events, `users/fisher/login`>;
         type f6 = GetClosestEventPayload<Events, `users/fisher/logout`>;
 
         type cases = [
             Expect<Equal<ResultEvents["a"], boolean>>,
             Expect<Equal<ResultEvents["b"], number>>,
-            Expect<Equal<ResultEvents["div/login/click"], { x: number; y: number }>>,
-            Expect<Equal<ResultEvents[`div/${string}/click`], { x: number; y: number }>>,
+            Expect<
+                Equal<
+                    ResultEvents["div/login/click"],
+                    { x: number; y: number } & Record<string, any>
+                >
+            >,
+            Expect<
+                Equal<
+                    ResultEvents[`div/${string}/click`],
+                    { x: number; y: number } & Record<string, any>
+                >
+            >,
             //users/fisher/login
             Expect<Equal<`users/fisher/login` extends keyof ResultEvents ? true : false, true>>,
             Expect<Equal<`users/${string}/login` extends keyof ResultEvents ? true : false, true>>,
@@ -239,7 +267,7 @@ describe("使用once监听器的FaseEvent类型系统测试", () => {
             type cases = [
                 Expect<Equal<EventType, "a">>,
                 Expect<Equal<PayloadType, boolean>>,
-                Expect<Equal<MetaType, (Partial<FastEventMeta> & Record<string, any>) | undefined>>,
+                Expect<Equal<MetaType, FastEventMeta & Record<string, any>>>,
             ];
         });
         type T1 = ExtendWildcardEvents<Events>;
@@ -249,9 +277,9 @@ describe("使用once监听器的FaseEvent类型系统测试", () => {
             type MetaType = typeof message.meta;
 
             type cases = [
-                Expect<Equal<EventType, `users/${string}/login`>>,
+                Expect<Equal<EventType, `users/fisher/login`>>,
                 Expect<Equal<PayloadType, string>>,
-                Expect<Equal<MetaType, (Partial<FastEventMeta> & Record<string, any>) | undefined>>,
+                Expect<Equal<MetaType, FastEventMeta & Record<string, any>>>,
             ];
         });
         emitter.once("users/fisher/online", (message) => {
@@ -259,7 +287,7 @@ describe("使用once监听器的FaseEvent类型系统测试", () => {
             type PayloadType = typeof message.payload;
             type MetaType = typeof message.meta;
             type cases = [
-                Expect<Equal<EventType, `users/${string}/${string}`>>,
+                Expect<Equal<EventType, `users/fisher/online`>>,
                 Expect<
                     Equal<
                         PayloadType,
@@ -269,7 +297,7 @@ describe("使用once监听器的FaseEvent类型系统测试", () => {
                         }
                     >
                 >,
-                Expect<Equal<MetaType, (Partial<FastEventMeta> & Record<string, any>) | undefined>>,
+                Expect<Equal<MetaType, FastEventMeta & Record<string, any>>>,
             ];
         });
         type T2 = GetClosestEvents<Events, "users/fisher/login/xxx">;
@@ -280,15 +308,15 @@ describe("使用once监听器的FaseEvent类型系统测试", () => {
             type MetaType = typeof message.meta;
 
             type cases = [
-                Expect<Equal<EventType, string>>,
+                Expect<Equal<EventType, "users/fisher/login/xxx">>,
                 Expect<Equal<PayloadType, Record<string, any>>>,
-                Expect<Equal<MetaType, (Partial<FastEventMeta> & Record<string, any>) | undefined>>,
+                Expect<Equal<MetaType, FastEventMeta & Record<string, any>>>,
             ];
         });
         // 未声明式的事件
         emitter.once("xyz", (message) => {
             type cases = [
-                Expect<Equal<typeof message.type, string>>,
+                Expect<Equal<typeof message.type, "xyz">>,
                 Expect<Equal<typeof message.payload, { data: any }>>,
             ];
         });
@@ -301,19 +329,9 @@ describe("使用once监听器的FaseEvent类型系统测试", () => {
         const emitter = new FastEvent<Events>();
         const subscriber = emitter.once("a/1/c/2/d/3/e/4/g/5", (message) => {
             type cases = [
-                Expect<
-                    Equal<
-                        typeof message.type,
-                        `a/${string}/c/${string}/d/${string}/e/${string}/g/${string}`
-                    >
-                >,
+                Expect<Equal<typeof message.type, `a/1/c/2/d/3/e/4/g/5`>>,
                 Expect<Equal<typeof message.payload, string>>,
-                Expect<
-                    Equal<
-                        typeof message.meta,
-                        (Partial<FastEventMeta> & Record<string, any>) | undefined
-                    >
-                >,
+                Expect<Equal<typeof message.meta, FastEventMeta & Record<string, any>>>,
             ];
         });
     });

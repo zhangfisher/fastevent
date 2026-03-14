@@ -122,7 +122,6 @@ export type FastEventListenerArgs<M = Record<string, any>> = {
     retain?: boolean;
     meta?: DeepPartial<M> & Record<string, any>;
     abortSignal?: AbortSignal; // 用于传递给监听器函数
-
     /**
      *
      * allSettled: 使用Promise.allSettled()执行所有监听器

@@ -3,6 +3,7 @@
  */
 import { PickPayload } from "./transformed/PickPayload";
 import { DeepPartial } from "./utils/DeepPartial";
+import { OptionalKeys } from "./utils/OptionalKeys";
 import { ValueOf } from "./utils/ValueOf";
 import { GetMatchedEvents } from "./WildcardEvents";
 import { ReplaceWildcard } from "./wildcards/ReplaceWildcard";
@@ -19,8 +20,17 @@ export type FastEventMessage<
 > = {
     type: T;
     payload: P;
-    meta?: M & Partial<FastEventMeta>;
+    meta: FastEventMeta & M & Record<string, any>;
 } & FastEventMessageExtends;
+
+/**
+ * 用于emit方法，允许meta可选，更加宽泛
+ */
+export type FastEventEmitMessage<
+    T extends string = string,
+    P = any,
+    M extends Record<string, any> = Record<string, any>,
+> = OptionalKeys<FastEventMessage<T, P, M>, "meta">;
 
 export type WildcardStyle =
     | `*`
@@ -37,7 +47,7 @@ export type TypedFastEventMessage<
     [K in keyof Events as K extends WildcardStyle ? ReplaceWildcard<K> : never]: {
         type: ReplaceWildcard<K>;
         payload: Events[K];
-        meta?: Partial<FastEventMeta> & M & Record<string, any>;
+        meta?: Partial<FastEventMeta & M> & Record<string, any>;
     };
 } & {
     [K in keyof Events as K extends WildcardStyle ? never : K]: {
@@ -47,41 +57,6 @@ export type TypedFastEventMessage<
     };
 })[Exclude<keyof Events, number | symbol>] &
     FastEventMessageExtends;
-
-type Events = {
-    a: boolean;
-    b: number;
-    c: string;
-    "div/*/click": { x: number; y: number };
-    "users/*/login": string;
-    "users/*/logout": number;
-    "users/*/*": { name: string; vip: boolean };
-    "*": { data: any };
-    "**": Record<string, any>;
-};
-
-type GetIncludeWidcardEvents<Events extends Record<string, any>, M = any> = {
-    [K in keyof Events as K extends WildcardStyle ? ReplaceWildcard<K> : never]: {
-        type: ReplaceWildcard<K>;
-        payload: Events[K];
-        meta?: Partial<FastEventMeta> & M & Record<string, any>;
-    };
-}[ReplaceWildcard<keyof Events>];
-
-type GetIncludeNoWidcardEvents<Events extends Record<string, any>, M = any> = {
-    [K in keyof Events as K extends WildcardStyle ? never : K]: {
-        type: ReplaceWildcard<K>;
-        payload: Events[K];
-        meta?: Partial<FastEventMeta> & M & Record<string, any>;
-    };
-};
-
-type WEvents = GetIncludeWidcardEvents<{
-    "**": Record<string, any>;
-}>;
-type NEvents = GetIncludeNoWidcardEvents<Events>;
-type WEvents1 = GetIncludeWidcardEvents<Record<"**", 1>>;
-type NEvents2 = GetIncludeNoWidcardEvents<Record<"**", 1>>;
 
 // 用于构建消息时使用，meta是可选的
 
@@ -97,18 +72,6 @@ export type TypedFastEventMessageOptional<
 }[Exclude<keyof Events, number | symbol>] &
     FastEventMessageExtends;
 // 用于emit方法使用
-
-export type FastEventEmitMessage<
-    Events extends Record<string, any> = Record<string, any>,
-    M = any,
-> = {
-    [K in keyof Events]: {
-        type: Exclude<K, number | symbol>;
-        payload?: Events[K];
-        meta?: DeepPartial<FastEventMeta & M & Record<string, any>>;
-    };
-}[Exclude<keyof Events, number | symbol>] &
-    FastEventMessageExtends;
 
 export type FastMessagePayload<P = any> = {
     type: P;
@@ -194,3 +157,25 @@ export type AssertFastMessage<M> = {
     type: M;
     __IS_FAST_MESSAGE__: true;
 };
+
+// type Events = {
+//     a: boolean;
+//     b: number;
+//     c: string;
+//     "div/*/click": { x: number; y: number };
+//     "users/*/login": string;
+//     "users/*/logout": number;
+//     "users/*/*": { name: string; vip: boolean };
+//     "*": { data: any };
+//     "**": Record<string, any>;
+// };
+
+// type GetIncludeNoWidcardEvents<Events extends Record<string, any>, M = any> = {
+//     [K in keyof Events as K extends WildcardStyle ? never : K]: {
+//         type: ReplaceWildcard<K>;
+//         payload: Events[K];
+//         meta?: Partial<FastEventMeta> & M & Record<string, any>;
+//     };
+// };
+// type NEvents = GetIncludeNoWidcardEvents<Events>;
+// type NEvents2 = GetIncludeNoWidcardEvents<Record<"**", 1>>;

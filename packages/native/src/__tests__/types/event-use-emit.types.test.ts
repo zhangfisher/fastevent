@@ -19,11 +19,9 @@ describe("emit 触发事件类型系统测试", () => {
         const emitter = new FastEvent();
         emitter.on("x", (message) => {
             type cases = [
-                Expect<Equal<typeof message.type, string>>,
+                Expect<Equal<typeof message.type, "x">>,
                 Expect<Equal<typeof message.payload, any>>,
-                Expect<
-                    Equal<typeof message.meta, (FastEventMeta & Record<string, any>) | undefined>
-                >,
+                Expect<Equal<typeof message.meta, FastEventMeta & Record<string, any>>>,
             ];
         });
         const aSubscriber = emitter.emit("a");
@@ -104,12 +102,6 @@ describe("emit 触发事件类型系统测试", () => {
         }
         const emitter = new FastEvent<Events>();
         type Messages = MutableMessage<Events>;
-        type M1 = FastEventEmitMessage<Events, { a: 1 }>;
-        type ddd2 = ExtendWildcardEvents<Events>;
-        type AT = Extract<Messages, { type: "a" }>;
-        type P1 = GetPayload<Events, "users/a/login">;
-
-        type EventNames = Messages["type"];
 
         type x1 = AllowCall<typeof emitter.emit, [{ type: "a"; payload: 1 }]>;
         type x2 = AllowCall<typeof emitter.emit, [{ type: "x"; payload: 1 }]>;
@@ -257,14 +249,9 @@ describe("emitAsync 触发事件类型系统测试", () => {
         const emitter = new FastEvent();
         emitter.on("x", (message) => {
             type cases = [
-                Expect<Equal<typeof message.type, string>>,
+                Expect<Equal<typeof message.type, "x">>,
                 Expect<Equal<typeof message.payload, any>>,
-                Expect<
-                    Equal<
-                        typeof message.meta,
-                        (Partial<FastEventMeta> & Record<string, any>) | undefined
-                    >
-                >,
+                Expect<Equal<typeof message.meta, FastEventMeta & Record<string, any>>>,
             ];
         });
         await emitter.emitAsync("a");
@@ -322,7 +309,6 @@ describe("emitAsync 触发事件类型系统测试", () => {
         }
         const emitter = new FastEvent<Events>();
         type Messages = MutableMessage<Events>;
-        type M1 = FastEventEmitMessage<Events, { a: 1 }>;
         type ddd2 = ExtendWildcardEvents<Events>;
         type AT = Extract<Messages, { type: "a" }>;
         type P1 = GetPayload<Events, "users/a/login">;

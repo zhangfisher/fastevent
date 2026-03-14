@@ -36,12 +36,7 @@ describe("返回迭代器的FaseEvent类型系统测试", () => {
         type ACases = [
             Expect<Equal<AMessageType["type"], "a">>,
             Expect<Equal<AMessageType["payload"], boolean>>,
-            Expect<
-                Equal<
-                    AMessageType["meta"],
-                    (Partial<FastEventMeta> & Record<string, any>) | undefined
-                >
-            >,
+            Expect<Equal<AMessageType["meta"], FastEventMeta & Record<string, any>>>,
         ];
 
         const anyMessages = emitter.onAny();
@@ -56,7 +51,7 @@ describe("返回迭代器的FaseEvent类型系统测试", () => {
                     {
                         type: "a";
                         payload: boolean;
-                        meta?: (Partial<FastEventMeta> & Record<string, any>) | undefined;
+                        meta?: FastEventMeta & Record<string, any>;
                     }
                 >
             >,
@@ -68,12 +63,7 @@ describe("返回迭代器的FaseEvent类型系统测试", () => {
         type XCases = [
             Expect<Equal<XMessageType["type"], "xyz">>,
             Expect<Equal<XMessageType["payload"], any>>,
-            Expect<
-                Equal<
-                    XMessageType["meta"],
-                    (Partial<FastEventMeta> & Record<string, any>) | undefined
-                >
-            >,
+            Expect<Equal<XMessageType["meta"], FastEventMeta & Record<string, any>>>,
         ];
     });
 
@@ -96,50 +86,30 @@ describe("返回迭代器的FaseEvent类型系统测试", () => {
         type ACases = [
             Expect<Equal<AMessageType["type"], "a">>,
             Expect<Equal<AMessageType["payload"], boolean>>,
-            Expect<
-                Equal<
-                    AMessageType["meta"],
-                    (Partial<FastEventMeta> & Record<string, any>) | undefined
-                >
-            >,
+            Expect<Equal<AMessageType["meta"], FastEventMeta & Record<string, any>>>,
         ];
 
         const loginMessages = emitter.on("users/fisher/login");
         type LoginMessageType = IteratorMessage<typeof loginMessages>;
         type LoginCases = [
-            Expect<Equal<LoginMessageType["type"], `users/${string}/login`>>,
+            Expect<Equal<LoginMessageType["type"], `users/fisher/login`>>,
             Expect<Equal<LoginMessageType["payload"], string>>,
-            Expect<
-                Equal<
-                    LoginMessageType["meta"],
-                    (Partial<FastEventMeta> & Record<string, any>) | undefined
-                >
-            >,
+            Expect<Equal<LoginMessageType["meta"], FastEventMeta & Record<string, any>>>,
         ];
         // 未声明式的事件
         const XLoginMessages = emitter.on("users/fisher/login/xxx");
         type XLoginMessageType = IteratorMessage<typeof XLoginMessages>;
         type XLoginCases = [
-            Expect<Equal<XLoginMessageType["type"], string>>,
+            Expect<Equal<XLoginMessageType["type"], "users/fisher/login/xxx">>,
             Expect<Equal<XLoginMessageType["payload"], Record<string, any>>>,
-            Expect<
-                Equal<
-                    XLoginMessageType["meta"],
-                    (Partial<FastEventMeta> & Record<string, any>) | undefined
-                >
-            >,
+            Expect<Equal<XLoginMessageType["meta"], FastEventMeta & Record<string, any>>>,
         ];
         const xMessages = emitter.on("xyz");
-        type XMessageType = IteratorMessage<typeof loginMessages>;
+        type XMessageType = IteratorMessage<typeof xMessages>;
         type XCases = [
-            Expect<Equal<XMessageType["type"], `users/${string}/login`>>,
-            Expect<Equal<XMessageType["payload"], string>>,
-            Expect<
-                Equal<
-                    XMessageType["meta"],
-                    (Partial<FastEventMeta> & Record<string, any>) | undefined
-                >
-            >,
+            Expect<Equal<XMessageType["type"], `xyz`>>,
+            Expect<Equal<XMessageType["payload"], { data: any }>>,
+            Expect<Equal<XMessageType["meta"], FastEventMeta & Record<string, any>>>,
         ];
     });
     test("部份事件经过转换", () => {
@@ -155,12 +125,7 @@ describe("返回迭代器的FaseEvent类型系统测试", () => {
         type ACases = [
             Expect<Equal<AMessageType["type"], `a`>>,
             Expect<Equal<AMessageType["payload"], boolean>>,
-            Expect<
-                Equal<
-                    AMessageType["meta"],
-                    (Partial<FastEventMeta> & Record<string, any>) | undefined
-                >
-            >,
+            Expect<Equal<AMessageType["meta"], FastEventMeta & Record<string, any>>>,
         ];
         // b事件经过转换
         const bMessages = emitter.on("b");
@@ -199,12 +164,7 @@ describe("返回迭代器的FaseEvent类型系统测试", () => {
             // x未声明NotPayload
             Expect<Equal<XMessageType["type"], "xyz">>,
             Expect<Equal<XMessageType["payload"], any>>,
-            Expect<
-                Equal<
-                    XMessageType["meta"],
-                    (Partial<FastEventMeta> & Record<string, any>) | undefined
-                >
-            >,
+            Expect<Equal<XMessageType["meta"], FastEventMeta & Record<string, any>>>,
         ];
     });
     test("含多段通配符事件类型", () => {
@@ -227,19 +187,9 @@ describe("返回迭代器的FaseEvent类型系统测试", () => {
         type Cases = [
             Expect<Equal<AnyMessageType, number>>,
             // 没有使用NotPayload
-            Expect<
-                Equal<
-                    MessageType["type"],
-                    `a/${string}/c/${string}/d/${string}/e/${string}/g/${string}`
-                >
-            >,
+            Expect<Equal<MessageType["type"], "a/1/c/2/d/3/e/4/g/5">>,
             Expect<Equal<MessageType["payload"], string>>,
-            Expect<
-                Equal<
-                    MessageType["meta"],
-                    (Partial<FastEventMeta> & Record<string, any>) | undefined
-                >
-            >,
+            Expect<Equal<MessageType["meta"], FastEventMeta & Record<string, any>>>,
         ];
     });
 });

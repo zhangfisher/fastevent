@@ -82,11 +82,11 @@ function test(name: string, age?: number): any;
 function test(): any {}
 
 type sss = Extract<MutableMessage<Events>, { type: "a" }>;
-// type t6 = IsValidCall<typeof test, ["Tom"]>; // true
-// type t7 = IsValidCall<typeof test, ["Tom", 18]>; // true
-// type t8 = IsValidCall<typeof test, ["Tom", 18, true]>; // false
-// type t9 = IsValidCall<typeof test, [true]>; // false
-// type t9 = IsValidCall<typeof test, [true]>; // false
+// type t6 = AllowCall<typeof test, ["Tom"]>; // true
+// type t7 = AllowCall<typeof test, ["Tom", 18]>; // true
+// type t8 = AllowCall<typeof test, ["Tom", 18, true]>; // false
+// type t9 = AllowCall<typeof test, [true]>; // false
+// type t9 = AllowCall<typeof test, [true]>; // false
 type t1 = AllowCall<typeof test, [{ type: "a"; payload: "ddd" }]>; // false
 type t2 = AllowCall<typeof test, [{ type: "a"; payload: "ddd" }]>; // false
 type r1 = GetMatchingOverload<Overloads<typeof test>, [{ type: "a"; payload: 1 }]>; // false

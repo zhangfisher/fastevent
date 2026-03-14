@@ -2,7 +2,16 @@
 import { FastEventDirectives, UnboundError } from "./consts";
 import type { FastEvent } from "./event";
 import { FastListenerExecutor } from "./executors/types";
-import { ScopeEvents, GetMatchedEvents, GetClosestEvents, MutableRecord, KeyOf } from "./types";
+import {
+    ScopeEvents,
+    GetClosestEvents,
+    KeyOf,
+    MutableMessage,
+    UnTransformedEvents,
+    ReplaceWildcard,
+    GetPayload,
+    Fallback,
+} from "./types";
 import {
     FastEventEmitMessage,
     TypedFastEventMessage,
@@ -11,11 +20,7 @@ import {
     FastEventMessage,
 } from "./types/FastEventMessages";
 import { FastEventSubscriber } from "./types/FastEventSubscribers";
-import {
-    TypedFastEventAnyListener,
-    TypedFastEventListener,
-    FastEventCommonListener,
-} from "./types/FastEventListeners";
+import { TypedFastEventListener, FastEventCommonListener } from "./types/FastEventListeners";
 import {
     FastEventListenerArgs,
     FastEventListenOptions,
@@ -29,15 +34,15 @@ import { PayloadValues } from "./types/transformed/PayloadValues";
 import { ValueOf } from "./types/utils/ValueOf";
 import { Dict } from "./types/utils/Dict";
 import { DeepPartial } from "./types/utils/DeepPartial";
-import { Fallback } from "./types/Fallback";
 import { IsAllTransformed } from "./types/transformed/IsAllTransformed";
 import { parseEmitArgs } from "./utils/parseEmitArgs";
 import { parseScopeArgs } from "./utils/parseScopeArgs";
 import { renameFn } from "./utils/renameFn";
-import { AtPayloads } from "./types/transformed/AtPayloads";
 import { PickPayload } from "./types/transformed/PickPayload";
 import { isFunction } from "./utils/isFunction";
 import { FastEventIterator } from "./utils/eventIterator";
+import { GetClosestMessage } from "./types/closest/GetClosestMessage";
+import { InMatchedEvent } from "./types/wildcards/InMatchedEvent";
 
 export type FastEventScopeOptions<Meta = Record<string, any>, Context = never> = {
     meta: FastEventScopeMeta & FastEventMeta & Meta;
@@ -83,39 +88,12 @@ export class FastEventScope<
     readonly __context__!: Context;
     private _options: DeepPartial<FastEventScopeOptions<FinalMeta, Context>> = {};
 
-    // types = {
-    //     events: undefined as unknown as Events,
-    //     meta: undefined as unknown as FinalMeta,
-    //     context: undefined as unknown as Fallback<Context, typeof this>,
-    //     message: undefined as unknown as TypedFastEventMessageOptional<Events, FinalMeta>,
-    //     listeners: undefined as unknown as FastEventListeners<Events, FinalMeta>,
-    //     anyListener: undefined as unknown as TypedFastEventAnyListener<
-    //         Events,
-    //         FinalMeta,
-    //         Fallback<Context, typeof this>
-    //     >,
-    // };
-    // declare types: {
-    //     // 基本类型字段（不依赖 this）
-    //     events: Events;
-    //     meta: FinalMeta;
-    //     message: TypedFastEventMessageOptional<Events, FinalMeta>;
-    //     listeners: FastEventListeners<Events, FinalMeta>;
-
-    //     // 需要使用 this 的字段 - 使用当前类作为占位符
-    //     // 在实际使用时，TypeScript 会正确推断为实例类型
-    //     context: Fallback<Context, FastEventScope<Events, Meta, Context, Types, FinalMeta>>;
-    //     anyListener: TypedFastEventAnyListener<
-    //         Events,
-    //         FinalMeta,
-    //         Fallback<Context, FastEventScope<Events, Meta, Context, Types, FinalMeta>>
-    //     >;
-    // };
     declare types: {
         events: ExtendWildcardEvents<Events>;
+        eventNames: KeyOf<ExtendWildcardEvents<Events>>;
+        messages: MutableMessage<Events, FinalMeta>;
         rawEvents: Events;
         meta: FinalMeta;
-        message: TypedFastEventMessageOptional<Events, FinalMeta>;
     };
     prefix: string = "";
     emitter!: FastEvent<any>;
@@ -180,6 +158,7 @@ export class FastEventScope<
         if (!listener) {
             throw new Error();
         }
+        // oxlint-disable-next-line typescript/no-this-alias
         const scopeThis = this;
         const scopeListener = renameFn(function (
             message: TypedFastEventMessage,
@@ -207,11 +186,9 @@ export class FastEventScope<
     private _fixScopeType(type: string) {
         return type.startsWith(this.prefix) ? type.substring(this.prefix.length) : type;
     }
-
-    // 返回事件迭代器
     public on<T extends string = KeyOf<Events> | "**">(
         type: T,
-        options?: FastEventListenOptions<Events, Meta>,
+        options?: FastEventListenOptions<Events, FinalMeta>,
     ): T extends IsTransformedEvent<Events, T>
         ? FastEventIterator<
               T extends "**"
@@ -221,24 +198,23 @@ export class FastEventScope<
                   : PickPayload<ValueOf<GetClosestEvents<Events, T>>>
           >
         : FastEventIterator<
-              TypedFastEventMessage<GetClosestEvents<Events, T, Record<T, any>>, FinalMeta>
+              T extends "**" ? MutableMessage<Events> : GetClosestMessage<Events, T, FinalMeta>
           >;
-    // 使用标准监听器
+
+    // 指定监听器
     public on<T extends string = KeyOf<Events> | "**">(
         type: T,
         listener: FastEventCommonListener<
             T extends IsTransformedEvent<Events, T>
                 ? PickPayload<ValueOf<GetClosestEvents<Events, T>>>
-                : TypedFastEventMessage<
-                      T extends "**" ? Events : GetClosestEvents<Events, T, Record<T, any>>,
-                      FinalMeta
-                  >,
+                : T extends "**"
+                  ? MutableMessage<Events>
+                  : GetClosestMessage<Events, T, FinalMeta>,
             FinalMeta,
             Fallback<Context, typeof this>
         >,
         options?: FastEventListenOptions,
     ): FastEventSubscriber;
-
     public on(): FastEventSubscriber | FastEventIterator<any> {
         if (!this.emitter) throw new UnboundError();
         const args = [...arguments] as [any, any, any];
@@ -282,10 +258,14 @@ export class FastEventScope<
         options?: FastEventListenOptions<Events, FinalMeta>,
     ): FastEventSubscriber;
 
-    public once<T extends Exclude<string, Types>>(
+    public once<T extends string = KeyOf<Events> | "**">(
         type: T,
-        listener: TypedFastEventAnyListener<
-            GetClosestEvents<Events, T>,
+        listener: FastEventCommonListener<
+            T extends IsTransformedEvent<Events, T>
+                ? PickPayload<ValueOf<GetClosestEvents<Events, T>>>
+                : T extends "**"
+                  ? MutableMessage<Events>
+                  : GetClosestMessage<Events, T, FinalMeta>,
             FinalMeta,
             Fallback<Context, typeof this>
         >,
@@ -295,16 +275,17 @@ export class FastEventScope<
         return this.on(arguments[0], arguments[1], Object.assign({}, arguments[2], { count: 1 }));
     }
 
-    onAny(
-        options?: Pick<FastEventListenOptions, "prepend">,
-    ): FastEventIterator<TypedFastEventMessage<Events, FinalMeta>>;
-    onAny<P = any>(
-        listener: TypedFastEventAnyListener<
-            { [K: string]: P },
-            FinalMeta,
+    public onAny(
+        options?: FastEventListenOptions<Events, FinalMeta>,
+    ): FastEventIterator<MutableMessage<Events, FinalMeta>>;
+    // 指定监听器
+    public onAny(
+        listener: FastEventCommonListener<
+            MutableMessage<Events, FinalMeta>,
+            Meta,
             Fallback<Context, typeof this>
         >,
-        options?: Pick<FastEventListenOptions, "prepend">,
+        options?: FastEventListenOptions<Events, FinalMeta>,
     ): FastEventSubscriber;
     onAny() {
         return this.on("**" as any, ...(arguments as any)) as any;
@@ -333,37 +314,44 @@ export class FastEventScope<
      * @param type
      * @param directive
      */
-    public emit(type: Types, directive: symbol): void;
-    public emit(type: string, directive: symbol): void;
     public emit<R = any, T extends Types = Types>(
         type: T,
-        payload?: PickPayload<Events[T]>,
+        payload?: UnTransformedEvents<Events>[T],
         retain?: boolean,
     ): R[];
     public emit<R = any, T extends string = string>(
-        type: T,
-        payload?: PickPayload<T extends Types ? Events[T] : ValueOf<GetMatchedEvents<Events, T>>>,
+        type: ReplaceWildcard<T> | Types,
+        payload?: InMatchedEvent<Events, T> extends true
+            ? GetPayload<UnTransformedEvents<Events>, T>
+            : any,
         retain?: boolean,
     ): R[];
     public emit<R = any, T extends string = string>(
-        type: T,
-        payload?: PickPayload<T extends Types ? Events[T] : ValueOf<GetMatchedEvents<Events, T>>>,
-        options?: FastEventListenerArgs<FinalMeta>,
+        type: ReplaceWildcard<T> | Types,
+        payload?: InMatchedEvent<Events, T> extends true
+            ? GetPayload<UnTransformedEvents<Events>, T>
+            : any,
+        options?: FastEventListenerArgs<Partial<FinalMeta>>,
     ): R[];
+    public emit<R = any, T extends KeyOf<Events> = KeyOf<Events>>(
+        message: FastEventEmitMessage<T, UnTransformedEvents<Events>[T], Partial<FinalMeta>>,
+        retain?: boolean,
+    ): R[];
+    public emit<R = any>(message: MutableMessage<Events, FinalMeta>, retain?: boolean): R[];
     public emit<R = any>(
-        message: FastEventEmitMessage<AtPayloads<Events>, FinalMeta>,
-        options?: FastEventListenerArgs<FinalMeta>,
+        message: {
+            type: keyof Events;
+        },
+        retain?: boolean,
     ): R[];
     public emit<R = any, T extends string = string>(
-        message: FastEventEmitMessage<
-            {
-                [K in T]: PickPayload<K extends Types ? Events[K] : any>;
-            },
-            FinalMeta
-        >,
-        options?: FastEventListenerArgs<FinalMeta>,
+        type: T,
+        payload?: InMatchedEvent<Events, T> extends true
+            ? GetPayload<UnTransformedEvents<Events>, T>
+            : any,
+        retain?: boolean,
     ): R[];
-    public emit() {
+    public emit(): any {
         // 清除保留事件
         if (
             arguments.length === 2 &&
@@ -379,10 +367,10 @@ export class FastEventScope<
             this.options.executor,
         );
 
-        this._transformMessage(message, args);
+        this._transformMessage(message as any, args);
         message.type = this._getScopeType(message.type)!;
 
-        return this.emitter.emit(message as TypedFastEventMessage<Events, FinalMeta>, args);
+        return this.emitter.emit(message as any, args);
     }
 
     private _transformMessage(message: FastEventMessage, args: FastEventListenerArgs<FinalMeta>) {
@@ -395,33 +383,45 @@ export class FastEventScope<
 
     public async emitAsync<R = any, T extends Types = Types>(
         type: T,
-        payload?: PickPayload<Events[T]>,
+        payload?: UnTransformedEvents<Events>[T],
+        retain?: boolean,
+    ): Promise<[R | Error][]>;
+    public async emitAsync<R = any, T extends string = string>(
+        type: ReplaceWildcard<T> | Types,
+        payload?: InMatchedEvent<Events, T> extends true
+            ? GetPayload<UnTransformedEvents<Events>, T>
+            : any,
+        retain?: boolean,
+    ): Promise<[R | Error][]>;
+    public async emitAsync<R = any, T extends string = string>(
+        type: ReplaceWildcard<T> | Types,
+        payload?: InMatchedEvent<Events, T> extends true
+            ? GetPayload<UnTransformedEvents<Events>, T>
+            : any,
+        options?: FastEventListenerArgs<Partial<FinalMeta>>,
+    ): Promise<[R | Error][]>;
+    public async emitAsync<R = any, T extends KeyOf<Events> = KeyOf<Events>>(
+        message: FastEventEmitMessage<T, UnTransformedEvents<Events>[T], Partial<FinalMeta>>,
+        retain?: boolean,
+    ): Promise<[R | Error][]>;
+    public async emitAsync<R = any>(
+        message: MutableMessage<Events, FinalMeta>,
+        retain?: boolean,
+    ): Promise<[R | Error][]>;
+    public async emitAsync<R = any>(
+        message: {
+            type: keyof Events;
+        },
         retain?: boolean,
     ): Promise<[R | Error][]>;
     public async emitAsync<R = any, T extends string = string>(
         type: T,
-        payload?: PickPayload<T extends Types ? Events[T] : any>,
+        payload?: InMatchedEvent<Events, T> extends true
+            ? GetPayload<UnTransformedEvents<Events>, T>
+            : any,
         retain?: boolean,
     ): Promise<[R | Error][]>;
-    public async emitAsync<R = any, T extends Types = Types>(
-        type: T,
-        payload?: PickPayload<Events[T]>,
-        options?: FastEventListenerArgs<FinalMeta>,
-    ): Promise<[R | Error][]>;
-    public async emitAsync<R = any, T extends string = string>(
-        type: T,
-        payload?: PickPayload<T extends Types ? Events[T] : any>,
-        options?: FastEventListenerArgs<FinalMeta>,
-    ): Promise<[R | Error][]>;
-    public async emitAsync<R = any, T extends string = string>(
-        message: FastEventEmitMessage<
-            {
-                [K in T]: PickPayload<K extends Types ? Events[K] : any>;
-            },
-            FinalMeta
-        >,
-        options?: FastEventListenerArgs<FinalMeta>,
-    ): Promise<[R | Error][]>;
+
     public async emitAsync<R = any>(): Promise<[R | Error][]> {
         const results = await Promise.allSettled(this.emit.apply(this, arguments as any));
         return results.map((result) => {

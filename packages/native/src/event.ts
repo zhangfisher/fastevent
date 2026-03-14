@@ -10,11 +10,7 @@ import {
     MutableMessage,
     Expand,
     Fallback,
-    AssertString,
     ReplaceWildcard,
-    GetClosestEventTuple,
-    IsMatchEventName,
-    ContainsWildcard,
     UnTransformedEvents,
     FastEventMessage,
     GetClosestEventPayload,
@@ -43,8 +39,6 @@ import {
     FastEventListenerFlags,
 } from "./types/FastEvents";
 import { IsTransformedEvent } from "./types/transformed/IsTransformedEvent";
-import { OmitTransformedEvents } from "./types/transformed/OmitTransformedEvents";
-import { PickTransformedEvents } from "./types/transformed/PickTransformedEvents";
 import { ExtendWildcardEvents } from "./types/wildcards/ExtendWildcardEvents";
 import { PayloadValues } from "./types/transformed/PayloadValues";
 import { PickPayload } from "./types/transformed/PickPayload";
@@ -59,7 +53,7 @@ import { renameFn } from "./utils/renameFn";
 import { isFunction } from "./utils/isFunction";
 import { ScopeEvents } from "./types";
 import { FastListenerPipe } from "./pipes";
-import { AbortError, CancelError, FastEventDirectives } from "./consts";
+import { AbortError, CancelError } from "./consts";
 import { parseScopeArgs } from "./utils/parseScopeArgs";
 import { FastListenerExecutor, parallel } from "./executors";
 import { expandEmitResults } from "./utils/expandEmitResults";
@@ -116,19 +110,6 @@ export class FastEvent<
         meta: AllMeta;
         context: Expand<Fallback<Context, FastEvent<AllEvents, Meta, Context>>>;
         messages: MutableMessage<AllEvents, Meta>;
-        message: TypedFastEventMessageOptional<
-            AllEvents,
-            Expand<FastEventMeta & Meta & Record<string, any>>
-        >;
-        listeners: FastEventListeners<
-            AllEvents,
-            Expand<FastEventMeta & Meta & Record<string, any>>
-        >;
-        anyListener: TypedFastEventAnyListener<
-            AllEvents,
-            Expand<FastEventMeta & Meta & Record<string, any>>,
-            Expand<Fallback<Context, FastEvent<AllEvents, Meta, Context>>>
-        >;
     };
     /**
      * 创建FastEvent实例
@@ -349,7 +330,7 @@ export class FastEvent<
                   : PickPayload<ValueOf<GetClosestEvents<AllEvents, T>>>
           >
         : FastEventIterator<
-              TypedFastEventMessage<GetClosestEvents<AllEvents, T, Record<T, any>>, Meta>
+              T extends "**" ? MutableMessage<Events> : GetClosestMessage<Events, T, Meta>
           >;
 
     // 指定监听器
@@ -359,7 +340,7 @@ export class FastEvent<
             T extends IsTransformedEvent<AllEvents, T>
                 ? PickPayload<ValueOf<GetClosestEvents<Events, T>>>
                 : T extends "**"
-                  ? TypedFastEventMessage<Events>
+                  ? MutableMessage<Events>
                   : GetClosestMessage<Events, T, Meta>,
             Meta,
             Fallback<Context, typeof this>
@@ -492,10 +473,9 @@ export class FastEvent<
         listener: FastEventCommonListener<
             T extends IsTransformedEvent<AllEvents, T>
                 ? PickPayload<ValueOf<GetClosestEvents<Events, T>>>
-                : TypedFastEventMessage<
-                      T extends "**" ? Events : GetClosestEvents<Events, T, Record<T, any>>,
-                      Meta
-                  >,
+                : T extends "**"
+                  ? MutableMessage<Events>
+                  : GetClosestMessage<Events, T, Meta>,
             Meta,
             Fallback<Context, typeof this>
         >,
@@ -895,7 +875,7 @@ export class FastEvent<
         if (isFunction(this._options.transform)) {
             if (!args) args = {};
             args.rawEventType = message.type;
-            message.payload = this._options.transform.call(this, message);
+            message.payload = this._options.transform.call(this, message as any);
             args.flags = this._setListenerFlags(args.flags, FastEventListenerFlags.Transformed);
         }
 
@@ -1034,8 +1014,15 @@ export class FastEvent<
             : any,
         retain?: boolean,
     ): R[];
+    public emit<R = any, T extends string = string>(
+        type: ReplaceWildcard<T> | Types,
+        payload?: InMatchedEvent<Events, T> extends true
+            ? GetPayload<UnTransformedEvents<AllEvents>, T>
+            : any,
+        options?: FastEventListenerArgs<Partial<Meta>>,
+    ): R[];
     public emit<R = any, T extends KeyOf<AllEvents> = KeyOf<AllEvents>>(
-        message: FastEventMessage<T, UnTransformedEvents<AllEvents>[T], Meta>,
+        message: FastEventEmitMessage<T, UnTransformedEvents<AllEvents>[T], Partial<Meta>>,
         retain?: boolean,
     ): R[];
     public emit<R = any>(message: MutableMessage<AllEvents, Meta>, retain?: boolean): R[];
@@ -1078,7 +1065,7 @@ export class FastEvent<
         }
         // 触发时进行消息转换
         if (isFunction(this._options.transform)) {
-            message.payload = this._options.transform.call(this, message);
+            message.payload = this._options.transform.call(this, message as any);
             args.rawEventType = message.type;
             args.flags = (args.flags || 0) | FastEventListenerFlags.Transformed;
         }
@@ -1143,8 +1130,15 @@ export class FastEvent<
             : any,
         retain?: boolean,
     ): Promise<[R | Error][]>;
+    public async emitAsync<R = any, T extends string = string>(
+        type: ReplaceWildcard<T> | Types,
+        payload?: InMatchedEvent<Events, T> extends true
+            ? GetPayload<UnTransformedEvents<AllEvents>, T>
+            : any,
+        options?: FastEventListenerArgs<Partial<Meta>>,
+    ): Promise<[R | Error][]>;
     public async emitAsync<R = any, T extends KeyOf<AllEvents> = KeyOf<AllEvents>>(
-        message: FastEventMessage<T, UnTransformedEvents<AllEvents>[T], Meta>,
+        message: FastEventEmitMessage<T, UnTransformedEvents<AllEvents>[T], Partial<Meta>>,
         retain?: boolean,
     ): Promise<[R | Error][]>;
     public async emitAsync<R = any>(

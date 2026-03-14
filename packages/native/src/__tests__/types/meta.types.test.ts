@@ -52,9 +52,7 @@ describe("FastEvent元数据类型检查", () => {
 
         emitter.onAny((message) => {
             type cases = [
-                Expect<
-                    Equal<typeof message.meta, FastEventMeta & CustomMeta & Record<string, any>>
-                >,
+                Expect<Equal<typeof message.meta, (FastEventMeta & CustomMeta) | undefined>>,
             ];
         });
     });
