@@ -1,9 +1,9 @@
 // oxlint-disable no-unused-expressions
 /* eslint-disable no-unused-vars */
-import { describe, test, expect } from "vitest";
+import { describe, test, expect } from "bun:test";
 import type { Equal, Expect, NotAny } from "@type-challenges/utils";
 import { FastEvent } from "../../event";
-import { ScopeEvents } from "../../types";
+import { Expand, ScopeEvents } from "../../types";
 import { TypedFastEventMessage, FastEventMeta } from "../../types/FastEventMessages";
 import { FastEventScopeMeta } from "../../scope";
 // declare module "../.." {
@@ -149,17 +149,26 @@ describe("类型系统测试", () => {
 
         test("onAny方法应正确处理通配符事件类型", () => {
             emitter.onAny((message) => {
-                message.type = "xxx";
                 type cases = [
-                    Expect<Equal<typeof message.type, string>>,
-                    Expect<Equal<typeof message.payload, any>>,
+                    Expect<
+                        Equal<
+                            typeof message.type,
+                            "a" | "b" | "c" | "x/y/z/a" | "x/y/z/b" | "x/y/z/c"
+                        >
+                    >,
+                    Expect<Equal<typeof message.payload, string | number | boolean>>,
                 ];
             });
 
-            emitter.onAny<number>((message) => {
+            emitter.onAny((message) => {
                 type cases = [
-                    Expect<Equal<typeof message.type, string>>,
-                    Expect<Equal<typeof message.payload, number>>,
+                    Expect<
+                        Equal<
+                            typeof message.type,
+                            "a" | "b" | "c" | "x/y/z/a" | "x/y/z/b" | "x/y/z/c"
+                        >
+                    >,
+                    Expect<Equal<typeof message.payload, string | number | boolean>>,
                 ];
             });
         });
@@ -200,18 +209,18 @@ describe("类型系统测试", () => {
 
             emitter.waitFor("xxxx").then((message) => {
                 type cases = [
-                    Expect<Equal<typeof message.type, keyof CustomEvents>>,
-                    Expect<Equal<typeof message.payload, CustomEvents[keyof CustomEvents]>>,
+                    Expect<Equal<typeof message.type, "xxxx">>,
+                    Expect<Equal<typeof message.payload, any>>,
                     Expect<
                         Equal<typeof message.meta, FastEventMeta & CustomMeta & Record<string, any>>
                     >,
                 ];
             });
 
-            emitter.waitFor<boolean>("xxxx").then((message) => {
+            emitter.waitFor("xxxx").then((message) => {
                 type cases = [
-                    Expect<Equal<typeof message.type, string>>,
-                    Expect<Equal<typeof message.payload, boolean>>,
+                    Expect<Equal<typeof message.type, "xxxx">>,
+                    Expect<Equal<typeof message.payload, any>>,
                     Expect<
                         Equal<typeof message.meta, FastEventMeta & CustomMeta & Record<string, any>>
                     >,
@@ -268,10 +277,10 @@ describe("类型系统测试", () => {
                 ];
             });
 
-            emitter.onAny<number>((message) => {
+            emitter.onAny((message) => {
                 type cases = [
                     Expect<Equal<typeof message.type, string>>,
-                    Expect<Equal<typeof message.payload, number>>,
+                    Expect<Equal<typeof message.payload, any>>,
                 ];
             });
         });
@@ -399,7 +408,7 @@ describe("类型系统测试", () => {
 
             scope.waitFor("xxxx").then((message) => {
                 type cases = [
-                    Expect<Equal<typeof message.type, string>>,
+                    Expect<Equal<typeof message.type, "xxxx">>,
                     Expect<Equal<typeof message.payload, any>>,
                     Expect<
                         Equal<
@@ -410,10 +419,10 @@ describe("类型系统测试", () => {
                 ];
             });
 
-            scope.waitFor<boolean>("xxxx").then((message) => {
+            scope.waitFor("xxxx").then((message) => {
                 type cases = [
-                    Expect<Equal<typeof message.type, string>>,
-                    Expect<Equal<typeof message.payload, boolean>>,
+                    Expect<Equal<typeof message.type, "xxxx">>,
+                    Expect<Equal<typeof message.payload, any>>,
                     Expect<
                         Equal<
                             typeof message.meta,
@@ -454,8 +463,8 @@ describe("作用域事件类型检查", () => {
         });
         scope.onAny((message) => {
             type cases = [
-                Expect<Equal<typeof message.type, string>>,
-                Expect<Equal<typeof message.payload, any>>,
+                Expect<Equal<typeof message.type, "x" | "y" | "z">>,
+                Expect<Equal<typeof message.payload, 1 | 2 | 3>>,
             ];
         });
     });
@@ -500,8 +509,8 @@ describe("作用域事件类型检查", () => {
         });
         scope.onAny((message) => {
             type cases = [
-                Expect<Equal<typeof message.type, string>>,
-                Expect<Equal<typeof message.payload, any>>,
+                Expect<Equal<typeof message.type, "x" | "y" | "z" | "m" | "n">>,
+                Expect<Equal<typeof message.payload, number | boolean>>,
             ];
         });
     });
@@ -514,14 +523,15 @@ describe("作用域事件类型检查", () => {
         };
 
         const emitter = new FastEvent<RootEvents>();
-        type RootScopeEvents = { root: 1 };
-        type ChildScopeEvents = { children: 2 };
-        type GrandsondDScopeEvents = { grandson: 3 };
+        type RootExtEvents = { root: 1 };
+        type ChildExtEvents = { children: 2 };
+        type GrandsondExtEvents = { grandson: 3 };
 
-        const rootScope = emitter.scope<RootScopeEvents, "root">("root");
-        const childrenScope = rootScope.scope<ChildScopeEvents, "children">("children");
-        const GrandsondScope = childrenScope.scope<GrandsondDScopeEvents, "grandsond">("grandsond");
+        const rootScope = emitter.scope<RootExtEvents, "root">("root");
+        const childrenScope = rootScope.scope<ChildExtEvents, "children">("children");
+        const GrandsondScope = childrenScope.scope<GrandsondExtEvents, "grandsond">("grandsond");
 
+        type rootScopeEvents = Expand<ScopeEvents<RootEvents, "root">> & RootExtEvents;
         type childScopeEvents = keyof typeof childrenScope.types.events;
         type grandsondScopeEvents = keyof typeof GrandsondScope.types.events;
 
@@ -529,14 +539,19 @@ describe("作用域事件类型检查", () => {
             Expect<
                 Equal<
                     typeof rootScope.types.events,
-                    ScopeEvents<RootEvents, "root"> & RootScopeEvents
+                    {
+                        x: 100;
+                        "children/x": 200;
+                        "children/grandsond/x": 300;
+                        root: 1;
+                    }
                 >
             >,
             Expect<
                 Equal<
                     typeof childrenScope.types.events,
                     ScopeEvents<
-                        ScopeEvents<RootEvents, "root"> & RootScopeEvents & ChildScopeEvents,
+                        ScopeEvents<RootEvents, "root"> & RootExtEvents & ChildExtEvents,
                         "children"
                     >
                 >
@@ -547,10 +562,10 @@ describe("作用域事件类型检查", () => {
                     typeof GrandsondScope.types.events,
                     ScopeEvents<
                         ScopeEvents<
-                            ScopeEvents<RootEvents, "root"> & RootScopeEvents & ChildScopeEvents,
+                            ScopeEvents<RootEvents, "root"> & RootExtEvents & ChildExtEvents,
                             "children"
                         > &
-                            GrandsondDScopeEvents,
+                            GrandsondExtEvents,
                         "grandsond"
                     >
                 >
@@ -578,8 +593,8 @@ describe("作用域事件类型检查", () => {
         });
         childrenScope.onAny((message) => {
             type cases = [
-                Expect<Equal<typeof message.type, string>>,
-                Expect<Equal<typeof message.payload, any>>,
+                Expect<Equal<typeof message.type, "x" | "grandsond/x">>,
+                Expect<Equal<typeof message.payload, 200 | 300>>,
             ];
         });
         //  GrandsondScope
@@ -603,8 +618,8 @@ describe("作用域事件类型检查", () => {
         });
         GrandsondScope.onAny((message) => {
             type cases = [
-                Expect<Equal<typeof message.type, string>>,
-                Expect<Equal<typeof message.payload, any>>,
+                Expect<Equal<typeof message.type, "x">>,
+                Expect<Equal<typeof message.payload, 300>>,
             ];
         });
     });

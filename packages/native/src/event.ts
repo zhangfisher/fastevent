@@ -330,7 +330,7 @@ export class FastEvent<
                   : PickPayload<ValueOf<GetClosestEvents<AllEvents, T>>>
           >
         : FastEventIterator<
-              T extends "**" ? MutableMessage<Events> : GetClosestMessage<Events, T, Meta>
+              T extends "**" ? MutableMessage<AllEvents> : GetClosestMessage<Events, T, Meta>
           >;
 
     // 指定监听器
@@ -932,7 +932,7 @@ export class FastEvent<
      * 清除所有事件或指定事件的保留消息
      * @param type
      */
-    clearRetainMessages(type?: EventNames) {
+    clearRetainMessages(type?: EventNames | string) {
         if (type) {
             this.retainedMessages.delete(type as string);
         } else {
@@ -1289,7 +1289,7 @@ export class FastEvent<
         prefix: P,
         scopeObj: ScopeObject,
         options?: DeepPartial<FastEventScopeOptions<Meta>>,
-    ): FastEventScopeExtend<AllEvents, P, ScopeObject, Meta>;
+    ): FastEventScope<ScopeEvents<AllEvents, P>, Meta> & ScopeObject; // FastEventScopeExtend<AllEvents, P, ScopeObject, Meta>;
     scope<
         E = unknown, //用于扩展事件
         P extends string = string,

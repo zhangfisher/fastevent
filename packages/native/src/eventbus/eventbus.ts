@@ -44,13 +44,16 @@
 
 import { FastEventDirectives } from "../consts";
 import { FastEvent } from "../event";
-import { TypedFastEventMessage } from "../types/FastEventMessages";
 import { FastEventListenerArgs } from "../types/FastEvents";
-import { Expand } from "../types/Expand";
 import { NodeDataEvent } from "./consts";
 import type { FastEventBusNode } from "./node";
 import { FastEventBusEvents, FastEventBusMessage, FastEventBusOptions } from "./types";
 import { parseBroadcaseArgs } from "./utils";
+import { UnTransformedEvents } from "../types/transformed/UnTransformedEvents";
+import { ReplaceWildcard } from "../types/wildcards/ReplaceWildcard";
+import { InMatchedEvent } from "../types/wildcards/InMatchedEvent";
+import { GetPayload } from "../types/transformed/GetPayload";
+import { Expand, FastEventEmitMessage, KeyOf, MutableMessage } from "../types";
 
 export class FastEventBus<
     Events extends Record<string, any> = FastEventBusEvents,
@@ -82,10 +85,8 @@ export class FastEventBus<
             node.options.debug = this.options.debug;
             node.options.ignoreErrors = this.options.ignoreErrors;
             this.nodes.set(node.id, node);
-            this.emit(
-                `$disconnect${this.options.delimiter}${node.id}`,
-                FastEventDirectives.clearRetain,
-            );
+
+            this.clearRetainMessages(`$disconnect${this.options.delimiter}${node.id}`);
             this.emit(`$connect${this.options.delimiter}${node.id}`, node.id as any, true);
         });
     }
@@ -99,10 +100,7 @@ export class FastEventBus<
         if (node) {
             node.eventbus = undefined;
             this.nodes.delete(nodeId);
-            this.emit(
-                `$connect${this.options.delimiter}${node.id}`,
-                FastEventDirectives.clearRetain,
-            );
+            this.clearRetainMessages(`$connect${this.options.delimiter}${node.id}`);
             this.emit(`$disconnect${this.options.delimiter}${node.id}`, node.id as any, true);
         }
     }
@@ -118,23 +116,61 @@ export class FastEventBus<
      *
      * @param message 要广播的消息
      */
-    broadcast<R = any, T extends Types = Types>(
-        message: FastEventBusMessage<{ [K in T]: AllEvents[T] }, Meta>,
-        args?: FastEventListenerArgs,
-    ): R[];
-    broadcast<R = any, T extends string = string>(
-        message: FastEventBusMessage<{ [K in T]: K extends Types ? AllEvents[K] : any }, Meta>,
-        args?: FastEventListenerArgs,
-    ): R[];
-    broadcast<R = any, T extends string = string>(
+    // broadcast<R = any, T extends Types = Types>(
+    //     message: FastEventBusMessage<{ [K in T]: AllEvents[T] }, Meta>,
+    //     args?: FastEventListenerArgs,
+    // ): R[];
+    // broadcast<R = any, T extends string = string>(
+    //     message: FastEventBusMessage<{ [K in T]: K extends Types ? AllEvents[K] : any }, Meta>,
+    //     args?: FastEventListenerArgs,
+    // ): R[];
+    // broadcast<R = any, T extends string = string>(
+    //     type: T,
+    //     payload?: T extends Types ? AllEvents[Types] : any,
+    //     options?: FastEventListenerArgs<Meta>,
+    // ): R[];
+    // broadcast<R = any, T extends Types = Types>(
+    //     type: T,
+    //     payload: AllEvents[T],
+    //     args?: FastEventListenerArgs,
+    // ): R[];
+
+    public broadcast<R = any, T extends Types = Types>(
         type: T,
-        payload?: T extends Types ? AllEvents[Types] : any,
-        options?: FastEventListenerArgs<Meta>,
+        payload?: UnTransformedEvents<AllEvents>[T],
+        retain?: boolean,
     ): R[];
-    broadcast<R = any, T extends Types = Types>(
+    public broadcast<R = any, T extends string = string>(
+        type: ReplaceWildcard<T> | Types,
+        payload?: InMatchedEvent<Events, T> extends true
+            ? GetPayload<UnTransformedEvents<AllEvents>, T>
+            : any,
+        retain?: boolean,
+    ): R[];
+    public broadcast<R = any, T extends string = string>(
+        type: ReplaceWildcard<T> | Types,
+        payload?: InMatchedEvent<Events, T> extends true
+            ? GetPayload<UnTransformedEvents<AllEvents>, T>
+            : any,
+        options?: FastEventListenerArgs<Partial<Meta>>,
+    ): R[];
+    public broadcast<R = any, T extends KeyOf<AllEvents> = KeyOf<AllEvents>>(
+        message: FastEventEmitMessage<T, UnTransformedEvents<AllEvents>[T], Partial<Meta>>,
+        retain?: boolean,
+    ): R[];
+    public broadcast<R = any>(message: MutableMessage<AllEvents, Meta>, retain?: boolean): R[];
+    public broadcast<R = any>(
+        message: {
+            type: keyof AllEvents;
+        },
+        retain?: boolean,
+    ): R[];
+    public broadcast<R = any, T extends string = string>(
         type: T,
-        payload: AllEvents[T],
-        args?: FastEventListenerArgs,
+        payload?: InMatchedEvent<Events, T> extends true
+            ? GetPayload<UnTransformedEvents<AllEvents>, T>
+            : any,
+        retain?: boolean,
     ): R[];
     broadcast<R = any>(): R[] {
         const [message, args] = parseBroadcaseArgs(arguments, this.options.delimiter);
@@ -150,7 +186,7 @@ export class FastEventBus<
      * @param message 要发送的消息
      */
     send<R = any>(message: FastEventBusMessage, args?: FastEventListenerArgs): R[] {
-        message.type = `${message.to}${this.options.delimiter}${NodeDataEvent}`;
-        return this.emit(message as TypedFastEventMessage, args as any)[0];
+        message.type = `${message.to}${this.options.delimiter}${NodeDataEvent}` as any;
+        return this.emit(message as any, args as any)[0];
     }
 }

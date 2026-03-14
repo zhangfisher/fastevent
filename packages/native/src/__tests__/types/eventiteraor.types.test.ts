@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import { describe, test, expect } from "vitest";
+import { describe, test, expect } from "bun:test";
 import type { Equal, Expect } from "@type-challenges/utils";
 import { FastEvent } from "../../event";
 import { GetClosestEvents, WildcardKeys } from "../../types";
@@ -201,22 +201,10 @@ describe("FastEvent 使用异步迭代器监听事件类型系统测试", () => 
             const emitter = new FastEvent<CustomEvents>();
 
             const messages = emitter.on("**");
-            type MessageType = IteratorMessage<typeof messages>;
+            type Message = IteratorMessage<typeof messages>;
+            type MessageType = Message["type"];
             type cases = [
-                Expect<
-                    Equal<
-                        MessageType["type"],
-                        | `users/${string}/online`
-                        | `users/${string}/offline`
-                        | `users/${string}/${string}`
-                        | `posts/${string}/view`
-                        | `posts/${string}/comment`
-                        | `posts/${string}`
-                        | `devices/${string}/status`
-                        | `devices/${string}`
-                        | `${string}`
-                    >
-                >,
+                Expect<Equal<MessageType, "a" | "b" | "c" | "x/y/z/a" | "x/y/z/b" | "x/y/z/c">>,
             ];
         });
         test("多层级通配符事件的异步迭代器消息类型", () => {

@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test } from "bun:test";
 import { FastEvent } from "../../event";
 import { FastEventScope } from "../../scope";
 import { TypedFastEventMessage } from "../../types/FastEventMessages";

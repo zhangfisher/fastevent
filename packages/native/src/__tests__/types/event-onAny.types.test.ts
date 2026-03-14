@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import { describe, test } from "vitest";
+import { describe, test } from "bun:test";
 import type { Equal, Expect } from "@type-challenges/utils";
 import { FastEvent } from "../../event";
 import { TransformedEvents } from "../../types/transformed/TransformedEvents";

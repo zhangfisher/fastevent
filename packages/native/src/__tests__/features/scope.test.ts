@@ -1,5 +1,5 @@
 // eslint-disable  no-unused-vars
-import { describe, test, expect } from "vitest";
+import { describe, test, expect } from "bun:test";
 import { FastEvent } from "../../event";
 import { TypedFastEventListener } from "../../types/FastEventListeners";
 import { FastEventScope } from "../../scope";

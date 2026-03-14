@@ -1,6 +1,6 @@
 // oxlint-disable no-unused-expressions
 // oxlint-disable no-unused-vars
-import { describe, test, expect, vi } from "vitest";
+import { describe, test, expect, vi } from "bun:test";
 import { FastEvent } from "../../event";
 import { queue, throttle } from "../../pipes";
 import { NotPayload } from "../../types/transformed/NotPayload";

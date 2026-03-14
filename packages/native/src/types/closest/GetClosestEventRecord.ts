@@ -20,7 +20,6 @@ type Result = ["users/* /login", string]
 export type GetClosestEventTuple<
     Events extends Record<string, any>,
     T extends string,
-    D = any,
 > = ExpandRecord<GetClosestEvents<Events, T>>;
 
 // import { ReplaceWildcard } from "../wildcards/ReplaceWildcard";

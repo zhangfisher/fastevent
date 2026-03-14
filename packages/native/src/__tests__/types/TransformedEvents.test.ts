@@ -3,7 +3,7 @@
  * 将整个事件全部转换为NotPayload
  */
 
-import { describe, test } from "vitest";
+import { describe, test } from "bun:test";
 import type { Equal, Expect } from "@type-challenges/utils";
 import { ExpandWildcard, GetMatchedEvents } from "../../types";
 import { GetClosestEventPayload } from "../../types/closest/GetClosestEventPayload";

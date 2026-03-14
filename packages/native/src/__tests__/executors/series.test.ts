@@ -1,4 +1,4 @@
-import { describe, test, expect, vi } from "vitest";
+import { describe, test, expect, vi } from "bun:test";
 import { FastEvent } from "../../event";
 import { series } from "../../executors/series";
 import { TypedFastEventMessage } from "../../types/FastEventMessages";

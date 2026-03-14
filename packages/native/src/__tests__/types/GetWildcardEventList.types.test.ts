@@ -1,5 +1,5 @@
 // oxlint-disable no-unused-vars
-import { describe, test } from "vitest";
+import { describe, test } from "bun:test";
 import type { Equal, Expect } from "@type-challenges/utils";
 import type { GetWildcardEventList } from "../../types";
 
@@ -18,7 +18,12 @@ describe("GetWildcardEventList 类型测试", () => {
         };
         type Result = GetWildcardEventList<TestEvents>;
         type cases = [
-            Expect<Equal<Extract<Result, { [x: `div/click/${string}`]: boolean }>, { [x: `div/click/${string}`]: boolean }>>,
+            Expect<
+                Equal<
+                    Extract<Result, { [x: `div/click/${string}`]: boolean }>,
+                    { [x: `div/click/${string}`]: boolean }
+                >
+            >,
         ];
     });
 
@@ -29,7 +34,10 @@ describe("GetWildcardEventList 类型测试", () => {
         type Result = GetWildcardEventList<TestEvents>;
         type cases = [
             Expect<
-                Equal<Extract<Result, { [x: `x/${string}/y/${string}`]: number }>, { [x: `x/${string}/y/${string}`]: number }>
+                Equal<
+                    Extract<Result, { [x: `x/${string}/y/${string}`]: number }>,
+                    { [x: `x/${string}/y/${string}`]: number }
+                >
             >,
         ];
     });
@@ -61,9 +69,24 @@ describe("GetWildcardEventList 类型测试", () => {
         type Result = GetWildcardEventList<TestEvents>;
         type cases = [
             Expect<Equal<Extract<Result, { [x: string]: 2 }>, { [x: string]: 2 }>>,
-            Expect<Equal<Extract<Result, { [x: `div/click/${string}`]: boolean }>, { [x: `div/click/${string}`]: boolean }>>,
-            Expect<Equal<Extract<Result, { [x: `x/${string}/y/${string}`]: number }>, { [x: `x/${string}/y/${string}`]: number }>>,
-            Expect<Equal<Extract<Result, { [x: `${string}/${string}/${string}/${string}`]: 1 }>, { [x: `${string}/${string}/${string}/${string}`]: 1 }>>,
+            Expect<
+                Equal<
+                    Extract<Result, { [x: `div/click/${string}`]: boolean }>,
+                    { [x: `div/click/${string}`]: boolean }
+                >
+            >,
+            Expect<
+                Equal<
+                    Extract<Result, { [x: `x/${string}/y/${string}`]: number }>,
+                    { [x: `x/${string}/y/${string}`]: number }
+                >
+            >,
+            Expect<
+                Equal<
+                    Extract<Result, { [x: `${string}/${string}/${string}/${string}`]: 1 }>,
+                    { [x: `${string}/${string}/${string}/${string}`]: 1 }
+                >
+            >,
             Expect<Equal<Extract<Result, { a: any }>, { a: string }>>,
             Expect<Equal<Extract<Result, { "simple*test": any }>, { "simple*test": string }>>,
             Expect<Equal<Extract<Result, { "no/wildcard": any }>, { "no/wildcard": string[] }>>,
@@ -90,7 +113,12 @@ describe("GetWildcardEventList 类型测试", () => {
         type Result = GetWildcardEventList<TestEvents>;
         type cases = [
             Expect<Equal<Extract<Result, { [x: string]: boolean }>, { [x: string]: boolean }>>,
-            Expect<Equal<Extract<Result, { [x: `a/b/${string}`]: number }>, { [x: `a/b/${string}`]: number }>>,
+            Expect<
+                Equal<
+                    Extract<Result, { [x: `a/b/${string}`]: number }>,
+                    { [x: `a/b/${string}`]: number }
+                >
+            >,
         ];
     });
 
@@ -101,7 +129,10 @@ describe("GetWildcardEventList 类型测试", () => {
         type Result = GetWildcardEventList<TestEvents>;
         type cases = [
             Expect<
-                Equal<Extract<Result, { [x: `a/${string}/b/${string}/c`]: string }>, { [x: `a/${string}/b/${string}/c`]: string }>
+                Equal<
+                    Extract<Result, { [x: `a/${string}/b/${string}/c`]: string }>,
+                    { [x: `a/${string}/b/${string}/c`]: string }
+                >
             >,
         ];
     });
@@ -112,7 +143,9 @@ describe("GetWildcardEventList 类型测试", () => {
         };
         type Result = GetWildcardEventList<TestEvents>;
         type WildcardType = Extract<Result, { [x: string]: number }>;
-        type cases = [Expect<Equal<WildcardType extends { [x: string]: number } ? true : false, true>>];
+        type cases = [
+            Expect<Equal<WildcardType extends { [x: string]: number } ? true : false, true>>,
+        ];
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const _cases: cases = [true];
     });

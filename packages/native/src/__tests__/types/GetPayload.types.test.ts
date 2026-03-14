@@ -1,6 +1,6 @@
 /* eslint-disable no-unused-vars */
 
-import { describe, test } from "vitest";
+import { describe, test } from "bun:test";
 import type { Equal, Expect } from "@type-challenges/utils";
 import { type FastMessagePayload } from "../../types/FastEventMessages";
 import { type GetPayload } from "../../types/transformed/GetPayload";

@@ -2,7 +2,7 @@
 // oxlint-disable no-unused-expressions
 /* eslint-disable no-unused-vars */
 
-import { describe, test, expect } from "vitest";
+import { describe, test } from "bun:test";
 import type { Equal, Expect, NotAny } from "@type-challenges/utils";
 import { FastEvent } from "../../event";
 import { FastEventScope, FastEventScopeMeta } from "../../scope";
@@ -449,6 +449,11 @@ describe("事件作用域: 返回迭代器 类型测试", () => {
         type AnyMeta1 = typeof scope.types.meta;
         type AnyMessageType = IteratorMessage<typeof anyMessages>;
         type R1 = Extract<AnyMessageType, { type: "a" }>;
+        type R2 = {
+            type: "a";
+            payload: 1;
+            meta?: (FastEventMeta & FastEventScopeMeta & Record<string, any>) | undefined;
+        } & FastEventMessageExtends;
         type cases = [
             Expect<
                 Equal<
@@ -456,7 +461,9 @@ describe("事件作用域: 返回迭代器 类型测试", () => {
                     {
                         type: "a";
                         payload: 1;
-                        meta: FastEventMeta & FastEventScopeMeta & Record<string, any>;
+                        meta?:
+                            | (FastEventMeta & FastEventScopeMeta & Record<string, any>)
+                            | undefined;
                     } & FastEventMessageExtends
                 >
             >,
@@ -466,7 +473,7 @@ describe("事件作用域: 返回迭代器 类型测试", () => {
                     {
                         type: "b";
                         payload: 2;
-                        meta: FastEventMeta & FastEventScopeMeta & Record<string, any>;
+                        meta?: FastEventMeta & FastEventScopeMeta & Record<string, any>;
                     } & FastEventMessageExtends
                 >
             >,
@@ -507,7 +514,7 @@ describe("事件作用域: 返回迭代器 类型测试", () => {
         const aMessages = scope.on("fisher/login");
         type AMessageType = IteratorMessage<typeof aMessages>;
         type ACases = [
-            Expect<Equal<AMessageType["type"], `${string}/login`>>,
+            Expect<Equal<AMessageType["type"], `fisher/login`>>,
             Expect<Equal<AMessageType["payload"], string>>,
             Expect<
                 Equal<
@@ -520,7 +527,7 @@ describe("事件作用域: 返回迭代器 类型测试", () => {
         const loginMessages = scope.on("fisher/login");
         type LoginMessageType = IteratorMessage<typeof loginMessages>;
         type LoginCases = [
-            Expect<Equal<LoginMessageType["type"], `${string}/login`>>,
+            Expect<Equal<LoginMessageType["type"], `fisher/login`>>,
             Expect<Equal<LoginMessageType["payload"], string>>,
             Expect<
                 Equal<
@@ -543,10 +550,10 @@ describe("事件作用域: 返回迭代器 类型测试", () => {
             >,
         ];
         const xMessages = scope.on("xyz");
-        type XMessageType = IteratorMessage<typeof loginMessages>;
+        type XMessageType = IteratorMessage<typeof xMessages>;
         type XCases = [
-            Expect<Equal<XMessageType["type"], `${string}/login`>>,
-            Expect<Equal<XMessageType["payload"], string>>,
+            Expect<Equal<XMessageType["type"], `xyz`>>,
+            Expect<Equal<XMessageType["payload"], any>>,
             Expect<
                 Equal<
                     XMessageType["meta"],
@@ -637,7 +644,7 @@ describe("事件作用域: 返回迭代器 类型测试", () => {
         type Cases = [
             Expect<Equal<AnyMessageType, number>>,
             // 没有使用NotPayload
-            Expect<Equal<MessageType["type"], `c/${string}/d/${string}/e/${string}/g/${string}`>>,
+            Expect<Equal<MessageType["type"], `c/2/d/3/e/4/g/5`>>,
             Expect<Equal<MessageType["payload"], string>>,
             Expect<
                 Equal<MessageType["meta"], FastEventMeta & FastEventScopeMeta & Record<string, any>>
@@ -712,7 +719,7 @@ describe("作用域上下文类型系统", () => {
         scope.on("a", function (this, message) {
             type cases = [
                 Expect<Equal<typeof this, number>>,
-                Expect<Equal<typeof message.type, string>>,
+                Expect<Equal<typeof message.type, "a">>,
                 Expect<Equal<typeof message.payload, any>>,
                 Expect<
                     Equal<
@@ -771,9 +778,25 @@ describe("作用域上下文类型系统", () => {
         function getRoomScope<Prefix extends string>(prefix: Prefix) {
             return emitter.scope(`rooms/${prefix}`, new CustomScope());
         }
-
+        type S1 = ScopeEvents<
+            {
+                "rooms/*/users/online": {
+                    name: string;
+                    status?: number;
+                };
+                "rooms/*/users/*/online": {
+                    name: string;
+                    status?: number;
+                };
+                "rooms/*/users/*/offline": boolean;
+                "rooms/*/posts/**": number;
+                "rooms/*/posts/*/online": number;
+            },
+            "rooms/y"
+        >;
         const scope = getRoomScope("y");
-        scope.test;
+        type SEventNames = typeof scope.types.eventNames;
+        type SEvents = typeof scope.types.events;
         scope.on("users/online", (message) => {
             type cases = [
                 Expect<Equal<typeof message.type, "users/online">>,
@@ -853,6 +876,8 @@ describe("作用域上下文类型系统", () => {
         }
         type S = ScopeEvents<Events, "rooms/y">;
 
+        const c1 = new CustomScope();
+
         function getRoom<Prefix extends string>(prefix: Prefix) {
             return emitter.scope(`rooms/${prefix}`, new CustomScope()); // as FastEventScopeExtend<Events, `rooms/${Prefix}`, CustomScope>;
         }
@@ -913,11 +938,11 @@ describe("作用域上下文类型系统", () => {
                 Expect<
                     Equal<
                         typeof message.type,
-                        | `users/${string}/online`
                         | "users/online"
+                        | `users/${string}/online`
                         | `users/${string}/offline`
+                        | `posts/${string}/online`
                         | `posts/${string}`
-                        | (`posts/${string}` & `posts/${string}/online`)
                     >
                 >,
             ];
@@ -1026,52 +1051,6 @@ describe("作用域上下文类型系统", () => {
         e1.on("d1/e1/f1");
         type e1Kyes = keyof typeof e1.types.events;
     });
-    // test("scope监听器类型", () => {
-    //     type Events = {
-    //         "rooms/*/users/online": { name: string; status?: number };
-    //         "rooms/*/users/*/online": { name: string; status?: number };
-    //         "rooms/*/users/*/offline": boolean;
-    //         "rooms/*/posts/**": number;
-    //         "rooms/*/posts/*/online": number;
-    //     };
-    //     const emitter = new FastEvent<Events>();
-    //     const useScope = emitter.scope(`rooms/x`);
-
-    //     type ScopeListeners = typeof useScope.types.listeners;
-
-    //     // 'users/online': TypedFastEventListener<"users/online", {
-    //     //         name: string;
-    //     //         status?: number;
-    //     //     }, FastEventMeta & FastEventScopeMeta & Record<string, any>, any>;
-    //     //     'users/*/online': TypedFastEventListener<...>;
-    //     //     'users/*/offline': TypedFastEventListener<...>;
-    //     //     'posts/**': TypedFastEventListener<...>;
-    //     //     'posts/*/online': TypedFastEventListener<...>;
-    //     type ListenerKeys = keyof ScopeListeners;
-    //     type cases = [
-    //         Expect<
-    //             Equal<
-    //                 ScopeListeners["users/online"],
-    //                 TypedFastEventListener<
-    //                     "users/online",
-    //                     { name: string; status?: number },
-    //                     FastEventMeta & FastEventScopeMeta & Record<string, any>,
-    //                     any
-    //                 >
-    //             >
-    //         >,
-    //         Expect<
-    //             Equal<
-    //                 ListenerKeys,
-    //                 | "users/online"
-    //                 | "users/*/online"
-    //                 | "users/*/offline"
-    //                 | "posts/**"
-    //                 | "posts/*/online"
-    //             >
-    //         >,
-    //     ];
-    // });
 });
 
 describe("事件作用域含通配符的类型测试", () => {
@@ -1098,7 +1077,7 @@ describe("事件作用域含通配符的类型测试", () => {
         scope.on("aaa/click", (message) => {
             message.meta;
             type cases = [
-                Expect<Equal<typeof message.type, `${string}/click`>>,
+                Expect<Equal<typeof message.type, `aaa/click`>>,
                 Expect<Equal<typeof message.payload, [number, number]>>,
             ];
         });

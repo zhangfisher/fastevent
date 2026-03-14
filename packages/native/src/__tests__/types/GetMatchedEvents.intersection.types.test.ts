@@ -1,5 +1,5 @@
-import { describe, test } from "vitest";
-import { expectTypeOf } from "vitest";
+import { describe, test } from "bun:test";
+import { expectTypeOf } from "bun:test";
 import type { Equal, Expect } from "@type-challenges/utils";
 import type { GetMatchedEvents } from "../../types";
 import type { GetClosestEventPayload } from "../../types/closest/GetClosestEventPayload";

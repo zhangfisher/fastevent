@@ -1,18 +1,11 @@
 /* eslint-disable no-unused-vars */
-import { describe, test } from "vitest";
+import { describe, test } from "bun:test";
 import type { Equal, Expect } from "@type-challenges/utils";
 import { FastEvent } from "../../event";
 import { TransformedEvents } from "../../types/transformed/TransformedEvents";
 import { NotPayload } from "../../types/transformed/NotPayload";
 import { GetClosestEventTuple } from "../../types/closest/GetClosestEventRecord";
-import {
-    GetClosestEvents,
-    GetClosestEventNameTuple,
-    GetMatchedEventNames,
-    FastEventMessage,
-    FastEventMessageExtends,
-    MutableMessage,
-} from "../../types";
+import { GetClosestEvents, FastEventMessage, MutableMessage } from "../../types";
 import { FastEventMeta, TypedFastEventMessage } from "../../types/FastEventMessages";
 import { GetClosestEventPayload } from "../../types/closest/GetClosestEventPayload";
 import { ExtendWildcardEvents } from "../../types/wildcards/ExtendWildcardEvents";
@@ -24,19 +17,7 @@ describe("FaseEvent.waitFor类型系统测试", () => {
         const emitter = new FastEvent();
         type ScopeEventType = GetClosestEvents<Record<string, any>, "x", Record<"x", any>>;
         const result = await emitter.waitFor("x");
-        type cases = [
-            Expect<
-                Equal<
-                    typeof result,
-                    TypedFastEventMessage<
-                        {
-                            x: any;
-                        },
-                        Record<string, any>
-                    >
-                >
-            >,
-        ];
+        type cases = [Expect<Equal<typeof result, FastEventMessage<"x", any>>>];
     });
 
     test("常规类型测试", async () => {

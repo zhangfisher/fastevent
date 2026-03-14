@@ -1,4 +1,4 @@
-import { describe, test, expect, vi } from "vitest";
+import { describe, test, expect, vi } from "bun:test";
 import { FastEvent } from "../../event";
 import { FastEventListenerArgs } from "../../types/FastEvents";
 import { race } from "../../executors/race";

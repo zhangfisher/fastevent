@@ -1,9 +1,9 @@
 /* eslint-disable no-unused-vars */
-import { describe, test, expect } from 'vitest';
-import type { Equal, Expect, NotAny } from '@type-challenges/utils';
-import { FastEventBus, FastEventBusNode } from '../../eventbus';
+import { describe, test, expect } from "vitest";
+import type { Equal, Expect, NotAny } from "@type-challenges/utils";
+import { FastEventBus, FastEventBusNode } from "../../eventbus";
 
-declare module '../../eventbus/types' {
+declare module "../../eventbus/types" {
     interface FastEventBusEvents {
         submit: string;
         click: number;
@@ -14,7 +14,7 @@ declare module '../../eventbus/types' {
         user: any;
     }
 }
-describe('eventbus类型系统测试', () => {
+describe("eventbus类型系统测试", () => {
     type CustomBusEvents = {
         x: string;
         y: number;
@@ -26,43 +26,43 @@ describe('eventbus类型系统测试', () => {
         c: boolean;
     };
 
-    test('broadcast类型', () => {
+    test("broadcast类型", () => {
         const eventbus = new FastEventBus<CustomBusEvents>();
         eventbus.broadcast({
-            type: 'x',
-            payload: '1111',
+            type: "",
+            payload: "1111",
         });
         eventbus.broadcast({
-            type: 'xx',
-            payload: '1111',
+            type: "xx",
+            payload: "1111",
         });
-        eventbus.broadcast('data', 1);
-        eventbus.broadcast('x', 2222);
-        eventbus.broadcast('y', 2222);
-        eventbus.broadcast('z', 1);
-        eventbus.broadcast('x', 1);
+        eventbus.broadcast("data", 1);
+        eventbus.broadcast("x", "2222");
+        eventbus.broadcast("y", 2222);
+        eventbus.broadcast("z", true);
+        eventbus.broadcast("x", "1");
     });
-    test('node.broadcast', () => {
+    test("node.broadcast", () => {
         const eventbus = new FastEventBus<CustomBusEvents>();
         const node = new FastEventBusNode();
         node.connect(eventbus);
         node.broadcast({
-            type: 'submit',
-            payload: '1',
+            type "submit",
+            payload: "1",
         });
         node.broadcast({
-            type: 'submitx',
+            type: "submitx",
             payload: 1,
         });
-        node.broadcast('submit2', 1);
-        node.broadcast('submit', '1');
+        node.broadcast("submit2", 1);
+        node.broadcast("submit", "1");
     });
-    test('node.send', () => {
+    test("node.send", () => {
         const eventbus = new FastEventBus<CustomBusEvents>();
         const node = new FastEventBusNode<CustomNodeEvents>();
         node.connect(eventbus);
-        node.send('auth', 1);
-        node.send('user', 1);
-        node.emit('c');
+        node.send("auth", 1);
+        node.send("user", 1);
+        node.emit("c");
     });
 });

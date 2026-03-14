@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import { describe, test } from "vitest";
+import { describe, test } from "bun:test";
 import type { Equal, Expect } from "@type-challenges/utils";
 import { FastEvent } from "../../event";
 import {
@@ -11,7 +11,7 @@ import { IsTransformedEvent } from "../../types/transformed/IsTransformedEvent";
 import { TransformedEvents } from "../../types/transformed/TransformedEvents";
 import { NotPayload } from "../../types/transformed/NotPayload";
 import { ValueOf } from "../../types/utils/ValueOf";
-import { GetClosestEvents } from "../../types";
+import { FastEventMessageExtends, GetClosestEvents } from "../../types";
 import { FastEventMeta } from "../../types/FastEventMessages";
 import { FastEventIterator } from "../../utils/eventIterator";
 import { Overloads } from "./utils";
@@ -52,7 +52,7 @@ describe("返回迭代器的FaseEvent类型系统测试", () => {
                         type: "a";
                         payload: boolean;
                         meta?: FastEventMeta & Record<string, any>;
-                    }
+                    } & FastEventMessageExtends
                 >
             >,
         ];

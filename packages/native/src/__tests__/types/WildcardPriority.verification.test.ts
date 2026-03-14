@@ -2,7 +2,7 @@
 
 // Verify wildcard priority system fixes override issues
 
-import { describe, test } from "vitest";
+import { describe, test } from "bun:test";
 import type { Equal, Expect } from "@type-challenges/utils";
 import { type TransformedEvents } from "../../types/transformed/TransformedEvents";
 

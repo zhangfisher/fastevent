@@ -1,5 +1,5 @@
 // oxlint-disable no-unused-vars
-import { describe, test } from "vitest";
+import { describe, test } from "bun:test";
 import type { Equal, Expect } from "@type-challenges/utils";
 import type { IsMatchEventName } from "../../types/wildcards/IsMatchEventName";
 import { AssertString } from "../../types/utils/AssertString";
@@ -132,10 +132,7 @@ describe("IsMatchEventName 类型测试", () => {
         type Result3 = IsMatchEventName<"admin/login", "user/login" | "admin/*">;
         type cases3 = [Expect<Equal<Result3, true>>];
 
-        type Result4 = IsMatchEventName<
-            "users/aaa/login",
-            "users/*/login" | "admin/*"
-        >;
+        type Result4 = IsMatchEventName<"users/aaa/login", "users/*/login" | "admin/*">;
         type cases4 = [Expect<Equal<Result4, true>>];
     });
 

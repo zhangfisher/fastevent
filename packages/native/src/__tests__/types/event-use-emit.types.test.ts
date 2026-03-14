@@ -1,12 +1,12 @@
 /* eslint-disable no-unused-vars */
-import { describe, test } from "vitest";
+import { describe, test } from "bun:test";
 import type { Equal, Expect } from "@type-challenges/utils";
 import { FastEvent } from "../../event";
 import { FastEventEmitMessage } from "../../types/FastEventMessages";
 import { TransformedEvents } from "../../types/transformed/TransformedEvents";
 import { NotPayload } from "../../types/transformed/NotPayload";
 import { MutableMessage, GetPayload } from "../../types";
-import { FastEventMeta, TypedFastEventMessage } from "../../types/FastEventMessages";
+import { FastEventMeta } from "../../types/FastEventMessages";
 import { ExtendWildcardEvents } from "../../types/wildcards/ExtendWildcardEvents";
 import { FastEventIterator } from "../../utils/eventIterator";
 import { Overloads } from "./utils";
