@@ -1,7 +1,7 @@
 /* eslint-disable no-unused-vars */
 import { describe, test, expect } from "bun:test";
 import type { Equal, Expect, NotAny } from "@type-challenges/utils";
-import { GetMatchedEvents, GetClosestEvents } from "../../types";
+import { GetClosestEvents } from "../../types";
 import { FastEvent } from "../../event";
 
 describe("事件通配符匹配", () => {
@@ -11,10 +11,11 @@ describe("事件通配符匹配", () => {
             "b/b1": number;
             "c/c1/c2": boolean;
         };
+        type R1 = GetClosestEvents<Events, "a">;
         type cases = [
-            Expect<Equal<GetMatchedEvents<Events, "a">, { a: string }>>,
-            Expect<Equal<GetMatchedEvents<Events, "b/b1">, { "b/b1": number }>>,
-            Expect<Equal<GetMatchedEvents<Events, "c/c1/c2">, { "c/c1/c2": boolean }>>,
+            Expect<Equal<GetClosestEvents<Events, "a">, { a: string }>>,
+            Expect<Equal<GetClosestEvents<Events, "b/b1">, { "b/b1": number }>>,
+            Expect<Equal<GetClosestEvents<Events, "c/c1/c2">, { "c/c1/c2": boolean }>>,
         ];
     });
     test("不匹配的情况", () => {
@@ -24,7 +25,7 @@ describe("事件通配符匹配", () => {
             "c/c1/c2": boolean;
         };
 
-        type cases = [Expect<Equal<GetMatchedEvents<Events, "a">, { a: any }>>];
+        type cases = [Expect<Equal<GetClosestEvents<Events, "a">, Record<string, any>>>];
     });
     test("单层通配符匹配", () => {
         type Events = {
@@ -34,16 +35,17 @@ describe("事件通配符匹配", () => {
             "b/*/y": number;
             "c/*": boolean;
         };
+        type R1 = GetClosestEvents<Events, "a">;
         type cases = [
-            Expect<Equal<GetMatchedEvents<Events, "a">, { a: any }>>,
-            Expect<Equal<GetMatchedEvents<Events, "a/x">, { "a/*": string }>>,
-            Expect<Equal<GetMatchedEvents<Events, "a/y">, { "a/*": string }>>,
-            Expect<Equal<GetMatchedEvents<Events, "a/z/x">, { "a/*/x": string }>>,
+            Expect<Equal<GetClosestEvents<Events, "a">, Record<string, any>>>,
+            Expect<Equal<GetClosestEvents<Events, "a/x">, { "a/*": string }>>,
+            Expect<Equal<GetClosestEvents<Events, "a/y">, { "a/*": string }>>,
+            Expect<Equal<GetClosestEvents<Events, "a/z/x">, { "a/*/x": string }>>,
 
-            Expect<Equal<GetMatchedEvents<Events, "b">, { b: any }>>,
-            Expect<Equal<GetMatchedEvents<Events, "b/x">, { "b/*": number }>>,
-            Expect<Equal<GetMatchedEvents<Events, "b/y">, { "b/*": number }>>,
-            Expect<Equal<GetMatchedEvents<Events, "b/z/y">, { "b/*/y": number }>>,
+            Expect<Equal<GetClosestEvents<Events, "b">, Record<string, any>>>,
+            Expect<Equal<GetClosestEvents<Events, "b/x">, { "b/*": number }>>,
+            Expect<Equal<GetClosestEvents<Events, "b/y">, { "b/*": number }>>,
+            Expect<Equal<GetClosestEvents<Events, "b/z/y">, { "b/*/y": number }>>,
         ];
     });
     test("同时多个匹配的情况", () => {
@@ -82,12 +84,12 @@ describe("事件通配符匹配", () => {
             "a/*/x/*/x/*/x": 4;
         };
         type cases = [
-            Expect<Equal<GetMatchedEvents<Events, "a">, { a: any }>>,
-            Expect<Equal<GetMatchedEvents<Events, "a/1">, { "a/*": 1 }>>,
-            Expect<Equal<GetMatchedEvents<Events, "a/1/x">, { "a/*/x": 2 }>>,
-            Expect<Equal<GetMatchedEvents<Events, "a/1/2/x">, { "a/*/*/x": 2 }>>,
-            Expect<Equal<GetMatchedEvents<Events, "a/1/x/2/x">, { "a/*/x/*/x": 3 }>>,
-            Expect<Equal<GetMatchedEvents<Events, "a/1/x/2/x/3/x">, { "a/*/x/*/x/*/x": 4 }>>,
+            Expect<Equal<GetClosestEvents<Events, "a">, { a: any }>>,
+            Expect<Equal<GetClosestEvents<Events, "a/1">, { "a/*": 1 }>>,
+            Expect<Equal<GetClosestEvents<Events, "a/1/x">, { "a/*/x": 2 }>>,
+            Expect<Equal<GetClosestEvents<Events, "a/1/2/x">, { "a/*/*/x": 2 }>>,
+            Expect<Equal<GetClosestEvents<Events, "a/1/x/2/x">, { "a/*/x/*/x": 3 }>>,
+            Expect<Equal<GetClosestEvents<Events, "a/1/x/2/x/3/x">, { "a/*/x/*/x/*/x": 4 }>>,
         ];
     });
     test("未尾通配符匹配", () => {
@@ -100,13 +102,13 @@ describe("事件通配符匹配", () => {
             "a/*/*/*/*/*/*": 6;
         };
         type cases = [
-            Expect<Equal<GetMatchedEvents<Events, "a">, { a: any }>>,
-            Expect<Equal<GetMatchedEvents<Events, "a/1">, { "a/*": 1 }>>,
-            Expect<Equal<GetMatchedEvents<Events, "a/1/2">, { "a/*/*": 2 }>>,
-            Expect<Equal<GetMatchedEvents<Events, "a/1/2/3">, { "a/*/*/*": 3 }>>,
-            Expect<Equal<GetMatchedEvents<Events, "a/1/2/3/4">, { "a/*/*/*/*": 4 }>>,
-            Expect<Equal<GetMatchedEvents<Events, "a/1/2/3/4/5">, { "a/*/*/*/*/*": 5 }>>,
-            Expect<Equal<GetMatchedEvents<Events, "a/1/2/3/4/5/6">, { "a/*/*/*/*/*/*": 6 }>>,
+            Expect<Equal<GetClosestEvents<Events, "a">, { a: any }>>,
+            Expect<Equal<GetClosestEvents<Events, "a/1">, { "a/*": 1 }>>,
+            Expect<Equal<GetClosestEvents<Events, "a/1/2">, { "a/*/*": 2 }>>,
+            Expect<Equal<GetClosestEvents<Events, "a/1/2/3">, { "a/*/*/*": 3 }>>,
+            Expect<Equal<GetClosestEvents<Events, "a/1/2/3/4">, { "a/*/*/*/*": 4 }>>,
+            Expect<Equal<GetClosestEvents<Events, "a/1/2/3/4/5">, { "a/*/*/*/*/*": 5 }>>,
+            Expect<Equal<GetClosestEvents<Events, "a/1/2/3/4/5/6">, { "a/*/*/*/*/*/*": 6 }>>,
         ];
     });
     test("多级通配符匹配", () => {
@@ -119,14 +121,14 @@ describe("事件通配符匹配", () => {
             "a/b/c/d/e/**": 5;
         };
 
-        type s = GetMatchedEvents<Events, "a/b/c1/x">;
+        type s = GetClosestEvents<Events, "a/b/c1/x">;
 
         type cases = [
-            Expect<Equal<GetMatchedEvents<Events, "a">, { a: any }>>,
-            Expect<Equal<GetMatchedEvents<Events, "a/x">, { "a/*": 1 }>>,
-            Expect<Equal<GetMatchedEvents<Events, "a/b/x">, { "a/b/**": 2 }>>,
-            Expect<Equal<GetMatchedEvents<Events, "a/b/x/y">, { "a/b/**": 2 }>>,
-            Expect<Equal<GetMatchedEvents<Events, "a/b/x/y/z">, { "a/b/**": 2 }>>,
+            Expect<Equal<GetClosestEvents<Events, "a">, { a: any }>>,
+            Expect<Equal<GetClosestEvents<Events, "a/x">, { "a/*": 1 }>>,
+            Expect<Equal<GetClosestEvents<Events, "a/b/x">, { "a/b/**": 2 }>>,
+            Expect<Equal<GetClosestEvents<Events, "a/b/x/y">, { "a/b/**": 2 }>>,
+            Expect<Equal<GetClosestEvents<Events, "a/b/x/y/z">, { "a/b/**": 2 }>>,
         ];
     });
     test("订阅通配符事件", () => {

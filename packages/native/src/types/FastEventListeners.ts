@@ -30,10 +30,10 @@ export type FastEventListeners<
 // 标准监听器
 
 export type FastEventListener<
+    T extends string = string,
     P = any,
     M extends Record<string, any> = Record<string, any>,
-    T extends string = string,
-> = (message: FastEventMessage<P, M, T>, args: FastEventListenerArgs<M>) => any | Promise<any>;
+> = (message: FastEventMessage<T, P, M>, args: FastEventListenerArgs<M>) => any | Promise<any>;
 // 通用监听器， 允许指定消息类型
 
 export type FastEventCommonListener<

@@ -110,6 +110,7 @@ export class FastEvent<
         meta: AllMeta;
         context: Expand<Fallback<Context, FastEvent<AllEvents, Meta, Context>>>;
         messages: MutableMessage<AllEvents, Meta>;
+        message: MutableMessage<AllEvents, Meta>;
     };
     /**
      * 创建FastEvent实例

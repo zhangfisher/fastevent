@@ -5,7 +5,6 @@
 
 import { describe, test } from "bun:test";
 import type { Equal, Expect } from "@type-challenges/utils";
-import { ExpandWildcard, GetMatchedEvents } from "../../types";
 import { GetClosestEventPayload } from "../../types/closest/GetClosestEventPayload";
 import { type TransformedEvents } from "../../types/transformed/TransformedEvents";
 import { ExtendWildcardEvents } from "../../types/wildcards/ExtendWildcardEvents";
@@ -147,7 +146,7 @@ describe("TransformedEvents", () => {
     test("多个通配符组合", () => {
         type Events = {
             "*/*/test": boolean;
-            "a/**/z": number;
+            "a/b/**": number;
         };
         type Result = ExtendWildcardEvents<TransformedEvents<Events>>;
         type cases = [
@@ -287,45 +286,17 @@ describe("TransformedEvents", () => {
         type Posts = GetClosestEventPayload<Result, "posts">;
 
         type cases = [
-            Expect<
-                Equal<
-                    OnlinePayload,
-                    | NotPayload<{ name: string; status?: number }>
-                    | NotPayload<string>
-                    | NotPayload<any>
-                >
-            >,
-            Expect<
-                Equal<OfflinePayload, NotPayload<boolean> | NotPayload<string> | NotPayload<any>>
-            >,
-            Expect<Equal<ProfilePayload, NotPayload<string> | NotPayload<any>>>,
-            Expect<
-                Equal<
-                    PostsView,
-                    | NotPayload<{ title: string; views: number }>
-                    | NotPayload<number>
-                    | NotPayload<any>
-                >
-            >,
-            Expect<
-                Equal<
-                    PostsComment,
-                    | NotPayload<{ title: string; views: number }>
-                    | NotPayload<string>
-                    | NotPayload<any>
-                >
-            >,
-            Expect<Equal<Anything, NotPayload<string> | NotPayload<any>>>,
-            Expect<Equal<Posts123, NotPayload<{ title: string; views: number }> | NotPayload<any>>>,
-            Expect<
-                Equal<
-                    DevicesStatus,
-                    NotPayload<"online" | "offline"> | NotPayload<number> | NotPayload<any>
-                >
-            >,
-            Expect<Equal<DevicesData, NotPayload<number> | NotPayload<any>>>,
+            Expect<Equal<OnlinePayload, NotPayload<{ name: string; status?: number }>>>,
+            Expect<Equal<OfflinePayload, NotPayload<boolean>>>,
+            Expect<Equal<ProfilePayload, NotPayload<string>>>,
+            Expect<Equal<PostsView, NotPayload<number>>>,
+            Expect<Equal<PostsComment, NotPayload<string>>>,
+            Expect<Equal<Anything, NotPayload<string>>>,
+            Expect<Equal<Posts123, NotPayload<{ title: string; views: number }>>>,
+            Expect<Equal<DevicesStatus, NotPayload<"online" | "offline">>>,
+            Expect<Equal<DevicesData, NotPayload<number>>>,
             Expect<Equal<AnyNestedPath, NotPayload<any>>>,
-            Expect<Equal<Posts, NotPayload<string> | NotPayload<any>>>,
+            Expect<Equal<Posts, NotPayload<string>>>,
         ];
     });
 

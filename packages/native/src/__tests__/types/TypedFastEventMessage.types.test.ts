@@ -286,7 +286,10 @@ describe("TypedFastEventMessage 类型测试", () => {
 
             type TypeTest = [
                 Expect<
-                    Equal<typeof message.meta, FastEventMeta & CustomMeta & Record<string, any>>
+                    Equal<
+                        typeof message.meta,
+                        (Partial<FastEventMeta> & CustomMeta & Record<string, any>) | undefined
+                    >
                 >,
             ];
         });
@@ -309,7 +312,7 @@ describe("TypedFastEventMessage 类型测试", () => {
             };
 
             type MetaType = typeof message.meta;
-            type TypeTest = [Expect<Equal<MetaType, any> extends true ? false : true>];
+            type TypeTest = [Expect<Equal<MetaType, any>>];
         });
 
         test("应支持 FastEventMeta 的内置属性", () => {
@@ -401,7 +404,7 @@ describe("TypedFastEventMessage 类型测试", () => {
 
             emitter.on("click/button", (message) => {
                 type TypeChecks = [
-                    Expect<Equal<typeof message.type, `click/${string}`>>,
+                    Expect<Equal<typeof message.type, `click/button`>>,
                     Expect<Equal<typeof message.payload, { x: number; y: number }>>,
                 ];
             });

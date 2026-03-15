@@ -6,8 +6,6 @@ import { FastEvent } from "../../event";
 import { FastEventMessage, FastEventMeta } from "../../types/FastEventMessages";
 import { FastEventListener, TypedFastEventListener } from "../../types/FastEventListeners";
 import { ExtendWildcardEvents } from "../../types/wildcards/ExtendWildcardEvents";
-import { AssertFastMessage as NotPayload } from "../../types/FastEventMessages";
-import { Expand } from "../../types/Expand";
 
 describe("types", () => {
     test("未定义事件类型时就支持任意事件", () => {
@@ -49,9 +47,9 @@ describe("types", () => {
         });
 
         // 构建通用的消息
-        const message: FastEventMessage = {
+        const message: MessageType = {
             type: "click",
-            payload: 100,
+            payload: { x: 1, y: 2 },
         };
         emitter.emit(message);
 
@@ -137,10 +135,10 @@ describe("types", () => {
     test("通用监听器类型传递", () => {
         const emitter = new FastEvent();
         type MyListener<
+            T extends string = string,
             P = any,
             M extends Record<string, any> = Record<string, any>,
-            T extends string = string,
-        > = FastEventListener<P, M, T>;
+        > = FastEventListener<T, P, M>;
         const listener: MyListener = (message) => {
             console.log(message);
         };

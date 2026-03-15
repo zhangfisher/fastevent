@@ -112,9 +112,10 @@ describe("启用Transform时的类型支持", () => {
             emitter.emit("div/click", { x: 1, y: 2 });
             // scope.emit('click', { x: '1', y: 2 });
             emitter.on("div/mousemove", (message) => {
-                expect(message).toBe(true);
-
-                type cases = [Expect<Equal<typeof message.payload, boolean>>];
+                type cases = [
+                    Expect<Equal<typeof message.type, "div/mousemove">>,
+                    Expect<Equal<typeof message.payload, boolean>>,
+                ];
                 resolve();
             });
             emitter.on("div/mouseout", (message) => {
@@ -167,8 +168,10 @@ describe("启用Transform时的类型支持", () => {
             scope.emit("click", { x: 1, y: 2 });
             // scope.emit('click', { x: '1', y: 2 });
             scope.on("mousemove", (message) => {
-                expect(message).toBe(true);
-                type cases = [Expect<Equal<typeof message.payload, boolean>>];
+                type cases = [
+                    Expect<Equal<typeof message.type, "mousemove">>,
+                    Expect<Equal<typeof message.payload, boolean>>,
+                ];
                 resolve();
             });
             scope.on("mouseout", (message) => {
