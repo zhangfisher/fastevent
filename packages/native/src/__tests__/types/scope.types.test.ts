@@ -49,6 +49,7 @@ describe("事件作用域使用监听器类型测试", () => {
         };
         const emitter = new FastEvent<Events>();
         const scope = emitter.scope("rooms/1");
+
         type scopeKeys = Expand<keyof typeof scope.types.events>;
         // 存在的事件
         scope.on("add", (message) => {
@@ -797,6 +798,7 @@ describe("作用域上下文类型系统", () => {
         const scope = getRoomScope("y");
         type SEventNames = typeof scope.types.eventNames;
         type SEvents = typeof scope.types.events;
+
         scope.on("users/online", (message) => {
             type cases = [
                 Expect<Equal<typeof message.type, "users/online">>,

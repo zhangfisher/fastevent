@@ -5,7 +5,7 @@ import type { Equal, Expect } from "@type-challenges/utils";
 import { GetFixedPartCount } from "../../types/wildcards/GetFixedPartCount";
 import { IsFullWildcard } from "../../types/wildcards/IsFullWildcard";
 import { IsSemiWildcard } from "../../types/wildcards/IsSemiWildcard";
-import { GetClosestEvents } from "../../types/WildcardEvents";
+import { GetClosestEvents } from "../../types/closest";
 
 describe("WildcardPriority", () => {
     describe("SplitPath - 路径分割基础测试", () => {
@@ -122,6 +122,7 @@ describe("WildcardPriority", () => {
         });
 
         test("不应该识别为全通配符", () => {
+            type ddd = IsFullWildcard<"*/events">;
             type cases = [
                 Expect<Equal<IsFullWildcard<"rooms/*/$join">, false>>,
                 Expect<Equal<IsFullWildcard<"api/*/users">, false>>,

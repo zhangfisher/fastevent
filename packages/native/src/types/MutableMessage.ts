@@ -25,10 +25,10 @@ type EnsureEventType<K extends string> =
 
 export type MutableMessage<
     Events extends Record<string, any>,
-    Meta extends Record<string, any> = never,
+    Meta extends Record<string, any> = Record<string, any>,
 > =
     IsAnyRecord<Events> extends true
-        ? FastEventMessage<string, any, Meta>
+        ? FastEventMessage<string, any, Partial<Meta>>
         : {
               [K in KeyOf<Events>]: Events[K] extends FastMessagePayload
                   ? IfNever<Events[K]["type"], any>

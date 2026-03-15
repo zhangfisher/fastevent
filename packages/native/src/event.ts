@@ -1,9 +1,4 @@
-import {
-    FastEventScope,
-    FastEventScopeExtend,
-    IFastEventScope,
-    type FastEventScopeOptions,
-} from "./scope";
+import { FastEventScope, IFastEventScope, type FastEventScopeOptions } from "./scope";
 import {
     GetClosestEvents,
     KeyOf,
@@ -19,16 +14,13 @@ import {
     TypedFastEventMessage,
     FastEventEmitMessage,
     FastEventMeta,
-    TypedFastEventMessageOptional,
 } from "./types/FastEventMessages";
 import { FastListeners } from "./types/FastEventListeners";
 import { FastEventSubscriber } from "./types/FastEventSubscribers";
 import {
     TypedFastEventListener,
     FastEventListenerNode,
-    TypedFastEventAnyListener,
     FastEventListenerMeta,
-    FastEventListeners,
     FastEventCommonListener,
 } from "./types/FastEventListeners";
 import {
@@ -109,7 +101,7 @@ export class FastEvent<
         eventNames: KeyOf<ExtendWildcardEvents<AllEvents>>;
         meta: AllMeta;
         context: Expand<Fallback<Context, FastEvent<AllEvents, Meta, Context>>>;
-        messages: MutableMessage<AllEvents, Meta>;
+        messages: MutableMessage<AllEvents, Partial<Meta>>;
         message: MutableMessage<AllEvents, Partial<Meta>>;
     };
     /**
@@ -1279,18 +1271,11 @@ export class FastEvent<
      * userEvents.offAll();  // 清理 'user' 前缀下的所有事件
      * ```
      */
-    scope<
-        P extends string = string,
-        ScopeObject extends IFastEventScope<Record<string, any>, any, any> = FastEventScope<
-            Record<string, any>,
-            any,
-            any
-        >,
-    >(
+    scope<P extends string = string, ScopeInstance extends IFastEventScope = FastEventScope>(
         prefix: P,
-        scopeObj: ScopeObject,
+        scopeObj: ScopeInstance,
         options?: DeepPartial<FastEventScopeOptions<Meta>>,
-    ): FastEventScope<ScopeEvents<AllEvents, P>, Meta> & ScopeObject; // FastEventScopeExtend<AllEvents, P, ScopeObject, Meta>;
+    ): FastEventScope<ScopeEvents<AllEvents, P>, Meta, Context> & ScopeInstance;
     scope<
         E = unknown, //用于扩展事件
         P extends string = string,

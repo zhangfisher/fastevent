@@ -21,3 +21,5 @@ export type IsFullWildcard<T extends string> =
               ? true // 1个固定段和1个通配符段 → 全通配符
               : false
           : false;
+
+type R1 = IsFullWildcard<"*/events">;

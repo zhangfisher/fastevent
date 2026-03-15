@@ -17,7 +17,6 @@ import {
     FastEventEmitMessage,
     TypedFastEventMessage,
     FastEventMeta,
-    TypedFastEventMessageOptional,
     FastEventMessage,
 } from "./types/FastEventMessages";
 import { FastEventSubscriber } from "./types/FastEventSubscribers";
@@ -503,19 +502,3 @@ export class FastEventScope<
         return scope;
     }
 }
-
-type ExtractScopeMeta<T> = T extends { __meta__: infer Meta } ? Meta : Record<string, any>;
-type ExtractScopeEvents<T> = T extends { __events__: infer Events } ? Events : Record<string, any>;
-type ExtractScopeContext<T> = T extends { __context__: infer Context } ? Context : never;
-
-export type FastEventScopeExtend<
-    Events extends Record<string, any>,
-    Prefix extends string,
-    T extends IFastEventScope = FastEventScope<any, any, any>,
-    EmitterMeta extends Record<string, any> = Record<string, any>,
-> = FastEventScope<
-    ScopeEvents<Events, Prefix> & ExtractScopeEvents<T>,
-    EmitterMeta & ExtractScopeMeta<T> & FastEventScopeMeta,
-    ExtractScopeContext<T>
-> &
-    Omit<T, keyof FastEventScope>;

@@ -3,7 +3,7 @@
 import { describe, test } from "bun:test";
 import type { Equal, Expect } from "@type-challenges/utils";
 import { MutableMessage } from "../../types/MutableMessage";
-import { IsMatchEventName, KeyOf } from "../../types";
+import { FastEventMessageExtends, IsMatchEventName, KeyOf } from "../../types";
 import { Tuple } from "../../types/utils/Tuple";
 import { UnionToTuple } from "type-fest";
 
@@ -37,7 +37,11 @@ describe("MutableMessage - 基本事件类型测试", () => {
             Expect<
                 Equal<
                     Extract<Message, { type: "a" }>,
-                    { type: "a"; payload: boolean; meta?: Record<string, any> | undefined }
+                    {
+                        type: "a";
+                        payload: boolean;
+                        meta?: Record<string, any> | undefined;
+                    } & FastEventMessageExtends
                 >
             >,
             Expect<
