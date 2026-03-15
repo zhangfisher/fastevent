@@ -6,6 +6,7 @@ import { FastEvent } from "../../event";
 import { FastEventMessage, FastEventMeta } from "../../types/FastEventMessages";
 import { FastEventListener, TypedFastEventListener } from "../../types/FastEventListeners";
 import { ExtendWildcardEvents } from "../../types/wildcards/ExtendWildcardEvents";
+import { Expand } from "../../types/utils/Expand";
 
 describe("types", () => {
     test("未定义事件类型时就支持任意事件", () => {
@@ -176,17 +177,7 @@ describe("types", () => {
         }>;
         type cases = [
             Expect<Equal<typeof emitter.types.events, CustomEvents>>,
-            Expect<
-                Equal<
-                    typeof emitter.types.meta,
-                    {
-                        [x: string]: any;
-                        x: number;
-                        y: number;
-                        z?: number | undefined;
-                    }
-                >
-            >,
+            Expect<Equal<typeof emitter.types.meta, FastEventMeta & CustomMeta>>,
             Expect<Equal<typeof emitter.types.context, CustomContext>>,
         ];
     });

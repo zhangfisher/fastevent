@@ -4,7 +4,7 @@ import type { Equal, Expect } from "@type-challenges/utils";
 import { FastEvent } from "../../event";
 import { TransformedEvents } from "../../types/transformed/TransformedEvents";
 import { NotPayload } from "../../types/transformed/NotPayload";
-import { GetClosestEvents, MutableMessage } from "../../types";
+import { FastEventMessageExtends, GetClosestEvents, MutableMessage } from "../../types";
 import { FastEventMeta } from "../../types/FastEventMessages";
 import { FastEventIterator } from "../../utils/eventIterator";
 type IteratorMessage<T> = T extends FastEventIterator<infer M> ? M : never;
@@ -256,7 +256,7 @@ describe("使用onAny监听器的FaseEvent类型系统测试", () => {
                                     type: "a";
                                     payload: boolean;
                                     meta?: (FastEventMeta & Record<string, any>) | undefined;
-                                }
+                                } & FastEventMessageExtends
                             >
                         >,
                     ];

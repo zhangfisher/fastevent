@@ -51,5 +51,5 @@ export type { Tuple } from "./Tuple";
 export type { MergeStrings } from "./MergeStrings";
 export type { AllowCall } from "./AllowCall";
 export type { StrictEqual } from "./StrictEqual";
-export type { IsStrictRecord } from "./IsStrictRecord";
+export type { IsAnyRecord } from "./IsAnyRecord";
 export type { RequiredKeys } from "./RequiredKeys";

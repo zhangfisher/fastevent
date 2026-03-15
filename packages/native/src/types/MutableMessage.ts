@@ -5,7 +5,7 @@ import {
     FastMessagePayload,
     IfNever,
     KeyOf,
-    IsStrictRecord,
+    IsAnyRecord,
     FastEventMessageExtends,
 } from ".";
 import { ReplaceWildcard } from "./wildcards/ReplaceWildcard";
@@ -27,7 +27,7 @@ export type MutableMessage<
     Events extends Record<string, any>,
     Meta extends Record<string, any> = never,
 > =
-    IsStrictRecord<Events> extends true
+    IsAnyRecord<Events> extends true
         ? FastEventMessage<string, any, Meta>
         : {
               [K in KeyOf<Events>]: Events[K] extends FastMessagePayload

@@ -2,44 +2,6 @@ import { Add } from "./utils/Add";
 import { GetFixedPartCount } from "./wildcards/GetFixedPartCount";
 import { Equal, Keys, Split } from "./utils";
 
- 
-/**
- * 计算两个路径的匹配度（1-9）
- * 规则：将路径分段，逐段比较，只有非通配符段相等时才 +1
- * 通配符段包括：*、**、${string}
- */
-export type GetMatchRate<Input extends string, Pattern extends string> = GetMatchRateImpl<
-    Split<Input>,
-    Split<Pattern>,
-    0
->;
-
-type GetMatchRateImpl<
-    InputArr extends string[],
-    PatternArr extends string[],
-    Acc extends number,
-> = InputArr extends [infer InputHead extends string, ...infer InputTail extends string[]]
-    ? PatternArr extends [infer PatternHead extends string, ...infer PatternTail extends string[]]
-        ? IsWildcardSegment<PatternHead> extends true
-            ? GetMatchRateImpl<InputTail, PatternTail, Acc> // 通配符段，不累加，继续
-            : Equal<InputHead, PatternHead> extends true
-              ? GetMatchRateImpl<InputTail, PatternTail, Add<Acc, 1>> // 相等，累加
-              : Acc // 不相等，停止
-        : Acc
-    : PatternArr extends [string, ...string[]]
-      ? Acc
-      : Acc;
-
-/**
- * 判断一个字符串段是否为通配符
- * 通配符包括：*、**、${string}
- */
-type IsWildcardSegment<S extends string> = S extends "*" | "**"
-    ? true
-    : S extends `${string}{${string}}` // 匹配 ${...} 格式
-      ? true
-      : false;
-
 // 匹配单个段
 type MatchSegment<Input extends string, Pattern extends string> = Pattern extends "*"
     ? true
@@ -95,6 +57,43 @@ export type MatchPattern<T extends string, Pattern extends string> =
  */
 export type IsWildcardMatched<Input extends string, Pattern extends string> =
     MatchPatternArray<Split<Input>, Split<Pattern>> extends true ? true : false;
+
+// /**
+//  * 计算两个路径的匹配度（1-9）
+//  * 规则：将路径分段，逐段比较，只有非通配符段相等时才 +1
+//  * 通配符段包括：*、**、${string}
+//  */
+export type GetMatchRate<Input extends string, Pattern extends string> = GetMatchRateImpl<
+    Split<Input>,
+    Split<Pattern>,
+    0
+>;
+
+type GetMatchRateImpl<
+    InputArr extends string[],
+    PatternArr extends string[],
+    Acc extends number,
+> = InputArr extends [infer InputHead extends string, ...infer InputTail extends string[]]
+    ? PatternArr extends [infer PatternHead extends string, ...infer PatternTail extends string[]]
+        ? IsWildcardSegment<PatternHead> extends true
+            ? GetMatchRateImpl<InputTail, PatternTail, Acc> // 通配符段，不累加，继续
+            : Equal<InputHead, PatternHead> extends true
+              ? GetMatchRateImpl<InputTail, PatternTail, Add<Acc, 1>> // 相等，累加
+              : Acc // 不相等，停止
+        : Acc
+    : PatternArr extends [string, ...string[]]
+      ? Acc
+      : Acc;
+
+/**
+ * 判断一个字符串段是否为通配符
+ * 通配符包括：*、**、${string}
+ */
+type IsWildcardSegment<S extends string> = S extends "*" | "**"
+    ? true
+    : S extends `${string}{${string}}` // 匹配 ${...} 格式
+      ? true
+      : false;
 
 /**
  *

@@ -108,15 +108,17 @@ export type FastEventCommonMessage<Events extends Record<string, any>> = {
         payload: Events[K];
     };
 }[Exclude<keyof Events, number | symbol>];
-/**
- * 支持通配符的通用事件消息类型
- * @description 创建一个消息类型，type 可以是任意字符串，payload 类型根据 type 匹配的通配符模式自动推导
- */
+// /**
+//  * 支持通配符的通用事件消息类型
+//  * @description 创建一个消息类型，type 可以是任意字符串，payload 类型根据 type 匹配的通配符模式自动推导
+//  */
 
-export type FastEventWildcardMessage<Events extends Record<string, any>, T extends string> = {
-    type: T;
-    payload: PickPayload<ValueOf<GetMatchedEvents<Events, T>>>;
-}; /**
+// export type FastEventWildcardMessage<Events extends Record<string, any>, T extends string> = {
+//     type: T;
+//     payload: PickPayload<ValueOf<GetMatchedEvents<Events, T>>>;
+// };
+
+/**
  * 声明事件类型时，一般情况下，K=事件名称，V=事件Payload参数类型
  *
  * AssertFastMessage用于声明V是一个FastMessage类型，而不是Payload类型

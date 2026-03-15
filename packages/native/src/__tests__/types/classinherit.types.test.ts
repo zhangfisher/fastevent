@@ -8,8 +8,8 @@ import { FastEventScope, FastEventScopeMeta, FastEventScopeOptions } from "../..
 import { FastEventMeta } from "../../types/FastEventMessages";
 import { FastEventOptions } from "../../types/FastEvents";
 import { Dict } from "../../types/utils/Dict";
-import { Expand } from "../../types/Expand";
 import { OverrideOptions } from "../../types/utils/OverrideOptions";
+import { ScopeEvents } from "../../types/ScopeEvents";
 
 describe("继承FastEvent类型系统", () => {
     test("默认继承方式", () => {
@@ -114,8 +114,8 @@ describe("继承FastEvent类型系统", () => {
                 });
                 this.onAny((message) => {
                     type cases = [
-                        Expect<Equal<typeof message.type, string>>,
-                        Expect<Equal<typeof message.payload, any>>,
+                        Expect<Equal<typeof message.type, "a" | "b" | "c">>,
+                        Expect<Equal<typeof message.payload, string | number | boolean>>,
                     ];
                 });
             }
@@ -214,6 +214,8 @@ describe("继承FastEventScope类型系统", () => {
             b: string;
             c: boolean;
         };
+
+        type SEvents = MyScopeEvents & unknown;
         const emitter = new FastEvent({
             meta: {
                 root: 100,
@@ -228,6 +230,8 @@ describe("继承FastEventScope类型系统", () => {
 
         const r = new MyScope();
         const myScope = emitter.scope("modules/my", new MyScope());
+
+        type dd = ScopeEvents<Record<string, any>, "modules/my">;
 
         type events = typeof myScope.types.events;
 

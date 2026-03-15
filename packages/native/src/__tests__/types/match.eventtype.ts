@@ -83,8 +83,9 @@ describe("事件通配符匹配", () => {
             "a/*/x/*/x": 3;
             "a/*/x/*/x/*/x": 4;
         };
+        type X = GetClosestEvents<Events, "a">;
         type cases = [
-            Expect<Equal<GetClosestEvents<Events, "a">, { a: any }>>,
+            Expect<Equal<GetClosestEvents<Events, "a">, Record<string, any>>>,
             Expect<Equal<GetClosestEvents<Events, "a/1">, { "a/*": 1 }>>,
             Expect<Equal<GetClosestEvents<Events, "a/1/x">, { "a/*/x": 2 }>>,
             Expect<Equal<GetClosestEvents<Events, "a/1/2/x">, { "a/*/*/x": 2 }>>,
