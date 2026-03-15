@@ -227,6 +227,16 @@ describe("继承FastEventScope类型系统", () => {
                 return 100;
             }
         }
+        type mevents = Exclude<
+            {
+                [x: string]: any;
+            } & {
+                a: number;
+                b: string;
+                c: boolean;
+            },
+            Record<string, any>
+        >;
 
         const r = new MyScope();
         const myScope = emitter.scope("modules/my", new MyScope());
@@ -475,7 +485,7 @@ describe("继承FastEventScope类型系统", () => {
         const myScope = emitter.scope("modules/my", new MyScope());
 
         myScope.on("a", function (message) {
-            type This = typeof this; // [!code ++]
+            type This = typeof this;
             type cases = [
                 Expect<Equal<typeof message.type, "a">>,
                 Expect<Equal<typeof message.payload, number>>,
