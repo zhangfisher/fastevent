@@ -28,6 +28,18 @@ export type FastEventSubscriber = {
      */
     off: () => void;
     /**
+     * 同步资源释放（支持 using 语句）
+     *
+     * @example
+     * ```ts
+     * {
+     *     using subscriber = emitter.on('event', listener);
+     *     // subscriber 在作用域结束时自动释放
+     * }
+     * ```
+     */
+    [Symbol.dispose]: () => void;
+    /**
      * 为什么要有一个listener引用? 主要用于移除监听器时使用
      *
      *  - 正常情况下
@@ -56,10 +68,6 @@ export type FastEventSubscriber = {
      *
      */
     readonly listener: TypedFastEventListener<any, any, any>;
-    /**
-     * 异步迭代器（仅当启用 iterable 时可用）
-     */
-    [Symbol.asyncIterator]?: () => AsyncIterator<TypedFastEventMessage>;
 } & {
     /**
      * 将消息加入队列（内部方法，仅当启用 iterable 时可用）

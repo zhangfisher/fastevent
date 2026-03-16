@@ -40,7 +40,8 @@
       "Bash(npx vitest run \"packages/native/src/__tests__/types/GetClosedEvents.types.test.ts\")",
       "Bash(bun test packages/native/src/__tests__/types/MutableMessage.types.test.ts)",
       "Bash(bun test packages/native/src/__tests__/types/MutableMessage.debug.test.ts)",
-      "Bash(npx vitest:*)"
+      "Bash(npx vitest:*)",
+      "Bash(bun test:*)"
     ]
   }
 }

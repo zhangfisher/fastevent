@@ -1,11 +1,8 @@
 /**
  * 事件消息相关
  */
-import { PickPayload } from "./transformed/PickPayload";
 import { DeepPartial } from "./utils/DeepPartial";
 import { OptionalKeys } from "./utils/OptionalKeys";
-import { ValueOf } from "./utils/ValueOf";
-import { GetMatchedEvents } from "./WildcardEvents";
 import { ReplaceWildcard } from "./wildcards/ReplaceWildcard";
 
 // 用来扩展全局Meta类型
@@ -20,7 +17,7 @@ export type FastEventMessage<
 > = {
     type: T;
     payload: P;
-    meta: FastEventMeta & M & Record<string, any>;
+    meta?: FastEventMeta & M & Record<string, any>;
 } & FastEventMessageExtends;
 
 /**

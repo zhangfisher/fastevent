@@ -5,11 +5,10 @@ import { FastEvent } from "../../event";
 import { FastEventEmitMessage } from "../../types/FastEventMessages";
 import { TransformedEvents } from "../../types/transformed/TransformedEvents";
 import { NotPayload } from "../../types/transformed/NotPayload";
-import { MutableMessage, GetPayload } from "../../types";
+import { MutableMessage, GetPayload, Overloads } from "../../types";
 import { FastEventMeta } from "../../types/FastEventMessages";
 import { ExtendWildcardEvents } from "../../types/wildcards/ExtendWildcardEvents";
 import { FastEventIterator } from "../../utils/eventIterator";
-import { Overloads } from "./utils";
 import { AllowCall, GetMatchingOverload } from "../../types/utils/AllowCall";
 
 type IteratorMessage<T> = T extends FastEventIterator<infer M> ? M : never;
@@ -21,7 +20,9 @@ describe("emit 触发事件类型系统测试", () => {
             type cases = [
                 Expect<Equal<typeof message.type, "x">>,
                 Expect<Equal<typeof message.payload, any>>,
-                Expect<Equal<typeof message.meta, FastEventMeta & Record<string, any>>>,
+                Expect<
+                    Equal<typeof message.meta, (FastEventMeta & Record<string, any>) | undefined>
+                >,
             ];
         });
         const aSubscriber = emitter.emit("a");
@@ -251,7 +252,9 @@ describe("emitAsync 触发事件类型系统测试", () => {
             type cases = [
                 Expect<Equal<typeof message.type, "x">>,
                 Expect<Equal<typeof message.payload, any>>,
-                Expect<Equal<typeof message.meta, FastEventMeta & Record<string, any>>>,
+                Expect<
+                    Equal<typeof message.meta, (FastEventMeta & Record<string, any>) | undefined>
+                >,
             ];
         });
         await emitter.emitAsync("a");

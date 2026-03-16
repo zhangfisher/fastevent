@@ -1,4 +1,5 @@
-import { describe, expect, vi, beforeEach, afterEach, test } from "bun:test";
+// oxlint-disable typescript/await-thenable
+import { describe, expect, jest, beforeEach, afterEach, test } from "bun:test";
 import { FastEvent } from "../../event";
 import { throttle } from "../../pipes/throttle";
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -8,11 +9,11 @@ describe("监听器Pipe操作: Throttle", () => {
 
     beforeEach(() => {
         emitter = new FastEvent();
-        vi.useFakeTimers();
+        jest.useFakeTimers();
     });
 
     afterEach(() => {
-        vi.useRealTimers();
+        jest.useRealTimers();
     });
 
     test("第一次调用应该立即执行", async () => {
@@ -53,13 +54,13 @@ describe("监听器Pipe操作: Throttle", () => {
         expect(results).toEqual([1]);
 
         // 5ms后的调用应该被丢弃
-        vi.advanceTimersByTime(5);
+        jest.advanceTimersByTime(5);
         await emitter.emit("test", 2);
         expect(results).toEqual([1]);
         expect(dropped).toEqual([2]);
 
         // 10ms后的调用应该执行
-        vi.advanceTimersByTime(5);
+        jest.advanceTimersByTime(5);
         await emitter.emit("test", 3);
         expect(results).toEqual([1, 3]);
     });
@@ -91,24 +92,24 @@ describe("监听器Pipe操作: Throttle", () => {
             }
         };
         emitMessages();
-        return new Promise<void>((resolve) => {
-            vi.runAllTimersAsync().then(async () => {
-                await Promise.all(promises);
-                // 1. 接收到从1开始，间隔5的数列
-                expect(results).toEqual([
-                    1, 6, 11, 16, 21, 26, 31, 36, 41, 46, 51, 56, 61, 66, 71, 76, 81, 86, 91, 96,
-                ]);
-                // 2. 其他消息均会被丢弃
-                expect(
-                    Array.from({ length: 100 })
-                        .map((_, i) => i + 1)
-                        .filter((i) => {
-                            return !results.includes(i);
-                        }),
-                ).toEqual(dropped);
+        return new Promise<void>(async (resolve) => {
+            jest.runAllTimers();
 
-                resolve();
-            });
+            await Promise.all(promises);
+            // 1. 接收到从1开始，间隔5的数列
+            expect(results).toEqual([
+                1, 6, 11, 16, 21, 26, 31, 36, 41, 46, 51, 56, 61, 66, 71, 76, 81, 86, 91, 96,
+            ]);
+            // 2. 其他消息均会被丢弃
+            expect(
+                Array.from({ length: 100 })
+                    .map((_, i) => i + 1)
+                    .filter((i) => {
+                        return !results.includes(i);
+                    }),
+            ).toEqual(dropped);
+
+            resolve();
         });
     });
 
@@ -134,12 +135,12 @@ describe("监听器Pipe操作: Throttle", () => {
         expect(results).toEqual([1]);
 
         // 5ms后的调用应该触发drop回调
-        vi.advanceTimersByTime(5);
+        jest.advanceTimersByTime(5);
         await emitter.emit("test", 2);
         expect(dropped).toEqual([2]);
 
         // 10ms后的调用应该执行
-        vi.advanceTimersByTime(5);
+        jest.advanceTimersByTime(5);
         await emitter.emit("test", 3);
         expect(results).toEqual([1, 3]);
     });

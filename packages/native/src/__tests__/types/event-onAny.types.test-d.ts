@@ -17,7 +17,9 @@ describe("使用onAny监听器的FaseEvent类型系统测试", () => {
             type cases = [
                 Expect<Equal<typeof message.type, string>>,
                 Expect<Equal<typeof message.payload, any>>,
-                Expect<Equal<typeof message.meta, FastEventMeta & Record<string, any>>>,
+                Expect<
+                    Equal<typeof message.meta, (FastEventMeta & Record<string, any>) | undefined>
+                >,
             ];
         });
     });
@@ -306,7 +308,7 @@ describe("使用onAny返回迭代器类型系统测试", () => {
         type cases = [
             Expect<Equal<MessageType["type"], string>>,
             Expect<Equal<MessageType["payload"], any>>,
-            Expect<Equal<MessageType["meta"], Record<string, any> & FastEventMeta>>,
+            Expect<Equal<MessageType["meta"], (Record<string, any> & FastEventMeta) | undefined>>,
         ];
     });
 

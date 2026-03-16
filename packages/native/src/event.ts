@@ -1,3 +1,4 @@
+import { RemoveAnyRecord } from "./types/utils/RemoveAnyRecord";
 import { FastEventScope, IFastEventScope, type FastEventScopeOptions } from "./scope";
 import {
     GetClosestEvents,
@@ -44,7 +45,6 @@ import { removeItem } from "./utils/removeItem";
 import { renameFn } from "./utils/renameFn";
 import { isFunction } from "./utils/isFunction";
 import { ScopeEvents } from "./types";
-import { FastListenerPipe } from "./pipes";
 import { AbortError, CancelError } from "./consts";
 import { parseScopeArgs } from "./utils/parseScopeArgs";
 import { FastListenerExecutor, parallel } from "./executors";
@@ -58,6 +58,7 @@ import {
 } from "./utils/eventIterator";
 import { InMatchedEvent } from "./types/wildcards/InMatchedEvent";
 import { GetClosestMessage } from "./types/closest/GetClosestMessage";
+import { wrapPipeListener } from "./utils/wrapPipeListener";
 
 /**
  * FastEvent 事件发射器类
@@ -77,6 +78,7 @@ export class FastEvent<
     EventNames = KeyOf<ExtendWildcardEvents<AllEvents>>,
 > {
     __FastEvent__: boolean = true;
+
     /** 事件监听器树结构，存储所有注册的事件监听器 */
     public listeners: FastListeners = { __listeners: [] } as unknown as FastListeners;
 
@@ -101,8 +103,8 @@ export class FastEvent<
         eventNames: KeyOf<ExtendWildcardEvents<AllEvents>>;
         meta: AllMeta;
         context: Expand<Fallback<Context, FastEvent<AllEvents, Meta, Context>>>;
-        messages: MutableMessage<AllEvents, Partial<Meta>>;
-        message: MutableMessage<AllEvents, Partial<Meta>>;
+        messages: MutableMessage<AllEvents, Meta>;
+        message: MutableMessage<AllEvents, Meta>;
     };
     /**
      * 创建FastEvent实例
@@ -260,15 +262,6 @@ export class FastEvent<
             return isRemove;
         });
     }
-    private _pipeListener(
-        listener: TypedFastEventListener<any, any, any, any>,
-        pipes: FastListenerPipe[],
-    ): TypedFastEventListener<any, any, any, any> {
-        pipes.forEach((decorator) => {
-            listener = renameFn(decorator(listener), listener.name);
-        });
-        return listener;
-    }
     /**
      * 调用onAddListener HOOK
      * @param type
@@ -348,19 +341,14 @@ export class FastEvent<
         let listener: any = null;
         let options: any;
 
-        if (arguments.length < 2) {
-            // on(type)
-            options = {};
-        } else if (isFunction(arguments[1])) {
+        // 当不提供监听器时返回异步迭代器
+        const returnIterator = !isFunction(arguments[1]);
+        if (returnIterator) {
+            options = arguments[1] || {};
+        } else {
             // on(type, listener, options?)
             listener = arguments[1];
             options = arguments[2] || {};
-        } else if (arguments.length > 2) {
-            // on(type, null, options?) 或 on(type, non-function, options?)
-            options = arguments[2] || {};
-        } else {
-            // on(type, options?)
-            options = arguments[1];
         }
 
         const finalOptions = Object.assign(
@@ -374,7 +362,7 @@ export class FastEvent<
 
         if (type.length === 0) throw new Error("event type cannot be empty");
         // 当未指定监听器时返回一个异步迭代器
-        if (listener === null) {
+        if (returnIterator || listener === null) {
             const iteratorOpts = Object.assign(
                 {
                     overflow: "expand",
@@ -389,8 +377,6 @@ export class FastEvent<
             return iterator;
         }
         // 执行回调
-        this._onAddListener(type, listener, finalOptions);
-        //
         if (isFunction(this._options.onAddListener)) {
             const r = this._options.onAddListener(type, listener, finalOptions);
             if (r === false) {
@@ -404,7 +390,7 @@ export class FastEvent<
 
         // 处理 pipes（适用于所有订阅者，包括 iterable）
         if (finalOptions.pipes && finalOptions.pipes.length > 0) {
-            listener = this._pipeListener(listener, finalOptions.pipes);
+            listener = wrapPipeListener(listener, finalOptions.pipes);
         }
 
         // 处理 filter 和 off（仅用于普通订阅者）
@@ -437,7 +423,13 @@ export class FastEvent<
         // 触发监听器保留消息
         this._emitRetainMessage(type, node, index);
 
-        return { off, listener };
+        return {
+            off,
+            listener,
+            [Symbol.dispose]() {
+                off();
+            },
+        };
     }
 
     /**
@@ -1115,44 +1107,44 @@ export class FastEvent<
         type: T,
         payload?: UnTransformedEvents<AllEvents>[T],
         retain?: boolean,
-    ): Promise<[R | Error][]>;
+    ): Promise<(R | Error)[]>;
     public async emitAsync<R = any, T extends string = string>(
         type: ReplaceWildcard<T> | Types,
         payload?: InMatchedEvent<Events, T> extends true
             ? GetPayload<UnTransformedEvents<AllEvents>, T>
             : any,
         retain?: boolean,
-    ): Promise<[R | Error][]>;
+    ): Promise<(R | Error)[]>;
     public async emitAsync<R = any, T extends string = string>(
         type: ReplaceWildcard<T> | Types,
         payload?: InMatchedEvent<Events, T> extends true
             ? GetPayload<UnTransformedEvents<AllEvents>, T>
             : any,
         options?: FastEventListenerArgs<Partial<Meta>>,
-    ): Promise<[R | Error][]>;
+    ): Promise<(R | Error)[]>;
     public async emitAsync<R = any, T extends KeyOf<AllEvents> = KeyOf<AllEvents>>(
         message: FastEventEmitMessage<T, UnTransformedEvents<AllEvents>[T], Partial<Meta>>,
         retain?: boolean,
-    ): Promise<[R | Error][]>;
+    ): Promise<(R | Error)[]>;
     public async emitAsync<R = any>(
         message: MutableMessage<AllEvents, Meta>,
         retain?: boolean,
-    ): Promise<[R | Error][]>;
+    ): Promise<(R | Error)[]>;
     public async emitAsync<R = any>(
         message: {
             type: keyof AllEvents;
         },
         retain?: boolean,
-    ): Promise<[R | Error][]>;
+    ): Promise<(R | Error)[]>;
     public async emitAsync<R = any, T extends string = string>(
         type: T,
         payload?: InMatchedEvent<Events, T> extends true
             ? GetPayload<UnTransformedEvents<AllEvents>, T>
             : any,
         retain?: boolean,
-    ): Promise<[R | Error][]>;
+    ): Promise<(R | Error)[]>;
 
-    public async emitAsync<R = any>(): Promise<[R | Error][]> {
+    public async emitAsync<R = any>(): Promise<(R | Error)[]> {
         const results = await Promise.allSettled(this.emit.apply(this, arguments as any));
         return results.map((result) => {
             if (result.status === "fulfilled") {
@@ -1271,11 +1263,16 @@ export class FastEvent<
      * userEvents.offAll();  // 清理 'user' 前缀下的所有事件
      * ```
      */
-    scope<P extends string = string, ScopeInstance extends IFastEventScope = FastEventScope>(
+    scope<P extends string = string, ScopeInstance extends IFastEventScope = IFastEventScope>(
         prefix: P,
         scopeObj: ScopeInstance,
         options?: DeepPartial<FastEventScopeOptions<Meta>>,
-    ): FastEventScope<ScopeEvents<AllEvents, P>, Meta, Context> & ScopeInstance;
+    ): FastEventScope<
+        RemoveAnyRecord<ScopeEvents<AllEvents, P> & ScopeInstance["__events__"]>,
+        RemoveAnyRecord<Meta & ScopeInstance["__meta__"]>,
+        RemoveAnyRecord<Context & ScopeInstance["__context__"]>
+    > &
+        ScopeInstance;
     scope<
         E = unknown, //用于扩展事件
         P extends string = string,

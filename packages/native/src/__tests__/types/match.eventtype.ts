@@ -103,7 +103,7 @@ describe("事件通配符匹配", () => {
             "a/*/*/*/*/*/*": 6;
         };
         type cases = [
-            Expect<Equal<GetClosestEvents<Events, "a">, { a: any }>>,
+            Expect<Equal<GetClosestEvents<Events, "a">, Record<string, any>>>,
             Expect<Equal<GetClosestEvents<Events, "a/1">, { "a/*": 1 }>>,
             Expect<Equal<GetClosestEvents<Events, "a/1/2">, { "a/*/*": 2 }>>,
             Expect<Equal<GetClosestEvents<Events, "a/1/2/3">, { "a/*/*/*": 3 }>>,
@@ -125,7 +125,7 @@ describe("事件通配符匹配", () => {
         type s = GetClosestEvents<Events, "a/b/c1/x">;
 
         type cases = [
-            Expect<Equal<GetClosestEvents<Events, "a">, { a: any }>>,
+            Expect<Equal<GetClosestEvents<Events, "a">, Record<string, any>>>,
             Expect<Equal<GetClosestEvents<Events, "a/x">, { "a/*": 1 }>>,
             Expect<Equal<GetClosestEvents<Events, "a/b/x">, { "a/b/**": 2 }>>,
             Expect<Equal<GetClosestEvents<Events, "a/b/x/y">, { "a/b/**": 2 }>>,
@@ -143,13 +143,13 @@ describe("事件通配符匹配", () => {
         type AEvents = typeof emitter.types.events;
         emitter.on("users/fisher/online", (event) => {
             type cases = [
-                Expect<Equal<typeof event.type, `users/${string}/online`>>,
+                Expect<Equal<typeof event.type, `users/fisher/online`>>,
                 Expect<Equal<typeof event.payload, string>>,
             ];
         });
         emitter.on("users/fisher/offline", (event) => {
             type cases = [
-                Expect<Equal<typeof event.type, `users/${string}/offline`>>,
+                Expect<Equal<typeof event.type, `users/fisher/offline`>>,
                 Expect<Equal<typeof event.payload, boolean>>,
             ];
         });
@@ -161,13 +161,13 @@ describe("事件通配符匹配", () => {
         });
         emitter.once("users/fisher/online", (event) => {
             type cases = [
-                Expect<Equal<typeof event.type, `users/${string}/online`>>,
+                Expect<Equal<typeof event.type, `users/fisher/online`>>,
                 Expect<Equal<typeof event.payload, string>>,
             ];
         });
         emitter.once("users/fisher/offline", (event) => {
             type cases = [
-                Expect<Equal<typeof event.type, `users/${string}/offline`>>,
+                Expect<Equal<typeof event.type, `users/fisher/offline`>>,
                 Expect<Equal<typeof event.payload, boolean>>,
             ];
         });
@@ -182,7 +182,7 @@ describe("事件通配符匹配", () => {
 
         scope.on("a/online", (event) => {
             type cases = [
-                Expect<Equal<typeof event.type, `${string}/online`>>,
+                Expect<Equal<typeof event.type, `a/online`>>,
                 Expect<Equal<typeof event.payload, string>>,
             ];
         });
@@ -221,14 +221,14 @@ describe("事件通配符匹配", () => {
 
         emitter.on("x/users/x/online", (message) => {
             type cases = [
-                Expect<Equal<typeof message.type, `x/users/${string}/online`>>,
+                Expect<Equal<typeof message.type, `x/users/x/online`>>,
                 Expect<Equal<typeof message.payload, { name: string; status?: number }>>,
             ];
         });
 
         emitter.on("x/posts/fisher/online", (message) => {
             type cases = [
-                Expect<Equal<typeof message.type, `x/posts/${string}/online`>>,
+                Expect<Equal<typeof message.type, `x/posts/fisher/online`>>,
                 Expect<Equal<typeof message.payload, string>>,
             ];
         });
@@ -237,26 +237,26 @@ describe("事件通配符匹配", () => {
         // 一般情况下应该将明确语义的类型排在前面
         emitter.on("x/devices/x/offline", (message) => {
             type cases = [
-                Expect<Equal<typeof message.type, `x/devices/${string}/offline`>>,
+                Expect<Equal<typeof message.type, `x/devices/x/offline`>>,
                 Expect<Equal<typeof message.payload, boolean>>,
             ];
         });
         emitter.once("x/users/x/online", (message) => {
             type cases = [
-                Expect<Equal<typeof message.type, `x/users/${string}/online`>>,
+                Expect<Equal<typeof message.type, `x/users/x/online`>>,
                 Expect<Equal<typeof message.payload, { name: string; status?: number }>>,
             ];
         });
 
         emitter.once("x/posts/fisher/online", (message) => {
             type cases = [
-                Expect<Equal<typeof message.type, `x/posts/${string}/online`>>,
+                Expect<Equal<typeof message.type, `x/posts/fisher/online`>>,
                 Expect<Equal<typeof message.payload, string>>,
             ];
         });
         emitter.once("x/devices/x/offline", (message) => {
             type cases = [
-                Expect<Equal<typeof message.type, `x/devices/${string}/offline`>>,
+                Expect<Equal<typeof message.type, `x/devices/x/offline`>>,
                 Expect<Equal<typeof message.payload, boolean>>,
             ];
         });

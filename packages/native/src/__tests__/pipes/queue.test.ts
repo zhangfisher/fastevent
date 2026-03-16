@@ -1,4 +1,4 @@
-import { describe, expect, vi, beforeEach, afterEach, test } from "bun:test";
+import { describe, expect, jest, beforeEach, afterEach, test } from "bun:test";
 import { FastEvent } from "../../event";
 import { queue } from "../../pipes/queue";
 import { QueueOverflowError } from "../../consts";
@@ -8,11 +8,11 @@ describe("监听器Pipe操作: Queue", () => {
 
     beforeEach(() => {
         emitter = new FastEvent();
-        vi.useFakeTimers();
+        jest.useFakeTimers();
     });
 
     afterEach(() => {
-        vi.useRealTimers();
+        jest.useRealTimers();
     });
     describe("Queue is not overflow", () => {
         test("size=5时应该正确处理所有消息", () => {
@@ -38,7 +38,7 @@ describe("监听器Pipe操作: Queue", () => {
             ];
 
             return new Promise<void>((resolve) => {
-                vi.runAllTimersAsync();
+                jest.runAllTimers();
                 Promise.all(promises)
                     .then(() => {
                         expect(results).toEqual([1, 2, 3, 4, 5]);
@@ -68,7 +68,7 @@ describe("监听器Pipe操作: Queue", () => {
             }
 
             return new Promise<void>((resolve) => {
-                vi.runAllTimersAsync();
+                jest.runAllTimers();
                 Promise.all(promises)
                     .then(() => {
                         expect(results).toEqual(Array.from({ length }, (_, i) => i + 1));
@@ -124,7 +124,7 @@ describe("监听器Pipe操作: Queue", () => {
             ];
 
             return new Promise<void>((resolve) => {
-                vi.runAllTimersAsync();
+                jest.runAllTimers();
                 Promise.all(promises)
                     .then(() => {
                         expect(results).toEqual([1, 9, 10, 11]);
@@ -172,7 +172,7 @@ describe("监听器Pipe操作: Queue", () => {
             ];
 
             return new Promise<void>((resolve) => {
-                vi.runAllTimersAsync();
+                jest.runAllTimers();
                 Promise.all(promises)
                     .then(() => {
                         expect(results).toEqual([1, 2, 3, 4]);
@@ -215,7 +215,7 @@ describe("监听器Pipe操作: Queue", () => {
                 ...emitter.emit("test", 7), // 缓冲区满,throw
             ];
             return new Promise<void>((resolve) => {
-                vi.runAllTimersAsync();
+                jest.runAllTimers();
                 Promise.allSettled(promises)
                     .then((emitResults) => {
                         expect((emitResults[4] as any).value).toBeInstanceOf(QueueOverflowError);
@@ -269,7 +269,7 @@ describe("监听器Pipe操作: Queue", () => {
             ];
 
             return new Promise<void>((resolve) => {
-                vi.runAllTimersAsync();
+                jest.runAllTimers();
                 Promise.all(promises)
                     .then(() => {
                         // 验证消息按优先级顺序处理：
@@ -323,7 +323,7 @@ describe("监听器Pipe操作: Queue", () => {
             ];
 
             return new Promise<void>((resolve) => {
-                vi.runAllTimersAsync();
+                jest.runAllTimers();
                 Promise.all(promises)
                     .then(() => {
                         // 验证消息按优先级顺序处理：
@@ -373,7 +373,7 @@ describe("监听器Pipe操作: Queue", () => {
                 ...emitter.emit("test", 8), // 超出maxExpandSize，应该被丢弃
             ];
             return new Promise<void>((resolve) => {
-                vi.runAllTimersAsync();
+                jest.runAllTimers();
                 Promise.all(promises)
                     .then(() => {
                         expect(results).toEqual([1, 2, 3, 4, 5]); // 消息6, 7, 8被丢弃
@@ -418,7 +418,7 @@ describe("监听器Pipe操作: Queue", () => {
                 ...emitter.emit("test", 8), // 超出maxExpandSize，应该被丢弃
             ];
             return new Promise<void>((resolve) => {
-                vi.runAllTimersAsync();
+                jest.runAllTimers();
                 Promise.all(promises)
                     .then(() => {
                         expect(results).toEqual([1, 5, 6, 7, 8]); // 消息2, 3, 4被丢弃
@@ -464,7 +464,7 @@ describe("监听器Pipe操作: Queue", () => {
             ];
 
             return new Promise<void>((resolve, reject) => {
-                vi.runAllTimersAsync();
+                jest.runAllTimers();
                 Promise.allSettled(promises).then((emitResults) => {
                     try {
                         expect((emitResults[5] as any).value).toBeInstanceOf(QueueOverflowError);
@@ -514,7 +514,7 @@ describe("监听器Pipe操作: Queue", () => {
 
             return new Promise<void>((resolve) => {
                 // 推进时间600ms，使队列中的消息超时
-                vi.advanceTimersByTime(600);
+                jest.advanceTimersByTime(600);
                 promises.push(
                     ...emitter.emit("test", 6), // 马上处理
                     ...emitter.emit("test", 7), // 进入队列
@@ -522,7 +522,7 @@ describe("监听器Pipe操作: Queue", () => {
                     ...emitter.emit("test", 9), // 进入队列
                     ...emitter.emit("test", 10),
                 );
-                vi.runAllTimersAsync();
+                jest.runAllTimers();
                 Promise.all(promises)
                     .then(() => {
                         expect(results).toEqual([1, 6]); // 只有第一个消息被处理

@@ -397,7 +397,10 @@ describe("TypedFastEventMessage 类型测试", () => {
                     Expect<Equal<typeof message.type, "userCreated">>,
                     Expect<Equal<typeof message.payload, { id: number; name: string }>>,
                     Expect<
-                        Equal<typeof message.meta, FastEventMeta & AppMeta & Record<string, any>>
+                        Equal<
+                            typeof message.meta,
+                            (FastEventMeta & AppMeta & Record<string, any>) | undefined
+                        >
                     >,
                 ];
             });

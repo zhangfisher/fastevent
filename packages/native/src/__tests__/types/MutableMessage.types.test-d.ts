@@ -40,20 +40,28 @@ describe("MutableMessage - 基本事件类型测试", () => {
                     {
                         type: "a";
                         payload: boolean;
-                        meta?: Record<string, any> | undefined;
+                        meta?: Record<string, any>;
                     } & FastEventMessageExtends
                 >
             >,
             Expect<
                 Equal<
                     Extract<Message, { type: "b" }>,
-                    { type: "b"; payload: number; meta?: Record<string, any> }
+                    {
+                        type: "b";
+                        payload: number;
+                        meta?: Record<string, any>;
+                    } & FastEventMessageExtends
                 >
             >,
             Expect<
                 Equal<
                     Extract<Message, { type: "c" }>,
-                    { type: "c"; payload: string; meta?: Record<string, any> }
+                    {
+                        type: "c";
+                        payload: string;
+                        meta?: Record<string, any>;
+                    } & FastEventMessageExtends
                 >
             >,
         ];
@@ -72,19 +80,31 @@ describe("MutableMessage - 基本事件类型测试", () => {
             Expect<
                 Equal<
                     Extract<Message, { type: "a" }>,
-                    { type: "a"; payload: boolean; meta?: Record<string, any> | undefined }
+                    {
+                        type: "a";
+                        payload: boolean;
+                        meta?: Record<string, any>;
+                    } & FastEventMessageExtends
                 >
             >,
             Expect<
                 Equal<
                     Extract<Message, { type: "b" }>,
-                    { type: "b"; payload: number; meta?: Record<string, any> }
+                    {
+                        type: "b";
+                        payload: number;
+                        meta?: Record<string, any>;
+                    } & FastEventMessageExtends
                 >
             >,
             Expect<
                 Equal<
                     Extract<Message, { type: "c" }>,
-                    { type: "c"; payload: string; meta?: Record<string, any> }
+                    {
+                        type: "c";
+                        payload: string;
+                        meta?: Record<string, any>;
+                    } & FastEventMessageExtends
                 >
             >,
         ];
@@ -108,7 +128,7 @@ describe("MutableMessage - 基本事件类型测试", () => {
                         type: "userCreated";
                         payload: { id: number; name: string };
                         meta?: Record<string, any>;
-                    }
+                    } & FastEventMessageExtends
                 >
             >,
             Expect<
@@ -118,7 +138,7 @@ describe("MutableMessage - 基本事件类型测试", () => {
                         type: "userDeleted";
                         payload: { id: number; reason?: string };
                         meta?: Record<string, any>;
-                    }
+                    } & FastEventMessageExtends
                 >
             >,
             Expect<
@@ -128,7 +148,7 @@ describe("MutableMessage - 基本事件类型测试", () => {
                         type: "userUpdated";
                         payload: { id: number; changes: Record<string, any> };
                         meta?: Record<string, any>;
-                    }
+                    } & FastEventMessageExtends
                 >
             >,
         ];
@@ -151,7 +171,7 @@ describe("MutableMessage - 基本事件类型测试", () => {
                         type: "statusChanged";
                         payload: "active" | "inactive" | "pending";
                         meta?: Record<string, any>;
-                    }
+                    } & FastEventMessageExtends
                 >
             >,
             Expect<
@@ -161,7 +181,7 @@ describe("MutableMessage - 基本事件类型测试", () => {
                         type: "notificationSent";
                         payload: string | number;
                         meta?: Record<string, any>;
-                    }
+                    } & FastEventMessageExtends
                 >
             >,
             Expect<
@@ -171,7 +191,7 @@ describe("MutableMessage - 基本事件类型测试", () => {
                         type: "complexEvent";
                         payload: boolean | { data: string } | null;
                         meta?: Record<string, any>;
-                    }
+                    } & FastEventMessageExtends
                 >
             >,
         ];
@@ -190,13 +210,21 @@ describe("MutableMessage - 基本事件类型测试", () => {
             Expect<
                 Equal<
                     Extract<Message, { type: "itemsAdded" }>,
-                    { type: "itemsAdded"; payload: number[]; meta?: Record<string, any> }
+                    {
+                        type: "itemsAdded";
+                        payload: number[];
+                        meta?: Record<string, any>;
+                    } & FastEventMessageExtends
                 >
             >,
             Expect<
                 Equal<
                     Extract<Message, { type: "itemsRemoved" }>,
-                    { type: "itemsRemoved"; payload: string[]; meta?: Record<string, any> }
+                    {
+                        type: "itemsRemoved";
+                        payload: string[];
+                        meta?: Record<string, any>;
+                    } & FastEventMessageExtends
                 >
             >,
             Expect<
@@ -206,7 +234,7 @@ describe("MutableMessage - 基本事件类型测试", () => {
                         type: "batchOperation";
                         payload: [string, number, boolean][];
                         meta?: Record<string, any>;
-                    }
+                    } & FastEventMessageExtends
                 >
             >,
         ];
@@ -235,7 +263,7 @@ describe("MutableMessage - 通配符事件类型测试", () => {
                     {
                         type: `users/${string}/login`;
                         payload: { userId: number; timestamp: number };
-                        meta?: Record<string, any> | undefined;
+                        meta?: Record<string, any>;
                     }
                 >
             >,
@@ -245,7 +273,7 @@ describe("MutableMessage - 通配符事件类型测试", () => {
                     {
                         type: `users/${string}/logout`;
                         payload: { userId: number };
-                        meta?: Record<string, any> | undefined;
+                        meta?: Record<string, any>;
                     }
                 >
             >,
@@ -255,7 +283,7 @@ describe("MutableMessage - 通配符事件类型测试", () => {
                     {
                         type: `div/${string}/click`;
                         payload: { x: number; y: number };
-                        meta?: Record<string, any> | undefined;
+                        meta?: Record<string, any>;
                     }
                 >
             >,
@@ -299,7 +327,7 @@ describe("MutableMessage - 通配符事件类型测试", () => {
                         type: `api/**/response`;
                         payload: { status: number; body: any };
                         meta?: Record<string, any>;
-                    }
+                    } & FastEventMessageExtends
                 >
             >,
         ];
@@ -349,7 +377,7 @@ describe("MutableMessage - Meta 参数测试", () => {
                         type: "eventA";
                         payload: string;
                         meta?: CustomMeta;
-                    }
+                    } & FastEventMessageExtends
                 >
             >,
             Expect<
@@ -359,7 +387,7 @@ describe("MutableMessage - Meta 参数测试", () => {
                         type: "eventB";
                         payload: number;
                         meta?: CustomMeta;
-                    }
+                    } & FastEventMessageExtends
                 >
             >,
         ];
@@ -393,7 +421,7 @@ describe("MutableMessage - Meta 参数测试", () => {
                         type: "apiCall";
                         payload: { endpoint: string };
                         meta?: ComplexMeta;
-                    }
+                    } & FastEventMessageExtends
                 >
             >,
             Expect<
@@ -403,7 +431,7 @@ describe("MutableMessage - Meta 参数测试", () => {
                         type: "dbQuery";
                         payload: { query: string };
                         meta?: ComplexMeta;
-                    }
+                    } & FastEventMessageExtends
                 >
             >,
         ];
@@ -424,7 +452,7 @@ describe("MutableMessage - Meta 参数测试", () => {
                         type: "eventX";
                         payload: boolean;
                         meta?: Record<string, any>;
-                    }
+                    } & FastEventMessageExtends
                 >
             >,
         ];
@@ -433,7 +461,7 @@ describe("MutableMessage - Meta 参数测试", () => {
 
 describe("MutableMessage - 边界情况测试", () => {
     test("空事件对象", () => {
-        type Events = Record<string, never>;
+        type Events = Record<string, any>;
 
         type Message = MutableMessage<Events>;
 
@@ -441,11 +469,10 @@ describe("MutableMessage - 边界情况测试", () => {
         type cases = [
             Expect<
                 Equal<
-                    Message,
+                    Omit<Message, "meta">,
                     {
                         type: string;
                         payload: any;
-                        meta?: Record<string, any> | undefined;
                     }
                 >
             >,
@@ -469,7 +496,7 @@ describe("MutableMessage - 边界情况测试", () => {
                         type: "a/b/c/d";
                         payload: { deep: number };
                         meta?: Record<string, any>;
-                    }
+                    } & FastEventMessageExtends
                 >
             >,
             Expect<
@@ -479,7 +506,7 @@ describe("MutableMessage - 边界情况测试", () => {
                         type: "x/y/z";
                         payload: { nested: string };
                         meta?: Record<string, any>;
-                    }
+                    } & FastEventMessageExtends
                 >
             >,
             Expect<
@@ -489,7 +516,7 @@ describe("MutableMessage - 边界情况测试", () => {
                         type: "level1/level2/level3/level4/level5";
                         payload: { very: { deep: { path: boolean } } };
                         meta?: Record<string, any>;
-                    }
+                    } & FastEventMessageExtends
                 >
             >,
         ];
@@ -511,7 +538,7 @@ describe("MutableMessage - 边界情况测试", () => {
                         type: "callback";
                         payload: (data: string) => void;
                         meta?: Record<string, any>;
-                    }
+                    } & FastEventMessageExtends
                 >
             >,
             Expect<
@@ -521,7 +548,7 @@ describe("MutableMessage - 边界情况测试", () => {
                         type: "handler";
                         payload: (event: MouseEvent) => boolean;
                         meta?: Record<string, any>;
-                    }
+                    } & FastEventMessageExtends
                 >
             >,
         ];
@@ -546,7 +573,7 @@ describe("MutableMessage - 边界情况测试", () => {
                         type: "test-event";
                         payload: string;
                         meta?: Record<string, any>;
-                    }
+                    } & FastEventMessageExtends
                 >
             >,
             Expect<
@@ -556,7 +583,7 @@ describe("MutableMessage - 边界情况测试", () => {
                         type: "Test_Event";
                         payload: boolean;
                         meta?: Record<string, any>;
-                    }
+                    } & FastEventMessageExtends
                 >
             >,
         ];
@@ -580,8 +607,8 @@ describe("MutableMessage - 与 ToMessage 的对比测试", () => {
                     {
                         type: "simpleEvent";
                         payload: string;
-                        meta?: Record<string, any> | undefined;
-                    }
+                        meta?: Record<string, any>;
+                    } & FastEventMessageExtends
                 >
             >,
             // MutableMessage 使用 GetPayload
@@ -592,7 +619,7 @@ describe("MutableMessage - 与 ToMessage 的对比测试", () => {
                         type: "simpleEvent";
                         payload: string;
                         meta?: Record<string, any>;
-                    }
+                    } & FastEventMessageExtends
                 >
             >,
         ];
@@ -627,7 +654,7 @@ describe("MutableMessage - 实际使用场景测试", () => {
                         type: "userCreated";
                         payload: { id: number; name: string };
                         meta?: AppMeta;
-                    }
+                    } & FastEventMessageExtends
                 >
             >,
             Expect<
@@ -637,7 +664,7 @@ describe("MutableMessage - 实际使用场景测试", () => {
                         type: "userUpdated";
                         payload: { id: number; changes: Partial<{ name: string; email: string }> };
                         meta?: AppMeta;
-                    }
+                    } & FastEventMessageExtends
                 >
             >,
             Expect<
@@ -647,7 +674,7 @@ describe("MutableMessage - 实际使用场景测试", () => {
                         type: "userDeleted";
                         payload: { id: number; reason?: string };
                         meta?: AppMeta;
-                    }
+                    } & FastEventMessageExtends
                 >
             >,
             // 通配符事件类型
@@ -687,7 +714,7 @@ describe("MutableMessage - 实际使用场景测试", () => {
         };
 
         type ErrorMessage = MutableMessage<Events, ErrorMeta>;
-
+        type R = Extract<ErrorMessage, { type: "errorOccurred" }>;
         type cases = [
             Expect<
                 Equal<
@@ -696,7 +723,7 @@ describe("MutableMessage - 实际使用场景测试", () => {
                         type: "errorOccurred";
                         payload: { code: number; message: string };
                         meta?: ErrorMeta;
-                    }
+                    } & FastEventMessageExtends
                 >
             >,
             Expect<

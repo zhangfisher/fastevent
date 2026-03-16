@@ -7,6 +7,7 @@ import { TypedFastEventListener, FastEventListenerNode } from "./FastEventListen
 import type { FastListenerExecutor } from "../executors";
 import type { FastListenerPipe } from "../pipes";
 import { DeepPartial } from "./utils/DeepPartial";
+import { FastEventIteratorOptions } from "../utils/eventIterator";
 
 export type FastEventOptions<Meta = Record<string, any>, Context = never> = {
     id: string;
@@ -97,21 +98,18 @@ export type FastEventListenOptions<
      */
     tag?: string;
     /**
-     * 启用异步迭代器功能
-     * @default false
-     * @description
-     * 当设置为 true 时，返回的订阅者对象支持异步迭代，可以使用 for await...of 语法消费事件消息。
-     * 默认会添加 queue() pipe 来缓存消息，用户可以通过 pipes 选项覆盖默认行为。
+     * 异步迭代器选项
      *
-     * @example
-     * ```ts
-     * const subscriber = emitter.on('event', null, { iterable: true });
-     * for await (const message of subscriber) {
-     *     console.log(message);
-     * }
-     * ```
+     * 用于配置返回异步迭代器的参数
+     * 
+     * 默认值是
+        {
+            overflow: "expand",
+            size: 10,
+            maxExpandSize: 100,
+        }
      */
-    iterable?: boolean;
+    iterable?: FastEventIteratorOptions;
 };
 
 export enum FastEventListenerFlags {
@@ -145,4 +143,8 @@ export type FastEventListenerArgs<M = Record<string, any>> = {
      * 如果消息经过转换前的原主题
      */
     rawEventType?: string;
+    /**
+     *
+     */
+    cacheNodes?: FastEventListenerNode[];
 };

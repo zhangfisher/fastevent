@@ -20,7 +20,11 @@ import {
     FastEventMessage,
 } from "./types/FastEventMessages";
 import { FastEventSubscriber } from "./types/FastEventSubscribers";
-import { TypedFastEventListener, FastEventCommonListener } from "./types/FastEventListeners";
+import {
+    TypedFastEventListener,
+    FastEventCommonListener,
+    FastEventListenerNode,
+} from "./types/FastEventListeners";
 import {
     FastEventListenerArgs,
     FastEventListenOptions,
@@ -70,6 +74,9 @@ export interface IFastEventScope<
     Context = never,
 > {
     __FastEventScope__: boolean;
+    readonly __events__: Events;
+    readonly __meta__: Meta;
+    readonly __context__: Context;
 }
 
 export class FastEventScope<
@@ -130,6 +137,16 @@ export class FastEventScope<
         if (prefix.length > 0 && !prefix.endsWith(emitter.options.delimiter!)) {
             this.prefix = prefix + emitter.options.delimiter;
         }
+        const entryNode = this._getListenerNodeEntry();
+    }
+    private _getListenerNodeEntry() {
+        //@ts-ignore
+        this.emitter._forEachNodes(
+            this.prefix.split(this.emitter.options.delimiter),
+            (node: FastEventListenerNode, parent: FastEventListenerNode) => {
+                console.log(node);
+            },
+        );
     }
     /**
      * 初始化选项
@@ -322,14 +339,6 @@ export class FastEventScope<
         retain?: boolean,
     ): R[];
     public emit(): any {
-        // 清除保留事件
-        if (
-            arguments.length === 2 &&
-            typeof arguments[0] === "string" &&
-            arguments[1] === FastEventDirectives.clearRetain
-        ) {
-            return this.emitter.emit(this._getScopeType(arguments[0])!);
-        }
         let [message, args] = parseEmitArgs(
             arguments,
             this.emitter.options.meta,
@@ -355,42 +364,42 @@ export class FastEventScope<
         type: T,
         payload?: UnTransformedEvents<Events>[T],
         retain?: boolean,
-    ): Promise<[R | Error][]>;
+    ): Promise<(R | Error)[]>;
     public async emitAsync<R = any, T extends string = string>(
         type: ReplaceWildcard<T> | Types,
         payload?: InMatchedEvent<Events, T> extends true
             ? GetPayload<UnTransformedEvents<Events>, T>
             : any,
         retain?: boolean,
-    ): Promise<[R | Error][]>;
+    ): Promise<(R | Error)[]>;
     public async emitAsync<R = any, T extends string = string>(
         type: ReplaceWildcard<T> | Types,
         payload?: InMatchedEvent<Events, T> extends true
             ? GetPayload<UnTransformedEvents<Events>, T>
             : any,
         options?: FastEventListenerArgs<Partial<FinalMeta>>,
-    ): Promise<[R | Error][]>;
+    ): Promise<(R | Error)[]>;
     public async emitAsync<R = any, T extends KeyOf<Events> = KeyOf<Events>>(
         message: FastEventEmitMessage<T, UnTransformedEvents<Events>[T], Partial<FinalMeta>>,
         retain?: boolean,
-    ): Promise<[R | Error][]>;
+    ): Promise<(R | Error)[]>;
     public async emitAsync<R = any>(
         message: MutableMessage<Events, FinalMeta>,
         retain?: boolean,
-    ): Promise<[R | Error][]>;
+    ): Promise<(R | Error)[]>;
     public async emitAsync<R = any>(
         message: {
             type: keyof Events;
         },
         retain?: boolean,
-    ): Promise<[R | Error][]>;
+    ): Promise<(R | Error)[]>;
     public async emitAsync<R = any, T extends string = string>(
         type: T,
         payload?: InMatchedEvent<Events, T> extends true
             ? GetPayload<UnTransformedEvents<Events>, T>
             : any,
         retain?: boolean,
-    ): Promise<[R | Error][]>;
+    ): Promise<(R | Error)[]>;
 
     public async emitAsync<R = any>(): Promise<[R | Error][]> {
         const results = await Promise.allSettled(this.emit.apply(this, arguments as any));
@@ -415,6 +424,7 @@ export class FastEventScope<
         type: T,
         timeout?: number,
     ): Promise<TypedFastEventMessage<Events, FinalMeta>>;
+
     public async waitFor(): Promise<any> {
         const type = arguments[0] as string;
         const timeout = arguments[1] as number;

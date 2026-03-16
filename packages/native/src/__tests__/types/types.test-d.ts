@@ -1,3 +1,4 @@
+import { OptionalKeys } from "./../../types/utils/OptionalKeys";
 /* eslint-disable no-unused-vars */
 
 import { describe, test, expect } from "bun:test";
@@ -60,7 +61,7 @@ describe("types", () => {
         const emitter = new FastEvent();
 
         // 构建类型推断和约束的消息
-        type MessageType = typeof emitter.types.message;
+        type MessageType = OptionalKeys<typeof emitter.types.message, "meta">;
 
         const typedMessage: MessageType = {
             type: "click",

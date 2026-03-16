@@ -28,6 +28,25 @@ export class FastEventSubscriberClass implements AsyncIterable<TypedFastEventMes
     ) {}
 
     /**
+     * 同步资源释放（支持 using 语句）
+     *
+     * @description
+     * 当使用 `using` 语句时，此方法会在作用域结束时自动调用，
+     * 执行 off() 方法取消订阅。
+     *
+     * @example
+     * ```ts
+     * {
+     *     using subscriber = emitter.on('event', listener);
+     *     // subscriber 在作用域结束时自动调用 off()
+     * }
+     * ```
+     */
+    [Symbol.dispose](): void {
+        this.off();
+    }
+
+    /**
      * 异步迭代器实现
      *
      * @throws {TypeError} 如果迭代器已被并发消费

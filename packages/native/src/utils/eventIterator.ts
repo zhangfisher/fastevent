@@ -8,7 +8,7 @@ import type { FastEvent } from "../event";
 import type { FastEventScope } from "../scope";
 import type { FastEventMessage } from "../types/FastEventMessages";
 import type { FastEventListener } from "../types/FastEventListeners";
-import type { FastEventListenOptions } from "../types/FastEvents";
+import type { FastEventListenerArgs, FastEventListenOptions } from "../types/FastEvents";
 
 // 溢出策略类型
 export type FastQueueOverflows =
@@ -46,7 +46,7 @@ export class FastEventIterator<T = any> implements AsyncIterableIterator<T> {
     private buffer: [T, number][] = [];
     private resolvers: Array<(value: IteratorResult<any>) => void> = [];
     private errorResolvers: Array<(error: Error) => void> = [];
-    private isStopped = false;
+    private isStopped = false; // 已经停止迭代
     private error: Error | null = null;
     private options: Required<
         Omit<FastEventIteratorOptions<T>, "onPush" | "onPop" | "onDrop" | "onError" | "signal">
@@ -59,10 +59,10 @@ export class FastEventIterator<T = any> implements AsyncIterableIterator<T> {
     };
     private currentSize: number; // 当前缓冲区大小
     private hasNewMessage: boolean = false; // 自上次pop后是否有新消息
-    private unsubscribe: (() => void) | null = null;
     private _listener: FastEventListener;
-    private _created: boolean = false;
-
+    private _ready: boolean = false;
+    private _listenOptions?: FastEventListenOptions;
+    private _cleanups: (() => void)[] = [];
     constructor(
         private eventEmitter: FastEvent<any> | FastEventScope<any, any, any>,
         private eventName: string,
@@ -88,15 +88,18 @@ export class FastEventIterator<T = any> implements AsyncIterableIterator<T> {
         this.currentSize = this.options.size;
         this._listener = this.onMessage.bind(this);
     }
-
     get listener() {
         return this._listener;
+    }
+    get ready() {
+        return this._ready;
     }
     /**
      * 创建异步迭代器
      */
     create(options?: FastEventListenOptions) {
-        if (this._created) return;
+        if (this._ready) return;
+        this._listenOptions = options;
         try {
             // 监听事件 - 使用 FastEvent 的 on 方法，返回订阅者对象
             const subscriber = (this.eventEmitter as any).on(
@@ -104,15 +107,19 @@ export class FastEventIterator<T = any> implements AsyncIterableIterator<T> {
                 this._listener,
                 options,
             );
-            this.unsubscribe = subscriber.off;
+            this._cleanups.push(() => subscriber.off());
             // 处理中止信号
             if (this.options.signal) {
-                this.options.signal.addEventListener("abort", () => {
+                const offFn = () => {
                     this.off(true);
+                };
+                this.options.signal.addEventListener("abort", offFn);
+                this._cleanups.push(() => {
+                    this.options.signal!.removeEventListener("abort", offFn);
                 });
             }
         } finally {
-            this._created = true;
+            this._ready = true;
         }
     }
     /**
@@ -163,12 +170,14 @@ export class FastEventIterator<T = any> implements AsyncIterableIterator<T> {
         }
     }
 
-    private onMessage(message: FastEventMessage<any, any, any>): void {
+    private onMessage(
+        message: FastEventMessage<any, any, any>,
+        _args: FastEventListenerArgs,
+    ): void {
         if (this.isStopped) return;
 
         // 从 FastEvent 消息中提取 payload
         const data = message as T;
-        if (this.isStopped) return;
 
         // 如果有等待的消费者，直接resolve
         if (this.resolvers.length > 0) {
@@ -186,18 +195,20 @@ export class FastEventIterator<T = any> implements AsyncIterableIterator<T> {
             this.handleOverflow(data);
         }
     }
-
+    /**
+     * 中止监听
+     * @param abort
+     * @returns
+     */
     off(abort?: boolean): void {
-        if (!this._created) return;
+        if (!this._ready) return;
         if (this.isStopped) return;
-
         this.isStopped = true;
-
         // 取消事件订阅
-        if (this.unsubscribe) {
-            this.unsubscribe();
-            this.unsubscribe = null;
-        }
+        this._cleanups.forEach((fn) => fn());
+        this._cleanups = [];
+        this.buffer = [];
+        this._ready = false;
         // 如果是强制中止，如调用了AbortSign
         if (abort) {
             // 清理等待的error resolvers
@@ -212,6 +223,7 @@ export class FastEventIterator<T = any> implements AsyncIterableIterator<T> {
             });
             this.resolvers = [];
         }
+        this._ready = false;
     }
 
     async next(): Promise<IteratorResult<T>> {
@@ -275,6 +287,39 @@ export class FastEventIterator<T = any> implements AsyncIterableIterator<T> {
         this.off();
         return Promise.reject(error);
     }
+
+    /**
+     * 当 for await...of 循环被 break、return 或 throw 中断时调用
+     * 自动清理资源，防止内存泄漏
+     */
+    async return(): Promise<IteratorResult<T>> {
+        this.off();
+        return { value: undefined, done: true };
+    }
+
+    /**
+     * 同步资源释放（支持 using 语句）
+     *
+     * @description
+     * 当使用 `using` 语句时，此方法会在作用域结束时自动调用，
+     * 执行 off() 方法取消订阅。
+     *
+     * @example
+     * ```ts
+     * {
+     *     using subscriber = emitter.on('event');
+     *     // subscriber 在作用域结束时自动调用 off()
+     * }
+     * ```
+     */
+    [Symbol.dispose](): void {
+        this.off();
+    }
+
+    on() {
+        this.create(this._listenOptions);
+        this.isStopped = false;
+    }
 }
 
 /**
@@ -282,6 +327,7 @@ export class FastEventIterator<T = any> implements AsyncIterableIterator<T> {
  * @param eventEmitter FastEvent 或 FastEventScope 实例
  * @param eventName 事件名称
  * @param options 配置选项
+ * @param listenerOptions 监听器配置选项
  * @returns 异步迭代器
  */
 export function createAsyncEventIterator<T = any>(

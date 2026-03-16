@@ -1,4 +1,4 @@
-import { describe, expect, vi, beforeEach, afterEach, test } from "bun:test";
+import { describe, expect, jest, beforeEach, afterEach, test } from "bun:test";
 import { FastEvent } from "../../event";
 import { debounce } from "../../pipes/debounce";
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -8,11 +8,11 @@ describe("监听器Pipe操作: Debounce", () => {
 
     beforeEach(() => {
         emitter = new FastEvent();
-        vi.useFakeTimers();
+        jest.useFakeTimers();
     });
 
     afterEach(() => {
-        vi.useRealTimers();
+        jest.useRealTimers();
     });
 
     test("第一次调用应该立即执行", async () => {
@@ -55,7 +55,7 @@ describe("监听器Pipe操作: Debounce", () => {
         // 在100ms内快速发送12个事件
         const promises = [];
         for (let i = 2; i <= 13; i++) {
-            vi.advanceTimersByTime(8); // 每8ms发送一个事件
+            jest.advanceTimersByTime(8); // 每8ms发送一个事件
             promises.push(...emitter.emit("test", i));
         }
         await Promise.all(promises);
@@ -63,7 +63,7 @@ describe("监听器Pipe操作: Debounce", () => {
         expect(dropped).toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
 
         // 等待防抖动时间过后的调用
-        await vi.runAllTimersAsync();
+        await jest.runAllTimers();
         await emitter.emit("test", 14);
         expect(results).toEqual([1, 14]);
     });
@@ -99,11 +99,10 @@ describe("监听器Pipe操作: Debounce", () => {
                     expect(dropped).toEqual([2, 3, 4]);
 
                     // 等待防抖动时间过后
-                    vi.runAllTimersAsync().then(() => {
-                        Promise.all(emitter.emit("test", 5)).then(() => {
-                            expect(results).toEqual([1, 5]);
-                            resolve();
-                        });
+                    jest.runAllTimers();
+                    Promise.all(emitter.emit("test", 5)).then(() => {
+                        expect(results).toEqual([1, 5]);
+                        resolve();
                     });
                 });
             });
@@ -136,7 +135,7 @@ describe("监听器Pipe操作: Debounce", () => {
                 // 第二组：在防抖动时间内快速发送12个事件
                 const promises1 = [];
                 for (let i = 2; i <= 13; i++) {
-                    vi.advanceTimersByTime(8);
+                    jest.advanceTimersByTime(8);
                     promises1.push(...emitter.emit("test", i));
                 }
 
@@ -145,33 +144,33 @@ describe("监听器Pipe操作: Debounce", () => {
                     expect(dropped).toEqual([2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
 
                     // 等待防抖动时间过后
-                    vi.runAllTimersAsync().then(() => {
-                        // 第三组：新的调用可以执行
-                        Promise.all(emitter.emit("test", 14)).then(() => {
+                    jest.runAllTimers();
+
+                    // 第三组：新的调用可以执行
+                    Promise.all(emitter.emit("test", 14)).then(() => {
+                        expect(results).toEqual([1, 14]);
+
+                        // 第四组：在防抖动时间内快速发送15个事件
+                        const promises2 = [];
+                        for (let i = 15; i <= 29; i++) {
+                            jest.advanceTimersByTime(6);
+                            promises2.push(...emitter.emit("test", i));
+                        }
+
+                        Promise.all(promises2).then(() => {
                             expect(results).toEqual([1, 14]);
+                            expect(dropped).toEqual([
+                                2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21,
+                                22, 23, 24, 25, 26, 27, 28, 29,
+                            ]);
 
-                            // 第四组：在防抖动时间内快速发送15个事件
-                            const promises2 = [];
-                            for (let i = 15; i <= 29; i++) {
-                                vi.advanceTimersByTime(6);
-                                promises2.push(...emitter.emit("test", i));
-                            }
+                            // 等待防抖动时间过后
+                            jest.runAllTimers();
 
-                            Promise.all(promises2).then(() => {
-                                expect(results).toEqual([1, 14]);
-                                expect(dropped).toEqual([
-                                    2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20,
-                                    21, 22, 23, 24, 25, 26, 27, 28, 29,
-                                ]);
-
-                                // 等待防抖动时间过后
-                                vi.runAllTimersAsync().then(() => {
-                                    // 第五组：新的调用可以执行
-                                    Promise.all(emitter.emit("test", 30)).then(() => {
-                                        expect(results).toEqual([1, 14, 30]);
-                                        resolve();
-                                    });
-                                });
+                            // 第五组：新的调用可以执行
+                            Promise.all(emitter.emit("test", 30)).then(() => {
+                                expect(results).toEqual([1, 14, 30]);
+                                resolve();
                             });
                         });
                     });
@@ -207,24 +206,24 @@ describe("监听器Pipe操作: Debounce", () => {
             }
         };
         emitMessages();
-        return new Promise<void>((resolve) => {
-            vi.runAllTimersAsync().then(async () => {
-                await Promise.all(promises);
-                // 1. 接收到从1开始，间隔5的数列
-                expect(results).toEqual([
-                    1, 6, 11, 16, 21, 26, 31, 36, 41, 46, 51, 56, 61, 66, 71, 76, 81, 86, 91, 96,
-                ]);
-                // 2. 其他消息均会被丢弃
-                expect(
-                    Array.from({ length: 100 })
-                        .map((_, i) => i + 1)
-                        .filter((i) => {
-                            return !results.includes(i);
-                        }),
-                ).toEqual(dropped);
+        return new Promise<void>(async (resolve) => {
+            jest.runAllTimers();
 
-                resolve();
-            });
+            await Promise.all(promises);
+            // 1. 接收到从1开始，间隔5的数列
+            expect(results).toEqual([
+                1, 6, 11, 16, 21, 26, 31, 36, 41, 46, 51, 56, 61, 66, 71, 76, 81, 86, 91, 96,
+            ]);
+            // 2. 其他消息均会被丢弃
+            expect(
+                Array.from({ length: 100 })
+                    .map((_, i) => i + 1)
+                    .filter((i) => {
+                        return !results.includes(i);
+                    }),
+            ).toEqual(dropped);
+
+            resolve();
         });
     });
 
@@ -236,7 +235,7 @@ describe("监听器Pipe操作: Debounce", () => {
         emitter.on(
             "test",
             async (msg) => {
-                await vi.advanceTimersByTimeAsync(50); // 模拟异步操作
+                await jest.advanceTimersByTime(50); // 模拟异步操作
                 results.push(msg.payload);
             },
             {
@@ -254,7 +253,7 @@ describe("监听器Pipe操作: Debounce", () => {
                 expect(results).toEqual([1]);
 
                 // 在异步操作进行时发送事件（25ms时）
-                vi.advanceTimersByTime(25);
+                jest.advanceTimersByTime(25);
                 const promises1 = [];
                 for (let i = 2; i <= 6; i++) {
                     promises1.push(...emitter.emit("test", i));
@@ -264,31 +263,29 @@ describe("监听器Pipe操作: Debounce", () => {
                     expect(dropped).toEqual([2, 3, 4, 5, 6]);
 
                     // 等待第一个异步操作完成后的剩余防抖动时间
-                    vi.runAllTimersAsync().then(() => {
-                        // 防抖动时间结束后的新调用
-                        Promise.all(emitter.emit("test", 7)).then(() => {
+                    jest.runAllTimers();
+                    // 防抖动时间结束后的新调用
+                    Promise.all(emitter.emit("test", 7)).then(() => {
+                        expect(results).toEqual([1, 7]);
+
+                        // 在第二个异步操作进行时发送更多事件
+                        jest.advanceTimersByTime(25);
+                        const promises2 = [];
+                        for (let i = 8; i <= 12; i++) {
+                            promises2.push(...emitter.emit("test", i));
+                        }
+
+                        Promise.all(promises2).then(() => {
+                            expect(dropped).toEqual([2, 3, 4, 5, 6, 8, 9, 10, 11, 12]);
+
+                            // 等待所有操作完成
+                            jest.runAllTimers();
                             expect(results).toEqual([1, 7]);
 
-                            // 在第二个异步操作进行时发送更多事件
-                            vi.advanceTimersByTime(25);
-                            const promises2 = [];
-                            for (let i = 8; i <= 12; i++) {
-                                promises2.push(...emitter.emit("test", i));
-                            }
-
-                            Promise.all(promises2).then(() => {
-                                expect(dropped).toEqual([2, 3, 4, 5, 6, 8, 9, 10, 11, 12]);
-
-                                // 等待所有操作完成
-                                vi.runAllTimersAsync().then(() => {
-                                    expect(results).toEqual([1, 7]);
-
-                                    // 验证最后一次调用可以正常执行
-                                    Promise.all(emitter.emit("test", 13)).then(() => {
-                                        expect(results).toEqual([1, 7, 13]);
-                                        resolve();
-                                    });
-                                });
+                            // 验证最后一次调用可以正常执行
+                            Promise.all(emitter.emit("test", 13)).then(() => {
+                                expect(results).toEqual([1, 7, 13]);
+                                resolve();
                             });
                         });
                     });

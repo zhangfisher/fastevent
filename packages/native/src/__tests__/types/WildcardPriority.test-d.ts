@@ -117,17 +117,16 @@ describe("WildcardPriority", () => {
                 Expect<Equal<IsFullWildcard<"**">, true>>,
                 Expect<Equal<IsFullWildcard<"*/**">, true>>,
                 Expect<Equal<IsFullWildcard<"*/*">, true>>,
-                Expect<Equal<IsFullWildcard<"rooms/*">, true>>,
             ];
         });
 
         test("不应该识别为全通配符", () => {
-            type ddd = IsFullWildcard<"*/events">;
             type cases = [
+                Expect<Equal<IsFullWildcard<"rooms/*">, false>>,
+                Expect<Equal<IsFullWildcard<"*/events">, false>>,
                 Expect<Equal<IsFullWildcard<"rooms/*/$join">, false>>,
                 Expect<Equal<IsFullWildcard<"api/*/users">, false>>,
                 Expect<Equal<IsFullWildcard<"data/v*/detail">, false>>,
-                Expect<Equal<IsFullWildcard<"*/events">, false>>,
                 Expect<Equal<IsFullWildcard<"user/login">, false>>,
                 Expect<Equal<IsFullWildcard<"click">, false>>,
                 Expect<Equal<IsFullWildcard<"rooms/lobby/join">, false>>,
@@ -180,10 +179,11 @@ describe("WildcardPriority", () => {
                 // 开头通配符，结尾固定
                 Expect<Equal<GetFixedPartCount<"*/events">, 1>>,
                 Expect<Equal<IsSemiWildcard<"*/events">, true>>,
+                Expect<Equal<IsFullWildcard<"*/events">, false>>,
 
                 // 结尾通配符，开头固定
                 Expect<Equal<GetFixedPartCount<"rooms/*">, 1>>,
-                Expect<Equal<IsFullWildcard<"rooms/*">, true>>,
+                Expect<Equal<IsFullWildcard<"rooms/*">, false>>,
 
                 // 全通配符
                 Expect<Equal<GetFixedPartCount<"*">, 0>>,

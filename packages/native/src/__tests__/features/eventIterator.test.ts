@@ -17,7 +17,7 @@ async function delay(time: number = 1) {
 describe("FastEventIterator", () => {
     test("应该正确创建异步迭代器并消费事件", async () => {
         const emitter = new FastEvent();
-        const iterator = createAsyncEventIterator<string>(emitter, "test");
+        const iterator = createAsyncEventIterator(emitter, "test");
         iterator.create();
         // 发送消息
         emitter.emit("test", "message1");
@@ -26,7 +26,7 @@ describe("FastEventIterator", () => {
 
         const results: string[] = [];
         for await (const message of iterator) {
-            results.push(message);
+            results.push(message.payload);
             if (results.length === 3) break;
         }
 
@@ -35,7 +35,7 @@ describe("FastEventIterator", () => {
 
     test("应该支持滑动窗口溢出策略（slide）", async () => {
         const emitter = new FastEvent();
-        const iterator = createAsyncEventIterator<number>(emitter, "slide", {
+        const iterator = createAsyncEventIterator(emitter, "slide", {
             size: 3,
             overflow: "slide",
         });
@@ -48,7 +48,7 @@ describe("FastEventIterator", () => {
 
         const results: number[] = [];
         for await (const num of iterator) {
-            results.push(num);
+            results.push(num.payload);
             if (results.length === 3) break;
         }
 
@@ -60,12 +60,12 @@ describe("FastEventIterator", () => {
         const emitter = new FastEvent();
         let dropCount = 0;
         const droppedMessages: number[] = [];
-        const iterator = createAsyncEventIterator<number>(emitter, "drop", {
+        const iterator = createAsyncEventIterator(emitter, "drop", {
             size: 3,
             overflow: "drop",
             onDrop: (message) => {
                 dropCount++;
-                droppedMessages.push(message);
+                droppedMessages.push(message.payload);
             },
         });
         iterator.create();
@@ -77,7 +77,7 @@ describe("FastEventIterator", () => {
 
         const results: number[] = [];
         for await (const num of iterator) {
-            results.push(num);
+            results.push(num.payload);
             if (results.length === 3) break;
         }
 
@@ -90,7 +90,7 @@ describe("FastEventIterator", () => {
 
     test("应该支持扩展溢出策略（expand）", async () => {
         const emitter = new FastEvent();
-        const iterator = createAsyncEventIterator<number>(emitter, "expand", {
+        const iterator = createAsyncEventIterator(emitter, "expand", {
             size: 2,
             maxExpandSize: 6,
             overflow: "expand",
@@ -103,7 +103,7 @@ describe("FastEventIterator", () => {
 
         const results: number[] = [];
         for await (const num of iterator) {
-            results.push(num);
+            results.push(num.payload);
             if (results.length === 6) break;
         }
 
@@ -115,12 +115,12 @@ describe("FastEventIterator", () => {
         const emitter = new FastEvent();
         let dropCount = 0;
         const droppedMessages: number[] = [];
-        const iterator = createAsyncEventIterator<number>(emitter, "lifetime", {
+        const iterator = createAsyncEventIterator(emitter, "lifetime", {
             size: 10,
             lifetime: 100, // 100ms 后过期
             onDrop: (message) => {
                 dropCount++;
-                droppedMessages.push(message);
+                droppedMessages.push(message.payload);
             },
         });
         iterator.create();
@@ -136,7 +136,7 @@ describe("FastEventIterator", () => {
 
         const results: number[] = [];
         for await (const num of iterator) {
-            results.push(num);
+            results.push(num.payload);
             if (results.length === 1) break;
         }
 
@@ -149,11 +149,11 @@ describe("FastEventIterator", () => {
 
     test("应该支持 onPush 回调自定义消息入队逻辑", async () => {
         const emitter = new FastEvent();
-        const iterator = createAsyncEventIterator<string>(emitter, "push", {
+        const iterator = createAsyncEventIterator(emitter, "push", {
             size: 10,
             onPush: (message, buffer) => {
                 // 添加时间戳前缀
-                buffer.push([`[${Date.now()}] ${message}`, 0]);
+                buffer.push([`[${Date.now()}] ${message.payload}`, 0]);
             },
         });
         iterator.create();
@@ -170,7 +170,7 @@ describe("FastEventIterator", () => {
 
     test("应该支持 onPop 回调自定义消息弹出顺序", async () => {
         const emitter = new FastEvent();
-        const iterator = createAsyncEventIterator<number>(emitter, "pop", {
+        const iterator = createAsyncEventIterator(emitter, "pop", {
             size: 10,
             onPop: (buffer, _hasNew) => {
                 // 每次都使用后进先出（LIFO）
@@ -186,7 +186,7 @@ describe("FastEventIterator", () => {
 
         const results: number[] = [];
         for await (const num of iterator) {
-            results.push(num);
+            results.push(num.payload);
             if (results.length === 3) break;
         }
 
@@ -236,7 +236,7 @@ describe("FastEventIterator", () => {
     test("应该支持错误处理回调", async () => {
         const emitter = new FastEvent();
         let errorHandled = false;
-        const iterator = createAsyncEventIterator<string>(emitter, "data", {
+        const iterator = createAsyncEventIterator(emitter, "data", {
             onError: (_error) => {
                 errorHandled = true;
                 return Promise.resolve(false);
@@ -248,7 +248,7 @@ describe("FastEventIterator", () => {
 
         const results: string[] = [];
         for await (const message of iterator) {
-            results.push(message);
+            results.push(message.payload);
             if (results.length === 1) break;
         }
 
@@ -262,7 +262,7 @@ describe("FastEventIterator", () => {
 describe("FastEventIterator 辅助函数", () => {
     test("droppingIterator 应该创建丢弃新消息的迭代器", async () => {
         const emitter = new FastEvent();
-        const iterator = createAsyncEventIterator<number>(emitter, "drop", { overflow: "drop" });
+        const iterator = createAsyncEventIterator(emitter, "drop", { overflow: "drop" });
         iterator.create();
         for (let i = 0; i < 5; i++) {
             emitter.emit("drop", i);
@@ -270,7 +270,7 @@ describe("FastEventIterator 辅助函数", () => {
 
         const results: number[] = [];
         for await (const num of iterator) {
-            results.push(num);
+            results.push(num.payload);
             if (results.length === 3) break;
         }
 
@@ -279,7 +279,7 @@ describe("FastEventIterator 辅助函数", () => {
 
     test("slidingIterator 应该创建滑动窗口的迭代器", async () => {
         const emitter = new FastEvent();
-        const iterator = createAsyncEventIterator<number>(emitter, "slide", {
+        const iterator = createAsyncEventIterator(emitter, "slide", {
             overflow: "slide",
             size: 3,
         });
@@ -290,7 +290,7 @@ describe("FastEventIterator 辅助函数", () => {
 
         const results: number[] = [];
         for await (const num of iterator) {
-            results.push(num);
+            results.push(num.payload);
             if (results.length === 3) break;
         }
 
@@ -299,7 +299,7 @@ describe("FastEventIterator 辅助函数", () => {
 
     test("expandingIterator 应该创建可扩展的迭代器", async () => {
         const emitter = new FastEvent();
-        const iterator = createAsyncEventIterator<number>(emitter, "expand", {
+        const iterator = createAsyncEventIterator(emitter, "expand", {
             size: 2,
             maxExpandSize: 10,
             overflow: "expand",
@@ -311,7 +311,7 @@ describe("FastEventIterator 辅助函数", () => {
 
         const results: number[] = [];
         for await (const num of iterator) {
-            results.push(num);
+            results.push(num.payload);
             if (results.length === 5) break;
         }
 

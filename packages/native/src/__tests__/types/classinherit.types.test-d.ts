@@ -242,18 +242,17 @@ describe("继承FastEventScope类型系统", () => {
         myScope.on("a", (message) => {
             type cases = [
                 Expect<Equal<typeof message.type, "a">>,
-                Expect<Equal<typeof message.payload, any>>,
-                // 局限性，无法合并类型
-                // Expect<Equal<typeof message.payload, number>>,
+                Expect<Equal<typeof message.payload, number>>,
                 // 无法从Emitter继承推断出全局Meta
                 Expect<
                     Equal<
                         typeof message.meta,
-                        FastEventMeta &
-                            Record<string, any> &
-                            FastEventScopeMeta & {
-                                root: number;
-                            }
+                        | (FastEventMeta &
+                              Record<string, any> &
+                              FastEventScopeMeta & {
+                                  root: number;
+                              })
+                        | undefined
                     >
                 >,
             ];
@@ -261,17 +260,16 @@ describe("继承FastEventScope类型系统", () => {
         myScope.on("b", (message) => {
             type cases = [
                 Expect<Equal<typeof message.type, "b">>,
-                Expect<Equal<typeof message.payload, any>>,
-                // 局限性，无法合并类型
-                // Expect<Equal<typeof message.payload, string>>,
+                Expect<Equal<typeof message.payload, string>>,
                 Expect<
                     Equal<
                         typeof message.meta,
-                        FastEventMeta &
-                            Record<string, any> &
-                            FastEventScopeMeta & {
-                                root: number;
-                            }
+                        | (FastEventMeta &
+                              Record<string, any> &
+                              FastEventScopeMeta & {
+                                  root: number;
+                              })
+                        | undefined
                     >
                 >,
             ];
@@ -317,14 +315,18 @@ describe("继承FastEventScope类型系统", () => {
             message.meta;
             type cases = [
                 Expect<Equal<typeof message.type, "a">>,
-                Expect<Equal<typeof message.payload, any>>,
                 // 无法从Emitter继承推断出全局Meta
-                // Expect<Equal<typeof message.payload, number>>,
+                Expect<Equal<typeof message.payload, number>>,
                 // 无法从Emitter继承推断出全局Meta
                 Expect<
                     Equal<
                         typeof message.meta,
-                        FastEventMeta & FastEventScopeMeta & Record<string, any> & RootMeta
+                        | (FastEventMeta &
+                              FastEventScopeMeta &
+                              MyScopeMeta &
+                              Record<string, any> &
+                              RootMeta)
+                        | undefined
                     >
                 >,
             ];
@@ -332,13 +334,16 @@ describe("继承FastEventScope类型系统", () => {
         myScope.on("b", (message) => {
             type cases = [
                 Expect<Equal<typeof message.type, "b">>,
-                Expect<Equal<typeof message.payload, any>>,
-                // Expect<Equal<typeof message.payload, string>>,
+                Expect<Equal<typeof message.payload, string>>,
                 Expect<
                     Equal<
                         typeof message.meta,
-                        FastEventMeta & Record<string, any> & FastEventScopeMeta & RootMeta
-                        //  MyScopeMeta &
+                        | (RootMeta &
+                              FastEventMeta &
+                              MyScopeMeta &
+                              FastEventScopeMeta &
+                              Record<string, any>)
+                        | undefined
                     >
                 >,
             ];
@@ -383,13 +388,17 @@ describe("继承FastEventScope类型系统", () => {
             // message.meta;
             type cases = [
                 Expect<Equal<typeof message.type, "a">>,
-                Expect<Equal<typeof message.payload, any>>,
-                // Expect<Equal<typeof message.payload, number>>,
+                Expect<Equal<typeof message.payload, number>>,
                 // 无法从Emitter继承推断出全局Meta
                 Expect<
                     Equal<
                         typeof message.meta,
-                        FastEventMeta & Record<string, any> & FastEventScopeMeta & RootMeta
+                        | (RootMeta &
+                              FastEventMeta &
+                              MyScopeMeta &
+                              Record<string, any> &
+                              FastEventScopeMeta)
+                        | undefined
                     >
                 >,
             ];
@@ -397,12 +406,16 @@ describe("继承FastEventScope类型系统", () => {
         myScope.on("b", (message) => {
             type cases = [
                 Expect<Equal<typeof message.type, "b">>,
-                // Expect<Equal<typeof message.payload, string>>,
-                Expect<Equal<typeof message.payload, any>>,
+                Expect<Equal<typeof message.payload, string>>,
                 Expect<
                     Equal<
                         typeof message.meta,
-                        FastEventMeta & Record<string, any> & FastEventScopeMeta & RootMeta
+                        | (RootMeta &
+                              FastEventMeta &
+                              FastEventScopeMeta &
+                              MyScopeMeta &
+                              Record<string, any>)
+                        | undefined
                     >
                 >,
             ];
@@ -473,15 +486,15 @@ describe("继承FastEventScope类型系统", () => {
             type This = typeof this;
             type cases = [
                 Expect<Equal<typeof message.type, "a">>,
-                Expect<Equal<typeof message.payload, any>>,
-                // Expect<Equal<typeof message.payload, number>>,
+                Expect<Equal<typeof message.payload, number>>,
                 Expect<
                     Equal<
                         typeof message.meta,
-                        FastEventMeta &
-                            FastEventScopeMeta & {
-                                root: number;
-                            } & Record<string, any>
+                        | (FastEventMeta &
+                              FastEventScopeMeta & {
+                                  root: number;
+                              } & Record<string, any>)
+                        | undefined
                     >
                 >,
             ];

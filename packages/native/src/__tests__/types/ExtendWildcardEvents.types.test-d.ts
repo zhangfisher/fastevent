@@ -3,7 +3,6 @@
 import { describe, test } from "bun:test";
 import type { Equal, Expect } from "@type-challenges/utils";
 import { type ExtendWildcardEvents } from "../../types/wildcards/ExtendWildcardEvents";
-import { ApplyWildcardEvents } from "../../types/wildcards";
 
 describe("ExtendWildcardEvents", () => {
     test("非通配符事件保持不变", () => {

@@ -38,23 +38,6 @@ describe("类型系统测试", () => {
             type cases = [Expect<Equal<typeof this, { root: boolean }>>];
         });
     });
-    // test("作用域继承未指定上下文时的类型推导", () => {
-    //     const emitter = new FastEvent()
-    //     const withoutCtxScope = emitter.scope("x/y/z")
-    //     type withoutScopeCtx = Expect<Equal<typeof withoutCtxScope.options.context, never>>
-
-    //     withoutCtxScope.on("xxx", function (this, message) {
-    //         type cases = [
-    //             Expect<Equal<typeof this, FastEventScope>>
-    //         ]
-    //     })
-
-    //     withoutCtxScope.once("xxx", function (this, message) {
-    //         type cases = [
-    //             Expect<Equal<typeof this, FastEventScope>>
-    //         ]
-    //     })
-    // })
     test("作用域继承上下文时的类型推导", () => {
         const emitter = new FastEvent({
             context: {
@@ -94,7 +77,7 @@ describe("类型系统测试", () => {
                 Expect<
                     Equal<
                         typeof message.meta,
-                        FastEventMeta & Record<string, any> & FastEventScopeMeta
+                        (FastEventMeta & Record<string, any> & FastEventScopeMeta) | undefined
                     >
                 >,
             ];
@@ -108,7 +91,7 @@ describe("类型系统测试", () => {
                 Expect<
                     Equal<
                         typeof message.meta,
-                        FastEventMeta & Record<string, any> & FastEventScopeMeta
+                        (FastEventMeta & Record<string, any> & FastEventScopeMeta) | undefined
                     >
                 >,
             ];

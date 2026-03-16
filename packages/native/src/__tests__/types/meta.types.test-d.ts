@@ -21,14 +21,26 @@ describe("FastEvent元数据类型检查", () => {
         const emitter = new FastEvent();
         type cases = [Expect<Equal<typeof emitter.options.meta, Record<string, any>>>];
         emitter.on("x", (message) => {
-            type cases = [Expect<Equal<typeof message.meta, FastEventMeta & Record<string, any>>>];
+            type cases = [
+                Expect<
+                    Equal<typeof message.meta, (FastEventMeta & Record<string, any>) | undefined>
+                >,
+            ];
         });
         emitter.once("x", (message) => {
-            type cases = [Expect<Equal<typeof message.meta, FastEventMeta & Record<string, any>>>];
+            type cases = [
+                Expect<
+                    Equal<typeof message.meta, (FastEventMeta & Record<string, any>) | undefined>
+                >,
+            ];
         });
 
         emitter.onAny((message) => {
-            type cases = [Expect<Equal<typeof message.meta, FastEventMeta & Record<string, any>>>];
+            type cases = [
+                Expect<
+                    Equal<typeof message.meta, (FastEventMeta & Record<string, any>) | undefined>
+                >,
+            ];
         });
     });
 
@@ -38,14 +50,20 @@ describe("FastEvent元数据类型检查", () => {
         emitter.on("x", (message) => {
             type cases = [
                 Expect<
-                    Equal<typeof message.meta, FastEventMeta & CustomMeta & Record<string, any>>
+                    Equal<
+                        typeof message.meta,
+                        (FastEventMeta & CustomMeta & Record<string, any>) | undefined
+                    >
                 >,
             ];
         });
         emitter.once("x", (message) => {
             type cases = [
                 Expect<
-                    Equal<typeof message.meta, FastEventMeta & CustomMeta & Record<string, any>>
+                    Equal<
+                        typeof message.meta,
+                        (FastEventMeta & CustomMeta & Record<string, any>) | undefined
+                    >
                 >,
             ];
         });
@@ -72,18 +90,33 @@ describe("FastEvent元数据类型检查", () => {
         type cases = [Expect<Equal<typeof emitter.options.meta, OrderType>>];
         emitter.on("x", (message) => {
             type cases = [
-                Expect<Equal<typeof message.meta, FastEventMeta & OrderType & Record<string, any>>>,
+                Expect<
+                    Equal<
+                        typeof message.meta,
+                        (FastEventMeta & OrderType & Record<string, any>) | undefined
+                    >
+                >,
             ];
         });
         emitter.once("x", (message) => {
             type cases = [
-                Expect<Equal<typeof message.meta, FastEventMeta & OrderType & Record<string, any>>>,
+                Expect<
+                    Equal<
+                        typeof message.meta,
+                        (FastEventMeta & OrderType & Record<string, any>) | undefined
+                    >
+                >,
             ];
         });
 
         emitter.onAny((message) => {
             type cases = [
-                Expect<Equal<typeof message.meta, FastEventMeta & OrderType & Record<string, any>>>,
+                Expect<
+                    Equal<
+                        typeof message.meta,
+                        (FastEventMeta & OrderType & Record<string, any>) | undefined
+                    >
+                >,
             ];
         });
     });
@@ -121,12 +154,13 @@ describe("FastEvent元数据类型检查", () => {
                 Expect<
                     Equal<
                         typeof message.meta,
-                        FastEventMeta & {
-                            root: number;
-                        } & {
-                            c: number;
-                        } & FastEventScopeMeta &
-                            Record<string, any>
+                        | (FastEventMeta & {
+                              root: number;
+                          } & {
+                              c: number;
+                          } & FastEventScopeMeta &
+                              Record<string, any>)
+                        | undefined
                     >
                 >,
             ];

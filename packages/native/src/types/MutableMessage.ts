@@ -1,3 +1,4 @@
+import { OptionalKeys } from "./utils/OptionalKeys";
 // oxlint-disable no-unused-vars
 import {
     ContainsWildcard,
@@ -28,7 +29,7 @@ export type MutableMessage<
     Meta extends Record<string, any> = Record<string, any>,
 > =
     IsAnyRecord<Events> extends true
-        ? FastEventMessage<string, any, Partial<Meta>>
+        ? OptionalKeys<FastEventMessage<string, any, Meta>, "meta"> & FastEventMessageExtends
         : {
               [K in KeyOf<Events>]: Events[K] extends FastMessagePayload
                   ? IfNever<Events[K]["type"], any>
@@ -39,7 +40,33 @@ export type MutableMessage<
                     } & FastEventMessageExtends;
           }[KeyOf<Events>];
 
+// export type OptionalMutableMessage<
+//     Events extends Record<string, any>,
+//     Meta extends Record<string, any> = Record<string, any>,
+// > =
+//     IsAnyRecord<Events> extends true
+//         ? OptionalKeys<FastEventMessage<string, any, Meta>, "meta"> & FastEventMessageExtends
+//         : {
+//               [K in KeyOf<Events>]: Events[K] extends FastMessagePayload
+//                   ? IfNever<Events[K]["type"], any>
+//                   : {
+//                         type: ReplaceWildcard<K extends "*" ? string : EnsureEventType<K>>;
+//                         payload: IfNever<Events[K], any>;
+//                         meta?: Meta;
+//                     } & FastEventMessageExtends;
+//           }[KeyOf<Events>];
+
+// type Events = {
+//     a: boolean;
+//     b: number;
+//     c: string;
+// };
+
+// type Messages = MutableMessage<Events, { a: boolean }>;
+// type s = OptionalMutableMessage<Messages>;
+
 // import { FastEventIterator } from "../utils/eventIterator";
+import { RequiredKeys } from "./utils/RequiredKeys";
 
 // type Events = {
 //     "users/*/login": string;
