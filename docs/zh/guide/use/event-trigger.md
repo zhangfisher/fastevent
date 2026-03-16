@@ -99,14 +99,13 @@ emitter.emit('system/status', { online: true }, true);
 emitter.on('system/status', (message) => {
     console.log('当前状态:', message.payload.online);
 });
-// 可以清除保留的事件。
-import { ClearRetainMessage } from 'fastevent'
-emitter.emit('system/status',ClearRetainMessage)
-
+// 清除所有保留消息
+emitter.clearRetainMessages()
+// 可以清除指定事件的保留消息。
+emitter.clearRetainMessages('system/status')
 ```
 :::warning 提示
 - 保留事件也叫粘性消息。
-- `ClearRetainMessage`是一个`symbol`类型，用于清除保留的事件。
 - `emitter.retainedMessages`记录了所有保留的消息。
 :::
 
@@ -114,7 +113,7 @@ emitter.emit('system/status',ClearRetainMessage)
 
 `emit`和`emitAsync`触发结果时会执行注册的监听器函数并返回结果。
 
-```typescript
+```typescript twoslash
 import { FastEvent } from 'fastevent';
 const emitter = new FastEvent();
 
@@ -335,3 +334,5 @@ export type FastEventListenerArgs<M = Record<string, any>> = {
 | `meta`        | `Record<string, any>`      | 事件元数据，用于传递给监听器                                                          |
 | `abortSignal` | `AbortSignal`              | 用于传递给监听器函数,详见[中止监听器](./abort.md)                                     |
 | `executor`    | `FastListenerExecutorArgs` | 用于控制监听器执行行为,详见[执行器](./executors/index)                                    |
+| `flags`    | `FastEventListenerFlags` | 额外的标识，`1: 当消息是经过transform转换后的消息时的标识`                         |
+| `rawEventType`    | `string` | 如果消息经过转换，则此为原始事件名                         |

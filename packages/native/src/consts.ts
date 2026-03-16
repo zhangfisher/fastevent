@@ -12,5 +12,3 @@ export class UnboundError extends FastEventError {}
 export class AbortError extends FastEventError {}
 export class CancelError extends FastEventError {}
 export class QueueOverflowError extends FastEventError {}
-
-export const FastEventDirectives = {};

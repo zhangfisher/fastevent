@@ -1,6 +1,5 @@
 import { describe, test, expect, vi } from "vitest";
 import { FastEvent } from "../../event";
-import { FastEventDirectives } from "../../consts";
 
 describe("订阅与发布retain事件", async () => {
     test("简单发布订阅retain事件", () => {

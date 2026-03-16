@@ -24,8 +24,12 @@ export function parseEmitArgs<
     }
     meta = Object.assign({}, emitterMeta, scopeMeta, emitArgs.meta, meta);
 
-    if (Object.keys(meta).length === 0) meta = undefined;
-    message.meta = meta;
+    if (Object.keys(meta).length === 0) {
+        meta = undefined;
+        delete message.meta;
+    } else {
+        message.meta = meta;
+    }
 
     if (emitArgs.executor === undefined) {
         emitArgs.executor = scopeExecutor;

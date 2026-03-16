@@ -1,5 +1,5 @@
 // oxlint-disable no-unused-vars
-import { FastEventDirectives, UnboundError } from "./consts";
+import { UnboundError } from "./consts";
 import type { FastEvent } from "./event";
 import { FastListenerExecutor } from "./executors/types";
 import {
@@ -20,11 +20,7 @@ import {
     FastEventMessage,
 } from "./types/FastEventMessages";
 import { FastEventSubscriber } from "./types/FastEventSubscribers";
-import {
-    TypedFastEventListener,
-    FastEventCommonListener,
-    FastEventListenerNode,
-} from "./types/FastEventListeners";
+import { TypedFastEventListener, FastEventCommonListener } from "./types/FastEventListeners";
 import {
     FastEventListenerArgs,
     FastEventListenOptions,
@@ -50,8 +46,6 @@ export type FastEventScopeOptions<Meta = Record<string, any>, Context = never> =
     meta: FastEventScopeMeta & FastEventMeta & Meta;
     context: Context;
     executor?: FastListenerExecutor;
-    // 默认监听器，优先级高类方法onMessage
-    onMessage?: TypedFastEventListener;
     /**
      * 对接收到的消息进行转换，用于将消息转换成其他格式
      *
@@ -137,17 +131,8 @@ export class FastEventScope<
         if (prefix.length > 0 && !prefix.endsWith(emitter.options.delimiter!)) {
             this.prefix = prefix + emitter.options.delimiter;
         }
-        const entryNode = this._getListenerNodeEntry();
     }
-    private _getListenerNodeEntry() {
-        //@ts-ignore
-        this.emitter._forEachNodes(
-            this.prefix.split(this.emitter.options.delimiter),
-            (node: FastEventListenerNode, parent: FastEventListenerNode) => {
-                console.log(node);
-            },
-        );
-    }
+
     /**
      * 初始化选项
      *
@@ -348,7 +333,6 @@ export class FastEventScope<
 
         this._transformMessage(message as any, args);
         message.type = this._getScopeType(message.type)!;
-
         return this.emitter.emit(message as any, args);
     }
 

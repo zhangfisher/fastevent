@@ -52,9 +52,9 @@ export type FastEventOptions<Meta = Record<string, any>, Context = never> = {
      * 全局执行器
      */
     executor?: FastListenerExecutor;
-    // 默认监听器，优先级高类方法onMessage
-    onMessage?: TypedFastEventListener;
-    // 是否展开emit返回值,默认为false，用于将事件转发给其他FastEvent时使用
+    /**
+     * 是否展开emit返回值,默认为false，用于将事件转发给其他FastEvent时使用
+     */
     expandEmitResults?: boolean;
     /**
      * 对接收到的消息进行转换，用于将消息转换成其他格式
@@ -143,8 +143,4 @@ export type FastEventListenerArgs<M = Record<string, any>> = {
      * 如果消息经过转换前的原主题
      */
     rawEventType?: string;
-    /**
-     *
-     */
-    cacheNodes?: FastEventListenerNode[];
 };
