@@ -2,8 +2,9 @@
 // oxlint-disable no-unused-vars
 import { describe, test, expect, vi } from "bun:test";
 import { FastEvent } from "../../event";
-import { queue, throttle } from "../../pipes";
+import { queue } from "../../pipes";
 import { NotPayload } from "../../types/transformed/NotPayload";
+import { AbortError } from "../../consts";
 
 describe("FastEvent 异步迭代器基础功能", () => {
     test("应该支持 for await...of 语法", async () => {
@@ -354,6 +355,181 @@ describe("边缘情况", () => {
             messages.push(msg);
         }
         expect(messages).toHaveLength(0);
+
+        expect(emitter.getListeners("test").length).toBe(0);
+    });
+});
+
+describe("FastEvent 异步迭代器取消订阅", () => {
+    test("通过传入 signal 参数使用 AbortSignal 来取消订阅", async () => {
+        const emitter = new FastEvent();
+        const abortController = new AbortController();
+
+        const subscriber = emitter.on("test", {
+            iterable: {
+                signal: abortController.signal,
+            },
+        });
+
+        // 先消费一条消息，清空队列
+        emitter.emit("test", "message1");
+        const firstMsg = await subscriber[Symbol.asyncIterator]().next();
+        expect(firstMsg.value.payload).toBe("message1");
+
+        // 然后在等待新消息时中止
+        const messages = [firstMsg.value];
+        setTimeout(() => {
+            abortController.abort();
+        }, 10);
+
+        try {
+            for await (const msg of subscriber) {
+                messages.push(msg);
+            }
+        } catch (error: unknown) {
+            // 期望收到 AbortError
+            expect(error).toBeInstanceOf(AbortError);
+        }
+
+        // 应该只收到一条消息
+        expect(messages).toHaveLength(1);
+    });
+
+    test("在 for await 内部 throw 错误来自动取消订阅", async () => {
+        const emitter = new FastEvent();
+        const subscriber = emitter.on("test");
+
+        // 发送一些消息
+        emitter.emit("test", "message1");
+        emitter.emit("test", "message2");
+        emitter.emit("test", "message3");
+
+        const messages: any[] = [];
+        const customError = new Error("Custom error in iteration");
+
+        try {
+            for await (const msg of subscriber) {
+                messages.push(msg);
+                // 在收到第二条消息后抛出错误
+                if (messages.length === 2) {
+                    throw customError;
+                }
+            }
+        } catch (error: unknown) {
+            // 期望收到自定义错误
+            expect(error).toBe(customError);
+        }
+
+        // 应该只收到两条消息
+        expect(messages).toHaveLength(2);
+        expect(messages[0].payload).toBe("message1");
+        expect(messages[1].payload).toBe("message2");
+
+        // 验证订阅已被取消，后续消息不会被接收
+        emitter.emit("test", "message4");
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        expect(messages).toHaveLength(2); // 长度不变
+    });
+
+    test("在 for await 内部 return 来自动取消订阅", async () => {
+        const emitter = new FastEvent();
+        const subscriber = emitter.on("test");
+        let subscribeCount = emitter.getListeners("test").length;
+        // 发送一些消息
+        emitter.emit("test", "message1");
+        emitter.emit("test", "message2");
+        emitter.emit("test", "message3");
+
+        const messages: any[] = [];
+        let returnedValue: string | undefined;
+
+        // 使用 IIFE 来支持 return 语句
+        await (async () => {
+            for await (const msg of subscriber) {
+                messages.push(msg);
+                // 在收到第二条消息后 return
+                if (messages.length === 2) {
+                    returnedValue = "early exit";
+                    return;
+                }
+            }
+        })();
+        expect(emitter.getListeners("test").length).toBe(0);
+        // 应该只收到两条消息
+        expect(messages).toHaveLength(2);
+        expect(messages[0].payload).toBe("message1");
+        expect(messages[1].payload).toBe("message2");
+        expect(returnedValue).toBe("early exit");
+
+        // 验证订阅已被取消，后续消息不会被接收
+        emitter.emit("test", "message4");
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        expect(messages).toHaveLength(2); // 长度不变
+    });
+
+    test("在 for await 内部 break 来自动取消订阅", async () => {
+        const emitter = new FastEvent();
+        const subscriber = emitter.on("test");
+
+        // 发送一些消息
+        emitter.emit("test", "message1");
+        emitter.emit("test", "message2");
+        emitter.emit("test", "message3");
+
+        const messages: any[] = [];
+
+        for await (const msg of subscriber) {
+            messages.push(msg);
+            // 在收到第二条消息后 break
+            if (messages.length === 2) {
+                break;
+            }
+        }
+
+        expect(emitter.getListeners("test").length).toBe(0);
+        // 应该只收到两条消息
+        expect(messages).toHaveLength(2);
+        expect(messages[0].payload).toBe("message1");
+        expect(messages[1].payload).toBe("message2");
+
+        // 验证订阅已被取消，后续消息不会被接收
+        emitter.emit("test", "message4");
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        expect(messages).toHaveLength(2); // 长度不变
+    });
+
+    test("break 后应该能重新开始迭代（需要调用 on()）", async () => {
+        const emitter = new FastEvent();
+        const subscriber = emitter.on("test");
+
+        // 发送消息
+        emitter.emit("test", "message1");
+
+        // 第一次迭代并 break
+        const messages1: any[] = [];
+        for await (const msg of subscriber) {
+            messages1.push(msg);
+            break;
+        }
+
+        expect(messages1).toHaveLength(1);
+        expect(messages1[0].payload).toBe("message1");
+
+        // 重新启用订阅
+        subscriber.on();
+
+        // 发送新消息
+        emitter.emit("test", "message2");
+
+        // 第二次迭代
+        const messages2: any[] = [];
+        for await (const msg of subscriber) {
+            messages2.push(msg);
+            break;
+        }
+
+        expect(messages2).toHaveLength(1);
+        expect(messages2[0].payload).toBe("message2");
     });
 });
 
@@ -449,7 +625,7 @@ describe("向后兼容性", () => {
         expect(subscriber).toBeDefined();
     });
 
-    test("iterable=true 时应该保留其他选项的功能", async () => {
+    test("应该保留其他选项的功能", async () => {
         const emitter = new FastEvent();
         let filterCallCount = 0;
 
@@ -474,29 +650,4 @@ describe("向后兼容性", () => {
         expect(messages).toHaveLength(1);
         expect(messages[0].payload).toBe("allowed");
     });
-
-    // test("iterable=true 时应该保留自定义 pipes", async () => {
-    //     const emitter = new FastEvent();
-
-    //     const subscriber = emitter.on("test", {
-    //         pipes: [
-    //             throttle(50), // 自定义 pipe
-    //             queue({ size: 5 }),
-    //         ],
-    //     });
-
-    //     // 快速发送多条消息
-    //     for (let i = 0; i < 10; i++) {
-    //         emitter.emit("test", i);
-    //     }
-
-    //     const messages = [];
-    //     for await (const msg of subscriber) {
-    //         messages.push(msg);
-    //         if (messages.length === 5) break;
-    //     }
-
-    //     // 自定义 pipes 应该正常工作
-    //     expect(messages.length).toBeLessThanOrEqual(5);
-    // });
 });

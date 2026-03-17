@@ -18,9 +18,9 @@
         "changeset": "changeset",
         "release": "bun run build && bun run changeset version && cpx packages/native/CHANGELOG.md docs/zh/guide/intro/ && bun run changeset publish",
         "sync": "cnpm sync fastevent",
-        "docs:dev": "vitepress dev docs",
         "lint": "oxlint",
         "lint:fix": "oxlint --fix",
+        "docs:dev": "vitepress dev docs",
         "docs:build": "vitepress build docs",
         "docs:preview": "vitepress preview docs"
     },

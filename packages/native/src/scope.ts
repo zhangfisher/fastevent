@@ -38,7 +38,7 @@ import { parseScopeArgs } from "./utils/parseScopeArgs";
 import { renameFn } from "./utils/renameFn";
 import { PickPayload } from "./types/transformed/PickPayload";
 import { isFunction } from "./utils/isFunction";
-import { FastEventIterator } from "./utils/eventIterator";
+import { FastEventIterator } from "./eventIterator";
 import { GetClosestMessage } from "./types/closest/GetClosestMessage";
 import { InMatchedEvent } from "./types/wildcards/InMatchedEvent";
 

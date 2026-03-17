@@ -9,7 +9,7 @@ import { NotPayload } from "../../types/transformed/NotPayload";
 import { ValueOf } from "../../types/utils/ValueOf";
 import { FastEventMessageExtends, GetClosestEvents } from "../../types";
 import { FastEventMeta } from "../../types/FastEventMessages";
-import { FastEventIterator } from "../../utils/eventIterator";
+import { FastEventIterator } from "../../eventIterator";
 
 type IteratorMessage<T> = T extends FastEventIterator<infer M> ? M : never;
 

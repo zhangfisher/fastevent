@@ -1,3 +1,4 @@
+// oxlint-disable no-unused-vars
 import { describe, test, expect } from "vitest";
 import { FastEvent } from "../../event";
 
@@ -19,6 +20,22 @@ describe("Symbol.dispose", () => {
         // 验证订阅已被取消
         emitter.emit("test");
         expect(events).toEqual(["test"]);
+    });
+    test("普通订阅者应自动取消订阅", () => {
+        const emitter = new FastEvent();
+        const events: string[] = [];
+
+        {
+            using subscriber = emitter.on("test", ({ type }) => {
+                events.push(type);
+            });
+            emitter.emit("test");
+            expect(emitter.getListeners("test").length).toBe(1);
+        }
+        emitter.emit("test");
+        expect(events).toEqual(["test"]);
+        expect(events.length).toBe(1);
+        expect(emitter.getListeners("test").length).toBe(0);
     });
 
     test("可迭代订阅者应支持 Symbol.dispose", async () => {
@@ -172,5 +189,18 @@ describe("Symbol.dispose", () => {
         scope.emit("test");
 
         expect(events).toEqual(["test"]);
+    });
+    test("异步迭代器订阅者应自动取消订阅", () => {
+        const emitter = new FastEvent();
+        const events: string[] = [];
+
+        {
+            using subscriber = emitter.on("test");
+            emitter.emit("test");
+            expect(emitter.getListeners("test").length).toBe(1);
+        }
+        emitter.emit("test");
+        expect(events.length).toBe(0);
+        expect(emitter.getListeners("test").length).toBe(0);
     });
 });

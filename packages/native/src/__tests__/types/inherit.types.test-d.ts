@@ -3,6 +3,7 @@ import { describe, test } from "bun:test";
 import type { Equal, Expect } from "@type-challenges/utils";
 import { FastEvent } from "../../event";
 import { FastEventScope, FastEventScopeOptions } from "../../scope";
+import type { FastEventOptions } from "../../";
 
 describe("事件继承类型测试", () => {
     test("基本子类继承类型", () => {
@@ -210,6 +211,27 @@ describe("事件继承类型测试", () => {
         }
         const scope = new MyEventScope();
     });
+    test("继承时FastEventScope时覆盖重载Options类型", () => {
+        interface MyEventOptions extends FastEventOptions {
+            count?: number;
+        }
+        class MyEvent extends FastEvent {
+            constructor(options?: Partial<MyEventOptions>) {
+                super(Object.assign({}, options));
+            }
+            get options() {
+                return super.options as MyEventOptions; // [!code ++]
+            }
+        }
+
+        const emitter = new MyEvent();
+        emitter.on("test", function (this, message) {
+            type This = typeof this; // [!code ++]
+        });
+        type OptionsType = typeof emitter.options;
+        emitter.options.count = 100;
+    });
+
     // TODO: 解决继承时的动态泛型问题
     // test("动态传递事件类型给基类进行类型合并", () => {
     //     type BaseEvents = {

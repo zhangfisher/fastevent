@@ -6,7 +6,7 @@ import { TransformedEvents } from "../../types/transformed/TransformedEvents";
 import { NotPayload } from "../../types/transformed/NotPayload";
 import { FastEventMessageExtends, GetClosestEvents, MutableMessage } from "../../types";
 import { FastEventMeta } from "../../types/FastEventMessages";
-import { FastEventIterator } from "../../utils/eventIterator";
+import { FastEventIterator } from "../../eventIterator";
 type IteratorMessage<T> = T extends FastEventIterator<infer M> ? M : never;
 
 describe("使用onAny监听器的FaseEvent类型系统测试", () => {

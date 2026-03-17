@@ -3,12 +3,12 @@
  * 重构：使用 queue.ts 中的队列参数和逻辑
  */
 
-import { AbortError } from "../consts";
-import type { FastEvent } from "../event";
-import type { FastEventScope } from "../scope";
-import type { FastEventMessage } from "../types/FastEventMessages";
-import type { FastEventListener } from "../types/FastEventListeners";
-import type { FastEventListenerArgs, FastEventListenOptions } from "../types/FastEvents";
+import { AbortError } from "./consts";
+import type { FastEvent } from "./event";
+import type { FastEventScope } from "./scope";
+import type { FastEventMessage } from "./types/FastEventMessages";
+import type { FastEventListener } from "./types/FastEventListeners";
+import type { FastEventListenerArgs, FastEventListenOptions } from "./types/FastEvents";
 
 // 溢出策略类型
 export type FastQueueOverflows =
@@ -68,8 +68,8 @@ export class FastEventIterator<T = any> implements AsyncIterableIterator<T> {
         private eventName: string,
         options: FastEventIteratorOptions<T> = {},
     ) {
-        const defaultSize = 100;
-        const defaultMaxExpandSize = 1000;
+        const defaultSize = 20;
+        const defaultMaxExpandSize = 100;
 
         this.options = {
             size: options.size ?? defaultSize,
@@ -109,7 +109,7 @@ export class FastEventIterator<T = any> implements AsyncIterableIterator<T> {
             );
             this._cleanups.push(() => subscriber.off());
             // 处理中止信号
-            if (this.options.signal) {
+            if (this.options.signal && !this.options.signal.aborted) {
                 const offFn = () => {
                     this.off(true);
                 };

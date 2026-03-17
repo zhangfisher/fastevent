@@ -55,7 +55,7 @@ import {
     createAsyncEventIterator,
     FastEventIterator,
     FastEventIteratorOptions,
-} from "./utils/eventIterator";
+} from "./eventIterator";
 import { InMatchedEvent } from "./types/wildcards/InMatchedEvent";
 import { GetClosestMessage } from "./types/closest/GetClosestMessage";
 import { wrapPipeListener } from "./utils/wrapPipeListener";

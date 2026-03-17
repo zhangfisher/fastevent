@@ -8,8 +8,8 @@
 
 ```typescript
 // 订阅事件时保存返回的订阅对象
-const subscriber = event.on('user/login', (message) => {
-    console.log('用户登录:', message.payload);
+const subscriber = event.on("user/login", (message) => {
+    console.log("用户登录:", message.payload);
 });
 
 // 使用订阅对象取消订阅
@@ -24,14 +24,14 @@ subscriber.off();
 
 ```typescript
 const listener = (message) => {
-    console.log('收到消息:', message.payload);
+    console.log("收到消息:", message.payload);
 };
 
 // 订阅事件
-event.on('chat/message', listener);
+event.on("chat/message", listener);
 
 // 取消特定事件的特定监听器
-event.off('chat/message', listener);
+event.off("chat/message", listener);
 ```
 
 ### 取消所有订阅
@@ -57,7 +57,7 @@ export type FastEventSubscriber = {
 推荐采用订阅对象取消订阅，可以避免误操作：
 
 ```ts
-const subscriber = event.on('chat/message', listener);
+const subscriber = event.on("chat/message", listener);
 subscriber.off(); // [!code ++]
 ```
 
@@ -68,8 +68,8 @@ subscriber.off(); // [!code ++]
 1. **取消特定事件的特定监听器：**
 
 ```typescript
-const subscriber = event.on('chat/message', listener);
-event.off('chat/message', subscriber.listener);
+const subscriber = event.on("chat/message", listener);
+event.off("chat/message", subscriber.listener);
 ```
 
 **特别注意：**
@@ -77,7 +77,7 @@ event.off('chat/message', subscriber.listener);
 优先采用以下方式进行退订：
 
 ```ts
-const subscriber = event.on('chat/message', listener);
+const subscriber = event.on("chat/message", listener);
 subscriber.off(); // [!code ++]
 ```
 
@@ -93,7 +93,7 @@ event.off('chat/message',
 2. **取消特定事件的所有监听器：**
 
 ```typescript
-event.off('chat/message');
+event.off("chat/message");
 ```
 
 3. **取消特定监听器的所有事件订阅：**
@@ -116,14 +116,14 @@ event.offAll();
 
 ```typescript
 // 取消所有以'user/'开头的事件订阅
-event.offAll('user');
+event.offAll("user");
 ```
 
 特性说明：
 
--   会清除指定范围内的所有监听器
--   不会影响其他范围的监听器
--   适合批量清理特定模块或功能的事件订阅
+- 会清除指定范围内的所有监听器
+- 不会影响其他范围的监听器
+- 适合批量清理特定模块或功能的事件订阅
 
 ### clear 方法
 
@@ -134,41 +134,64 @@ event.offAll('user');
 event.clear();
 
 // 清除特定前缀的订阅和保留的事件
-event.clear('user');
+event.clear("user");
 ```
 
 特性说明：
 
--   同时清除订阅和保留的事件
--   支持按前缀清除
--   适合完全重置特定范围的事件系统
+- 同时清除订阅和保留的事件
+- 支持按前缀清除
+- 适合完全重置特定范围的事件系统
 
 :::warning 提示
 `clear`和`offAll`的区别在于,`clear`会清除保留的事件消息,而`offAll`不会.
 :::
 
-### 自动取消订阅
+### 条件取消订阅
 
 `FastEvent`支持在订阅时指定`off`参数，用于在接收到满足条件的消息时自动取消订阅。
 
 ```ts
-import { FastEvent } from 'fastevent';
+import { FastEvent } from "fastevent";
 
 const emitter = new FastEvent();
 
 emitter.on(
-    'click',
+    "click",
     (message, args) => {
         console.log(message);
     },
     {
         off: (message, args) => {
-            return message.payload === 'exit'; //   [!code ++]
+            return message.payload === "exit"; //   [!code ++]
         },
     },
 );
-emitter.emit('click', '1');
-emitter.emit('click', 'exit');
+emitter.emit("click", "1");
+emitter.emit("click", "exit");
 ```
 
--   以上示例将在接收到`payload=exit`消息时自动取消订阅。
+- 以上示例将在接收到`payload=exit`消息时自动取消订阅。
+
+### 自动取消订阅
+
+`FastEvent`实现了`Symbol.dispose`特性，支持在离开作用裁量时自动取消订阅。
+
+```ts
+const emitter = new FastEvent();
+const events: string[] = [];
+
+{
+    using subscriber = emitter.on("test", ({ type }) => {
+        events.push(type);
+    });
+    emitter.emit("test");
+    // 有一个订阅者
+    expect(emitter.getListeners("test").length).toBe(1);
+}
+emitter.emit("test");
+expect(events).toEqual(["test"]);
+expect(events.length).toBe(1);
+// 已经取消订阅了
+expect(emitter.getListeners("test").length).toBe(0);
+```
