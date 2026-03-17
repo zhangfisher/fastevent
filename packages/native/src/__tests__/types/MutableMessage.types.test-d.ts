@@ -4,7 +4,6 @@ import { describe, test } from "bun:test";
 import type { Equal, Expect } from "@type-challenges/utils";
 import { MutableMessage } from "../../types/MutableMessage";
 import { FastEventMessageExtends, IsMatchEventName, KeyOf } from "../../types";
-import { Tuple } from "../../types/utils/Tuple";
 import { UnionToTuple } from "type-fest";
 
 type PickByType<E, T extends string> = E extends {

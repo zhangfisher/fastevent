@@ -59,15 +59,14 @@ emitter.on('click',(message)=>{
     //              ^?
     // typeof message !== { x: number; y: number }  ❌
 
-
+    message.type // click
+    message.payload //{ x: number; y: number 
 
 })
 
 ``` 
 
-
-
-
+ 
 以上代码中，我们针对`div/click`、`div/mousemove`两种事件直接返回`payload`。
 
 如此，在监听器订阅时可以接收到经`transform`转换后的消息，而不是默认的`FastEventMessage`。

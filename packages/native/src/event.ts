@@ -16,7 +16,11 @@ import {
     FastEventEmitMessage,
     FastEventMeta,
 } from "./types/FastEventMessages";
-import { FastListeners } from "./types/FastEventListeners";
+import {
+    FastEventListeners,
+    FastListeners,
+    TypedFastEventAnyListener,
+} from "./types/FastEventListeners";
 import { FastEventSubscriber } from "./types/FastEventSubscribers";
 import {
     TypedFastEventListener,
@@ -105,6 +109,14 @@ export class FastEvent<
         context: Expand<Fallback<Context, FastEvent<AllEvents, Meta, Context>>>;
         messages: MutableMessage<AllEvents, Meta>;
         message: MutableMessage<AllEvents, Meta>;
+        listeners: FastEventListeners<
+            AllEvents,
+            Expand<FastEventMeta & Meta & Record<string, any>>
+        >;
+        anyListener: TypedFastEventAnyListener<
+            AllEvents,
+            Expand<FastEventMeta & Meta & Record<string, any>>
+        >;
     };
     /**
      * 创建FastEvent实例
@@ -999,6 +1011,7 @@ export class FastEvent<
         },
         retain?: boolean,
     ): R[];
+    public emit<R = any>(message: FastEventMessage, retain?: boolean): R[];
     public emit<R = any, T extends string = string>(
         type: T,
         payload?: InMatchedEvent<Events, T> extends true

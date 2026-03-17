@@ -308,24 +308,14 @@ const listener:anyListener = (message) => {
 通用的监听器类型。
 
 ```ts twoslash
-import { FastEvent,FastEventMessage,FastEventListener } from 'fastevent';
+import { FastEventListener } from 'fastevent';
+ 
 
-type CustomEvents = {
-    click: { x: number; y: number };
-    mousemove: boolean;
-    scroll: number;
-    focus: string;
-};
-const emitter = new FastEvent<CustomEvents>(); 
-  
-type anyListener = typeof emitter.types.anyListener
-
-const listener:FastEventListener<number> = (message) => {
+const listener:FastEventListener<string,number> = (message) => {
     message.type
     message.payload    
 }
-
-
+ 
 ```
 
 
@@ -381,7 +371,7 @@ type anylistenerType = typeof emitter.types.anyListener;
 
 扩展全局事件类型。
 
-```ts twoslash
+```ts  
 import { FastEvent } from 'fastevent';
 
 declare module "fastevent" {
@@ -403,7 +393,7 @@ type EventTypes = typeof emitter.types.events
 
 扩展全局元数据类型。
 
-```ts twoslash
+```ts  
 import { FastEvent } from 'fastevent';
 
 declare module "fastevent" {
@@ -430,7 +420,7 @@ emitter.onAny((message) => {
 
 扩展全局事件作用域元数据类型。
 
-```ts  twoslash
+```ts   
 import { FastEvent } from 'fastevent';
 
 declare module "fastevent" {
@@ -464,7 +454,7 @@ scope.onAny((message) => {
 
 扩展全局消息类型。
 
-```ts  twoslash
+```ts   
 import { FastEvent,FastEventMessage } from 'fastevent';
 
 declare module "fastevent" {

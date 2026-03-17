@@ -1,3 +1,4 @@
+// oxlint-disable no-unused-expressions
 /* eslint-disable no-unused-vars */
 import { describe, test } from "bun:test";
 import type { Equal, Expect } from "@type-challenges/utils";
@@ -5,7 +6,7 @@ import { FastEvent } from "../../event";
 import { FastEventEmitMessage } from "../../types/FastEventMessages";
 import { TransformedEvents } from "../../types/transformed/TransformedEvents";
 import { NotPayload } from "../../types/transformed/NotPayload";
-import { MutableMessage, GetPayload, Overloads } from "../../types";
+import { MutableMessage, GetPayload, Overloads, FastEventMessage } from "../../types";
 import { FastEventMeta } from "../../types/FastEventMessages";
 import { ExtendWildcardEvents } from "../../types/wildcards/ExtendWildcardEvents";
 import { FastEventIterator } from "../../eventIterator";
@@ -14,6 +15,29 @@ import { AllowCall, GetMatchingOverload } from "../../types/utils/AllowCall";
 type IteratorMessage<T> = T extends FastEventIterator<infer M> ? M : never;
 
 describe("emit 触发事件类型系统测试", () => {
+    test("无类型触发事件", () => {
+        type CustomEvents = {
+            click: { x: number; y: number };
+            mousemove: boolean;
+            scroll: number;
+            focus: string;
+        };
+        const emitter = new FastEvent<CustomEvents>();
+
+        // 构建通用的消息，没有类型推断和约束
+        const message: FastEventMessage = {
+            type: "click",
+            payload: 100,
+        };
+        emitter.emit(message);
+
+        emitter.on("click", (message) => {
+            type cases = [
+                Expect<Equal<typeof message.type, "click">>,
+                Expect<Equal<typeof message.payload, { x: number; y: number }>>,
+            ];
+        });
+    });
     test("没有指定事件类型时支持所有事件", () => {
         const emitter = new FastEvent();
         emitter.on("x", (message) => {
@@ -206,6 +230,7 @@ describe("emit 触发事件类型系统测试", () => {
         }
         const emitter = new FastEvent<Events>();
         emitter.emit("a/1/c/2/d/3/e/4/g/5", "1");
+
         // emitter.emit("a/*/c/*/d/*/e/*/g/*", 1);
     });
     test("部份事件经过转换", () => {

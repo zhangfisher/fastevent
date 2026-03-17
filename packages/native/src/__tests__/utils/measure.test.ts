@@ -557,7 +557,6 @@ describe("measureObject - 方法调用链测试", () => {
         );
 
         const tree = measure.results;
-        console.log(measure.toTree());
 
         // 验证调用深度：A1 -> A2 -> A11 (3层)
         const a1 = tree[0];
@@ -983,7 +982,6 @@ describe("measureObject - 多个对象方法调用链测试", () => {
             },
             { count: 1 },
         );
-        console.log(measure.toTree());
         const flatResults = measure.getFlatResults();
 
         // 应该有 2 个根方法调用

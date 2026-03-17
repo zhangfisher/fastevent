@@ -34,6 +34,7 @@ export type FastEventListener<
     P = any,
     M extends Record<string, any> = Record<string, any>,
 > = (message: FastEventMessage<T, P, M>, args: FastEventListenerArgs<M>) => any | Promise<any>;
+
 // 通用监听器， 允许指定消息类型
 
 export type FastEventCommonListener<
