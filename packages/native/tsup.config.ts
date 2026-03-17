@@ -34,19 +34,6 @@ export default defineConfig([
         treeshake: true,
         minify: true,
     },
-    // {
-    //     entry: [
-    //         'src/eventbus/index.ts'
-    //     ],
-    //     outDir: 'dist/eventbus',
-    //     format: ['esm', 'cjs'],
-    //     dts: true,
-    //     splitting: true,
-    //     sourcemap: true,
-    //     clean: true,
-    //     treeshake: true,
-    //     minify: true
-    // },
     {
         entry: ["src/devTools.ts"],
         format: ["esm", "cjs"],

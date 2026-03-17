@@ -41,7 +41,10 @@
       "Bash(bun test packages/native/src/__tests__/types/MutableMessage.types.test.ts)",
       "Bash(bun test packages/native/src/__tests__/types/MutableMessage.debug.test.ts)",
       "Bash(npx vitest:*)",
-      "Bash(bun test:*)"
+      "Bash(bun test:*)",
+      "Bash(\"c:\\\\Work\\\\Code\\\\fastevent\\\\packages\\\\native\\\\src\\\\utils\\\\measure.ts.tmp\")",
+      "Bash(bun run:*)",
+      "Bash(bun test_measure.ts)"
     ]
   }
 }
