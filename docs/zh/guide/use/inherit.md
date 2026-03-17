@@ -5,7 +5,7 @@
 
 ## 继承FastEvent
 
-```ts twoslash
+```ts  
 import { FastEvent, FastEventOptions } from 'fastevent'
 interface MyEventOptions extends FastEventOptions {
     count?: number
@@ -31,7 +31,7 @@ emitter.options.count = 100
 
 **当创建`FastEvent`实例时，如何传入`context`参数，则情况有些不一样。**
 
-```ts twoslash
+```ts  
 import { FastEvent, FastEventOptions } from 'fastevent'
 interface MyEventOptions extends FastEventOptions {
     count?: number

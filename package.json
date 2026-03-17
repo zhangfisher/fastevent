@@ -21,10 +21,9 @@
         "release": "bun run build && bun run changeset version && cpx packages/native/CHANGELOG.md docs/zh/guide/intro/ && bun run changeset publish",
         "sync": "cnpm sync fastevent",
         "lint": "oxlint",
-        "lint:fix": "oxlint --fix",
-        "docs:dev": "vitepress dev docs",
-        "docs:build": "vitepress build docs",
-        "docs:preview": "vitepress preview docs"
+        "lint:fix": "oxlint --fix",        
+        "docs:dev": "cd docs && vitepress dev .",
+        "docs:build": "vitepress build docs"
     },
     "keywords": [
         "eventemitter"
@@ -33,7 +32,6 @@
     "license": "MIT",
     "devDependencies": {
         "@changesets/cli": "^2.30.0",
-        "@shikijs/vitepress-twoslash": "^4.0.2",
         "@types/bun": "^1.3.10",
         "@types/node": "^25.5.0",
         "cpx": "^1.5.0",
@@ -42,8 +40,7 @@
         "oxlint-tsgolint": "^0.17.0",
         "turbo": "^2.8.17",
         "type-fest": "^5.4.4",
-        "typescript": "^5.9.3",
-        "vitepress": "^1.6.4"
+        "typescript": "^5.9.3"
     },
     "packageManager": "bun@1.3.10",
     "workspaces": [

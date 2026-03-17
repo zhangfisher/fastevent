@@ -6,6 +6,25 @@ import { FastEventScope, FastEventScopeOptions } from "../../scope";
 import type { FastEventOptions } from "../../";
 
 describe("事件继承类型测试", () => {
+    test("继承子类的类型", () => {
+        interface MyEventOptions extends FastEventOptions {
+            count?: number;
+        }
+        class MyEvent extends FastEvent {
+            constructor(options?: Partial<MyEventOptions>) {
+                super(Object.assign({}, options));
+            }
+            get options() {
+                return super.options as MyEventOptions;
+            }
+        }
+        const emitter = new MyEvent();
+        emitter.on("test", function (this, message) {
+            type This = typeof this; // [!code ++]
+        });
+        type OptionsType = typeof emitter.options;
+        emitter.options.count = 100;
+    });
     test("基本子类继承类型", () => {
         class MyEvent extends FastEvent {
             test() {

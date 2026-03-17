@@ -7,18 +7,16 @@
     "type": "module",
     "scripts": {
         "dev": "vitepress dev",
-        "build": "vitepress build",
-        "docs:dev": "vitepress dev",
-        "docs:build": "vitepress build",
-        "docs:preview": "vitepress preview"
+        "build": "vitepress build"
     },
     "keywords": [],
     "author": "",
     "license": "ISC",
     "dependencies": {
-        "fastevent": "lastest"
+        "fastevent": "workspace:*",
+        "vitepress": "^1.6.4"
     },
     "devDependencies": {
-        "@shikijs/vitepress-twoslash": "^3.3.0"
+        "@shikijs/vitepress-twoslash": "^4.0.2"
     }
 }
