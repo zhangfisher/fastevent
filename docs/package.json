@@ -16,7 +16,7 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
-        "fastevent": "workspace:*"
+        "fastevent": "lastest"
     },
     "devDependencies": {
         "@shikijs/vitepress-twoslash": "^3.3.0"
