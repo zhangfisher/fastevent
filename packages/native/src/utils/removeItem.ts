@@ -17,15 +17,3 @@ export function removeItem(arr: any[], condition: (item: any) => boolean) {
     // 因为是从后往前遍历的，所以索引是降序的，需要反转得到升序结果
     return removedIndices.reverse();
 }
-// let index: number[] = [];
-// while (true) {
-//     const i = arr.findIndex((item) => {
-//         return condition(item);
-//     });
-//     if (i === -1) {
-//         index.push(i);
-//         break;
-//     }
-//     arr.splice(i, 1);
-// }
-// return index;

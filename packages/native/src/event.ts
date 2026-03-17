@@ -836,32 +836,34 @@ export class FastEvent<
     ): any[] {
         if (!nodes || nodes.length === 0) return [];
         // 1. 遍历所有监听器任务,即需要执行的监听器函数[]
-        const listeners = nodes.reduce<[FastEventListenerMeta, number, FastEventListenerMeta[]][]>(
-            (result, node) => {
-                return result.concat(
-                    node.__listeners
-                        .filter((listener) => {
-                            if (!isFunction(filter)) return true;
-                            return filter(listener, node);
-                        })
-                        .map((listener, i) => {
-                            return [listener, i, node.__listeners] as [
-                                FastEventListenerMeta,
-                                number,
-                                FastEventListenerMeta[],
-                            ];
-                        }),
-                );
-            },
-            [],
-        );
+        // const listeners = nodes.reduce<[FastEventListenerMeta, number, FastEventListenerMeta[]][]>(
+        //     (result, node) => {
+        //         return result.concat(
+        //             node.__listeners
+        //                 .filter((listener) => {
+        //                     if (!isFunction(filter)) return true;
+        //                     return filter(listener, node);
+        //                 })
+        //                 .map((listener, i) => {
+        //                     return [listener, i, node.__listeners] as [
+        //                         FastEventListenerMeta,
+        //                         number,
+        //                         FastEventListenerMeta[],
+        //                     ];
+        //                 }),
+        //         );
+        //     },
+        //     [],
+        // );
+        const listeners: [FastEventListenerMeta, number, FastEventListenerMeta[]][] = [];
 
-        // 转换消息
-        if (isFunction(this._options.transform)) {
-            if (!args) args = {};
-            args.rawEventType = message.type;
-            message.payload = this._options.transform.call(this, message as any);
-            args.flags = this._setListenerFlags(args.flags, FastEventListenerFlags.Transformed);
+        for (const node of nodes) {
+            let i: number = 0;
+            for (const listener of node.__listeners) {
+                if (!filter || filter(listener, node)) {
+                    listeners.push([listener, i++, node.__listeners]);
+                }
+            }
         }
 
         // 执行监听器前计数选减一，否则如果在监听器函数中再次触发时会导致重复执行。
