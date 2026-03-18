@@ -1,5 +1,6 @@
+// oxlint-disable no-unused-vars
 import { describe, test, expect } from "bun:test";
-import { createMeasure } from "../../utils/measure";
+import { createCallProfiler } from "../../utils/profiler";
 
 describe("measureObject - 基础功能", () => {
     class TestClass {
@@ -25,24 +26,33 @@ describe("measureObject - 基础功能", () => {
         }
     }
 
-    test("应该返回测量函数", () => {
+    test("应该返回测量函数", async () => {
         const obj = new TestClass();
-        const measure = createMeasure(obj, ["syncMethod", "asyncMethod", "methodWithArgs"]);
+        const profiler = createCallProfiler(obj, ["syncMethod", "asyncMethod", "methodWithArgs"]);
 
-        expect(measure).toBeInstanceOf(Function);
-        expect(measure.results).toBeInstanceOf(Array);
-        expect(measure.enabled).toBe(false);
+        expect(profiler).toBeInstanceOf(Function);
+
+        // 调用测量函数后，返回值应包含所有方法和属性
+        const stats = await profiler(
+            () => {
+                obj.syncMethod();
+            },
+            { executionCount: 1 },
+        );
+
+        expect(stats.results).toBeInstanceOf(Array);
+        expect(stats.enabled).toBe(false);
     });
 
     test("应该能执行测量并返回统计数据", async () => {
         const obj = new TestClass();
-        const measure = createMeasure(obj, ["syncMethod"]);
+        const profiler = createCallProfiler(obj, ["syncMethod"]);
 
-        const stats = await measure(
+        const stats = await profiler(
             () => {
                 obj.syncMethod();
             },
-            { warmup: 2, count: 5 },
+            { warmup: 2, executionCount: 5 },
         );
 
         expect(stats.duration).toBeGreaterThanOrEqual(0);
@@ -53,13 +63,13 @@ describe("measureObject - 基础功能", () => {
 
     test("应该正确计算平均执行时间", async () => {
         const obj = new TestClass();
-        const measure = createMeasure(obj, ["syncMethod"]);
+        const profiler = createCallProfiler(obj, ["syncMethod"]);
 
-        const stats = await measure(
+        const stats = await profiler(
             () => {
                 obj.syncMethod();
             },
-            { warmup: 1, count: 10 },
+            { warmup: 1, executionCount: 10 },
         );
 
         // 平均时间应该在合理范围内
@@ -70,10 +80,10 @@ describe("measureObject - 基础功能", () => {
 
     test("默认使用 warmupCount=5 和 executionCount=100", async () => {
         const obj = new TestClass();
-        const measure = createMeasure(obj, ["syncMethod"]);
+        const profiler = createCallProfiler(obj, ["syncMethod"]);
 
         let callCount = 0;
-        const stats = await measure(() => {
+        const stats = await profiler(() => {
             callCount++;
             obj.syncMethod();
         });
@@ -84,43 +94,43 @@ describe("measureObject - 基础功能", () => {
 
     test("方法应保持原有功能", async () => {
         const obj = new TestClass();
-        const measure = createMeasure(obj, ["syncMethod", "asyncMethod", "methodWithArgs"]);
+        const profiler = createCallProfiler(obj, ["syncMethod", "asyncMethod", "methodWithArgs"]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 const syncResult = obj.syncMethod();
                 expect(syncResult).toBe("sync-result");
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        await measure(
+        await profiler(
             async () => {
                 const asyncResult = await obj.asyncMethod();
                 expect(asyncResult).toBe("async-result");
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        await measure(
+        await profiler(
             () => {
                 const argsResult = obj.methodWithArgs(3, 7);
                 expect(argsResult).toBe(10);
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
     });
 
     test("未测量的方法不影响测量", async () => {
         const obj = new TestClass();
-        const measure = createMeasure(obj, ["syncMethod"]);
+        const profiler = createCallProfiler(obj, ["syncMethod"]);
 
-        const stats = await measure(
+        const stats = await profiler(
             () => {
                 obj.syncMethod();
                 obj.notMeasured(); // 这个不会被测量
             },
-            { count: 5 },
+            { executionCount: 5 },
         );
 
         // 仍然应该有统计数据
@@ -129,13 +139,13 @@ describe("measureObject - 基础功能", () => {
 
     test("空方法列表应正常工作", async () => {
         const obj = new TestClass();
-        const measure = createMeasure(obj, []);
+        const profiler = createCallProfiler(obj, []);
 
-        const stats = await measure(
+        const stats = await profiler(
             () => {
                 obj.syncMethod();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
         // 没有方法被测量，但仍然返回统计数据
@@ -144,17 +154,17 @@ describe("measureObject - 基础功能", () => {
 
     test("不存在的属性应被忽略", async () => {
         const obj = new TestClass();
-        const measure = createMeasure(obj, ["nonExistent" as any]);
+        const profiler = createCallProfiler(obj, ["nonExistent" as any]);
 
-        const stats = await measure(
+        const stats = await profiler(
             () => {
                 obj.syncMethod();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
         // syncMethod 不在测量列表中，所以没有详细结果
-        expect(measure.results.length).toBe(0);
+        expect(stats.results.length).toBe(0);
     });
 
     test("应正确传递方法参数和 this 上下文", async () => {
@@ -171,22 +181,22 @@ describe("measureObject - 基础功能", () => {
         }
 
         const obj = new ContextTest();
-        const measure = createMeasure(obj, ["getValue", "add"]);
+        const profiler = createCallProfiler(obj, ["getValue", "add"]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 const value = obj.getValue();
                 expect(value).toBe(42);
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        await measure(
+        await profiler(
             () => {
                 const sum = obj.add(10, 20);
                 expect(sum).toBe(72);
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
     });
 
@@ -204,12 +214,12 @@ describe("measureObject - 基础功能", () => {
         const obj = new TestClass();
 
         // 第一次封装
-        const measure1 = createMeasure(obj, ["method1", "method2"]);
+        const measure1 = createCallProfiler(obj, ["method1", "method2"]);
 
         // 第二次封装同一个对象（应该跳过已封装的方法）
-        const measure2 = createMeasure(obj, ["method1", "method2"]);
+        const measure2 = createCallProfiler(obj, ["method1", "method2"]);
 
-        // 两个 measure 函数应该是不同的实例
+        // 两个 profiler 函数应该是不同的实例
         expect(measure1).not.toBe(measure2);
 
         // 但方法应该正常工作
@@ -218,7 +228,7 @@ describe("measureObject - 基础功能", () => {
                 const result = obj.method1();
                 expect(result).toBe("method1");
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
         await measure2(
@@ -226,7 +236,7 @@ describe("measureObject - 基础功能", () => {
                 const result = obj.method2();
                 expect(result).toBe("method2");
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
     });
 
@@ -248,37 +258,37 @@ describe("measureObject - 基础功能", () => {
         const obj = new TestClass();
 
         // 第一次封装部分方法
-        const measure1 = createMeasure(obj, ["method1", "method2"]);
+        const measure1 = createCallProfiler(obj, ["method1", "method2"]);
 
         // 第二次封装，添加新方法
-        const measure2 = createMeasure(obj, ["method2", "method3"]);
+        const measure2 = createCallProfiler(obj, ["method2", "method3"]);
 
         // method1 和 method2 应该在 measure1 中
-        await measure1(
+        const stats1 = await measure1(
             () => {
                 obj.method1();
                 obj.method2();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        expect(measure1.results.length).toBe(2);
+        expect(stats1.results.length).toBe(2);
 
         // 清空结果
-        measure1.clear();
+        stats1.clear();
 
         // method2 和 method3 应该在 measure2 中
-        await measure2(
+        const stats2 = await measure2(
             () => {
                 obj.method2();
                 obj.method3();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
         // 注意：method2 在第一次封装时已经被包装，所以会共享同一个包装器
         // 但 measure2 仍然能追踪到调用
-        expect(measure2.results.length).toBeGreaterThanOrEqual(1);
+        expect(stats2.results.length).toBeGreaterThanOrEqual(1);
     });
 
     test("应该支持对象数组并为方法名添加前缀", async () => {
@@ -306,21 +316,21 @@ describe("measureObject - 基础功能", () => {
         const post = new Post();
 
         // 新签名：为每个对象指定不同的方法
-        const measure = createMeasure([
+        const profiler = createCallProfiler([
             [user, ["getName"]],
             [post, ["getTitle"]],
         ]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 user.getName();
                 post.getTitle();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
         // 验证结果中方法名带有对象前缀
-        const flatResults = measure.getFlatResults();
+        const flatResults = stats.getFlatResults();
         expect(flatResults.length).toBe(2);
 
         const getNameCall = flatResults.find((r: any) => r.callee === "User:getName");
@@ -338,16 +348,16 @@ describe("measureObject - 基础功能", () => {
         }
 
         const user = new User();
-        const measure = createMeasure(user, ["getName"]);
+        const profiler = createCallProfiler(user, ["getName"]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 user.getName();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        const flatResults = measure.getFlatResults();
+        const flatResults = stats.getFlatResults();
         expect(flatResults.length).toBe(1);
 
         // 单个对象不应该有前缀
@@ -376,20 +386,20 @@ describe("measureObject - 基础功能", () => {
         const validator = new Validator();
 
         // 新签名：为每个对象指定不同的方法
-        const measure = createMeasure([
+        const profiler = createCallProfiler([
             [calc, ["add"]],
             [validator, ["validate"]],
         ]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 calc.add(1, 2);
                 validator.validate(5);
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        const treeStr = measure.toTree();
+        const treeStr = stats.toTree();
 
         // 验证树形结构包含带前缀的方法名
         expect(treeStr).toContain("Calculator:add");
@@ -407,10 +417,10 @@ describe("measureObject - 边界情况", () => {
         }
 
         const obj = new ErrorClass();
-        const measure = createMeasure(obj, ["errorMethod"]);
+        const profiler = createCallProfiler(obj, ["errorMethod"]);
 
         let errorCount = 0;
-        const stats = await measure(
+        const stats = await profiler(
             async () => {
                 try {
                     await obj.errorMethod();
@@ -418,7 +428,7 @@ describe("measureObject - 边界情况", () => {
                     errorCount++;
                 }
             },
-            { warmup: 2, count: 3 },
+            { warmup: 2, executionCount: 3 },
         );
 
         // 总调用次数 = warmup (2) + execution (3)
@@ -446,38 +456,43 @@ describe("measureObject - 边界情况", () => {
         }
 
         const obj = new ValueClass();
-        const measure = createMeasure(obj, ["getNumber", "getObject", "getNull", "getUndefined"]);
+        const profiler = createCallProfiler(obj, [
+            "getNumber",
+            "getObject",
+            "getNull",
+            "getUndefined",
+        ]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 const num = obj.getNumber();
                 expect(num).toBe(12345);
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        await measure(
+        await profiler(
             () => {
                 const objResult = obj.getObject();
                 expect(objResult).toEqual({ key: "value" });
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        await measure(
+        await profiler(
             () => {
                 const nullVal = obj.getNull();
                 expect(nullVal).toBeNull();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        await measure(
+        await profiler(
             () => {
                 const undefVal = obj.getUndefined();
                 expect(undefVal).toBeUndefined();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
     });
 });
@@ -531,32 +546,32 @@ describe("measureObject - 方法调用链测试", () => {
 
     test("应该记录完整的方法调用链", async () => {
         const obj = new CallTreeTestClass();
-        const measure = createMeasure(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
+        const profiler = createCallProfiler(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 obj.A1();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
         // control.results 包含树形结构
-        expect(measure.results.length).toBe(1);
-        expect(measure.results[0].callee).toBe("A1");
+        expect(stats.results.length).toBe(1);
+        expect(stats.results[0].callee).toBe("A1");
     });
 
     test("应该能追踪多层嵌套调用", async () => {
         const obj = new CallTreeTestClass();
-        const measure = createMeasure(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
+        const profiler = createCallProfiler(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 obj.A1();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        const tree = measure.results;
+        const tree = stats.results;
 
         // 验证调用深度：A1 -> A2 -> A11 (3层)
         const a1 = tree[0];
@@ -575,98 +590,98 @@ describe("measureObject - 方法调用链测试", () => {
 
     test("应该能从中间节点开始追踪调用链", async () => {
         const obj = new CallTreeTestClass();
-        const measure = createMeasure(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
+        const profiler = createCallProfiler(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 obj.A2(); // 直接调用 A2
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
         // 只应该记录 A2 及其子调用
-        expect(measure.results.length).toBe(1);
-        expect(measure.results[0].callee).toBe("A2");
-        expect(measure.results[0].children.length).toBe(2);
+        expect(stats.results.length).toBe(1);
+        expect(stats.results[0].callee).toBe("A2");
+        expect(stats.results[0].children.length).toBe(2);
     });
 
     test("应该能追踪多个入口点的调用", async () => {
         const obj = new CallTreeTestClass();
-        const measure = createMeasure(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
+        const profiler = createCallProfiler(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 obj.A2();
                 obj.A3();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
         // 应该有 2 个根节点（A2 和 A3）
-        expect(measure.results.length).toBe(2);
+        expect(stats.results.length).toBe(2);
 
-        const rootCallees = measure.results.map((node) => node.callee);
+        const rootCallees = stats.results.map((node:any) => node.callee);
         expect(rootCallees).toContain("A2");
         expect(rootCallees).toContain("A3");
     });
 
     test("应该支持获取特定方法的所有调用", async () => {
         const obj = new CallTreeTestClass();
-        const measure = createMeasure(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
+        const profiler = createCallProfiler(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 obj.A1();
                 obj.A1();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
         // 获取所有 A2 的调用（A1 调用了 A2，所以有 2 次）
-        const a2Calls = measure.getCalls("A2");
+        const a2Calls = stats.getCalls("A2");
         expect(a2Calls.length).toBe(2);
     });
 
     test("应该支持清空测量结果", async () => {
         const obj = new CallTreeTestClass();
-        const measure = createMeasure(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
+        const profiler = createCallProfiler(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 obj.A1();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        expect(measure.results.length).toBe(1);
+        expect(stats.results.length).toBe(1);
 
         // 清空结果
-        measure.clear();
-        expect(measure.results.length).toBe(0);
+        stats.clear();
+        expect(stats.results.length).toBe(0);
 
         // 再次测量应该重新记录
-        await measure(
+        await profiler(
             () => {
                 obj.A2();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        expect(measure.results.length).toBe(1);
+        expect(stats.results.length).toBe(1);
     });
 
     test("应该支持将树形结构渲染为字符串", async () => {
         const obj = new CallTreeTestClass();
-        const measure = createMeasure(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
+        const profiler = createCallProfiler(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 obj.A1();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        const treeStr = measure.toTree();
+        const treeStr = stats.toTree();
 
         // 验证树形字符串格式
         expect(treeStr).toContain("A1");
@@ -677,16 +692,16 @@ describe("measureObject - 方法调用链测试", () => {
 
     test("toTree 应该显示正确的层级结构", async () => {
         const obj = new CallTreeTestClass();
-        const measure = createMeasure(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
+        const profiler = createCallProfiler(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 obj.A1();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        const treeStr = measure.toTree();
+        const treeStr = stats.toTree();
         const lines = treeStr.split("\n").filter((line: string) => line.trim());
 
         // 第一行应该是 A1（无缩进）
@@ -699,11 +714,19 @@ describe("measureObject - 方法调用链测试", () => {
         expect(lines[2]).toMatch(/^[│\s]*[├─]{3}\s+A11\s+\([\d.]+ms\)$/);
     });
 
-    test("toTree 在没有测量结果时应返回提示信息", () => {
+    test("toTree 在没有测量结果时应返回提示信息", async () => {
         const obj = new CallTreeTestClass();
-        const measure = createMeasure(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
+        const profiler = createCallProfiler(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
 
-        const treeStr = measure.toTree();
+        // 没有调用 profiler 之前，先执行一次获取空的 stats
+        const stats = await profiler(
+            () => {
+                // 不调用任何方法
+            },
+            { executionCount: 1 },
+        );
+
+        const treeStr = stats.toTree();
         expect(treeStr).toContain("no measurements");
     });
 
@@ -732,16 +755,16 @@ describe("measureObject - 方法调用链测试", () => {
         }
 
         const obj = new SlowTestClass();
-        const measure = createMeasure(obj, ["A2", "A11", "A12"]);
+        const profiler = createCallProfiler(obj, ["A2", "A11", "A12"]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 obj.A2();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        const flatResults = measure.getFlatResults();
+        const flatResults = stats.getFlatResults();
         const a2 = flatResults.find((r: any) => r.callee === "A2");
         const a11 = flatResults.find((r: any) => r.callee === "A11");
         const a12 = flatResults.find((r: any) => r.callee === "A12");
@@ -761,16 +784,16 @@ describe("measureObject - 方法调用链测试", () => {
 
     test("应该能通过 getFlatResults 获取所有调用", async () => {
         const obj = new CallTreeTestClass();
-        const measure = createMeasure(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
+        const profiler = createCallProfiler(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 obj.A1();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        const flatResults = measure.getFlatResults();
+        const flatResults = stats.getFlatResults();
 
         // 应该有 6 个方法调用：A1, A2, A3, A11, A12, A21
         expect(flatResults.length).toBe(6);
@@ -778,16 +801,16 @@ describe("measureObject - 方法调用链测试", () => {
 
     test("应该支持获取树形结构", async () => {
         const obj = new CallTreeTestClass();
-        const measure = createMeasure(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
+        const profiler = createCallProfiler(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 obj.A1();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        const tree = measure.results;
+        const tree = stats.results;
 
         // 应该只有一个根节点（A1）
         expect(tree.length).toBe(1);
@@ -810,16 +833,16 @@ describe("measureObject - 方法调用链测试", () => {
 
     test("每个节点都应有正确的 ID 和深度", async () => {
         const obj = new CallTreeTestClass();
-        const measure = createMeasure(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
+        const profiler = createCallProfiler(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 obj.A1();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        const tree = measure.results;
+        const tree = stats.results;
 
         // 根节点有 ID 和深度 0
         expect(tree[0].id).toBeDefined();
@@ -842,16 +865,16 @@ describe("measureObject - 方法调用链测试", () => {
 
     test("应该能从树形结构重建完整的调用路径", async () => {
         const obj = new CallTreeTestClass();
-        const measure = createMeasure(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
+        const profiler = createCallProfiler(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 obj.A1();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        const tree = measure.results;
+        const tree = stats.results;
 
         // 从 A11 回溯到根节点
         const a11 = tree[0].children[0].children[0];
@@ -970,19 +993,19 @@ describe("measureObject - 多个对象方法调用链测试", () => {
         const postService = new PostService(userService);
 
         // 新签名：为每个对象指定不同的方法
-        const measure = createMeasure([
+        const profiler = createCallProfiler([
             [userService, ["A1", "A2"]],
             [postService, ["B1"]],
         ]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 userService.A1();
                 postService.B1();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
-        const flatResults = measure.getFlatResults();
+        const flatResults = stats.getFlatResults();
 
         // 应该有 2 个根方法调用
         expect(flatResults.length).toBeGreaterThanOrEqual(2);
@@ -999,32 +1022,32 @@ describe("measureObject - 多个对象方法调用链测试", () => {
         const postService = new PostService(userService);
 
         // 新签名：为每个对象指定不同的方法
-        const measure = createMeasure([userService, postService]);
+        const profiler = createCallProfiler([userService, postService]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 userService.A1();
                 postService.B2();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
-        console.log(measure.toTree());
+        console.log(stats.toTree());
     });
 
     test("应该追踪跨对象的嵌套调用", async () => {
         const userService = new UserService();
 
         // 新签名：为每个对象指定不同的方法
-        const measure = createMeasure([[userService, ["A1", "A11", "A12", "A111", "A112"]]]);
+        const profiler = createCallProfiler([[userService, ["A1", "A11", "A12", "A111", "A112"]]]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 userService.A1();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        const tree = measure.results;
+        const tree = stats.results;
 
         // 应该有一个根节点
         expect(tree.length).toBe(1);
@@ -1033,12 +1056,12 @@ describe("measureObject - 多个对象方法调用链测试", () => {
         // 根节点应该有两个子节点（A11 和 A12）
         expect(tree[0].children.length).toBe(2);
 
-        const childCallees = tree[0].children.map((child) => child.callee);
+        const childCallees = tree[0].children.map((child:any) => child.callee);
         expect(childCallees).toContain("UserService:A11");
         expect(childCallees).toContain("UserService:A12");
 
         // A11 应该有两个子节点（A111 和 A112）
-        const a11Node = tree[0].children.find((child) => child.callee === "UserService:A11");
+        const a11Node = tree[0].children.find((child:any) => child.callee === "UserService:A11");
         expect(a11Node).toBeDefined();
         expect(a11Node!.children.length).toBe(2);
     });
@@ -1048,20 +1071,20 @@ describe("measureObject - 多个对象方法调用链测试", () => {
         const postService = new PostService(userService);
 
         // 新签名：为每个对象指定不同的方法
-        const measure = createMeasure([
+        const profiler = createCallProfiler([
             [userService, ["A1"]],
             [postService, ["B1"]],
         ]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 userService.A1();
                 postService.B1();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        const treeStr = measure.toTree();
+        const treeStr = stats.toTree();
 
         // 验证树形结构包含正确的对象前缀
         expect(treeStr).toContain("UserService:A1");
@@ -1073,20 +1096,20 @@ describe("measureObject - 多个对象方法调用链测试", () => {
         const postService = new PostService(userService);
 
         // 新签名：为每个对象指定不同的方法
-        const measure = createMeasure([
+        const profiler = createCallProfiler([
             [userService, ["A11"]],
             [postService, ["B11"]],
         ]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 userService.A11();
                 postService.B11();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        const flatResults = measure.getFlatResults();
+        const flatResults = stats.getFlatResults();
 
         expect(flatResults.length).toBe(2);
 
@@ -1105,26 +1128,26 @@ describe("measureObject - 多个对象方法调用链测试", () => {
         const postService = new PostService(userService);
 
         // 新签名：为每个对象指定不同的方法
-        const measure = createMeasure([
+        const profiler = createCallProfiler([
             [userService, ["A1"]],
             [postService, ["B1"]],
         ]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 userService.A1();
                 userService.A1();
                 postService.B1();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
         // 获取 UserService 的所有 A1 调用
-        const a1Calls = measure.getCalls("UserService:A1");
+        const a1Calls = stats.getCalls("UserService:A1");
         expect(a1Calls.length).toBe(2);
 
         // 获取 PostService 的 B1 调用
-        const b1Calls = measure.getCalls("PostService:B1");
+        const b1Calls = stats.getCalls("PostService:B1");
         expect(b1Calls.length).toBe(1);
     });
 
@@ -1132,16 +1155,16 @@ describe("measureObject - 多个对象方法调用链测试", () => {
         const userService = new UserService();
 
         // 新签名：为每个对象指定不同的方法
-        const measure = createMeasure([[userService, ["A1", "A11", "A12"]]]);
+        const profiler = createCallProfiler([[userService, ["A1", "A11", "A12"]]]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 userService.A1();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        const flatResults = measure.getFlatResults();
+        const flatResults = stats.getFlatResults();
 
         // 找到根节点和子节点
         const rootCall = flatResults.find((r: any) => r.callee === "UserService:A1");
@@ -1163,22 +1186,22 @@ describe("measureObject - 多个对象方法调用链测试", () => {
         const postService = new PostService(userService);
 
         // 新签名：为每个对象指定不同的方法
-        const measure = createMeasure([
+        const profiler = createCallProfiler([
             [userService, ["A1", "A2", "A11", "A12"]],
             [postService, ["B1", "B2", "B11", "B21"]],
         ]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 userService.A1();
                 postService.B1();
                 userService.A2();
                 postService.B2();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        const flatResults = measure.getFlatResults();
+        const flatResults = stats.getFlatResults();
 
         // A1 会调用 A11, A12，A2 会调用 A21，B1 会调用 B11，B2 会调用 B21
         // 总共会有多个调用
@@ -1188,7 +1211,7 @@ describe("measureObject - 多个对象方法调用链测试", () => {
         const rootCalls = flatResults.filter((r: any) => r.depth === 0);
         expect(rootCalls.length).toBe(4);
 
-        const callees = rootCalls.map((r) => r.callee);
+        const callees = rootCalls.map((r:any) => r.callee);
         expect(callees).toContain("UserService:A1");
         expect(callees).toContain("PostService:B1");
         expect(callees).toContain("UserService:A2");
@@ -1200,12 +1223,12 @@ describe("measureObject - 多个对象方法调用链测试", () => {
         const postService = new PostService(userService);
 
         // 为两个服务的方法都添加测量
-        const measure = createMeasure([
+        const profiler = createCallProfiler([
             [userService, ["A1", "A11", "A12", "A111"]],
             [postService, ["B2", "B21"]],
         ]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 // PostService.B2 会调用：
                 // 1. B21 (PostService 内部)
@@ -1214,10 +1237,10 @@ describe("measureObject - 多个对象方法调用链测试", () => {
                 // A11 会进一步调用 A111 和 A112
                 postService.B2();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        const flatResults = measure.getFlatResults();
+        const flatResults = stats.getFlatResults();
 
         // 验证跨对象调用被正确记录
         const postServiceCalls = flatResults.filter((r: any) =>
@@ -1238,7 +1261,7 @@ describe("measureObject - 多个对象方法调用链测试", () => {
         expect(userServiceCalls.some((r: any) => r.callee === "UserService:A11")).toBe(true);
 
         // 验证调用树的层级关系
-        const tree = measure.results;
+        const tree = stats.results;
 
         // 根节点应该是 B2
         expect(tree.length).toBe(1);
@@ -1246,14 +1269,14 @@ describe("measureObject - 多个对象方法调用链测试", () => {
 
         // B2 的子节点应该包含 B21 和 A1
         const b2Children = tree[0].children;
-        const b2ChildCallees = b2Children.map((child) => child.callee);
+        const b2ChildCallees = b2Children.map((child:any) => child.callee);
         expect(b2ChildCallees).toContain("PostService:B21");
         expect(b2ChildCallees).toContain("UserService:A1");
 
         // A1 的子节点应该包含 A11 和 A12
-        const a1Node = b2Children.find((child) => child.callee === "UserService:A1");
+        const a1Node = b2Children.find((child:any) => child.callee === "UserService:A1");
         expect(a1Node).toBeDefined();
-        const a1ChildCallees = a1Node!.children.map((child) => child.callee);
+        const a1ChildCallees = a1Node!.children.map((child:any) => child.callee);
         expect(a1ChildCallees).toContain("UserService:A11");
         expect(a1ChildCallees).toContain("UserService:A12");
     });
@@ -1262,19 +1285,19 @@ describe("measureObject - 多个对象方法调用链测试", () => {
         const userService = new UserService();
         const postService = new PostService(userService);
 
-        const measure = createMeasure([
+        const profiler = createCallProfiler([
             [userService, ["A1", "A11", "A12", "A111", "A112"]],
             [postService, ["B2", "B21"]],
         ]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 postService.B2();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        const treeStr = measure.toTree();
+        const treeStr = stats.toTree();
 
         // 验证树形字符串包含跨对象调用的信息
         expect(treeStr).toContain("PostService:B2");
@@ -1285,7 +1308,7 @@ describe("measureObject - 多个对象方法调用链测试", () => {
     });
 });
 
-describe("createMeasure - 多对象不同方法签名测试", () => {
+describe("createCallProfiler - 多对象不同方法签名测试", () => {
     class ServiceA {
         method1(): number {
             let sum = 0;
@@ -1335,28 +1358,28 @@ describe("createMeasure - 多对象不同方法签名测试", () => {
         const serviceB = new ServiceB();
 
         // 新签名：为每个对象指定不同的方法
-        const measure = createMeasure([
+        const profiler = createCallProfiler([
             [serviceA, ["method1", "method2"]],
             [serviceB, ["method3", "method4"]],
         ]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 serviceA.method1();
                 serviceA.method2();
                 serviceB.method3();
                 serviceB.method4();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        const flatResults = measure.getFlatResults();
+        const flatResults = stats.getFlatResults();
 
         // 应该有 4 个方法调用（每个对象 2 个方法）
         expect(flatResults.length).toBe(4);
 
         // 验证每个调用都有正确的对象前缀
-        const callees = flatResults.map((r) => r.callee);
+        const callees = flatResults.map((r:any) => r.callee);
         expect(callees).toContain("ServiceA:method1");
         expect(callees).toContain("ServiceA:method2");
         expect(callees).toContain("ServiceB:method3");
@@ -1367,12 +1390,12 @@ describe("createMeasure - 多对象不同方法签名测试", () => {
         const serviceA = new ServiceA();
         const serviceB = new ServiceB();
 
-        const measure = createMeasure([
+        const profiler = createCallProfiler([
             [serviceA, ["method1"]], // 只测量 method1
             [serviceB, ["method3"]], // 只测量 method3
         ]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 serviceA.method1(); // 应该被测量
                 serviceA.method2(); // 不应该被测量
@@ -1381,15 +1404,15 @@ describe("createMeasure - 多对象不同方法签名测试", () => {
                 serviceB.method4(); // 不应该被测量
                 serviceB.notMeasured(); // 不应该被测量
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        const flatResults = measure.getFlatResults();
+        const flatResults = stats.getFlatResults();
 
         // 只有 method1 和 method3 被测量
         expect(flatResults.length).toBe(2);
 
-        const callees = flatResults.map((r) => r.callee);
+        const callees = flatResults.map((r:any) => r.callee);
         expect(callees).toContain("ServiceA:method1");
         expect(callees).toContain("ServiceB:method3");
         expect(callees).not.toContain("ServiceA:method2");
@@ -1402,29 +1425,29 @@ describe("createMeasure - 多对象不同方法签名测试", () => {
         const serviceA = new ServiceA();
         const serviceB = new ServiceB();
 
-        const measure = createMeasure([
+        const profiler = createCallProfiler([
             [serviceA, ["method1"]], // ServiceA 只有 1 个方法
             [serviceB, ["method3", "method4"]], // ServiceB 有 2 个方法
         ]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 serviceA.method1();
                 serviceB.method3();
                 serviceB.method4();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        const flatResults = measure.getFlatResults();
+        const flatResults = stats.getFlatResults();
 
         // 应该有 3 个方法调用
         expect(flatResults.length).toBe(3);
 
-        const serviceACalls = flatResults.filter((r) => r.callee.startsWith("ServiceA:"));
+        const serviceACalls = flatResults.filter((r:any) => r.callee.startsWith("ServiceA:"));
         expect(serviceACalls.length).toBe(1);
 
-        const serviceBCalls = flatResults.filter((r) => r.callee.startsWith("ServiceB:"));
+        const serviceBCalls = flatResults.filter((r:any) => r.callee.startsWith("ServiceB:"));
         expect(serviceBCalls.length).toBe(2);
     });
 
@@ -1432,27 +1455,27 @@ describe("createMeasure - 多对象不同方法签名测试", () => {
         const serviceA = new ServiceA();
         const serviceB = new ServiceB();
 
-        const measure = createMeasure([
+        const profiler = createCallProfiler([
             [serviceA, ["method1", "method2"]],
             [serviceB, ["method3", "method4"]],
         ]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 serviceA.method1();
                 serviceA.method2();
                 serviceB.method3();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
         // 获取 ServiceA 的 method1 调用
-        const method1Calls = measure.getCalls("ServiceA:method1");
+        const method1Calls = stats.getCalls("ServiceA:method1");
         expect(method1Calls.length).toBe(1);
         expect(method1Calls[0].callee).toBe("ServiceA:method1");
 
         // 获取 ServiceB 的 method3 调用
-        const method3Calls = measure.getCalls("ServiceB:method3");
+        const method3Calls = stats.getCalls("ServiceB:method3");
         expect(method3Calls.length).toBe(1);
         expect(method3Calls[0].callee).toBe("ServiceB:method3");
     });
@@ -1471,19 +1494,19 @@ describe("createMeasure - 多对象不同方法签名测试", () => {
         const callerService = new CallerService();
         const serviceA = new ServiceA();
 
-        const measure = createMeasure([
+        const profiler = createCallProfiler([
             [callerService, ["callA"]],
             [serviceA, ["method1"]],
         ]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 callerService.callA(serviceA);
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        const tree = measure.results;
+        const tree = stats.results;
 
         // 应该有一个根节点（callA）
         expect(tree.length).toBe(1);
@@ -1498,17 +1521,17 @@ describe("createMeasure - 多对象不同方法签名测试", () => {
         const serviceA = new ServiceA();
         const serviceB = new ServiceB();
 
-        const measure = createMeasure([
+        const profiler = createCallProfiler([
             [serviceA, ["method1"]],
             [serviceB, ["method3"]],
         ]);
 
-        const stats = await measure(
+        const stats = await profiler(
             () => {
                 serviceA.method1();
                 serviceB.method3();
             },
-            { warmup: 2, count: 10 },
+            { warmup: 2, executionCount: 10 },
         );
 
         // 验证统计数据存在且合理
@@ -1522,43 +1545,43 @@ describe("createMeasure - 多对象不同方法签名测试", () => {
         const serviceA = new ServiceA();
         const serviceB = new ServiceB();
 
-        const measure = createMeasure([
+        const profiler = createCallProfiler([
             [serviceA, ["method1"]],
             [serviceB, ["method3"]],
         ]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 serviceA.method1();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        expect(measure.results.length).toBe(1);
+        expect(stats.results.length).toBe(1);
 
-        measure.clear();
+        stats.clear();
 
-        expect(measure.results.length).toBe(0);
+        expect(stats.results.length).toBe(0);
     });
 
     test("应该能够渲染树形字符串", async () => {
         const serviceA = new ServiceA();
         const serviceB = new ServiceB();
 
-        const measure = createMeasure([
+        const profiler = createCallProfiler([
             [serviceA, ["method1"]],
             [serviceB, ["method3"]],
         ]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 serviceA.method1();
                 serviceB.method3();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        const treeString = measure.toTree();
+        const treeString = stats.toTree();
 
         // 验证树形字符串包含预期的内容
         expect(treeString).toContain("ServiceA:method1");
@@ -1567,17 +1590,17 @@ describe("createMeasure - 多对象不同方法签名测试", () => {
     });
 
     test("应该能够处理空对象数组", async () => {
-        const measure = createMeasure([]);
+        const profiler = createCallProfiler([]);
 
-        const stats = await measure(
+        const stats = await profiler(
             () => {
                 // 什么都不做
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
         // 应该能正常运行，但没有结果
-        expect(measure.results.length).toBe(0);
+        expect(stats.results.length).toBe(0);
         expect(stats.duration).toBeGreaterThanOrEqual(0);
     });
 
@@ -1585,20 +1608,20 @@ describe("createMeasure - 多对象不同方法签名测试", () => {
         const serviceA = new ServiceA();
 
         // 单个对象也可以使用新签名
-        const measure = createMeasure([[serviceA, ["method1", "method2"]]]);
+        const profiler = createCallProfiler([[serviceA, ["method1", "method2"]]]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 serviceA.method1();
                 serviceA.method2();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        const flatResults = measure.getFlatResults();
+        const flatResults = stats.getFlatResults();
 
         expect(flatResults.length).toBe(2);
-        const callees = flatResults.map((r) => r.callee);
+        const callees = flatResults.map((r:any) => r.callee);
         expect(callees).toContain("ServiceA:method1");
         expect(callees).toContain("ServiceA:method2");
     });
@@ -1606,23 +1629,23 @@ describe("createMeasure - 多对象不同方法签名测试", () => {
     test("应该兼容旧的单对象签名", async () => {
         const serviceA = new ServiceA();
 
-        // 旧签名：createMeasure(obj, methods)
-        const measure = createMeasure(serviceA, ["method1", "method2"]);
+        // 旧签名：createCallProfiler(obj, methods)
+        const profiler = createCallProfiler(serviceA, ["method1", "method2"]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 serviceA.method1();
                 serviceA.method2();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        const flatResults = measure.getFlatResults();
+        const flatResults = stats.getFlatResults();
 
         expect(flatResults.length).toBe(2);
 
         // 旧签名不应该添加对象前缀
-        const callees = flatResults.map((r) => r.callee);
+        const callees = flatResults.map((r:any) => r.callee);
         expect(callees).toContain("method1");
         expect(callees).toContain("method2");
         expect(callees).not.toContain("ServiceA:method1");
@@ -1662,22 +1685,22 @@ describe("createMeasure - 多对象不同方法签名测试", () => {
         const obj = new TestClass();
 
         // 不指定 methods，应该自动测量所有公共方法
-        const measure = createMeasure(obj);
+        const profiler = createCallProfiler(obj);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 obj.method1();
                 obj.method2();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        const flatResults = measure.getFlatResults();
+        const flatResults = stats.getFlatResults();
 
         // 应该有 2 个方法调用（method1 和 method2）
         expect(flatResults.length).toBe(2);
 
-        const callees = flatResults.map((r) => r.callee);
+        const callees = flatResults.map((r:any) => r.callee);
         expect(callees).toContain("method1");
         expect(callees).toContain("method2");
 
@@ -1719,24 +1742,24 @@ describe("createMeasure - 多对象不同方法签名测试", () => {
         const serviceB = new ServiceB();
 
         // 不指定 methods，应该自动测量所有公共方法
-        const measure = createMeasure([[serviceA], [serviceB]]);
+        const profiler = createCallProfiler([[serviceA], [serviceB]]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 serviceA.method1();
                 serviceA.method2();
                 serviceB.method3();
                 serviceB.method4();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        const flatResults = measure.getFlatResults();
+        const flatResults = stats.getFlatResults();
 
         // 应该有 4 个方法调用
         expect(flatResults.length).toBe(4);
 
-        const callees = flatResults.map((r) => r.callee);
+        const callees = flatResults.map((r:any) => r.callee);
         expect(callees).toContain("ServiceA:method1");
         expect(callees).toContain("ServiceA:method2");
         expect(callees).toContain("ServiceB:method3");
@@ -1780,24 +1803,24 @@ describe("createMeasure - 多对象不同方法签名测试", () => {
         const serviceB = new ServiceB();
 
         // 简化语法：直接传入对象数组
-        const measure = createMeasure([serviceA, serviceB]);
+        const profiler = createCallProfiler([serviceA, serviceB]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 serviceA.method1();
                 serviceA.method2();
                 serviceB.method3();
                 serviceB.method4();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        const flatResults = measure.getFlatResults();
+        const flatResults = stats.getFlatResults();
 
         // 应该有 4 个方法调用
         expect(flatResults.length).toBe(4);
 
-        const callees = flatResults.map((r) => r.callee);
+        const callees = flatResults.map((r:any) => r.callee);
         expect(callees).toContain("ServiceA:method1");
         expect(callees).toContain("ServiceA:method2");
         expect(callees).toContain("ServiceB:method3");
@@ -1833,27 +1856,27 @@ describe("createMeasure - 多对象不同方法签名测试", () => {
         const serviceB = new ServiceB();
 
         // ServiceA 指定方法，ServiceB 自动获取
-        const measure = createMeasure([
+        const profiler = createCallProfiler([
             [serviceA, ["method1"]], // 只测量 method1
             [serviceB], // 自动测量所有方法
         ]);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 serviceA.method1();
                 serviceA.method2(); // 这个不会被测量
                 serviceB.method3();
                 serviceB.method4();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        const flatResults = measure.getFlatResults();
+        const flatResults = stats.getFlatResults();
 
         // 应该有 3 个方法调用（serviceA.method1 + serviceB 的两个方法）
         expect(flatResults.length).toBe(3);
 
-        const callees = flatResults.map((r) => r.callee);
+        const callees = flatResults.map((r:any) => r.callee);
         expect(callees).toContain("ServiceA:method1");
         expect(callees).not.toContain("ServiceA:method2"); // 没有被测量
         expect(callees).toContain("ServiceB:method3");
@@ -1877,20 +1900,20 @@ describe("createMeasure - 多对象不同方法签名测试", () => {
 
         const obj = new TestClass();
 
-        const measure = createMeasure(obj);
+        const profiler = createCallProfiler(obj);
 
-        await measure(
+        const stats = await profiler(
             () => {
                 obj.method1();
                 obj.method2();
             },
-            { count: 1 },
+            { executionCount: 1 },
         );
 
-        const flatResults = measure.getFlatResults();
+        const flatResults = stats.getFlatResults();
 
         // 应该只有 method1 和 method2，没有 constructor
-        const callees = flatResults.map((r) => r.callee);
+        const callees = flatResults.map((r:any) => r.callee);
         expect(callees).toContain("method1");
         expect(callees).toContain("method2");
         expect(callees).not.toContain("constructor");

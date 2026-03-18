@@ -44,7 +44,13 @@
       "Bash(bun test:*)",
       "Bash(\"c:\\\\Work\\\\Code\\\\fastevent\\\\packages\\\\native\\\\src\\\\utils\\\\measure.ts.tmp\")",
       "Bash(bun run:*)",
-      "Bash(bun test_measure.ts)"
+      "Bash(bun test_measure.ts)",
+      "Bash(bun install:*)",
+      "Bash(node fix-tests.js)",
+      "Bash(node fix-tests-v2.js)",
+      "Bash(node fix-tests-safe.js)",
+      "Bash(node fix-tests-final.js)",
+      "Bash(node update-tests.js)"
     ]
   }
 }

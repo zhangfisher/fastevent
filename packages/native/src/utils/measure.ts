@@ -22,31 +22,43 @@ function getHighPrecisionTime(): number {
 const wrappedObjects = new WeakMap<object, Set<string>>();
 
 /**
- * 测量选项
+ * 调用分析器选项
  */
-export interface MeasureOptions {
+export interface CallProfilerOptions {
     /** 预热次数（默认 5） */
     warmup?: number;
     /** 执行次数（默认 100） */
-    count?: number;
+    executionCount?: number;
 }
 
 /**
- * 测量统计结果
+ * 调用分析器统计结果（包含数据和操作方法）
  */
-export interface MeasureStats {
+export interface CallProfilerStats {
     /** 平均执行时长（毫秒） */
     duration: number;
     /** 最大执行时长（毫秒） */
     max: number;
     /** 最小执行时长（毫秒） */
     min: number;
+    /** 调用结果列表（树形结构，根节点数组） */
+    results: CallProfileNode[];
+    /** 获取平面结构的结果 */
+    getFlatResults: () => FlatCallProfile[];
+    /** 获取指定方法的所有调用 */
+    getCalls: (methodName: string) => CallProfileNode[];
+    /** 将结果渲染为树形字符串（用于终端输出） */
+    toTree: () => string;
+    /** 清空测量结果 */
+    clear: () => void;
+    /** 是否启用测量 */
+    enabled: boolean;
 }
 
 /**
- * 树形结构的测量结果节点（results 中的每个元素）
+ * 树形结构的调用分析节点（results 中的每个元素）
  */
-export interface MeasureResultNode {
+export interface CallProfileNode {
     /** 唯一标识符 */
     id: number;
     /** 被调用的方法名 */
@@ -60,13 +72,13 @@ export interface MeasureResultNode {
     /** 执行时长（毫秒） */
     duration: number;
     /** 子调用列表 */
-    children: MeasureResultNode[];
+    children: CallProfileNode[];
 }
 
 /**
- * 内部使用的平面测量结果
+ * 内部使用的平面调用分析结果
  */
-interface FlatMeasureResult {
+interface FlatCallProfile {
     id: number;
     callee: string;
     parentId: number | null; // 内部使用，构建树时需要
@@ -77,30 +89,12 @@ interface FlatMeasureResult {
 }
 
 /**
- * 测量函数类型
+ * 调用分析器函数类型
  */
-export type MeasureFunction = (
+export type CallProfiler = (
     callback: () => void | Promise<void>,
-    options?: MeasureOptions,
-) => Promise<MeasureStats>;
-
-/**
- * 测量函数扩展接口（直接包含 MeasureControl 成员）
- */
-export interface MeasureObject extends MeasureFunction {
-    /** 测量结果列表（树形结构，根节点数组） */
-    results: MeasureResultNode[];
-    /** 获取平面结构的结果 */
-    getFlatResults: () => FlatMeasureResult[];
-    /** 获取指定方法的所有调用 */
-    getCalls: (methodName: string) => MeasureResultNode[];
-    /** 将结果渲染为树形字符串（用于终端输出） */
-    toTree: () => string;
-    /** 清空测量结果 */
-    clear: () => void;
-    /** 是否启用测量 */
-    enabled: boolean;
-}
+    options?: CallProfilerOptions,
+) => Promise<CallProfilerStats>;
 
 /**
  * 全局调用栈，用于追踪调用关系
@@ -156,7 +150,7 @@ function measureMethod(
     target: Function,
     enabled: { value: boolean },
     callStack: CallStackItem[],
-    flatResults: FlatMeasureResult[],
+    flatResults: FlatCallProfile[],
     objectPrefix?: string,
 ): Function {
     const original = target;
@@ -204,7 +198,7 @@ function measureMethod(
                 const duration = endTime - startTime;
 
                 // 创建平面结果记录
-                const flatResult: FlatMeasureResult = {
+                const flatResult: FlatCallProfile = {
                     id,
                     callee: fullName,
                     parentId,
@@ -225,7 +219,7 @@ function measureMethod(
         const duration = endTime - startTime;
 
         // 创建平面结果记录
-        const flatResult: FlatMeasureResult = {
+        const flatResult: FlatCallProfile = {
             id,
             callee: fullName,
             parentId,
@@ -247,13 +241,13 @@ function measureMethod(
 /**
  * 将平面结果列表转换为树形结构
  */
-function buildTree(flatResults: FlatMeasureResult[]): MeasureResultNode[] {
-    const nodeMap = new Map<number, MeasureResultNode>();
-    const rootNodes: MeasureResultNode[] = [];
+function buildTree(flatResults: FlatCallProfile[]): CallProfileNode[] {
+    const nodeMap = new Map<number, CallProfileNode>();
+    const rootNodes: CallProfileNode[] = [];
 
     // 创建所有节点
     for (const result of flatResults) {
-        const node: MeasureResultNode = { ...result, children: [] };
+        const node: CallProfileNode = { ...result, children: [] };
         nodeMap.set(result.id, node);
     }
 
@@ -279,7 +273,7 @@ function buildTree(flatResults: FlatMeasureResult[]): MeasureResultNode[] {
 /**
  * 将树形节点渲染为字符串
  */
-function renderNode(node: MeasureResultNode, prefix: string = "", isLast: boolean = true): string {
+function renderNode(node: CallProfileNode, prefix: string = "", isLast: boolean = true): string {
     const connector = isLast ? "└──" : "├──";
     const durationStr = node.duration.toFixed(2);
 
@@ -299,7 +293,7 @@ function renderNode(node: MeasureResultNode, prefix: string = "", isLast: boolea
 /**
  * 将树形结构渲染为字符串（用于终端输出）
  */
-function renderTree(nodes: MeasureResultNode[]): string {
+function renderTree(nodes: CallProfileNode[]): string {
     if (nodes.length === 0) {
         return "(no measurements)\n";
     }
@@ -377,9 +371,9 @@ function getAllMethodNames(obj: object): string[] {
 /**
  * 测量上下文接口
  */
-interface MeasureContext {
+interface ProfilerContext {
     callStack: CallStackItem[];
-    flatResults: FlatMeasureResult[];
+    flatResults: FlatCallProfile[];
     enabled: { value: boolean };
 }
 
@@ -448,7 +442,7 @@ function parseInputToMethodPairs(
 function wrapSingleObjectMethods(
     obj: object,
     methods: string[],
-    context: MeasureContext,
+    context: ProfilerContext,
     useObjectPrefix: boolean,
 ): void {
     // 获取或创建该对象的已包装方法集合
@@ -498,7 +492,7 @@ function wrapSingleObjectMethods(
  */
 function wrapAllObjectMethods(
     objectMethodPairs: [object, string[]][],
-    context: MeasureContext,
+    context: ProfilerContext,
     useObjectPrefix: boolean,
 ): void {
     for (const [obj, methods] of objectMethodPairs) {
@@ -509,12 +503,12 @@ function wrapAllObjectMethods(
 /**
  * 创建测量函数的核心逻辑
  */
-function createMeasureFunctionCore(context: MeasureContext): MeasureObject {
+function createMeasureFunctionCore(context: ProfilerContext): CallProfiler {
     return async function (
         callback: () => void | Promise<void>,
-        options: MeasureOptions = {},
-    ): Promise<MeasureStats> {
-        const { warmup: warmupCount = 5, count: executionCount = 100 } = options;
+        options: CallProfilerOptions = {},
+    ): Promise<CallProfilerStats> {
+        const { warmup: warmupCount = 5, executionCount = 100 } = options;
 
         // 预热阶段
         for (let i = 0; i < warmupCount; i++) {
@@ -560,128 +554,109 @@ function createMeasureFunctionCore(context: MeasureContext): MeasureObject {
         const max = Math.max(...durations);
         const min = Math.min(...durations);
 
+        // 返回完整的统计结果（包含数据和方法）
         return {
             duration: avg,
             max,
             min,
+            get results(): CallProfileNode[] {
+                return buildTree(context.flatResults);
+            },
+            getFlatResults: () => [...context.flatResults],
+            getCalls: (methodName: string) => {
+                const tree = buildTree(context.flatResults);
+                // 递归查找所有匹配的节点
+                const findCalls = (nodes: CallProfileNode[]): CallProfileNode[] => {
+                    const result: CallProfileNode[] = [];
+                    for (const node of nodes) {
+                        if (node.callee === methodName) {
+                            result.push(node);
+                        }
+                        if (node.children.length > 0) {
+                            result.push(...findCalls(node.children));
+                        }
+                    }
+                    return result;
+                };
+
+                return findCalls(tree);
+            },
+            toTree: () => {
+                const tree = buildTree(context.flatResults);
+                return renderTree(tree);
+            },
+            clear: () => {
+                context.flatResults.length = 0;
+            },
+            get enabled(): boolean {
+                return context.enabled.value;
+            },
         };
-    } as MeasureObject;
+    }  
 }
 
 /**
- * 附加测量属性到函数
- */
-function attachMeasureProperties(measureFunction: MeasureObject, context: MeasureContext): void {
-    Object.defineProperty(measureFunction, "results", {
-        get(): MeasureResultNode[] {
-            return buildTree(context.flatResults);
-        },
-        enumerable: true,
-        configurable: true,
-    });
-
-    Object.defineProperty(measureFunction, "enabled", {
-        get(): boolean {
-            return context.enabled.value;
-        },
-        enumerable: true,
-        configurable: true,
-    });
-
-    measureFunction.clear = () => {
-        context.flatResults.length = 0;
-    };
-
-    measureFunction.getFlatResults = () => {
-        return [...context.flatResults];
-    };
-
-    measureFunction.getCalls = (methodName: string) => {
-        const tree = buildTree(context.flatResults);
-
-        // 递归查找所有匹配的节点
-        const findCalls = (nodes: MeasureResultNode[]): MeasureResultNode[] => {
-            const result: MeasureResultNode[] = [];
-            for (const node of nodes) {
-                if (node.callee === methodName) {
-                    result.push(node);
-                }
-                if (node.children.length > 0) {
-                    result.push(...findCalls(node.children));
-                }
-            }
-            return result;
-        };
-
-        return findCalls(tree);
-    };
-
-    measureFunction.toTree = () => {
-        const tree = buildTree(context.flatResults);
-        return renderTree(tree);
-    };
-}
-
-/**
- * 为单个对象的指定方法添加测量行为，返回测量函数
+ * 为单个对象的指定方法添加调用分析，返回分析器函数
  *
  * @param obj - 目标对象
- * @param methods - 需要测量的方法名数组（可选，未指定时自动测量所有方法）
- * @returns 测量函数（直接包含 results、getFlatResults、getCalls、toTree、clear、enabled 等成员）
+ * @param methods - 需要分析的方法名数组（可选，未指定时自动分析所有方法）
+ * @returns 调用分析器函数，调用后返回包含统计和操作方法的对象
  *
  * @example
  * ```typescript
- * // 指定要测量的方法
- * const measure = createMeasure(new MyClass(), ['method1', 'method2']);
- * const stats = await measure(
+ * // 指定要分析的方法
+ * const profiler = createCallProfiler(new MyClass(), ['method1', 'method2']);
+ * const stats = await profiler(
  *     () => { obj.method1(); },
- *     { warmupCount: 5, executionCount: 100 }
+ *     { warmup: 5, executionCount: 100 }
  * );
- * console.log(stats); // { duration: number, max: number, min: number }
+ * console.log(stats.duration); // 平均执行时间
+ * console.log(stats.results);  // 调用结果数组
+ * console.log(stats.toTree()); // 树形结构字符串
  *
- * // 自动测量所有方法（排除构造方法、私有方法和访问器）
- * const measure = createMeasure(new MyClass());
- * const stats = await measure(
+ * // 自动分析所有方法（排除构造方法、私有方法和访问器）
+ * const profiler = createCallProfiler(new MyClass());
+ * const stats = await profiler(
  *     () => { obj.anyMethod(); },
  *     { executionCount: 100 }
  * );
  * ```
  */
-export function createMeasure(obj: object, methods?: (string | keyof object)[]): MeasureObject;
+export function createCallProfiler(obj: object, methods?: (string | keyof object)[]): CallProfiler;
 
 /**
- * 为多个对象分别指定不同的测量方法，返回测量函数
+ * 为多个对象分别指定不同的分析方法，返回分析器函数
  *
  * @param objs - 对象和方法元组数组，每个元组包含 [对象, 方法名数组?]（方法数组可选）
- * @returns 测量函数（直接包含 results、getFlatResults、getCalls、toTree、clear、enabled 等成员）
+ * @returns 调用分析器函数，调用后返回包含统计和操作方法的对象
  *
  * @example
  * ```typescript
- * // 指定每个对象要测量的方法
- * const measure = createMeasure([
+ * // 指定每个对象要分析的方法
+ * const profiler = createCallProfiler([
  *     [userService, ['getUser', 'validateUser']],
  *     [postService, ['getPost', 'validatePost']]
  * ]);
  *
- * // 自动测量所有方法（简化语法）
- * const measure = createMeasure([
+ * // 自动分析所有方法（简化语法）
+ * const profiler = createCallProfiler([
  *     userService,
  *     postService
  * ]);
  *
- * // 或使用元组语法（自动测量所有方法）
- * const measure = createMeasure([
+ * // 或使用元组语法（自动分析所有方法）
+ * const profiler = createCallProfiler([
  *     [userService],
  *     [postService]
  * ]);
  *
- * // 混合使用：某些对象指定方法，某些对象自动测量
- * const measure = createMeasure([
- *     [userService, ['getUser']], // 只测量 getUser
- *     [postService] // 自动测量所有方法
+ * // 混合使用：某些对象指定方法，某些对象自动分析
+ * const profiler = createCallProfiler([
+ *     [userService, ['getUser']], // 只分析 getUser
+ *     [postService] // 自动分析所有方法
  * ]);
  *
- * const stats = await measure(
+ * const stats = await profiler(
  *     () => {
  *         userService.getUser(1);
  *         postService.getPost(1);
@@ -691,21 +666,21 @@ export function createMeasure(obj: object, methods?: (string | keyof object)[]):
  * // 结果中的 callee 会是 "UserService:getUser", "PostService:getPost"
  *
  * // 访问详细结果
- * console.log(measure.results);
- * console.log(measure.toTree());
+ * console.log(stats.results);
+ * console.log(stats.toTree());
  * ```
  */
-export function createMeasure(objs: ([object, string[]] | [object] | object)[]): MeasureObject;
+export function createCallProfiler(objs: ([object, string[]] | [object] | object)[]): CallProfiler;
 
 /**
- * createMeasure 函数实现（重载实现）
+ * createCallProfiler 函数实现（重载实现）
  */
-export function createMeasure(
+export function createCallProfiler(
     objOrObjs: object | ([object, string[]] | [object] | object)[],
     methods?: (string | keyof object)[],
-): MeasureObject {
-    // 创建测量上下文
-    const context: MeasureContext = {
+): CallProfiler {
+    // 创建分析上下文
+    const context: ProfilerContext = {
         callStack: [],
         flatResults: [],
         enabled: { value: false },
@@ -724,9 +699,6 @@ export function createMeasure(
 
     // 创建测量函数核心
     const measureFunction = createMeasureFunctionCore(context);
-
-    // 附加测量属性
-    attachMeasureProperties(measureFunction, context);
 
     return measureFunction;
 }

@@ -1,15 +1,15 @@
 // oxlint-disable no-unused-vars
-import { createMeasure } from "../utils/measure";
+import { createCallProfiler } from "../utils/measure";
 import { FastEvent } from "../event";
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const emitter = new FastEvent();
 
-const measure = createMeasure(emitter);
+const profiler = createCallProfiler(emitter);
 
 async function test() {
     let count: number = 0;
-    const result = await measure(
+    const stats = await profiler(
         async () => {
             // return new Promise<void>(async (resolve) => {
             const { off } = emitter.on("test", async () => {
@@ -21,10 +21,10 @@ async function test() {
             // });
         },
         {
-            count: 100,
+            executionCount: 100,
         },
     );
-    console.log(measure.toTree());
+    console.log(stats.toTree());
 }
 
 test().then(() => {
