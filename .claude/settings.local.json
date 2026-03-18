@@ -52,7 +52,8 @@
       "Bash(node fix-tests-final.js)",
       "Bash(node update-tests.js)",
       "Bash(DEBUG_PROFILER=1 bun run debug-test.ts)",
-      "Bash(ls *.ts)"
+      "Bash(ls *.ts)",
+      "Bash(xargs sed:*)"
     ]
   }
 }
