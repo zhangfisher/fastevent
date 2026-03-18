@@ -49,7 +49,7 @@ for await (const message of emitter.on("user/login")) {
 
 ### 消息存活时间
 
-当消息被放入缓冲区后，可以配置`lifetime`参数用于指定消息在最大存活时间。超过时会自动丢失。
+当消息被放入缓冲区后，可以配置`lifetime`参数用于指定消息在缓冲区中的最大存活时间，超过时会自动丢弃。
 
 ```ts
 const messages = emitter.on("count", {

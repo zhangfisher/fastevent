@@ -1,6 +1,6 @@
 // oxlint-disable no-unused-vars
 import { describe, test, expect } from "bun:test";
-import { createCallProfiler } from "../../utils/profiler";
+import { createCallProfiler, CallProfiler } from "../../utils/profiler";
 
 describe("measureObject - 基础功能", () => {
     class TestClass {
@@ -30,42 +30,42 @@ describe("measureObject - 基础功能", () => {
         const obj = new TestClass();
         const profiler = createCallProfiler(obj, ["syncMethod", "asyncMethod", "methodWithArgs"]);
 
-        expect(profiler).toBeInstanceOf(Function);
+        expect(profiler).toBeInstanceOf(createCallProfiler(new Object()).constructor);
 
         // 调用测量函数后，返回值应包含所有方法和属性
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 obj.syncMethod();
             },
             { executionCount: 1 },
         );
 
-        expect(stats.results).toBeInstanceOf(Array);
-        expect(stats.enabled).toBe(false);
+        expect(profiler.results).toBeInstanceOf(Array);
+        expect(profiler.enabled).toBe(false);
     });
 
     test("应该能执行测量并返回统计数据", async () => {
         const obj = new TestClass();
         const profiler = createCallProfiler(obj, ["syncMethod"]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 obj.syncMethod();
             },
             { warmup: 2, executionCount: 5 },
         );
 
-        expect(stats.duration).toBeGreaterThanOrEqual(0);
-        expect(stats.max).toBeGreaterThanOrEqual(0);
-        expect(stats.min).toBeGreaterThanOrEqual(0);
-        expect(stats.max).toBeGreaterThanOrEqual(stats.min);
+        expect(profiler.duration).toBeGreaterThanOrEqual(0);
+        expect(profiler.max).toBeGreaterThanOrEqual(0);
+        expect(profiler.min).toBeGreaterThanOrEqual(0);
+        expect(profiler.max).toBeGreaterThanOrEqual(profiler.min);
     });
 
     test("应该正确计算平均执行时间", async () => {
         const obj = new TestClass();
         const profiler = createCallProfiler(obj, ["syncMethod"]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 obj.syncMethod();
             },
@@ -73,9 +73,9 @@ describe("measureObject - 基础功能", () => {
         );
 
         // 平均时间应该在合理范围内
-        expect(stats.duration).toBeGreaterThan(0);
-        expect(stats.max).toBeGreaterThanOrEqual(stats.duration);
-        expect(stats.min).toBeLessThanOrEqual(stats.duration);
+        expect(profiler.duration).toBeGreaterThan(0);
+        expect(profiler.max).toBeGreaterThanOrEqual(profiler.duration);
+        expect(profiler.min).toBeLessThanOrEqual(profiler.duration);
     });
 
     test("默认使用 warmupCount=5 和 executionCount=100", async () => {
@@ -83,7 +83,7 @@ describe("measureObject - 基础功能", () => {
         const profiler = createCallProfiler(obj, ["syncMethod"]);
 
         let callCount = 0;
-        const stats = await profiler(() => {
+        await profiler.run(() => {
             callCount++;
             obj.syncMethod();
         });
@@ -96,7 +96,7 @@ describe("measureObject - 基础功能", () => {
         const obj = new TestClass();
         const profiler = createCallProfiler(obj, ["syncMethod", "asyncMethod", "methodWithArgs"]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 const syncResult = obj.syncMethod();
                 expect(syncResult).toBe("sync-result");
@@ -104,7 +104,7 @@ describe("measureObject - 基础功能", () => {
             { executionCount: 1 },
         );
 
-        await profiler(
+        await profiler.run(
             async () => {
                 const asyncResult = await obj.asyncMethod();
                 expect(asyncResult).toBe("async-result");
@@ -112,7 +112,7 @@ describe("measureObject - 基础功能", () => {
             { executionCount: 1 },
         );
 
-        await profiler(
+        await profiler.run(
             () => {
                 const argsResult = obj.methodWithArgs(3, 7);
                 expect(argsResult).toBe(10);
@@ -125,7 +125,7 @@ describe("measureObject - 基础功能", () => {
         const obj = new TestClass();
         const profiler = createCallProfiler(obj, ["syncMethod"]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 obj.syncMethod();
                 obj.notMeasured(); // 这个不会被测量
@@ -134,14 +134,14 @@ describe("measureObject - 基础功能", () => {
         );
 
         // 仍然应该有统计数据
-        expect(stats.duration).toBeGreaterThan(0);
+        expect(profiler.duration).toBeGreaterThan(0);
     });
 
     test("空方法列表应正常工作", async () => {
         const obj = new TestClass();
         const profiler = createCallProfiler(obj, []);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 obj.syncMethod();
             },
@@ -149,14 +149,14 @@ describe("measureObject - 基础功能", () => {
         );
 
         // 没有方法被测量，但仍然返回统计数据
-        expect(stats).toBeDefined();
+        expect(profiler).toBeDefined();
     });
 
     test("不存在的属性应被忽略", async () => {
         const obj = new TestClass();
         const profiler = createCallProfiler(obj, ["nonExistent" as any]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 obj.syncMethod();
             },
@@ -164,7 +164,7 @@ describe("measureObject - 基础功能", () => {
         );
 
         // syncMethod 不在测量列表中，所以没有详细结果
-        expect(stats.results.length).toBe(0);
+        expect(profiler.results.length).toBe(0);
     });
 
     test("应正确传递方法参数和 this 上下文", async () => {
@@ -183,7 +183,7 @@ describe("measureObject - 基础功能", () => {
         const obj = new ContextTest();
         const profiler = createCallProfiler(obj, ["getValue", "add"]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 const value = obj.getValue();
                 expect(value).toBe(42);
@@ -191,7 +191,7 @@ describe("measureObject - 基础功能", () => {
             { executionCount: 1 },
         );
 
-        await profiler(
+        await profiler.run(
             () => {
                 const sum = obj.add(10, 20);
                 expect(sum).toBe(72);
@@ -223,7 +223,7 @@ describe("measureObject - 基础功能", () => {
         expect(measure1).not.toBe(measure2);
 
         // 但方法应该正常工作
-        await measure1(
+        await measure1.run(
             () => {
                 const result = obj.method1();
                 expect(result).toBe("method1");
@@ -231,7 +231,7 @@ describe("measureObject - 基础功能", () => {
             { executionCount: 1 },
         );
 
-        await measure2(
+        await measure2.run(
             () => {
                 const result = obj.method2();
                 expect(result).toBe("method2");
@@ -264,7 +264,7 @@ describe("measureObject - 基础功能", () => {
         const measure2 = createCallProfiler(obj, ["method2", "method3"]);
 
         // method1 和 method2 应该在 measure1 中
-        const stats1 = await measure1(
+        await measure1.run(
             () => {
                 obj.method1();
                 obj.method2();
@@ -272,13 +272,13 @@ describe("measureObject - 基础功能", () => {
             { executionCount: 1 },
         );
 
-        expect(stats1.results.length).toBe(2);
+        expect(measure1.results.length).toBe(2);
 
         // 清空结果
-        stats1.clear();
+        measure1.clear();
 
         // method2 和 method3 应该在 measure2 中
-        const stats2 = await measure2(
+        await measure2.run(
             () => {
                 obj.method2();
                 obj.method3();
@@ -288,7 +288,7 @@ describe("measureObject - 基础功能", () => {
 
         // 注意：method2 在第一次封装时已经被包装，所以会共享同一个包装器
         // 但 measure2 仍然能追踪到调用
-        expect(stats2.results.length).toBeGreaterThanOrEqual(1);
+        expect(measure2.results.length).toBeGreaterThanOrEqual(1);
     });
 
     test("应该支持对象数组并为方法名添加前缀", async () => {
@@ -321,7 +321,7 @@ describe("measureObject - 基础功能", () => {
             [post, ["getTitle"]],
         ]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 user.getName();
                 post.getTitle();
@@ -330,7 +330,7 @@ describe("measureObject - 基础功能", () => {
         );
 
         // 验证结果中方法名带有对象前缀
-        const flatResults = stats.getFlatResults();
+        const flatResults = profiler.getFlatResults();
         expect(flatResults.length).toBe(2);
 
         const getNameCall = flatResults.find((r: any) => r.callee === "User:getName");
@@ -350,14 +350,14 @@ describe("measureObject - 基础功能", () => {
         const user = new User();
         const profiler = createCallProfiler(user, ["getName"]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 user.getName();
             },
             { executionCount: 1 },
         );
 
-        const flatResults = stats.getFlatResults();
+        const flatResults = profiler.getFlatResults();
         expect(flatResults.length).toBe(1);
 
         // 单个对象不应该有前缀
@@ -391,7 +391,7 @@ describe("measureObject - 基础功能", () => {
             [validator, ["validate"]],
         ]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 calc.add(1, 2);
                 validator.validate(5);
@@ -399,7 +399,7 @@ describe("measureObject - 基础功能", () => {
             { executionCount: 1 },
         );
 
-        const treeStr = stats.toTree();
+        const treeStr = profiler.toTree();
 
         // 验证树形结构包含带前缀的方法名
         expect(treeStr).toContain("Calculator:add");
@@ -420,7 +420,7 @@ describe("measureObject - 边界情况", () => {
         const profiler = createCallProfiler(obj, ["errorMethod"]);
 
         let errorCount = 0;
-        const stats = await profiler(
+        await profiler.run(
             async () => {
                 try {
                     await obj.errorMethod();
@@ -433,7 +433,7 @@ describe("measureObject - 边界情况", () => {
 
         // 总调用次数 = warmup (2) + execution (3)
         expect(errorCount).toBe(5);
-        expect(stats.duration).toBeGreaterThanOrEqual(0);
+        expect(profiler.duration).toBeGreaterThanOrEqual(0);
     });
 
     test("方法返回非 Promise 的值应正常处理", async () => {
@@ -463,7 +463,7 @@ describe("measureObject - 边界情况", () => {
             "getUndefined",
         ]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 const num = obj.getNumber();
                 expect(num).toBe(12345);
@@ -471,7 +471,7 @@ describe("measureObject - 边界情况", () => {
             { executionCount: 1 },
         );
 
-        await profiler(
+        await profiler.run(
             () => {
                 const objResult = obj.getObject();
                 expect(objResult).toEqual({ key: "value" });
@@ -479,7 +479,7 @@ describe("measureObject - 边界情况", () => {
             { executionCount: 1 },
         );
 
-        await profiler(
+        await profiler.run(
             () => {
                 const nullVal = obj.getNull();
                 expect(nullVal).toBeNull();
@@ -487,7 +487,7 @@ describe("measureObject - 边界情况", () => {
             { executionCount: 1 },
         );
 
-        await profiler(
+        await profiler.run(
             () => {
                 const undefVal = obj.getUndefined();
                 expect(undefVal).toBeUndefined();
@@ -548,7 +548,7 @@ describe("measureObject - 方法调用链测试", () => {
         const obj = new CallTreeTestClass();
         const profiler = createCallProfiler(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 obj.A1();
             },
@@ -556,22 +556,22 @@ describe("measureObject - 方法调用链测试", () => {
         );
 
         // control.results 包含树形结构
-        expect(stats.results.length).toBe(1);
-        expect(stats.results[0].callee).toBe("A1");
+        expect(profiler.results.length).toBe(1);
+        expect(profiler.results[0].callee).toBe("A1");
     });
 
     test("应该能追踪多层嵌套调用", async () => {
         const obj = new CallTreeTestClass();
         const profiler = createCallProfiler(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 obj.A1();
             },
             { executionCount: 1 },
         );
 
-        const tree = stats.results;
+        const tree = profiler.results;
 
         // 验证调用深度：A1 -> A2 -> A11 (3层)
         const a1 = tree[0];
@@ -592,7 +592,7 @@ describe("measureObject - 方法调用链测试", () => {
         const obj = new CallTreeTestClass();
         const profiler = createCallProfiler(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 obj.A2(); // 直接调用 A2
             },
@@ -600,16 +600,16 @@ describe("measureObject - 方法调用链测试", () => {
         );
 
         // 只应该记录 A2 及其子调用
-        expect(stats.results.length).toBe(1);
-        expect(stats.results[0].callee).toBe("A2");
-        expect(stats.results[0].children.length).toBe(2);
+        expect(profiler.results.length).toBe(1);
+        expect(profiler.results[0].callee).toBe("A2");
+        expect(profiler.results[0].children.length).toBe(2);
     });
 
     test("应该能追踪多个入口点的调用", async () => {
         const obj = new CallTreeTestClass();
         const profiler = createCallProfiler(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 obj.A2();
                 obj.A3();
@@ -618,9 +618,9 @@ describe("measureObject - 方法调用链测试", () => {
         );
 
         // 应该有 2 个根节点（A2 和 A3）
-        expect(stats.results.length).toBe(2);
+        expect(profiler.results.length).toBe(2);
 
-        const rootCallees = stats.results.map((node:any) => node.callee);
+        const rootCallees = profiler.results.map((node: any) => node.callee);
         expect(rootCallees).toContain("A2");
         expect(rootCallees).toContain("A3");
     });
@@ -629,7 +629,7 @@ describe("measureObject - 方法调用链测试", () => {
         const obj = new CallTreeTestClass();
         const profiler = createCallProfiler(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 obj.A1();
                 obj.A1();
@@ -638,7 +638,7 @@ describe("measureObject - 方法调用链测试", () => {
         );
 
         // 获取所有 A2 的调用（A1 调用了 A2，所以有 2 次）
-        const a2Calls = stats.getCalls("A2");
+        const a2Calls = profiler.getCalls("A2");
         expect(a2Calls.length).toBe(2);
     });
 
@@ -646,42 +646,42 @@ describe("measureObject - 方法调用链测试", () => {
         const obj = new CallTreeTestClass();
         const profiler = createCallProfiler(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 obj.A1();
             },
             { executionCount: 1 },
         );
 
-        expect(stats.results.length).toBe(1);
+        expect(profiler.results.length).toBe(1);
 
         // 清空结果
-        stats.clear();
-        expect(stats.results.length).toBe(0);
+        profiler.clear();
+        expect(profiler.results.length).toBe(0);
 
         // 再次测量应该重新记录
-        await profiler(
+        await profiler.run(
             () => {
                 obj.A2();
             },
             { executionCount: 1 },
         );
 
-        expect(stats.results.length).toBe(1);
+        expect(profiler.results.length).toBe(1);
     });
 
     test("应该支持将树形结构渲染为字符串", async () => {
         const obj = new CallTreeTestClass();
         const profiler = createCallProfiler(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 obj.A1();
             },
             { executionCount: 1 },
         );
 
-        const treeStr = stats.toTree();
+        const treeStr = profiler.toTree();
 
         // 验证树形字符串格式
         expect(treeStr).toContain("A1");
@@ -694,14 +694,14 @@ describe("measureObject - 方法调用链测试", () => {
         const obj = new CallTreeTestClass();
         const profiler = createCallProfiler(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 obj.A1();
             },
             { executionCount: 1 },
         );
 
-        const treeStr = stats.toTree();
+        const treeStr = profiler.toTree();
         const lines = treeStr.split("\n").filter((line: string) => line.trim());
 
         // 第一行应该是 A1（无缩进）
@@ -719,14 +719,14 @@ describe("measureObject - 方法调用链测试", () => {
         const profiler = createCallProfiler(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
 
         // 没有调用 profiler 之前，先执行一次获取空的 stats
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 // 不调用任何方法
             },
             { executionCount: 1 },
         );
 
-        const treeStr = stats.toTree();
+        const treeStr = profiler.toTree();
         expect(treeStr).toContain("no measurements");
     });
 
@@ -757,14 +757,14 @@ describe("measureObject - 方法调用链测试", () => {
         const obj = new SlowTestClass();
         const profiler = createCallProfiler(obj, ["A2", "A11", "A12"]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 obj.A2();
             },
             { executionCount: 1 },
         );
 
-        const flatResults = stats.getFlatResults();
+        const flatResults = profiler.getFlatResults();
         const a2 = flatResults.find((r: any) => r.callee === "A2");
         const a11 = flatResults.find((r: any) => r.callee === "A11");
         const a12 = flatResults.find((r: any) => r.callee === "A12");
@@ -786,14 +786,14 @@ describe("measureObject - 方法调用链测试", () => {
         const obj = new CallTreeTestClass();
         const profiler = createCallProfiler(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 obj.A1();
             },
             { executionCount: 1 },
         );
 
-        const flatResults = stats.getFlatResults();
+        const flatResults = profiler.getFlatResults();
 
         // 应该有 6 个方法调用：A1, A2, A3, A11, A12, A21
         expect(flatResults.length).toBe(6);
@@ -803,14 +803,14 @@ describe("measureObject - 方法调用链测试", () => {
         const obj = new CallTreeTestClass();
         const profiler = createCallProfiler(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 obj.A1();
             },
             { executionCount: 1 },
         );
 
-        const tree = stats.results;
+        const tree = profiler.results;
 
         // 应该只有一个根节点（A1）
         expect(tree.length).toBe(1);
@@ -835,14 +835,14 @@ describe("measureObject - 方法调用链测试", () => {
         const obj = new CallTreeTestClass();
         const profiler = createCallProfiler(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 obj.A1();
             },
             { executionCount: 1 },
         );
 
-        const tree = stats.results;
+        const tree = profiler.results;
 
         // 根节点有 ID 和深度 0
         expect(tree[0].id).toBeDefined();
@@ -867,14 +867,14 @@ describe("measureObject - 方法调用链测试", () => {
         const obj = new CallTreeTestClass();
         const profiler = createCallProfiler(obj, ["A1", "A2", "A3", "A11", "A12", "A21"]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 obj.A1();
             },
             { executionCount: 1 },
         );
 
-        const tree = stats.results;
+        const tree = profiler.results;
 
         // 从 A11 回溯到根节点
         const a11 = tree[0].children[0].children[0];
@@ -998,14 +998,14 @@ describe("measureObject - 多个对象方法调用链测试", () => {
             [postService, ["B1"]],
         ]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 userService.A1();
                 postService.B1();
             },
             { executionCount: 1 },
         );
-        const flatResults = stats.getFlatResults();
+        const flatResults = profiler.getFlatResults();
 
         // 应该有 2 个根方法调用
         expect(flatResults.length).toBeGreaterThanOrEqual(2);
@@ -1024,14 +1024,14 @@ describe("measureObject - 多个对象方法调用链测试", () => {
         // 新签名：为每个对象指定不同的方法
         const profiler = createCallProfiler([userService, postService]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 userService.A1();
                 postService.B2();
             },
             { executionCount: 1 },
         );
-        console.log(stats.toTree());
+        console.log(profiler.toTree());
     });
 
     test("应该追踪跨对象的嵌套调用", async () => {
@@ -1040,14 +1040,14 @@ describe("measureObject - 多个对象方法调用链测试", () => {
         // 新签名：为每个对象指定不同的方法
         const profiler = createCallProfiler([[userService, ["A1", "A11", "A12", "A111", "A112"]]]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 userService.A1();
             },
             { executionCount: 1 },
         );
 
-        const tree = stats.results;
+        const tree = profiler.results;
 
         // 应该有一个根节点
         expect(tree.length).toBe(1);
@@ -1056,12 +1056,12 @@ describe("measureObject - 多个对象方法调用链测试", () => {
         // 根节点应该有两个子节点（A11 和 A12）
         expect(tree[0].children.length).toBe(2);
 
-        const childCallees = tree[0].children.map((child:any) => child.callee);
+        const childCallees = tree[0].children.map((child: any) => child.callee);
         expect(childCallees).toContain("UserService:A11");
         expect(childCallees).toContain("UserService:A12");
 
         // A11 应该有两个子节点（A111 和 A112）
-        const a11Node = tree[0].children.find((child:any) => child.callee === "UserService:A11");
+        const a11Node = tree[0].children.find((child: any) => child.callee === "UserService:A11");
         expect(a11Node).toBeDefined();
         expect(a11Node!.children.length).toBe(2);
     });
@@ -1076,7 +1076,7 @@ describe("measureObject - 多个对象方法调用链测试", () => {
             [postService, ["B1"]],
         ]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 userService.A1();
                 postService.B1();
@@ -1084,7 +1084,7 @@ describe("measureObject - 多个对象方法调用链测试", () => {
             { executionCount: 1 },
         );
 
-        const treeStr = stats.toTree();
+        const treeStr = profiler.toTree();
 
         // 验证树形结构包含正确的对象前缀
         expect(treeStr).toContain("UserService:A1");
@@ -1101,7 +1101,7 @@ describe("measureObject - 多个对象方法调用链测试", () => {
             [postService, ["B11"]],
         ]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 userService.A11();
                 postService.B11();
@@ -1109,7 +1109,7 @@ describe("measureObject - 多个对象方法调用链测试", () => {
             { executionCount: 1 },
         );
 
-        const flatResults = stats.getFlatResults();
+        const flatResults = profiler.getFlatResults();
 
         expect(flatResults.length).toBe(2);
 
@@ -1133,7 +1133,7 @@ describe("measureObject - 多个对象方法调用链测试", () => {
             [postService, ["B1"]],
         ]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 userService.A1();
                 userService.A1();
@@ -1143,11 +1143,11 @@ describe("measureObject - 多个对象方法调用链测试", () => {
         );
 
         // 获取 UserService 的所有 A1 调用
-        const a1Calls = stats.getCalls("UserService:A1");
+        const a1Calls = profiler.getCalls("UserService:A1");
         expect(a1Calls.length).toBe(2);
 
         // 获取 PostService 的 B1 调用
-        const b1Calls = stats.getCalls("PostService:B1");
+        const b1Calls = profiler.getCalls("PostService:B1");
         expect(b1Calls.length).toBe(1);
     });
 
@@ -1157,14 +1157,14 @@ describe("measureObject - 多个对象方法调用链测试", () => {
         // 新签名：为每个对象指定不同的方法
         const profiler = createCallProfiler([[userService, ["A1", "A11", "A12"]]]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 userService.A1();
             },
             { executionCount: 1 },
         );
 
-        const flatResults = stats.getFlatResults();
+        const flatResults = profiler.getFlatResults();
 
         // 找到根节点和子节点
         const rootCall = flatResults.find((r: any) => r.callee === "UserService:A1");
@@ -1191,7 +1191,7 @@ describe("measureObject - 多个对象方法调用链测试", () => {
             [postService, ["B1", "B2", "B11", "B21"]],
         ]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 userService.A1();
                 postService.B1();
@@ -1201,7 +1201,7 @@ describe("measureObject - 多个对象方法调用链测试", () => {
             { executionCount: 1 },
         );
 
-        const flatResults = stats.getFlatResults();
+        const flatResults = profiler.getFlatResults();
 
         // A1 会调用 A11, A12，A2 会调用 A21，B1 会调用 B11，B2 会调用 B21
         // 总共会有多个调用
@@ -1211,7 +1211,7 @@ describe("measureObject - 多个对象方法调用链测试", () => {
         const rootCalls = flatResults.filter((r: any) => r.depth === 0);
         expect(rootCalls.length).toBe(4);
 
-        const callees = rootCalls.map((r:any) => r.callee);
+        const callees = rootCalls.map((r: any) => r.callee);
         expect(callees).toContain("UserService:A1");
         expect(callees).toContain("PostService:B1");
         expect(callees).toContain("UserService:A2");
@@ -1228,7 +1228,7 @@ describe("measureObject - 多个对象方法调用链测试", () => {
             [postService, ["B2", "B21"]],
         ]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 // PostService.B2 会调用：
                 // 1. B21 (PostService 内部)
@@ -1240,7 +1240,7 @@ describe("measureObject - 多个对象方法调用链测试", () => {
             { executionCount: 1 },
         );
 
-        const flatResults = stats.getFlatResults();
+        const flatResults = profiler.getFlatResults();
 
         // 验证跨对象调用被正确记录
         const postServiceCalls = flatResults.filter((r: any) =>
@@ -1261,7 +1261,7 @@ describe("measureObject - 多个对象方法调用链测试", () => {
         expect(userServiceCalls.some((r: any) => r.callee === "UserService:A11")).toBe(true);
 
         // 验证调用树的层级关系
-        const tree = stats.results;
+        const tree = profiler.results;
 
         // 根节点应该是 B2
         expect(tree.length).toBe(1);
@@ -1269,14 +1269,14 @@ describe("measureObject - 多个对象方法调用链测试", () => {
 
         // B2 的子节点应该包含 B21 和 A1
         const b2Children = tree[0].children;
-        const b2ChildCallees = b2Children.map((child:any) => child.callee);
+        const b2ChildCallees = b2Children.map((child: any) => child.callee);
         expect(b2ChildCallees).toContain("PostService:B21");
         expect(b2ChildCallees).toContain("UserService:A1");
 
         // A1 的子节点应该包含 A11 和 A12
-        const a1Node = b2Children.find((child:any) => child.callee === "UserService:A1");
+        const a1Node = b2Children.find((child: any) => child.callee === "UserService:A1");
         expect(a1Node).toBeDefined();
-        const a1ChildCallees = a1Node!.children.map((child:any) => child.callee);
+        const a1ChildCallees = a1Node!.children.map((child: any) => child.callee);
         expect(a1ChildCallees).toContain("UserService:A11");
         expect(a1ChildCallees).toContain("UserService:A12");
     });
@@ -1290,14 +1290,14 @@ describe("measureObject - 多个对象方法调用链测试", () => {
             [postService, ["B2", "B21"]],
         ]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 postService.B2();
             },
             { executionCount: 1 },
         );
 
-        const treeStr = stats.toTree();
+        const treeStr = profiler.toTree();
 
         // 验证树形字符串包含跨对象调用的信息
         expect(treeStr).toContain("PostService:B2");
@@ -1363,7 +1363,7 @@ describe("createCallProfiler - 多对象不同方法签名测试", () => {
             [serviceB, ["method3", "method4"]],
         ]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 serviceA.method1();
                 serviceA.method2();
@@ -1373,13 +1373,13 @@ describe("createCallProfiler - 多对象不同方法签名测试", () => {
             { executionCount: 1 },
         );
 
-        const flatResults = stats.getFlatResults();
+        const flatResults = profiler.getFlatResults();
 
         // 应该有 4 个方法调用（每个对象 2 个方法）
         expect(flatResults.length).toBe(4);
 
         // 验证每个调用都有正确的对象前缀
-        const callees = flatResults.map((r:any) => r.callee);
+        const callees = flatResults.map((r: any) => r.callee);
         expect(callees).toContain("ServiceA:method1");
         expect(callees).toContain("ServiceA:method2");
         expect(callees).toContain("ServiceB:method3");
@@ -1395,7 +1395,7 @@ describe("createCallProfiler - 多对象不同方法签名测试", () => {
             [serviceB, ["method3"]], // 只测量 method3
         ]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 serviceA.method1(); // 应该被测量
                 serviceA.method2(); // 不应该被测量
@@ -1407,12 +1407,12 @@ describe("createCallProfiler - 多对象不同方法签名测试", () => {
             { executionCount: 1 },
         );
 
-        const flatResults = stats.getFlatResults();
+        const flatResults = profiler.getFlatResults();
 
         // 只有 method1 和 method3 被测量
         expect(flatResults.length).toBe(2);
 
-        const callees = flatResults.map((r:any) => r.callee);
+        const callees = flatResults.map((r: any) => r.callee);
         expect(callees).toContain("ServiceA:method1");
         expect(callees).toContain("ServiceB:method3");
         expect(callees).not.toContain("ServiceA:method2");
@@ -1430,7 +1430,7 @@ describe("createCallProfiler - 多对象不同方法签名测试", () => {
             [serviceB, ["method3", "method4"]], // ServiceB 有 2 个方法
         ]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 serviceA.method1();
                 serviceB.method3();
@@ -1439,15 +1439,15 @@ describe("createCallProfiler - 多对象不同方法签名测试", () => {
             { executionCount: 1 },
         );
 
-        const flatResults = stats.getFlatResults();
+        const flatResults = profiler.getFlatResults();
 
         // 应该有 3 个方法调用
         expect(flatResults.length).toBe(3);
 
-        const serviceACalls = flatResults.filter((r:any) => r.callee.startsWith("ServiceA:"));
+        const serviceACalls = flatResults.filter((r: any) => r.callee.startsWith("ServiceA:"));
         expect(serviceACalls.length).toBe(1);
 
-        const serviceBCalls = flatResults.filter((r:any) => r.callee.startsWith("ServiceB:"));
+        const serviceBCalls = flatResults.filter((r: any) => r.callee.startsWith("ServiceB:"));
         expect(serviceBCalls.length).toBe(2);
     });
 
@@ -1460,7 +1460,7 @@ describe("createCallProfiler - 多对象不同方法签名测试", () => {
             [serviceB, ["method3", "method4"]],
         ]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 serviceA.method1();
                 serviceA.method2();
@@ -1470,12 +1470,12 @@ describe("createCallProfiler - 多对象不同方法签名测试", () => {
         );
 
         // 获取 ServiceA 的 method1 调用
-        const method1Calls = stats.getCalls("ServiceA:method1");
+        const method1Calls = profiler.getCalls("ServiceA:method1");
         expect(method1Calls.length).toBe(1);
         expect(method1Calls[0].callee).toBe("ServiceA:method1");
 
         // 获取 ServiceB 的 method3 调用
-        const method3Calls = stats.getCalls("ServiceB:method3");
+        const method3Calls = profiler.getCalls("ServiceB:method3");
         expect(method3Calls.length).toBe(1);
         expect(method3Calls[0].callee).toBe("ServiceB:method3");
     });
@@ -1499,14 +1499,14 @@ describe("createCallProfiler - 多对象不同方法签名测试", () => {
             [serviceA, ["method1"]],
         ]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 callerService.callA(serviceA);
             },
             { executionCount: 1 },
         );
 
-        const tree = stats.results;
+        const tree = profiler.results;
 
         // 应该有一个根节点（callA）
         expect(tree.length).toBe(1);
@@ -1526,7 +1526,7 @@ describe("createCallProfiler - 多对象不同方法签名测试", () => {
             [serviceB, ["method3"]],
         ]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 serviceA.method1();
                 serviceB.method3();
@@ -1535,10 +1535,10 @@ describe("createCallProfiler - 多对象不同方法签名测试", () => {
         );
 
         // 验证统计数据存在且合理
-        expect(stats.duration).toBeGreaterThan(0);
-        expect(stats.max).toBeGreaterThanOrEqual(stats.duration);
-        expect(stats.min).toBeLessThanOrEqual(stats.duration);
-        expect(stats.max).toBeGreaterThanOrEqual(stats.min);
+        expect(profiler.duration).toBeGreaterThan(0);
+        expect(profiler.max).toBeGreaterThanOrEqual(profiler.duration);
+        expect(profiler.min).toBeLessThanOrEqual(profiler.duration);
+        expect(profiler.max).toBeGreaterThanOrEqual(profiler.min);
     });
 
     test("应该能够清空结果", async () => {
@@ -1550,18 +1550,18 @@ describe("createCallProfiler - 多对象不同方法签名测试", () => {
             [serviceB, ["method3"]],
         ]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 serviceA.method1();
             },
             { executionCount: 1 },
         );
 
-        expect(stats.results.length).toBe(1);
+        expect(profiler.results.length).toBe(1);
 
-        stats.clear();
+        profiler.clear();
 
-        expect(stats.results.length).toBe(0);
+        expect(profiler.results.length).toBe(0);
     });
 
     test("应该能够渲染树形字符串", async () => {
@@ -1573,7 +1573,7 @@ describe("createCallProfiler - 多对象不同方法签名测试", () => {
             [serviceB, ["method3"]],
         ]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 serviceA.method1();
                 serviceB.method3();
@@ -1581,7 +1581,7 @@ describe("createCallProfiler - 多对象不同方法签名测试", () => {
             { executionCount: 1 },
         );
 
-        const treeString = stats.toTree();
+        const treeString = profiler.toTree();
 
         // 验证树形字符串包含预期的内容
         expect(treeString).toContain("ServiceA:method1");
@@ -1592,7 +1592,7 @@ describe("createCallProfiler - 多对象不同方法签名测试", () => {
     test("应该能够处理空对象数组", async () => {
         const profiler = createCallProfiler([]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 // 什么都不做
             },
@@ -1600,8 +1600,8 @@ describe("createCallProfiler - 多对象不同方法签名测试", () => {
         );
 
         // 应该能正常运行，但没有结果
-        expect(stats.results.length).toBe(0);
-        expect(stats.duration).toBeGreaterThanOrEqual(0);
+        expect(profiler.results.length).toBe(0);
+        expect(profiler.duration).toBeGreaterThanOrEqual(0);
     });
 
     test("应该能够处理单个对象使用新签名", async () => {
@@ -1610,7 +1610,7 @@ describe("createCallProfiler - 多对象不同方法签名测试", () => {
         // 单个对象也可以使用新签名
         const profiler = createCallProfiler([[serviceA, ["method1", "method2"]]]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 serviceA.method1();
                 serviceA.method2();
@@ -1618,10 +1618,10 @@ describe("createCallProfiler - 多对象不同方法签名测试", () => {
             { executionCount: 1 },
         );
 
-        const flatResults = stats.getFlatResults();
+        const flatResults = profiler.getFlatResults();
 
         expect(flatResults.length).toBe(2);
-        const callees = flatResults.map((r:any) => r.callee);
+        const callees = flatResults.map((r: any) => r.callee);
         expect(callees).toContain("ServiceA:method1");
         expect(callees).toContain("ServiceA:method2");
     });
@@ -1632,7 +1632,7 @@ describe("createCallProfiler - 多对象不同方法签名测试", () => {
         // 旧签名：createCallProfiler(obj, methods)
         const profiler = createCallProfiler(serviceA, ["method1", "method2"]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 serviceA.method1();
                 serviceA.method2();
@@ -1640,12 +1640,12 @@ describe("createCallProfiler - 多对象不同方法签名测试", () => {
             { executionCount: 1 },
         );
 
-        const flatResults = stats.getFlatResults();
+        const flatResults = profiler.getFlatResults();
 
         expect(flatResults.length).toBe(2);
 
         // 旧签名不应该添加对象前缀
-        const callees = flatResults.map((r:any) => r.callee);
+        const callees = flatResults.map((r: any) => r.callee);
         expect(callees).toContain("method1");
         expect(callees).toContain("method2");
         expect(callees).not.toContain("ServiceA:method1");
@@ -1687,7 +1687,7 @@ describe("createCallProfiler - 多对象不同方法签名测试", () => {
         // 不指定 methods，应该自动测量所有公共方法
         const profiler = createCallProfiler(obj);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 obj.method1();
                 obj.method2();
@@ -1695,12 +1695,12 @@ describe("createCallProfiler - 多对象不同方法签名测试", () => {
             { executionCount: 1 },
         );
 
-        const flatResults = stats.getFlatResults();
+        const flatResults = profiler.getFlatResults();
 
         // 应该有 2 个方法调用（method1 和 method2）
         expect(flatResults.length).toBe(2);
 
-        const callees = flatResults.map((r:any) => r.callee);
+        const callees = flatResults.map((r: any) => r.callee);
         expect(callees).toContain("method1");
         expect(callees).toContain("method2");
 
@@ -1744,7 +1744,7 @@ describe("createCallProfiler - 多对象不同方法签名测试", () => {
         // 不指定 methods，应该自动测量所有公共方法
         const profiler = createCallProfiler([[serviceA], [serviceB]]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 serviceA.method1();
                 serviceA.method2();
@@ -1754,12 +1754,12 @@ describe("createCallProfiler - 多对象不同方法签名测试", () => {
             { executionCount: 1 },
         );
 
-        const flatResults = stats.getFlatResults();
+        const flatResults = profiler.getFlatResults();
 
         // 应该有 4 个方法调用
         expect(flatResults.length).toBe(4);
 
-        const callees = flatResults.map((r:any) => r.callee);
+        const callees = flatResults.map((r: any) => r.callee);
         expect(callees).toContain("ServiceA:method1");
         expect(callees).toContain("ServiceA:method2");
         expect(callees).toContain("ServiceB:method3");
@@ -1805,7 +1805,7 @@ describe("createCallProfiler - 多对象不同方法签名测试", () => {
         // 简化语法：直接传入对象数组
         const profiler = createCallProfiler([serviceA, serviceB]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 serviceA.method1();
                 serviceA.method2();
@@ -1815,12 +1815,12 @@ describe("createCallProfiler - 多对象不同方法签名测试", () => {
             { executionCount: 1 },
         );
 
-        const flatResults = stats.getFlatResults();
+        const flatResults = profiler.getFlatResults();
 
         // 应该有 4 个方法调用
         expect(flatResults.length).toBe(4);
 
-        const callees = flatResults.map((r:any) => r.callee);
+        const callees = flatResults.map((r: any) => r.callee);
         expect(callees).toContain("ServiceA:method1");
         expect(callees).toContain("ServiceA:method2");
         expect(callees).toContain("ServiceB:method3");
@@ -1861,7 +1861,7 @@ describe("createCallProfiler - 多对象不同方法签名测试", () => {
             [serviceB], // 自动测量所有方法
         ]);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 serviceA.method1();
                 serviceA.method2(); // 这个不会被测量
@@ -1871,12 +1871,12 @@ describe("createCallProfiler - 多对象不同方法签名测试", () => {
             { executionCount: 1 },
         );
 
-        const flatResults = stats.getFlatResults();
+        const flatResults = profiler.getFlatResults();
 
         // 应该有 3 个方法调用（serviceA.method1 + serviceB 的两个方法）
         expect(flatResults.length).toBe(3);
 
-        const callees = flatResults.map((r:any) => r.callee);
+        const callees = flatResults.map((r: any) => r.callee);
         expect(callees).toContain("ServiceA:method1");
         expect(callees).not.toContain("ServiceA:method2"); // 没有被测量
         expect(callees).toContain("ServiceB:method3");
@@ -1902,7 +1902,7 @@ describe("createCallProfiler - 多对象不同方法签名测试", () => {
 
         const profiler = createCallProfiler(obj);
 
-        const stats = await profiler(
+        await profiler.run(
             () => {
                 obj.method1();
                 obj.method2();
@@ -1910,12 +1910,190 @@ describe("createCallProfiler - 多对象不同方法签名测试", () => {
             { executionCount: 1 },
         );
 
-        const flatResults = stats.getFlatResults();
+        const flatResults = profiler.getFlatResults();
 
         // 应该只有 method1 和 method2，没有 constructor
-        const callees = flatResults.map((r:any) => r.callee);
+        const callees = flatResults.map((r: any) => r.callee);
         expect(callees).toContain("method1");
         expect(callees).toContain("method2");
         expect(callees).not.toContain("constructor");
     });
 });
+
+    describe("unbind 和 bind", () => {
+        test("unbind 应该移除方法包装", async () => {
+            class TestClass {
+                method1() {
+                    return "method1";
+                }
+
+                method2() {
+                    return "method2";
+                }
+            }
+
+            const obj = new TestClass();
+            const profiler = createCallProfiler(obj, ["method1", "method2"]);
+
+            // 先运行一次测量，确保方法被包装
+            await profiler.run(
+                () => {
+                    obj.method1();
+                },
+                { executionCount: 1 },
+            );
+            expect(profiler.results.length).toBeGreaterThan(0);
+
+            // 清空结果
+            profiler.clear();
+
+            // 解绑
+            profiler.unbind();
+
+            // 再次运行，应该没有测量结果
+            await profiler.run(
+                () => {
+                    obj.method1();
+                },
+                { executionCount: 1 },
+            );
+            expect(profiler.results.length).toBe(0);
+        });
+
+        test("bind 应该重新包装方法", async () => {
+            class TestClass {
+                method1() {
+                    return "method1";
+                }
+            }
+
+            const obj = new TestClass();
+            const profiler = createCallProfiler(obj, ["method1"]);
+
+            // 解绑
+            profiler.unbind();
+
+            // 解绑后运行，应该没有结果
+            await profiler.run(
+                () => {
+                    obj.method1();
+                },
+                { executionCount: 1 },
+            );
+            expect(profiler.results.length).toBe(0);
+
+            // 重新绑定
+            profiler.bind();
+
+            // 绑定后运行，应该有结果
+            await profiler.run(
+                () => {
+                    obj.method1();
+                },
+                { executionCount: 1 },
+            );
+            expect(profiler.results.length).toBeGreaterThan(0);
+        });
+
+        test("unbind 后 bind 应该正常工作", async () => {
+            class TestClass {
+                method1() {
+                    return "method1";
+                }
+
+                method2() {
+                    return "method2";
+                }
+            }
+
+            const obj = new TestClass();
+            const profiler = createCallProfiler(obj, ["method1", "method2"]);
+
+            // 第一次测量
+            await profiler.run(
+                () => {
+                    obj.method1();
+                    obj.method2();
+                },
+                { executionCount: 1 },
+            );
+            const count1 = profiler.results.length;
+            expect(count1).toBe(2);
+
+            // 解绑
+            profiler.unbind();
+            profiler.clear();
+
+            // 解绑后运行，应该没有结果
+            await profiler.run(
+                () => {
+                    obj.method1();
+                    obj.method2();
+                },
+                { executionCount: 1 },
+            );
+            expect(profiler.results.length).toBe(0);
+
+            // 重新绑定
+            profiler.bind();
+            profiler.clear();
+
+            // 重新绑定后运行，应该有结果
+            await profiler.run(
+                () => {
+                    obj.method1();
+                    obj.method2();
+                },
+                { executionCount: 1 },
+            );
+            expect(profiler.results.length).toBe(2);
+        });
+
+        test("unbind 应该禁用测量", async () => {
+            class TestClass {
+                method1() {
+                    return "method1";
+                }
+            }
+
+            const obj = new TestClass();
+            const profiler = createCallProfiler(obj, ["method1"]);
+
+            // 运行测量
+            await profiler.run(
+                () => {
+                    obj.method1();
+                },
+                { executionCount: 1 },
+            );
+
+            // 解绑
+            profiler.unbind();
+
+            // 解绑后应该是禁用状态
+            expect(profiler.enabled).toBe(false);
+        });
+
+        test("bind 应该启用测量", async () => {
+            class TestClass {
+                method1() {
+                    return "method1";
+                }
+            }
+
+            const obj = new TestClass();
+            const profiler = createCallProfiler(obj, ["method1"]);
+
+            // 先解绑
+            profiler.unbind();
+
+            // 解绑后禁用
+            expect(profiler.enabled).toBe(false);
+
+            // 重新绑定
+            profiler.bind();
+
+            // 绑定后启用
+            expect(profiler.enabled).toBe(true);
+        });
+    });

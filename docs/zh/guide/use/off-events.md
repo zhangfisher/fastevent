@@ -175,9 +175,9 @@ emitter.emit("click", "exit");
 
 ### 自动取消订阅
 
-`FastEvent`实现了`Symbol.dispose`特性，支持在离开作用裁量时自动取消订阅。
+`FastEvent`实现了`Symbol.dispose`特性，支持在离开作用域时自动取消订阅。
 
-```ts
+```ts {5}
 const emitter = new FastEvent();
 const events: string[] = [];
 
@@ -188,10 +188,10 @@ const events: string[] = [];
     emitter.emit("test");
     // 有一个订阅者
     expect(emitter.getListeners("test").length).toBe(1);
-}
-emitter.emit("test");
+} // 离开作用域 [!code ++]
+emitter.emit("test"); // 此时已经没有订阅者了
 expect(events).toEqual(["test"]);
 expect(events.length).toBe(1);
-// 已经取消订阅了
+// 已经取消订阅了,所以没有订阅者
 expect(emitter.getListeners("test").length).toBe(0);
 ```

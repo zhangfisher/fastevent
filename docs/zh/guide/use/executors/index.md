@@ -1,12 +1,10 @@
 # 执行器
 
-
 事件触发的本质是调用`emit`方法，`emit`方法会调用所有注册的监听器函数，然后返回所有监听器的执行结果。
 
 正常情况下，`emit`方法会按注册顺序依次调用所有监听器函数，然后返回所有监听器的执行结果。
 
 `FastEvent`提供了灵活的执行器机制，可以让开发者配置如何执行多个监听器、如何处理执行结果，以及如何优化性能。
-
 
 ## 内置执行器
 
@@ -31,14 +29,13 @@
 在调用`emit`函数触发事件时指定执行器，仅对当前事件有效。
 
 ```typescript
-import { race } from "fastevent/executors"   // [!code ++]
+import { race } from "fastevent/executors"; // [!code ++]
 
 const emitter = new FastEvent();
 
-emitter.emit("event",payload,{
-    executor: race()   // [!code ++]
-})
-
+emitter.emit("event", payload, {
+    executor: race(), // [!code ++]
+});
 ```
 
 - **全局指定执行器**
@@ -46,14 +43,13 @@ emitter.emit("event",payload,{
 在创建事件发射器时指定执行器，对所有事件有效。
 
 ```typescript
-import { race } from "fastevent/executors"   // [!code ++]
+import { race } from "fastevent/executors"; // [!code ++]
 
 const emitter = new FastEvent({
-    executor: race() // [!code ++]
+    executor: race(), // [!code ++]
 });
 
-emitter.emit("event",payload)
-
+emitter.emit("event", payload);
 ```
 
 ## 自定义执行器
@@ -80,11 +76,30 @@ const emitter = new FastEvent({
 
 ### 执行次数管理
 
-每个监听器在 FastEvent 中都以元组形式存储：`[listener, maxCount, executedCount]`
+每个监听器在 `FastEvent` 中都以元组形式(类型为:`FastEventListenerMeta`)存储。
 
--   `listener`: 监听器函数
--   `maxCount`: 最大执行次数限制（0 表示无限制）
--   `executedCount`: 已执行次数
+```ts
+type FastEventListenerMeta = [
+    TypedFastEventListener<any, any>, // 监听器函数引用
+    number,
+    number,
+    string,
+    number,
+];
+```
+
+- `listener`: 监听器函数引用
+- `maxCount`: 最大执行次数限制（0 表示无限制）
+- `executedCount`: 已执行次数
+- `tag`: 调试用标签字符串
+- `flags`: 额外的标识数值，在执行监听器时会传递给监听器函数。
+  | 名称 | 值 |
+  |:---:| --- |
+  | `listener` | 监听器函数引用 |
+  | `maxCount` | 最大执行次数限制（`0` 表示无限制） |
+  | `executedCount` | 已执行次数 |
+  | `tag` | 调试用标签字符串 |
+  | `flags` | 额外的标识数值，在执行监听器时会传递给监听器函数。 |
 
 **重点说明：**
 

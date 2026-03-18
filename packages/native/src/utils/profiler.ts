@@ -2,6 +2,10 @@
  * 用于标记已封装对象的 Symbol
  */
 const MEASURE_WRAPPED_SYMBOL = Symbol("createMeasure.wrapped");
+// 存储 包装方法 -> context 的映射
+const METHOD_CONTEXT_MAP = new WeakMap<Function, ProfilerContext>();
+// 存储 对象 -> { 原始方法映射, 是否已包装 } 的映射
+const ORIGINAL_METHODS_MAP = new WeakMap<object, Map<string, Function>>();
 
 /**
  * 获取高精度时间戳（跨平台）
@@ -29,30 +33,8 @@ export interface CallProfilerOptions {
     warmup?: number;
     /** 执行次数（默认 100） */
     executionCount?: number;
-}
-
-/**
- * 调用分析器统计结果（包含数据和操作方法）
- */
-export interface CallProfilerStats {
-    /** 平均执行时长（毫秒） */
-    duration: number;
-    /** 最大执行时长（毫秒） */
-    max: number;
-    /** 最小执行时长（毫秒） */
-    min: number;
-    /** 调用结果列表（树形结构，根节点数组） */
-    results: CallProfileNode[];
-    /** 获取平面结构的结果 */
-    getFlatResults: () => FlatCallProfile[];
-    /** 获取指定方法的所有调用 */
-    getCalls: (methodName: string) => CallProfileNode[];
-    /** 将结果渲染为树形字符串（用于终端输出） */
-    toTree: () => string;
-    /** 清空测量结果 */
-    clear: () => void;
-    /** 是否启用测量 */
-    enabled: boolean;
+    /** 是否自动绑定（默认 true） */
+    autobind?: boolean;
 }
 
 /**
@@ -69,8 +51,12 @@ export interface CallProfileNode {
     caller?: string;
     /** 调用者所在文件和行号（如 "file.js:123"） */
     file?: string;
-    /** 执行时长（毫秒） */
+    /** 平均执行时长（毫秒） */
     duration: number;
+    /** 最大执行时长（毫秒） */
+    max: number;
+    /** 最小执行时长（毫秒） */
+    min: number;
     /** 子调用列表 */
     children: CallProfileNode[];
 }
@@ -86,15 +72,296 @@ interface FlatCallProfile {
     caller?: string;
     file?: string;
     duration: number;
+    /** 最大执行时长（毫秒） */
+    max: number;
+    /** 最小执行时长（毫秒） */
+    min: number;
 }
 
 /**
- * 调用分析器函数类型
+ * 调用分析器类
  */
-export type CallProfiler = (
-    callback: () => void | Promise<void>,
-    options?: CallProfilerOptions,
-) => Promise<CallProfilerStats>;
+export class CallProfiler {
+    // Context 字段直接展开为类字段
+    private callStack: CallStackItem[] = [];
+    private flatResults: FlatCallProfile[] = [];
+    private enabledValue: { value: boolean } = { value: false };
+
+    private mergedFlatResults: FlatCallProfile[] = [];
+    private _duration: number = 0;
+    private _max: number = 0;
+    private _min: number = 0;
+    private objectMethodPairs: [object, string[]][];
+    private useObjectPrefix: boolean;
+    private isBound: boolean = false;
+
+    constructor(
+        objOrObjs: object | ([object, string[]] | [object] | object)[],
+        methods?: (string | keyof object)[],
+        options: CallProfilerOptions = {},
+    ) {
+        const { autobind = true } = options;
+
+        // 解析输入为统一格式
+        this.objectMethodPairs = parseInputToMethodPairs(objOrObjs, methods);
+        // 判断是否是多对象模式（用于添加对象前缀）
+        const isArray = Array.isArray(objOrObjs);
+        const inputType = detectInputType(objOrObjs, isArray);
+        this.useObjectPrefix =
+            inputType === InputType.TupleArray || inputType === InputType.ObjectArray;
+
+        // 自动绑定
+        if (autobind) {
+            this.bind();
+        }
+    }
+
+    /**
+     * 是否启用测量
+     */
+    get enabled(): boolean {
+        return this.enabledValue.value;
+    }
+
+    set enabled(value: boolean) {
+        this.enabledValue.value = value;
+    }
+
+    /**
+     * 平均执行时长（毫秒）
+     */
+    get duration(): number {
+        return this._duration;
+    }
+
+    /**
+     * 最大执行时长（毫秒）
+     */
+    get max(): number {
+        return this._max;
+    }
+
+    /**
+     * 最小执行时长（毫秒）
+     */
+    get min(): number {
+        return this._min;
+    }
+
+    /**
+     * 调用结果列表（树形结构，根节点数组）
+     */
+    get results(): CallProfileNode[] {
+        return buildTree(this.mergedFlatResults);
+    }
+
+    /**
+     * 运行测量
+     */
+    async run(
+        callback: () => void | Promise<void>,
+        options: CallProfilerOptions = {},
+    ): Promise<void> {
+        if (!this.isBound) {
+            throw new Error('CallProfiler is not bound. Please call profiler.bind() or create with autobind: true option.');
+        }
+
+        const { warmup: warmupCount = 5, executionCount = 100 } = options;
+
+        // 每次运行前清空数据
+        this.clear();
+
+        // 预热阶段
+        for (let i = 0; i < warmupCount; i++) {
+            await callback();
+        }
+
+        // 清空调用栈和结果
+        this.callStack.length = 0;
+        this.flatResults.length = 0;
+        idCounter = 0;
+
+        // 启用测量
+        this.enabledValue.value = true;
+
+        // 测量阶段 - 收集每次执行的 flatResults
+        const allFlatResults: FlatCallProfile[][] = [];
+        const durations: number[] = [];
+
+        for (let i = 0; i < executionCount; i++) {
+            // 清空调用栈，但保持ID计数器不变，确保每次执行的ID一致
+            this.callStack.length = 0;
+            const startId = idCounter + 1;
+
+            const startTime = getHighPrecisionTime();
+            await callback();
+            const endTime = performance.now();
+
+            const duration = endTime - startTime;
+            durations.push(duration);
+
+            // 保存这次执行的 flatResults 副本
+            const copy = [...this.flatResults];
+            allFlatResults.push(copy);
+
+            // 清空调用栈和结果，准备下一次执行
+            this.flatResults.length = 0;
+            idCounter = startId;
+        }
+
+        // 禁用测量
+        this.enabledValue.value = false;
+
+        // 合并所有 flatResults
+        this.mergedFlatResults = this.mergeFlatResults(allFlatResults);
+
+        // 计算整体统计数据
+        const sum = durations.reduce((a, b) => a + b, 0);
+        this._duration = sum / durations.length;
+        this._max = Math.max(...durations);
+        this._min = Math.min(...durations);
+    }
+
+    /**
+     * 获取平面结构的结果
+     */
+    getFlatResults(): FlatCallProfile[] {
+        return [...this.mergedFlatResults];
+    }
+
+    /**
+     * 获取指定方法的所有调用
+     */
+    getCalls(methodName: string): CallProfileNode[] {
+        const tree = this.results;
+        // 递归查找所有匹配的节点
+        const findCalls = (nodes: CallProfileNode[]): CallProfileNode[] => {
+            const result: CallProfileNode[] = [];
+            for (const node of nodes) {
+                if (node.callee === methodName) {
+                    result.push(node);
+                }
+                if (node.children.length > 0) {
+                    result.push(...findCalls(node.children));
+                }
+            }
+            return result;
+        };
+
+        return findCalls(tree);
+    }
+
+    /**
+     * 将结果渲染为树形字符串（用于终端输出）
+     */
+    toTree(): string {
+        const tree = this.results;
+        return renderTree(tree);
+    }
+
+    /**
+     * 清空测量结果
+     */
+    clear(): void {
+        this.flatResults.length = 0;
+        this.mergedFlatResults = [];
+        this._duration = 0;
+        this._max = 0;
+        this._min = 0;
+    }
+
+    /**
+     * 解绑 - 移除对对象方法的包装，恢复原始方法
+     */
+    unbind(): void {
+        if (!this.isBound) {
+            return; // 已经解绑，直接返回
+        }
+
+        for (const [obj, methods] of this.objectMethodPairs) {
+            const originalMethods = ORIGINAL_METHODS_MAP.get(obj);
+            if (!originalMethods) continue;
+
+            for (const methodName of methods) {
+                const methodNameStr = String(methodName);
+                const originalMethod = originalMethods.get(methodNameStr);
+                if (originalMethod) {
+                    (obj as any)[methodNameStr] = originalMethod;
+                }
+            }
+
+            // 清除包装方法记录
+            const wrappedMethods = wrappedObjects.get(obj);
+            if (wrappedMethods) {
+                for (const methodName of methods) {
+                    wrappedMethods.delete(String(methodName));
+                }
+            }
+        }
+
+        // 禁用测量
+        this.enabled = false;
+        this.isBound = false;
+    }
+
+    /**
+     * 绑定 - 重新包装对象方法
+     */
+    bind(): void {
+        // 创建 context 对象传递给包装函数
+        const context = {
+            callStack: this.callStack,
+            flatResults: this.flatResults,
+            enabled: this.enabledValue,
+        };
+
+        // 重新包装所有对象的方法
+        wrapAllObjectMethods(this.objectMethodPairs, context, this.useObjectPrefix);
+
+        // 启用测量
+        this.enabled = true;
+        this.isBound = true;
+    }
+
+    /**
+     * 合并多次执行的 flatResults
+     */
+    private mergeFlatResults(allFlatResults: FlatCallProfile[][]): FlatCallProfile[] {
+        if (allFlatResults.length === 0) return [];
+
+        // 按 id 分组收集所有节点的 duration
+        const durationGroups = new Map<number, number[]>();
+
+        for (const flatResults of allFlatResults) {
+            for (const node of flatResults) {
+                if (!durationGroups.has(node.id)) {
+                    durationGroups.set(node.id, []);
+                }
+                durationGroups.get(node.id)!.push(node.duration);
+            }
+        }
+
+        // 使用第一份 flatResults 作为模板，计算统计值
+        const template = allFlatResults[0];
+        const merged: FlatCallProfile[] = [];
+
+        for (const node of template) {
+            const durations = durationGroups.get(node.id)!;
+            const avg = durations.reduce((a, b) => a + b, 0) / durations.length;
+            const max = Math.max(...durations);
+            const min = Math.min(...durations);
+
+            merged.push({
+                ...node,
+                duration: avg,
+                max,
+                min,
+            });
+        }
+
+        return merged;
+    }
+}
 
 /**
  * 全局调用栈，用于追踪调用关系
@@ -148,16 +415,18 @@ function parseStackTrace(stackLine: string | undefined): { caller?: string; file
  */
 function measureMethod(
     target: Function,
-    enabled: { value: boolean },
-    callStack: CallStackItem[],
-    flatResults: FlatCallProfile[],
+    context: ProfilerContext,
     objectPrefix?: string,
 ): Function {
     const original = target;
     const name = target.name;
     const fullName = objectPrefix ? `${objectPrefix}:${name}` : name;
 
-    return function (this: any, ...args: any) {
+    // 创建包装函数
+    const wrapped = function (this: any, ...args: any) {
+        // 直接使用闭包中的 context
+        const { enabled, callStack, flatResults } = context;
+
         // 如果未启用测量，直接执行原方法
         if (!enabled.value) {
             return original.apply(this, args);
@@ -206,6 +475,8 @@ function measureMethod(
                     caller: callerInfo.caller,
                     file: callerInfo.file,
                     duration,
+                    max: duration,
+                    min: duration,
                 };
 
                 flatResults.push(flatResult);
@@ -227,6 +498,8 @@ function measureMethod(
             caller: callerInfo.caller,
             file: callerInfo.file,
             duration,
+            max: duration,
+            min: duration,
         };
 
         flatResults.push(flatResult);
@@ -236,6 +509,11 @@ function measureMethod(
 
         return result;
     };
+
+    // 将包装函数和 context 的映射存储到 WeakMap
+    METHOD_CONTEXT_MAP.set(wrapped, context);
+
+    return wrapped;
 }
 
 /**
@@ -247,7 +525,12 @@ function buildTree(flatResults: FlatCallProfile[]): CallProfileNode[] {
 
     // 创建所有节点
     for (const result of flatResults) {
-        const node: CallProfileNode = { ...result, children: [] };
+        const node: CallProfileNode = {
+            ...result,
+            children: [],
+            max: result.duration,
+            min: result.duration,
+        };
         nodeMap.set(result.id, node);
     }
 
@@ -452,6 +735,13 @@ function wrapSingleObjectMethods(
         wrappedObjects.set(obj, wrappedMethods);
     }
 
+    // 获取或创建该对象的原始方法映射
+    let originalMethods = ORIGINAL_METHODS_MAP.get(obj);
+    if (!originalMethods) {
+        originalMethods = new Map<string, Function>();
+        ORIGINAL_METHODS_MAP.set(obj, originalMethods);
+    }
+
     // 多对象模式时，使用对象名称作为前缀
     const objectPrefix = useObjectPrefix ? getObjectName(obj) : undefined;
 
@@ -466,12 +756,13 @@ function wrapSingleObjectMethods(
 
         const method = (obj as any)[methodName];
         if (typeof method === "function") {
+            // 保存原始方法
+            originalMethods.set(methodNameStr, method);
+
             // 创建包装后的方法
             const wrapped = measureMethod(
                 method as Function,
-                context.enabled,
-                context.callStack,
-                context.flatResults,
+                context,
                 objectPrefix,
             );
             // 保留方法名
@@ -498,207 +789,4 @@ function wrapAllObjectMethods(
     for (const [obj, methods] of objectMethodPairs) {
         wrapSingleObjectMethods(obj, methods, context, useObjectPrefix);
     }
-}
-
-/**
- * 创建测量函数的核心逻辑
- */
-function createMeasureFunctionCore(context: ProfilerContext): CallProfiler {
-    return async function (
-        callback: () => void | Promise<void>,
-        options: CallProfilerOptions = {},
-    ): Promise<CallProfilerStats> {
-        const { warmup: warmupCount = 5, executionCount = 100 } = options;
-
-        // 预热阶段
-        for (let i = 0; i < warmupCount; i++) {
-            await callback();
-        }
-
-        // 清空调用栈和结果
-        context.callStack.length = 0;
-        context.flatResults.length = 0;
-        idCounter = 0;
-
-        // 启用测量
-        context.enabled.value = true;
-
-        // 测量阶段
-        const durations: number[] = [];
-        for (let i = 0; i < executionCount; i++) {
-            // 清空调用栈（保持ID计数器）
-            context.callStack.length = 0;
-            const startId = idCounter + 1;
-
-            const startTime = getHighPrecisionTime();
-            await callback();
-            const endTime = performance.now();
-
-            const duration = endTime - startTime;
-            durations.push(duration);
-
-            // 移除这次迭代的结果（因为我们用外部计时）
-            // 只保留最后一次的结果用于树形结构展示
-            if (i < executionCount - 1) {
-                context.flatResults.length = 0;
-                idCounter = startId;
-            }
-        }
-
-        // 禁用测量
-        context.enabled.value = false;
-
-        // 计算统计数据
-        const sum = durations.reduce((a, b) => a + b, 0);
-        const avg = sum / durations.length;
-        const max = Math.max(...durations);
-        const min = Math.min(...durations);
-
-        // 返回完整的统计结果（包含数据和方法）
-        return {
-            duration: avg,
-            max,
-            min,
-            get results(): CallProfileNode[] {
-                return buildTree(context.flatResults);
-            },
-            getFlatResults: () => [...context.flatResults],
-            getCalls: (methodName: string) => {
-                const tree = buildTree(context.flatResults);
-                // 递归查找所有匹配的节点
-                const findCalls = (nodes: CallProfileNode[]): CallProfileNode[] => {
-                    const result: CallProfileNode[] = [];
-                    for (const node of nodes) {
-                        if (node.callee === methodName) {
-                            result.push(node);
-                        }
-                        if (node.children.length > 0) {
-                            result.push(...findCalls(node.children));
-                        }
-                    }
-                    return result;
-                };
-
-                return findCalls(tree);
-            },
-            toTree: () => {
-                const tree = buildTree(context.flatResults);
-                return renderTree(tree);
-            },
-            clear: () => {
-                context.flatResults.length = 0;
-            },
-            get enabled(): boolean {
-                return context.enabled.value;
-            },
-        };
-    }  
-}
-
-/**
- * 为单个对象的指定方法添加调用分析，返回分析器函数
- *
- * @param obj - 目标对象
- * @param methods - 需要分析的方法名数组（可选，未指定时自动分析所有方法）
- * @returns 调用分析器函数，调用后返回包含统计和操作方法的对象
- *
- * @example
- * ```typescript
- * // 指定要分析的方法
- * const profiler = createCallProfiler(new MyClass(), ['method1', 'method2']);
- * const stats = await profiler(
- *     () => { obj.method1(); },
- *     { warmup: 5, executionCount: 100 }
- * );
- * console.log(stats.duration); // 平均执行时间
- * console.log(stats.results);  // 调用结果数组
- * console.log(stats.toTree()); // 树形结构字符串
- *
- * // 自动分析所有方法（排除构造方法、私有方法和访问器）
- * const profiler = createCallProfiler(new MyClass());
- * const stats = await profiler(
- *     () => { obj.anyMethod(); },
- *     { executionCount: 100 }
- * );
- * ```
- */
-export function createCallProfiler(obj: object, methods?: (string | keyof object)[]): CallProfiler;
-
-/**
- * 为多个对象分别指定不同的分析方法，返回分析器函数
- *
- * @param objs - 对象和方法元组数组，每个元组包含 [对象, 方法名数组?]（方法数组可选）
- * @returns 调用分析器函数，调用后返回包含统计和操作方法的对象
- *
- * @example
- * ```typescript
- * // 指定每个对象要分析的方法
- * const profiler = createCallProfiler([
- *     [userService, ['getUser', 'validateUser']],
- *     [postService, ['getPost', 'validatePost']]
- * ]);
- *
- * // 自动分析所有方法（简化语法）
- * const profiler = createCallProfiler([
- *     userService,
- *     postService
- * ]);
- *
- * // 或使用元组语法（自动分析所有方法）
- * const profiler = createCallProfiler([
- *     [userService],
- *     [postService]
- * ]);
- *
- * // 混合使用：某些对象指定方法，某些对象自动分析
- * const profiler = createCallProfiler([
- *     [userService, ['getUser']], // 只分析 getUser
- *     [postService] // 自动分析所有方法
- * ]);
- *
- * const stats = await profiler(
- *     () => {
- *         userService.getUser(1);
- *         postService.getPost(1);
- *     },
- *     { executionCount: 100 }
- * );
- * // 结果中的 callee 会是 "UserService:getUser", "PostService:getPost"
- *
- * // 访问详细结果
- * console.log(stats.results);
- * console.log(stats.toTree());
- * ```
- */
-export function createCallProfiler(objs: ([object, string[]] | [object] | object)[]): CallProfiler;
-
-/**
- * createCallProfiler 函数实现（重载实现）
- */
-export function createCallProfiler(
-    objOrObjs: object | ([object, string[]] | [object] | object)[],
-    methods?: (string | keyof object)[],
-): CallProfiler {
-    // 创建分析上下文
-    const context: ProfilerContext = {
-        callStack: [],
-        flatResults: [],
-        enabled: { value: false },
-    };
-
-    // 解析输入为统一格式
-    const objectMethodPairs = parseInputToMethodPairs(objOrObjs, methods);
-    // 判断是否是多对象模式（用于添加对象前缀）
-    const isArray = Array.isArray(objOrObjs);
-    const inputType = detectInputType(objOrObjs, isArray);
-    const useObjectPrefix =
-        inputType === InputType.TupleArray || inputType === InputType.ObjectArray;
-
-    // 包装所有对象的方法
-    wrapAllObjectMethods(objectMethodPairs, context, useObjectPrefix);
-
-    // 创建测量函数核心
-    const measureFunction = createMeasureFunctionCore(context);
-
-    return measureFunction;
 }
