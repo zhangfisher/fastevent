@@ -35,4 +35,24 @@
             - 第二行： flex水平居中布局，内容log.message.payload字符串，最多显示2行，超出部分显示....,颜色灰色，并字体略小。
             - 第三行：显示log.listeners数组，如果log.listeners.length===0则不渲染，调用renderListeners渲染。采用flex水平布局，gap=4px，允许换行。
               renderListeners内部调用renderListener分别渲染log.listeners成员。
-              rendernListener渲染出一个圆角按钮形状态，按钮内部采用水平居中布局，由listener.status状态图标（三种状态，分别是执行中， 成功，出错）listener.name，若干个标签（）
+              rendernListener渲染出一个圆角按钮形状态，按钮内部采用水平居中布局，由listener.status状态图标（三种状态，分别是执行中， 成功，出错）listener.name，若干个标签（listener.tag(不为空时显示),listener.count,listener.flags(不为零时显示)）
+    - log列表项之间mouseover淡色背景，
+
+## 属性
+
+组件支持以下属性
+
+- emitter：绑定一个FastEvent实例，当变更新要重新初始化
+- dark: 显示暗色风格
+- enable: 是否接收或停止接收事件
+
+## 方法
+
+- clear: 清空所有事件
+-
+
+## 样式
+
+- 样式采用清新风格,参考Antd组件库的设计风格
+- 支持通过dark指定为暗色调
+- renderTag支持为tag指定颜色，显示圆角

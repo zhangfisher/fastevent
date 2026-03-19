@@ -1,5 +1,7 @@
 import type { FastEventListenerArgs, FastEventMessage } from "fastevent";
 
+import type { FastEventListenerFlags } from "fastevent";
+
 export type EventLog = {
     id: number;
     message: WeakRef<FastEventMessage>;
@@ -12,7 +14,7 @@ export type EventLog = {
         name: string; // 监听器函数名称
         tag: string | undefined;
         count: string; // 实际执行的次数/触发的次数限制
-        falgs: any;
+        flags?: FastEventListenerFlags;
         result: any; // 监听器返回结果
     }[];
 };

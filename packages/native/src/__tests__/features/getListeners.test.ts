@@ -25,4 +25,17 @@ describe("getListeners", async () => {
         const listeners = emitter.getListeners("x");
         expect(listeners.length).toBe(4);
     });
+    test("含通配符时的监听器", () => {
+        const emitter = new FastEvent();
+
+        const events: string[] = [];
+        emitter.on("a/*", ({ type }) => {
+            events.push(type);
+        });
+        emitter.onAny(({ type }) => {
+            events.push(type);
+        });
+        const listeners = emitter.getListeners("a/c");
+        expect(listeners.length).toBe(2);
+    });
 });

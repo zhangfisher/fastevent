@@ -32,18 +32,6 @@
         "typescript": "^5.9.3",
       },
     },
-    "packages/components": {
-      "name": "fastevent-components",
-      "version": "0.0.0",
-      "dependencies": {
-        "lit": "^3.3.2",
-      },
-      "devDependencies": {
-        "fastevent": "workspace:*",
-        "typescript": "~5.9.3",
-        "vite": "^8.0.0",
-      },
-    },
     "packages/native": {
       "name": "fastevent",
       "version": "2.4.1",
@@ -60,6 +48,18 @@
         "typescript": "^5.9.3",
         "vitepress": "^1.6.4",
         "vitest": "^4.1.0",
+      },
+    },
+    "packages/viewer": {
+      "name": "fastevent-viewer",
+      "version": "2.4.1",
+      "dependencies": {
+        "lit": "^3.3.2",
+      },
+      "devDependencies": {
+        "fastevent": "workspace:*",
+        "typescript": "~5.9.3",
+        "vite": "^8.0.0",
       },
     },
   },
@@ -732,9 +732,9 @@
 
     "fastevent": ["fastevent@workspace:packages/native"],
 
-    "fastevent-components": ["fastevent-components@workspace:packages/components"],
-
     "fastevent-docs": ["fastevent-docs@workspace:docs"],
+
+    "fastevent-viewer": ["fastevent-viewer@workspace:packages/viewer"],
 
     "fastq": ["fastq@1.19.1", "https://registry.npmmirror.com/fastq/-/fastq-1.19.1.tgz", { "dependencies": { "reusify": "^1.0.4" } }, "sha512-GwLTyxkCXjXbxqIhTsMI2Nui8huMPtnxg7krajPJAjnEG/iiOS7i+zCtWGZR9G0NBKbXKh6X9m9UIsYX/N6vvQ=="],
 

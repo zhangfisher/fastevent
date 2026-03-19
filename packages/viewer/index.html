@@ -1,17 +1,232 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
     <head>
         <meta charset="UTF-8" />
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>components</title>
-        <link rel="stylesheet" href="./src/index.css" />
-        <script type="module" src="/src/listener-viewer.ts"></script>
-        <script type="module" src="/src/eventViewer/index.ts"></script>
+        <title>FastEvent Viewer 测试</title>
+        <link rel="stylesheet" href="./src/styles/icons.css" />
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                padding: 2rem;
+            }
+
+            .container {
+                max-width: 1200px;
+                margin: 0 auto;
+            }
+
+            .header {
+                text-align: center;
+                color: white;
+                margin-bottom: 2rem;
+            }
+
+            .header h1 {
+                font-size: 2.5rem;
+                margin-bottom: 0.5rem;
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            }
+
+            .header p {
+                font-size: 1.1rem;
+                opacity: 0.9;
+            }
+
+            .controls {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 1rem;
+                justify-content: center;
+                margin-bottom: 2rem;
+            }
+
+            .control-btn {
+                padding: 0.75rem 1.5rem;
+                border: 2px solid rgba(255, 255, 255, 0.3);
+                border-radius: 8px;
+                background: rgba(255, 255, 255, 0.1);
+                color: white;
+                font-size: 0.95rem;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                backdrop-filter: blur(10px);
+            }
+
+            .control-btn:hover {
+                transform: translateY(-2px);
+                background: rgba(255, 255, 255, 0.2);
+                border-color: rgba(255, 255, 255, 0.5);
+                box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            }
+
+            .control-btn:active {
+                transform: translateY(0);
+                background: rgba(255, 255, 255, 0.15);
+            }
+
+            .control-btn.danger {
+                border-color: rgba(239, 68, 68, 0.5);
+                background: rgba(239, 68, 68, 0.1);
+            }
+
+            .control-btn.danger:hover {
+                background: rgba(239, 68, 68, 0.2);
+                border-color: rgba(239, 68, 68, 0.7);
+            }
+
+            .control-btn.success {
+                border-color: rgba(16, 185, 129, 0.5);
+                background: rgba(16, 185, 129, 0.1);
+            }
+
+            .control-btn.success:hover {
+                background: rgba(16, 185, 129, 0.2);
+                border-color: rgba(16, 185, 129, 0.7);
+            }
+
+            .control-btn.warning {
+                border-color: rgba(245, 158, 11, 0.5);
+                background: rgba(245, 158, 11, 0.1);
+            }
+
+            .control-btn.warning:hover {
+                background: rgba(245, 158, 11, 0.2);
+                border-color: rgba(245, 158, 11, 0.7);
+            }
+
+            .viewer-container {
+                display: flex;
+                justify-content: center;
+                align-items: flex-start;
+                gap: 2rem;
+            }
+
+            .controls-wrapper {
+                display: flex;
+                flex-direction: column;
+                gap: 0.4rem;
+                background: rgba(255, 255, 255, 0.1);
+                padding: 0.75rem;
+                border-radius: 12px;
+                backdrop-filter: blur(10px);
+                max-height: 600px;
+            }
+
+            .controls-wrapper .control-btn {
+                width: 100%;
+                min-width: 160px;
+                padding: 0.5rem 0.75rem;
+                font-size: 0.85rem;
+                text-align: left;
+                justify-content: flex-start;
+            }
+
+            .viewer-wrapper {
+                flex: 1;
+                min-width: 600px;
+                max-width: 900px;
+            }
+
+            fastevent-viewer {
+                width: 100%;
+                height: 600px;
+                border-radius: 12px;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            }
+
+            @media (max-width: 768px) {
+                body {
+                    padding: 1rem;
+                }
+
+                .header h1 {
+                    font-size: 1.8rem;
+                }
+
+                .viewer-container {
+                    flex-direction: column;
+                }
+
+                .viewer-wrapper {
+                    min-width: 100%;
+                }
+
+                .controls-wrapper {
+                    width: 100%;
+                    max-height: none;
+                }
+
+                fastevent-viewer {
+                    height: 400px;
+                }
+            }
+        </style>
     </head>
     <body>
-        <my-element>
-            <h1>Get started</h1>
-        </my-element>
+        <div class="container">
+            <div class="header">
+                <h1>🚀 FastEvent Viewer</h1>
+                <p>实时事件监听与调试工具</p>
+            </div>
+
+            <div class="viewer-container">
+                <div class="viewer-wrapper">
+                    <fastevent-viewer id="viewer"></fastevent-viewer>
+                </div>
+
+                <div class="controls-wrapper">
+                    <button class="control-btn" onclick="triggerSimpleEvent()">📝 简单事件</button>
+                    <button class="control-btn success" onclick="triggerTaggedEvent()">🏷️ 带标签事件</button>
+                    <button class="control-btn warning" onclick="triggerTransformEvent()">🔄 Transform 事件</button>
+                    <button class="control-btn danger" onclick="triggerErrorEvent()">❌ 错误事件</button>
+                    <button class="control-btn" onclick="triggerMultiListenerEvent()">👥 多监听器事件</button>
+                    <button class="control-btn" onclick="triggerCountedEvent()">🔢 计数限制事件</button>
+                    <button class="control-btn" onclick="triggerBatchEvents()">📦 批量事件</button>
+                    <button class="control-btn" onclick="triggerWildcardEvents()">🎯 通配符事件</button>
+                    <button class="control-btn" onclick="triggerAsyncEvent()">⏳ 异步事件</button>
+                    <button class="control-btn" onclick="triggerLongRunningEvent()">⏰ 长时间执行</button>
+                    <button class="control-btn success" onclick="startRandomEvents()">🎲 启动随机事件</button>
+                    <button class="control-btn danger" onclick="stopRandomEvents()">⏹️ 停止随机事件</button>
+                </div>
+            </div>
+        </div>
+
+        <script type="module" src="/src/demo.ts"></script>
+        <script type="module" src="/src/eventViewer/index.ts"></script>
+        <script type="module">
+            import * as demo from "/src/demo.ts";
+
+            // 绑定 emitter 到 viewer
+            const viewer = document.getElementById("viewer");
+            if (viewer && demo.emitter) {
+                viewer.emitter = demo.emitter;
+                console.log("✓ FastEvent Viewer 已绑定到 FastEvent 实例");
+            }
+
+            // 触发函数绑定到全局
+            window.triggerSimpleEvent = demo.triggerSimpleEvent;
+            window.triggerTaggedEvent = demo.triggerTaggedEvent;
+            window.triggerTransformEvent = demo.triggerTransformEvent;
+            window.triggerErrorEvent = demo.triggerErrorEvent;
+            window.triggerMultiListenerEvent = demo.triggerMultiListenerEvent;
+            window.triggerCountedEvent = demo.triggerCountedEvent;
+            window.triggerBatchEvents = demo.triggerBatchEvents;
+            window.triggerWildcardEvents = demo.triggerWildcardEvents;
+            window.triggerAsyncEvent = demo.triggerAsyncEvent;
+            window.triggerLongRunningEvent = demo.triggerLongRunningEvent;
+            window.startRandomEvents = demo.startRandomEvents;
+            window.stopRandomEvents = demo.stopRandomEvents;
+        </script>
     </body>
 </html>

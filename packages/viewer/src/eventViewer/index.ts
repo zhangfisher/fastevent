@@ -5,9 +5,10 @@ import {
     type FastEventListenerNode,
     type FastEventMessage,
     type FastEventSubscriber,
+    type FastEventListenerFlags,
 } from "fastevent";
 import { LitElement, html } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 import type { ItemOf } from "../types";
 import { styles } from "./styles";
 import type { EventLog } from "./types";
@@ -19,11 +20,20 @@ export class FastEventViewer extends LitElement {
     @property({ type: Object })
     emitter?: FastEvent;
 
+    @property({ type: Boolean, reflect: true })
+    dark = false;
+
+    @property({ type: Boolean, reflect: true })
+    enable = true;
+
     /**
      * 允许显示的日志最大数量,超过此数量时自动删除旧的
      */
     @property({ type: Number })
-    maxSize?: number = 500;
+    maxSize: number = 500;
+
+    @state()
+    private _filterText = "";
 
     subscriber?: FastEventSubscriber;
     messages: FastEventMessage[] = [];
@@ -37,10 +47,48 @@ export class FastEventViewer extends LitElement {
         super.connectedCallback();
         this._attach();
     }
+
     disconnectedCallback(): void {
         this._detach();
     }
+
+    willUpdate(changedProperties: Map<string, any>): void {
+        if (changedProperties.has("emitter")) {
+            this._reattach();
+        }
+        if (changedProperties.has("_filterText")) {
+            this._updateFilteredLogs();
+        }
+    }
+
+    private _reattach() {
+        this._detach();
+        this.clear();
+        this._attach();
+    }
+
+    private _updateFilteredLogs() {
+        const filter = this._filterText.toLowerCase().trim();
+        if (!filter) {
+            // 倒序：最新的在前
+            this._logIndexs = this.logs.map((_, i) => i).reverse();
+            return;
+        }
+
+        this._logIndexs = this.logs
+            .map((log, i) => ({ log, index: i }))
+            .filter(({ log }) => {
+                const message = log.message.deref();
+                if (!message) return false;
+                return message.type.toLowerCase().includes(filter);
+            })
+            .map(({ index }) => index)
+            .reverse(); // 倒序：最新的在前
+    }
+
     _onBeforeExecuteListener = (message: FastEventMessage, args: FastEventListenerArgs) => {
+        if (!this.enable) return;
+
         const listeners = (this.emitter!.getListeners(message.type) || []).map((meta) => {
             return this._getListenerMeta(meta);
         });
@@ -55,51 +103,79 @@ export class FastEventViewer extends LitElement {
         // 重点：
         (message as any).__index = log.id;
         this.logs.push(log as any);
-        this._logIndexs.push(this.logs.length - 1);
+        // 倒序：将新日志索引添加到开头
+        this._logIndexs.unshift(this.logs.length - 1);
+
+        // 限制日志数量
+        if (this.maxSize > 0 && this.logs.length > this.maxSize) {
+            this.logs.shift();
+            this._updateFilteredLogs();
+        }
+
+        this.requestUpdate();
     };
-    _getListenerMeta(meta: FastEventListenerMeta) {
+
+    _getListenerMeta(meta: FastEventListenerMeta): ItemOf<EventLog["listeners"]> {
         return {
             status: meta.length === 6 ? (meta[5] instanceof Error ? "error" : "ok") : "running",
             fn: new WeakRef(meta[0]),
             name: meta[0].name || "anonymous",
             count: `${meta[2]}${meta[1]}`,
             tag: meta[3],
-            falgs: meta[4],
+            flags: meta[4] as FastEventListenerFlags | undefined,
             result: meta[5],
         };
     }
+
     _onAfterExecuteListener = (
         message: FastEventMessage,
         returns: any[],
         _listeners: FastEventListenerNode[],
     ) => {
+        if (!this.enable) return;
+
         const index = (message as any).__index;
         if (typeof index === "number") {
             const log = this.logs[index];
             if (log) {
                 log.duration[1] = performance.now();
             }
-            log.listeners = _listeners[0].__listeners.map((listener) => {
-                return this._getListenerMeta(listener);
-            });
-            returns.map((r, i) => {
-                const listener = log.listeners[i];
-                if (listener) {
-                    try {
-                        listener.result = structuredClone(r);
-                    } catch {
-                        listener.result = r;
+
+            const newListeners = _listeners.reduce<EventLog["listeners"]>((result, current) => {
+                current.__listeners.forEach((meta) => {
+                    result.push(this._getListenerMeta(meta));
+                });
+                return result;
+            }, []);
+
+            // 找到对应的 log 并更新 listeners
+            const logIndex = this.logs.findIndex(l => l.id === index);
+            if (logIndex !== -1) {
+                this.logs[logIndex].listeners = newListeners;
+
+                returns.map((r, i) => {
+                    const listener = this.logs[logIndex].listeners[i];
+                    if (listener) {
+                        try {
+                            listener.result = structuredClone(r);
+                        } catch {
+                            listener.result = r;
+                        }
+                        if (r instanceof Error) {
+                            listener.status = "error";
+                        } else {
+                            listener.status = "ok";
+                        }
                     }
-                    if (r instanceof Error) {
-                        listener.status = "error";
-                    } else {
-                        listener.status = "ok";
-                    }
-                }
-            });
+                });
+            }
+
             delete (message as any).__index;
         }
+
+        this.requestUpdate();
     };
+
     private _attach() {
         if (this.emitter) {
             const options = this.emitter.options;
@@ -107,39 +183,222 @@ export class FastEventViewer extends LitElement {
             this._oldAfterExecuteListener = options.onAfterExecuteListener;
             options.onBeforeExecuteListener = this._onBeforeExecuteListener;
             options.onAfterExecuteListener = this._onAfterExecuteListener;
+            options.debug = true;
         }
     }
+
     private _detach() {
         if (this.emitter) {
             const options = this.emitter.options;
             options.onBeforeExecuteListener = this._oldBeforeExecuteListener;
             options.onAfterExecuteListener = this._oldAfterExecuteListener;
+            options.debug = false;
         }
     }
-    renderTag() {}
-    renderButton() {}
-    renderIcon() {}
-    renderFilter() {}
-    renderHeader() {
-        return html``;
+
+    clear() {
+        this.logs = [];
+        this._logIndexs = [];
+        this.messages = [];
+        this.requestUpdate();
     }
-    renderToolbar() {}
-    renderLogs() {
-        return html``;
+
+    private _formatTime(timestamp: number): string {
+        const date = new Date(timestamp);
+        const hours = date.getHours().toString().padStart(2, "0");
+        const minutes = date.getMinutes().toString().padStart(2, "0");
+        const seconds = date.getSeconds().toString().padStart(2, "0");
+        const ms = date.getMilliseconds().toString().padStart(3, "0");
+        return `${hours}:${minutes}:${seconds}.${ms}`;
+    }
+
+    private _getTagColor(tag: string): string {
+        const colors = ["blue", "green", "orange", "red", "purple"];
+        let hash = 0;
+        for (let i = 0; i < tag.length; i++) {
+            hash = tag.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        return colors[Math.abs(hash) % colors.length];
+    }
+
+    renderTag(text: string, color?: string, tooltip?: string) {
+        const colorClass = color ? `tag-${color}` : `tag-${this._getTagColor(text)}`;
+        return html`<span class="tag ${colorClass}" title="${tooltip || text}">${text}</span>`;
+    }
+
+    renderButton(
+        content: unknown,
+        onClick: () => void,
+        options: { icon?: string; pressed?: boolean; className?: string; title?: string } = {}
+    ) {
+        const { icon, pressed, className = "", title } = options;
+        const classes = [`btn`, className];
+        if (pressed) classes.push("btn-pressed");
+        if (icon) classes.push("btn-icon");
+
+        return html`<button class="${classes.join(" ")}" title="${title || ''}" @click="${onClick}">
+            ${icon ? html`<span class="icon ${icon}"></span>` : ""}
+            ${content}
+        </button>`;
+    }
+
+    renderIcon(name: string) {
+        return html`<span class="icon ${name}"></span>`;
+    }
+
+    renderFilter() {
+        return html`<input
+            type="text"
+            class="filter-input"
+            placeholder="事件过滤"
+            .value="${this._filterText}"
+            @input="${(e: InputEvent) => {
+                this._filterText = (e.target as HTMLInputElement).value;
+            }}"
+        />`;
+    }
+
+    renderHeader() {
+        return html`
+            <div class="header">
+                <span class="header-title">FastEvent</span>
+                ${this.renderButton("", () => {
+                    this.enable = !this.enable;
+                    this.requestUpdate();
+                }, {
+                    icon: this.enable ? "success" : "cancel",
+                    pressed: this.enable,
+                    className: "btn-icon"
+                })}
+                ${this.renderButton("", () => {
+                    // TODO: 显示监听器统计
+                }, {
+                    icon: "bell",
+                    className: "btn-icon"
+                })}
+            </div>
+        `;
+    }
+
+    renderToolbar() {
+        return html`
+            <div class="toolbar">
+                ${this.renderFilter()}
+                <span class="toolbar-spacer">共${this._logIndexs.length}条</span>
+                <button class="btn btn-icon" title="清空" @click="${() => this.clear()}">
+                    <span class="icon clear"></span>
+                </button>
+            </div>
+        `;
     }
 
     renderLog(log: EventLog) {
-        return html``;
+        const message = log.message.deref();
+        const args = log.args.deref();
+        if (!message) return html``;
+
+        const payload = JSON.stringify(message.payload ?? "");
+        const timeStr = this._formatTime(log.triggerTime);
+
+        return html`
+            <div class="log-item">
+                <div class="log-content">
+                    <div class="log-header">
+                        ${this.renderIcon("file")}
+                        <span class="log-type" title="事件类型">${message.type}</span>
+                        <span class="log-time" title="触发时间">${timeStr}</span>
+                        ${args?.retain ? this.renderTag("retain", "green", "保留最后一次事件数据") : ""}
+                        ${args?.rawEventType ? this.renderTag(args.rawEventType, "blue", `原始事件类型: ${args.rawEventType}`) : ""}
+                        ${args?.flags !== undefined ? this.renderTag(`flags: ${args.flags}`, "orange", "事件标志位") : ""}
+                        ${this.renderButton("", () => {
+                            const messageData = {
+                                type: message.type,
+                                payload: message.payload,
+                            };
+                            const jsonStr = JSON.stringify(messageData, null, 2);
+                            navigator.clipboard.writeText(jsonStr);
+                        }, { icon: "copy", className: "btn-icon", title: "复制完整消息" })}
+                    </div>
+                    ${payload ? html`<div class="log-payload">${payload}</div>` : ""}
+                    ${log.listeners.length > 0 ? this.renderListeners(log.listeners) : ""}
+                </div>
+            </div>
+        `;
     }
-    renderListeners() {
-        return html``;
+
+    renderListeners(listeners: EventLog["listeners"]) {
+        return html`
+            <div class="log-listeners">
+                ${listeners.map((listener) => this.renderListener(listener))}
+            </div>
+        `;
     }
-    renderListener(listener: ItemOf<EventLog["listeners"]>) {}
-    renderFooter() {
-        return html``;
+
+    renderListener(listener: ItemOf<EventLog["listeners"]>) {
+        const statusClass = listener.status === "ok" ? "yes" : listener.status;
+        const resultText = this._formatResult(listener.result);
+        return html`
+            <div class="listener">
+                <span class="listener-status ${statusClass}" title="${resultText}">
+                    ${this.renderIcon(listener.status === "running" ? "loading" : listener.status === "ok" ? "yes" : listener.status)}
+                </span>
+                <span class="listener-name" title="监听器函数名称">${listener.name}</span>
+                ${listener.tag ? this.renderTag(listener.tag, undefined, `监听器标签: ${listener.tag}`) : ""}
+                ${this.renderTag(listener.count, undefined, "执行次数计数（当前/总数）")}
+                ${listener.flags !== undefined ? this.renderTag(`flags: ${listener.flags}`, "orange", "监听器标志位") : ""}
+            </div>
+        `;
     }
+
+    private _formatResult(result: any): string {
+        if (result === undefined) return "执行中...";
+        if (result === null) return "null";
+
+        // 处理 Error 对象
+        if (result instanceof Error) {
+            return `错误: ${result.message}`;
+        }
+
+        // 处理对象和数组
+        if (typeof result === "object") {
+            try {
+                const str = JSON.stringify(result);
+                if (str.length > 100) {
+                    return str.substring(0, 100) + "...";
+                }
+                return str;
+            } catch {
+                return result.toString();
+            }
+        }
+
+        // 处理其他类型
+        return String(result);
+    }
+
+    renderLogs() {
+        if (this._logIndexs.length === 0) {
+            return html`
+                <div class="empty-state">
+                    ${this.renderIcon("bell")}
+                    <p>暂无事件日志</p>
+                </div>
+            `;
+        }
+
+        return html`
+            <div class="logs">
+                ${this._logIndexs.map((index) => this.renderLog(this.logs[index]))}
+            </div>
+        `;
+    }
+
     render() {
-        return html``;
+        return html`
+            ${this.renderHeader()}
+            ${this.renderToolbar()}
+            ${this.renderLogs()}
+        `;
     }
 }
 

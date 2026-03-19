@@ -909,13 +909,11 @@ export class FastEvent<
         this._traverseToPath(this.listeners, parts, (node) => {
             nodes.push(node);
         });
-        let r: any[] = [];
-
-        return ([] as any[]).concat(() =>
-            nodes.map((node) => {
-                return node.__listeners;
-            }),
-        );
+        const listeners: any[] = [];
+        nodes.map((node) => {
+            listeners.push(...node.__listeners);
+        });
+        return listeners;
     }
     /**
      * 清除所有事件或指定事件的保留消息
