@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "webawesome": {
+      "source": "C:\\Work\\Code\\fastevent\\packages\\components\\node_modules\\@awesome.me\\webawesome\\dist\\skills\\webawesome",
+      "sourceType": "local",
+      "computedHash": "f46ee156842200187135f7c1b0478c14ee3d1bc41a4f4d810f8c6f0651b4801f"
+    }
+  }
+}
