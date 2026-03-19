@@ -63,6 +63,7 @@ import {
 import { InMatchedEvent } from "./types/wildcards/InMatchedEvent";
 import { GetClosestMessage } from "./types/closest/GetClosestMessage";
 import { wrapPipeListener } from "./utils/wrapPipeListener";
+import { getWeakRef } from "./utils/getWeakRef";
 
 /**
  * FastEvent 事件发射器类
@@ -763,10 +764,6 @@ export class FastEvent<
             throw e;
         }
     }
-    private _setListenerFlags(flags: any, value: FastEventListenerFlags): FastEventListenerFlags {
-        if (!flags || flags === 0) return value;
-        return flags | value;
-    }
     /**
      * 执行单个监听器函数
      * @param listener - 要执行的监听器函数或包装过的监听器对象
@@ -787,24 +784,28 @@ export class FastEvent<
      *   - 否则抛出错误
      */
     private _executeListener(
-        listener: TypedFastEventListener<any, any>,
+        listener: FastEventListenerMeta,
         message: TypedFastEventMessage,
         args: FastEventListenerArgs<any> | undefined,
         catchErrors: boolean = false,
     ): Promise<any> | any {
+        const listenerFn = listener[0];
         try {
+            if (this.options.debug) {
+                listener.length = 5;
+            }
             // 如果传入已经aborted的abortSignal，则直接返回
             if (args && args.abortSignal && args.abortSignal.aborted) {
                 return this._onListenerError(
-                    listener,
+                    listenerFn,
                     message,
                     args,
-                    new AbortError(listener.name),
+                    new AbortError(listener[0].name),
                 );
             }
             const isTransformed = ((args?.flags || 0) & FastEventListenerFlags.Transformed) > 0;
 
-            let result = listener.call(
+            let result = listenerFn.call(
                 this.context,
                 isTransformed ? message.payload : message,
                 args!,
@@ -812,12 +813,15 @@ export class FastEvent<
             // 自动处理reject Promise
             if (catchErrors && result && result instanceof Promise) {
                 result = tryReturnError(result, (e) =>
-                    this._onListenerError(listener, message, args, e),
+                    this._onListenerError(listenerFn, message, args, e),
                 );
+            }
+            if (this.options.debug) {
+                listener[5] = getWeakRef(result);
             }
             return result;
         } catch (e: any) {
-            return this._onListenerError(listener, message, args, e);
+            return this._onListenerError(listenerFn, message, args, e);
         }
     }
     private _getListenerExecutor(args: FastEventListenerArgs): FastListenerExecutor | undefined {
@@ -873,7 +877,7 @@ export class FastEvent<
             return Array.isArray(r) ? r : [r];
         } else {
             return listeners.map((listener) =>
-                this._executeListener(listener[0][0], message, args, true),
+                this._executeListener(listener[0], message, args, true),
             );
         }
     }
@@ -905,7 +909,13 @@ export class FastEvent<
         this._traverseToPath(this.listeners, parts, (node) => {
             nodes.push(node);
         });
-        return nodes[0].__listeners;
+        let r: any[] = [];
+
+        return ([] as any[]).concat(() =>
+            nodes.map((node) => {
+                return node.__listeners;
+            }),
+        );
     }
     /**
      * 清除所有事件或指定事件的保留消息

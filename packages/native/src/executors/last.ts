@@ -1,4 +1,4 @@
-import { FastListenerExecutor } from "./types"
+import { FastListenerExecutor } from "./types";
 
 /**
  * 执行监听器列表中的最后一个监听器
@@ -10,10 +10,15 @@ import { FastListenerExecutor } from "./types"
  */
 export const last = (): FastListenerExecutor => {
     return (listeners, message, args, execute) => {
-        listeners.forEach(listener => listener[2]--)
-        listeners[listeners.length - 1][2]++
+        listeners.forEach((listener) => listener[2]--);
+        listeners[listeners.length - 1][2]++;
         return [
-            execute(listeners[listeners.length - 1][0], message, args)
-        ]
-    }
-}
+            execute.call(
+                listeners[listeners.length - 1],
+                listeners[listeners.length - 1],
+                message,
+                args,
+            ),
+        ];
+    };
+};

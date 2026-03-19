@@ -1,5 +1,5 @@
 import { TypedFastEventMessage } from "../types/FastEventMessages";
-import { TypedFastEventListener } from "../types/FastEventListeners";
+import { FastEventListenerMeta, TypedFastEventListener } from "../types/FastEventListeners";
 import { FastEventListenerArgs } from "../types/FastEvents";
 import { isString } from "../utils";
 import { isFunction } from "../utils/isFunction";
@@ -58,7 +58,7 @@ export const series = (options?: SeriesExecutorOptions): FastListenerExecutor =>
         listeners.forEach((listener) => listener[2]--);
         for (let i = 0; i < listeners.length; i++) {
             const item = listeners[reverse ? listeners.length - 1 - i : i];
-            const listener = item[0] as TypedFastEventListener<any, any, any>;
+            const listener = item as unknown as FastEventListenerMeta;
             try {
                 if (
                     isFunction(onNext) &&
@@ -66,7 +66,7 @@ export const series = (options?: SeriesExecutorOptions): FastListenerExecutor =>
                 ) {
                     break;
                 }
-                stepResult = await execute(listener, message, args, false);
+                stepResult = await execute.call(listener, listener, message, args, false);
                 if (isFunction(onReturns)) {
                     results = onReturns(results, stepResult);
                 } else {

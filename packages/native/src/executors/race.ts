@@ -28,14 +28,16 @@ export const race = (): FastListenerExecutor => {
         const result = Promise.race(
             listeners.map((listener) => {
                 listener[2]--;
-                return Promise.resolve(execute(listener[0], message, args)).then((result: any) => {
-                    if (!winner) {
-                        winner = listener;
-                        listener[2]++;
-                    }
-                    abortController?.abort();
-                    return result;
-                });
+                return Promise.resolve(execute.call(listener, listener, message, args)).then(
+                    (result: any) => {
+                        if (!winner) {
+                            winner = listener;
+                            listener[2]++;
+                        }
+                        abortController?.abort();
+                        return result;
+                    },
+                );
             }),
         );
         return [result];

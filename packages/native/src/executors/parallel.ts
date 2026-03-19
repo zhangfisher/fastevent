@@ -1,10 +1,12 @@
-import { FastListenerExecutor } from "./types"
+import { FastListenerExecutor } from "./types";
 
 /**
- *  
+ *
  */
 export const parallel = (): FastListenerExecutor => {
     return (listeners, message, args, execute) => {
-        return listeners.map(listener => execute(listener[0], message, args, true))
-    }
-}
+        return listeners.map((listener, i) =>
+            execute.call(listeners[i], listener, message, args, true),
+        );
+    };
+};

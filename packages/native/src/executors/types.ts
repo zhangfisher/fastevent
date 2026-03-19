@@ -1,5 +1,5 @@
 import { TypedFastEventMessage } from "../types/FastEventMessages";
-import { TypedFastEventListener, FastEventListenerMeta } from "../types/FastEventListeners";
+import { FastEventListenerMeta } from "../types/FastEventListeners";
 import { FastEventListenerArgs } from "../types/FastEvents";
 
 export type FastListenerExecutor = (
@@ -8,7 +8,8 @@ export type FastListenerExecutor = (
     args: FastEventListenerArgs,
     // 用来执行监听器的函数，内置一些通用逻辑
     execute: (
-        listener: TypedFastEventListener,
+        this: FastEventListenerMeta,
+        listener: FastEventListenerMeta,
         message: TypedFastEventMessage,
         args: FastEventListenerArgs,
         catchErrors?: boolean,

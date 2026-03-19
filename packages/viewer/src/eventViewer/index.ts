@@ -42,7 +42,7 @@ export class FastEventViewer extends LitElement {
     }
     _onBeforeExecuteListener = (message: FastEventMessage, args: FastEventListenerArgs) => {
         const listeners = (this.emitter!.getListeners(message.type) || []).map((meta) => {
-            return this._getListenerMeta(meta, "running");
+            return this._getListenerMeta(meta);
         });
         const log = {
             message: new WeakRef(message),
@@ -57,15 +57,15 @@ export class FastEventViewer extends LitElement {
         this.logs.push(log as any);
         this._logIndexs.push(this.logs.length - 1);
     };
-    _getListenerMeta(meta: FastEventListenerMeta, status?: string, result?: any) {
+    _getListenerMeta(meta: FastEventListenerMeta) {
         return {
-            status,
+            status: meta.length === 6 ? (meta[5] instanceof Error ? "error" : "ok") : "running",
             fn: new WeakRef(meta[0]),
             name: meta[0].name || "anonymous",
             count: `${meta[2]}${meta[1]}`,
             tag: meta[3],
             falgs: meta[4],
-            result,
+            result: meta[5],
         };
     }
     _onAfterExecuteListener = (
@@ -80,7 +80,7 @@ export class FastEventViewer extends LitElement {
                 log.duration[1] = performance.now();
             }
             log.listeners = _listeners[0].__listeners.map((listener) => {
-                return this._getListenerMeta(listener, "done");
+                return this._getListenerMeta(listener);
             });
             returns.map((r, i) => {
                 const listener = log.listeners[i];

@@ -44,11 +44,12 @@ export type FastEventCommonListener<
 > = (this: Context, message: Message, args: FastEventListenerArgs<Meta>) => any | Promise<any>;
 /**
  * [
- *      监听器函数引用，
- *      需要执行多少次，                     =0代表不限
- *      实际执行的次数(用于负载均衡时记录)
- *      标签            用于调试一般可以标识监听器类型或任意信息
- *      标识
+ *      0: 监听器函数引用，
+ *      1: 需要执行多少次，                     =0代表不限
+ *      2: 实际执行的次数(用于负载均衡时记录)
+ *      3: 标签            用于调试一般可以标识监听器类型或任意信息
+ *      4: 标识,
+ *      5: 监听器最后一次执行结果，仅仅在debug时启用，如果结果是对象则是一个WeakRef
  * ]
  */
 
@@ -58,6 +59,7 @@ export type FastEventListenerMeta = [
     number,
     string,
     number,
+    any?,
 ];
 
 export type FastEventListenerNode = {
