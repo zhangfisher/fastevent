@@ -31,7 +31,7 @@ function userLoginHandler(data: any) {
 }
 emitter.on("user/login", userLoginHandler, { tag: "auth" });
 
-function onAny(message: any) {
+function onAny(_message: any) {
     return Math.abs(Math.random() * 100);
 }
 emitter.onAny(onAny);
