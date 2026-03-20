@@ -82,6 +82,7 @@ FastEventViewer (容器)
 | 方法 | 描述 |
 |------|------|
 | `_buildTreeData()` | 递归遍历 `emitter.listeners`，构建渲染用的树数据 |
+| `_initializeExpandedNodes()` | 初始化展开节点集合（实现默认全部展开） |
 | `_handleNodeSelect(path)` | 处理树节点文本点击，更新右侧监听器列表 |
 | `_handleNodeToggle(path)` | 处理树节点箭头点击，切换展开/折叠状态 |
 | `_handleRefresh()` | 刷新数据（重新构建树） |
@@ -107,11 +108,11 @@ FastEventViewer (容器)
 
 | 方法 | 描述 |
 |------|------|
-| `renderTag(text, color, tooltip)` | 渲染标签组件（独立实现，参考 eventViewer） |
-| `renderButton(content, onClick, options)` | 渲染按钮组件（独立实现，参考 eventViewer） |
-| `renderIcon(name)` | 渲染图标组件（独立实现，参考 eventViewer） |
+| `renderTag(text, color, tooltip)` | 渲染标签组件（独立实现） |
+| `renderButton(content, onClick, options)` | 渲染按钮组件（独立实现） |
+| `renderIcon(name)` | 渲染图标组件（独立实现） |
 
-**注意**: 这些方法在 FastEventListeners 组件中独立实现，代码逻辑参考 FastEventViewer，但不直接复用（因为是实例方法，无法跨组件共享）。
+**实现说明**: 这些渲染方法在 FastEventListeners 组件中独立实现。虽然 FastEventViewer 有类似方法，但它们是实例方法，无法跨组件共享。未来可以考虑将可复用的渲染逻辑提取为共享工具函数。
 
 ## 4. 数据结构设计
 
@@ -122,11 +123,13 @@ interface TreeNode {
     key: string                         // 节点键名
     path: string[]                      // 完整路径（如 ['user', 'login']）
     listeners: FastEventListenerMeta[]  // 当前节点的 __listeners
-    listenerCount: number               // 监听器数量
+    listenerCount: number               // 监听器数量（缓存值，避免重复计算 listeners.length）
     children: TreeNode[]                // 子节点
     depth: number                       // 深度（用于缩进）
 }
 ```
+
+**字段说明**: `listenerCount` 是 `listeners.length` 的缓存值，用于在 UI 上快速显示监听器数量而不需要重复计算数组长度。
 
 ### 4.2 树遍历算法
 
@@ -604,28 +607,32 @@ render() {
 2. willUpdate() 检测 emitter 属性变化
 3. 触发 _buildTreeData() 构建树数据
    - 同步构建，返回 TreeNode[] 数组
-4. 初始化 _expandedNodes（实现默认全部展开）
+4. 在 updated() 生命周期钩子中初始化 _expandedNodes（实现默认全部展开）
    - 遍历所有节点
    - 将每个节点的 path (路径数组) 转换为字符串（path.join('/')）
    - 添加到 _expandedNodes Set 中
    - 代码示例：
      ```typescript
-     this._expandedNodes = new Set();
-     const collectPaths = (nodes: TreeNode[]) => {
-         for (const node of nodes) {
-             this._expandedNodes.add(node.path.join('/'));
-             collectPaths(node.children);
-         }
-     };
-     collectPaths(this._treeData);
+     private _initializeExpandedNodes() {
+         this._expandedNodes = new Set();
+         const collectPaths = (nodes: TreeNode[]) => {
+             for (const node of nodes) {
+                 this._expandedNodes.add(node.path.join('/'));
+                 collectPaths(node.children);
+             }
+         };
+         collectPaths(this._treeData);
+     }
      ```
-5. 默认选中第一个有监听器的节点
+5. 默认选中第一个有监听器的节点（也在 updated() 中）
    - 调用 _findFirstNodeWithListeners()
    - 使用深度优先遍历
    - 找到第一个 listenerCount > 0 的节点
    - 更新 _selectedPath 和 _listeners
 6. 触发重新渲染
 ```
+
+**展开策略说明**: 默认展开所有节点（"全部展开"策略）。选中第一个有监听器的节点时，由于所有节点都已展开，无需特殊处理。
 
 ### 7.2 点击树节点流程
 
@@ -795,12 +802,11 @@ private _handleResize(event: MouseEvent) {
 **当前实施**（MVP）：
 - 不使用缓存，每次重新构建树数据
 - 适用于中小型应用（< 1000 个监听器）
-- 重新构建开销 < 10ms，可接受
+- 重新构建开销估算：< 10ms（基于类似数据结构的性能测试）
 
 **未来优化方向**（不在当前实施范围）：
 - 虚拟滚动：对于单个节点有大量监听器的情况
 - 延迟加载：初始只渲染前 3 层，展开时再加载
-- 版本号缓存机制：为超大型应用（> 5000 个监听器）提供
 
 ### 9.2 防抖刷新
 
@@ -907,7 +913,7 @@ private _buildTreeData() {
 
 **不在当前实施范围的功能**：
 - localStorage 记忆宽度偏好
-- 完整的键盘导航（ArrowDown/Up 节点间移动）
+- 完整的键盘导航（ArrowDown/Up 节点间移动，仅 ArrowRight/Left 展开/折叠在实施范围）
 - 虚拟滚动
 - 延迟加载
 - 国际化支持
@@ -989,9 +995,9 @@ viewer.emitter = emitter;
 - FastEventViewer 组件: `packages/viewer/src/eventViewer/index.ts`
 - 监听器类型定义: `packages/native/src/types/FastEventListeners.ts`
 
-### 12.4 可访问性
+### 12.4 可访问性（必须实施）
 
-**实施范围**：基础键盘导航和 ARIA 属性支持
+组件必须支持以下可访问性特性：
 
 **键盘导航实现**：
 ```typescript
@@ -1032,7 +1038,7 @@ _handleKeyDown(event: KeyboardEvent, node: TreeNode) {
 </div>
 ```
 
-**注意**：完整的键盘导航（ArrowDown/Up 在节点间移动）不在当前实施范围，未来可扩展
+**注意**：完整的键盘导航（ArrowDown/Up 在节点间移动）不在当前实施范围。当前仅实现：Enter/Space 选中节点、ArrowRight/Left 展开/折叠节点。
 
 ### 12.5 移动端适配
 
@@ -1056,16 +1062,13 @@ _handleKeyDown(event: KeyboardEvent, node: TreeNode) {
 }
 ```
 
-### 12.6 国际化
+### 12.6 国际化（未来扩展）
 
-当前版本所有文本为硬编码中文。如需支持多语言，可以：
+**当前状态**: 所有文本为硬编码中文，不支持多语言。
 
-1. 使用 Lit 的 `@localized()` 装饰器
-2. 提取所有文本到单独的翻译文件
-3. 通过属性传入语言设置
-
-示例：
+**未来扩展示例**（不在当前实施范围）：
 ```typescript
+// 注意：这是未来扩展示例，不在当前实施范围
 @property()
 lang = 'zh';
 
@@ -1073,12 +1076,10 @@ const messages = {
     zh: {
         title: '已注册监听器',
         empty: '暂无注册的监听器',
-        // ...
     },
     en: {
         title: 'Registered Listeners',
         empty: 'No registered listeners',
-        // ...
     }
 };
 ```
