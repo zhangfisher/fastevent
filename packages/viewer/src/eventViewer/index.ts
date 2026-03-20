@@ -143,7 +143,7 @@ export class FastEventViewer extends LitElement {
             status: status,
             fn: new WeakRef(meta[0]),
             name: meta[0].name || "anonymous",
-            count: `${meta[2]}/${meta[1]}`,
+            count: `${meta[2]}/${meta[1] === 0 ? "∞" : meta[1]}`,
             tag: meta[3],
             flags: meta[4] as FastEventListenerFlags | undefined,
             result: meta[5],
@@ -441,12 +441,13 @@ export class FastEventViewer extends LitElement {
     render() {
         return html`
             ${this.renderHeader()}
-            ${this._showListeners
-                ? html`<fastevent-listeners
+            ${
+                this._showListeners
+                    ? html`<fastevent-listeners
                         .emitter="${this.emitter}"
                         ?dark="${this.dark}">
                     </fastevent-listeners>`
-                : html`${this.renderToolbar()}${this.renderLogs()}`
+                    : html`${this.renderToolbar()}${this.renderLogs()}`
             }
         `;
     }

@@ -1,7 +1,9 @@
 // packages/viewer/src/listenerViewer/styles.ts
 import { css } from "lit";
+import { icons } from "../styles/icons";
 
 export const styles = css`
+    ${icons}
     :host {
         display: flex;
         flex-direction: column;
@@ -10,8 +12,6 @@ export const styles = css`
         line-height: 1.5;
         color: var(--fe-color-text, #333);
         background: var(--fe-color-bg, #fff);
-        border: 1px solid var(--fe-color-border, #e8e8e8);
-        border-radius: 6px;
         overflow: hidden;
     }
 
@@ -29,7 +29,7 @@ export const styles = css`
     }
 
     :host {
-        --fe-left-width: 33.33%;
+        --fe-left-width: 30%;
     }
 
     .toolbar {
@@ -42,9 +42,9 @@ export const styles = css`
     }
 
     .toolbar-title {
-        font-size: 16px;
-        font-weight: 600;
-        color: var(--fe-color-text, #333);
+        font-size: 14px;
+        /* font-weight: 600;
+        color: var(--fe-color-text, #333); */
     }
 
     .main-container {
@@ -77,6 +77,7 @@ export const styles = css`
         overflow-y: auto;
         overflow-x: hidden;
         padding: 8px;
+        padding-left: 0px;
     }
 
     .listeners-panel::-webkit-scrollbar {
@@ -132,35 +133,9 @@ export const styles = css`
         align-items: center;
         justify-content: center;
         padding: 3em;
+        padding-left: 0;
         color: var(--fe-color-text-secondary, #999);
         text-align: center;
-    }
-
-    .icon {
-        --icon-size: 16px;
-        display: inline-block;
-        background-color: currentColor;
-        mask-size: cover;
-        -webkit-mask-size: cover;
-        vertical-align: text-bottom;
-        position: relative;
-        width: var(--icon-size);
-        height: var(--icon-size);
-    }
-
-    .icon.listeners {
-        mask-image: var(--icon-listeners);
-        -webkit-mask-image: var(--icon-listeners);
-    }
-
-    .icon.refresh {
-        mask-image: var(--icon-refresh);
-        -webkit-mask-image: var(--icon-refresh);
-    }
-
-    .icon.arrow {
-        mask-image: var(--icon-arrow);
-        -webkit-mask-image: var(--icon-arrow);
     }
 
     .btn {
@@ -248,6 +223,7 @@ export const styles = css`
     .tree-node-label {
         font-family: "SFMono-Regular", Consolas, monospace;
         font-size: 13px;
+        flex-grow: 1;
     }
 
     .tree-node-badge {
@@ -262,68 +238,15 @@ export const styles = css`
         padding-left: 16px;
     }
 
-    .listener-card {
-        display: table;
-        width: 100%;
-        padding: 12px;
-        margin-bottom: 8px;
-        background: transparent;
-        border-radius: 6px;
-        border: 1px solid var(--fe-color-border, #e8e8e8);
-        transition: all 0.2s;
-        box-sizing: border-box;
-    }
-
-    .listener-card:hover {
-        border-color: #1890ff;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    }
-
-    .listener-row {
-        display: table-row;
-        border-bottom: 1px solid var(--fe-color-border, #e8e8e8);
-    }
-
-    .listener-row:last-child {
-        border-bottom: none;
-    }
-
-    .listener-cell {
-        display: table-cell;
-        padding: 4px 8px;
-        vertical-align: middle;
-        border-right: 1px solid var(--fe-color-border, #e8e8e8);
-    }
-
-    .listener-cell:first-child {
-        width: 120px;
-        min-width: 120px;
-    }
-
-    .listener-cell:last-child {
-        border-right: none;
-    }
-
-    .listener-label {
-        color: var(--fe-color-text-secondary, #999);
-        font-size: 12px;
-        font-weight: 500;
-    }
-
-    .listener-value {
-        color: var(--fe-color-text, #333);
-        font-size: 13px;
-    }
-
-    .listener-function {
-        font-family: "SFMono-Regular", Consolas, monospace;
-        color: #1890ff;
-        cursor: pointer;
-        text-decoration: underline;
-    }
-
-    .listener-function:hover {
-        color: #40a9ff;
+    .tag {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.1em 0.4em;
+        border-radius: 5px;
+        font-size: 11px;
+        white-space: nowrap;
+        background: var(--fe-color-tag-bg, #f0f0f0);
+        color: var(--fe-color-tag-text, #666);
     }
 
     @media (max-width: 768px) {

@@ -8,3 +8,4 @@ export * from "./FastEventSubscribers";
 export * from "./FastEvents";
 export * from "./transformed";
 export * from "./closest";
+export * from "./FastEventHooks";

@@ -1,23 +1,24 @@
 {
   "name": "fastevent-viewer",
-    "version": "2.4.1",
-    "description": "visualizes and inspects events for fastevent!",
-    "main": "dist/index.js",
-    "module": "dist/index.mjs",
-    "types": "./dist/index.d.ts",
-    "private": false,
-    "access": "public",
-    "homepage": "https://zhangfisher.github.io/fastevent/",
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/zhangfisher/fastevent.git"
-    },
+  "version": "2.4.1",
+  "description": "visualizes and inspects events for fastevent!",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "private": false,
+  "access": "public",
+  "homepage": "https://zhangfisher.github.io/fastevent/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zhangfisher/fastevent.git"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview"
   },
-  "dependencies": { 
+  "dependencies": {
+    "@lit-labs/preact-signals": "^1.0.3",
     "lit": "^3.3.2"
   },
   "devDependencies": {
@@ -25,8 +26,8 @@
     "vite": "^8.0.0",
     "fastevent": "workspace:*"
   },
-    "keywords": [
-        "eventemitter",
-        "events"
-    ] 
+  "keywords": [
+    "eventemitter",
+    "events"
+  ]
 }

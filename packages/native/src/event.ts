@@ -67,6 +67,7 @@ import { getWeakRef } from "./utils/getWeakRef";
 import { getPromiseResults } from "./utils/getPromiseResults";
 import { isPromise } from "./utils/isPromise";
 import { resolveValue } from "./utils/resolveValue";
+import { FastEventHooks } from "./types/FastEventHooks";
 
 /**
  * FastEvent 事件发射器类
@@ -99,6 +100,7 @@ export class FastEvent<
     /** 事件监听器执行时的上下文对象 */
     private _context: Context;
 
+    private _hooks?: FastEventHooks;
     /** 保留的事件消息映射，Key是事件名称，Value是保留的事件消息 */
     retainedMessages: Map<string, any> = new Map<string, any>();
 
@@ -166,7 +168,36 @@ export class FastEvent<
     get id() {
         return this._options.id!;
     }
-
+    get hooks(): FastEventHooks {
+        if (!this._hooks) {
+            this._hooks = {
+                AddListener: [],
+                RemoveListener: [],
+                ClearListeners: [],
+                ListenerError: [],
+                BeforeExecuteListener: [],
+                AfterExecuteListener: [],
+            };
+        }
+        return this._hooks;
+    }
+    /**
+     * 执行Hook
+     * @param hookName
+     * @param args
+     * @returns
+     */
+    private _executeHooks(hookName: keyof FastEventHooks, args: any[]) {
+        if (!this._hooks) return;
+        const hooks = this.hooks[hookName];
+        if (Array.isArray(hooks)) {
+            Promise.allSettled(
+                hooks.map((hook) => {
+                    return (hook as any).apply(this, args);
+                }),
+            );
+        }
+    }
     /**
      * 初始化选项
      *
@@ -1076,12 +1107,9 @@ export class FastEvent<
         }
         if (isFunction(this._options.onAfterExecuteListener)) {
             Promise.allSettled(results).then((r: any[]) => {
-                this._options.onAfterExecuteListener!.call(
-                    this,
-                    message,
-                    getPromiseResults(r),
-                    nodes,
-                );
+                const args = [message, getPromiseResults(r), nodes];
+                this._options.onAfterExecuteListener!.apply(this, args as any);
+                this._executeHooks("AfterExecuteListener", args);
             });
         }
         return results;

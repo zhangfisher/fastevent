@@ -19,6 +19,11 @@ function simpleEventHandler(data: any) {
 }
 emitter.on("test/simple", simpleEventHandler);
 
+export function addSimpleSubscribe() {
+    emitter.on("test/simple", () => {
+        return Math.abs(Math.random() * 100);
+    });
+}
 // 带标签的用户登录监听器 - 返回对象
 function userLoginHandler(data: any) {
     console.log("[用户登录]", data);

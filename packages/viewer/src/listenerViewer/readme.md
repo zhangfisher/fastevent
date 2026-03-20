@@ -10,13 +10,13 @@
 <fastevent-listeners id="listeners"></fastevent-listeners>
 
 <script type="module">
-    import { FastEvent } from 'fastevent';
+    import { FastEvent } from "fastevent";
 
     const emitter = new FastEvent();
-    document.getElementById('listeners').emitter = emitter;
+    document.getElementById("listeners").emitter = emitter;
 
-    emitter.on('user/login', (data) => {
-        console.log('User logged in:', data);
+    emitter.on("user/login", (data) => {
+        console.log("User logged in:", data);
     });
 </script>
 ```
@@ -31,8 +31,8 @@
 - **树形浏览**: 左侧显示事件层级结构
 - **监听器详情**: 右侧显示选中节点的监听器列表
 - **交互操作**:
-  - 点击箭头展开/折叠节点
-  - 点击节点文本选中节点
-  - 点击函数名在控制台输出监听器信息
-  - 拖动分割线调整左右宽度
+    - 点击箭头展开/折叠节点
+    - 点击节点文本选中节点
+    - 点击函数名在控制台输出监听器信息
+    - 拖动分割线调整左右宽度
 - **刷新**: 点击刷新按钮重新加载数据

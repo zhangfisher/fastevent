@@ -14,7 +14,9 @@
             }
 
             body {
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
+                    sans-serif;
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                 min-height: 100vh;
                 padding: 2rem;
@@ -186,18 +188,37 @@
                 </div>
 
                 <div class="controls-wrapper">
+                    <button class="control-btn" onclick="addSimpleSubscribe()">✈️ 增加订阅</button>
                     <button class="control-btn" onclick="triggerSimpleEvent()">📝 简单事件</button>
-                    <button class="control-btn success" onclick="triggerTaggedEvent()">🏷️ 带标签事件</button>
-                    <button class="control-btn warning" onclick="triggerTransformEvent()">🔄 Transform 事件</button>
-                    <button class="control-btn danger" onclick="triggerErrorEvent()">❌ 错误事件</button>
-                    <button class="control-btn" onclick="triggerMultiListenerEvent()">👥 多监听器事件</button>
-                    <button class="control-btn" onclick="triggerCountedEvent()">🔢 计数限制事件</button>
+                    <button class="control-btn success" onclick="triggerTaggedEvent()">
+                        🏷️ 带标签事件
+                    </button>
+                    <button class="control-btn warning" onclick="triggerTransformEvent()">
+                        🔄 Transform 事件
+                    </button>
+                    <button class="control-btn danger" onclick="triggerErrorEvent()">
+                        ❌ 错误事件
+                    </button>
+                    <button class="control-btn" onclick="triggerMultiListenerEvent()">
+                        👥 多监听器事件
+                    </button>
+                    <button class="control-btn" onclick="triggerCountedEvent()">
+                        🔢 计数限制事件
+                    </button>
                     <button class="control-btn" onclick="triggerBatchEvents()">📦 批量事件</button>
-                    <button class="control-btn" onclick="triggerWildcardEvents()">🎯 通配符事件</button>
+                    <button class="control-btn" onclick="triggerWildcardEvents()">
+                        🎯 通配符事件
+                    </button>
                     <button class="control-btn" onclick="triggerAsyncEvent()">⏳ 异步事件</button>
-                    <button class="control-btn" onclick="triggerLongRunningEvent()">⏰ 长时间执行</button>
-                    <button class="control-btn success" onclick="startRandomEvents()">🎲 启动随机事件</button>
-                    <button class="control-btn danger" onclick="stopRandomEvents()">⏹️ 停止随机事件</button>
+                    <button class="control-btn" onclick="triggerLongRunningEvent()">
+                        ⏰ 长时间执行
+                    </button>
+                    <button class="control-btn success" onclick="startRandomEvents()">
+                        🎲 启动随机事件
+                    </button>
+                    <button class="control-btn danger" onclick="stopRandomEvents()">
+                        ⏹️ 停止随机事件
+                    </button>
                 </div>
             </div>
         </div>
@@ -227,6 +248,7 @@
             window.triggerLongRunningEvent = demo.triggerLongRunningEvent;
             window.startRandomEvents = demo.startRandomEvents;
             window.stopRandomEvents = demo.stopRandomEvents;
+            window.addSimpleSubscribe = demo.addSimpleSubscribe;
         </script>
     </body>
 </html>

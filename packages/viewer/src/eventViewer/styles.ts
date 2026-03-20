@@ -1,6 +1,8 @@
 import { css } from "lit";
+import { icons } from "../styles/icons";
 
 export const styles = css`
+    ${icons}
     :host {
         display: flex;
         flex-direction: column;
@@ -115,83 +117,6 @@ export const styles = css`
     .btn-pressed {
         color: #1890ff;
         background: rgba(24, 144, 255, 0.1);
-    }
-
-    .icon {
-        --icon-size: 16px;
-        display: inline-block;
-        background-color: currentColor;
-        mask-size: cover;
-        -webkit-mask-size: cover;
-        vertical-align: text-bottom;
-        position: relative;
-        width: var(--icon-size);
-        height: var(--icon-size);
-    }
-
-    .icon.home {
-        mask-image: var(--icon-home);
-        -webkit-mask-image: var(--icon-home);
-    }
-
-    .icon.close {
-        mask-image: var(--icon-close);
-        -webkit-mask-image: var(--icon-close);
-    }
-
-    .icon.settings {
-        mask-image: var(--icon-settings);
-        -webkit-mask-image: var(--icon-settings);
-    }
-
-    .icon.yes {
-        mask-image: var(--icon-yes);
-        -webkit-mask-image: var(--icon-yes);
-    }
-
-    .icon.copy {
-        mask-image: var(--icon-copy);
-        -webkit-mask-image: var(--icon-copy);
-    }
-
-    .icon.file {
-        mask-image: var(--icon-file);
-        -webkit-mask-image: var(--icon-file);
-    }
-
-    .icon.listeners {
-        mask-image: var(--icon-listeners);
-        -webkit-mask-image: var(--icon-listeners);
-    }
-
-    .icon.error {
-        mask-image: var(--icon-error);
-        -webkit-mask-image: var(--icon-error);
-    }
-
-    .icon.success {
-        mask-image: var(--icon-success);
-        -webkit-mask-image: var(--icon-success);
-    }
-
-    .icon.loading {
-        mask-image: var(--icon-loading);
-        -webkit-mask-image: var(--icon-loading);
-    }
-
-    .icon.refresh {
-        mask-image: var(--icon-refresh);
-        -webkit-mask-image: var(--icon-refresh);
-    }
-
-    .icon.cancel {
-        mask-image: var(--icon-cancel);
-        -webkit-mask-image: var(--icon-cancel);
-    }
-
-    .icon.clear {
-        mask-image: var(--icon-clear);
-        -webkit-mask-image: var(--icon-clear);
     }
 
     .logs {
