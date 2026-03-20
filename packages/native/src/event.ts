@@ -67,7 +67,8 @@ import { getWeakRef } from "./utils/getWeakRef";
 import { getPromiseResults } from "./utils/getPromiseResults";
 import { isPromise } from "./utils/isPromise";
 import { resolveValue } from "./utils/resolveValue";
-import { FastEventHooks } from "./types/FastEventHooks";
+import { AfterExecuteListenerHook, FastEventHooks } from "./types/FastEventHooks";
+import { ItemOf } from "../../viewer/src/types";
 
 /**
  * FastEvent 事件发射器类
@@ -181,21 +182,47 @@ export class FastEvent<
         }
         return this._hooks;
     }
+    private _execAfterExecuteListener(fn: Function, args: Parameters<AfterExecuteListenerHook>) {
+        Promise.allSettled(args[1]).then((r: any[]) => {
+            args[1] = getPromiseResults(r);
+            fn!.apply(this, args as any);
+        });
+    }
     /**
      * 执行Hook
      * @param hookName
      * @param args
      * @returns
      */
-    private _executeHooks(hookName: keyof FastEventHooks, args: any[]) {
-        if (!this._hooks) return;
-        const hooks = this.hooks[hookName];
-        if (Array.isArray(hooks)) {
-            Promise.allSettled(
-                hooks.map((hook) => {
-                    return (hook as any).apply(this, args);
-                }),
-            );
+    private _executeHooks<T extends keyof FastEventHooks>(
+        hookName: T,
+        args: Parameters<ItemOf<FastEventHooks[T]>>,
+        onlyAsyncHook: boolean = false,
+    ) {
+        setTimeout(() => {
+            if (!this._hooks) return;
+            const hooks = this.hooks[hookName];
+            if (Array.isArray(hooks) && hooks.length > 0) {
+                Promise.allSettled(
+                    hooks.map((hook) => {
+                        if (hookName === "AfterExecuteListener") {
+                            this._execAfterExecuteListener(hook, args as any);
+                        } else {
+                            return (hook as any).apply(this, args);
+                        }
+                    }),
+                );
+            }
+        });
+        if (!onlyAsyncHook) {
+            const hookMethod = this.options[`on${hookName}`] as Function;
+            if (isFunction(hookMethod)) {
+                if (hookName === "AfterExecuteListener") {
+                    this._execAfterExecuteListener(hookMethod, args as any);
+                } else {
+                    return hookMethod.apply(this, args);
+                }
+            }
         }
     }
     /**
@@ -302,30 +329,28 @@ export class FastEvent<
             const isRemove = item === listener;
             if (isRemove) {
                 this.listenerCount--;
-                if (isFunction(this._options.onRemoveListener)) {
-                    this._options.onRemoveListener(path.join(this._delimiter), listener);
-                }
+                this._executeHooks("RemoveListener", [path.join(this._delimiter), listener]);
             }
             return isRemove;
         });
     }
-    /**
-     * 调用onAddListener HOOK
-     * @param type
-     * @param listener
-     * @param options
-     * @returns
-     */
-    private _onAddListener(type: string, listener: any, options: any) {
-        if (isFunction(this._options.onAddListener)) {
-            const r = this._options.onAddListener(type, listener, options);
-            if (r === false) {
-                throw new CancelError();
-            } else if (isSubsctiber(r)) {
-                return r;
-            }
-        }
-    }
+    // /**
+    //  * 调用onAddListener HOOK
+    //  * @param type
+    //  * @param listener
+    //  * @param options
+    //  * @returns
+    //  */
+    // private _onAddListener(type: string, listener: any, options: any) {
+    //     if (isFunction(this._options.onAddListener)) {
+    //         const r = this._options.onAddListener(type, listener, options);
+    //         if (r === false) {
+    //             throw new CancelError();
+    //         } else if (isSubsctiber(r)) {
+    //             return r;
+    //         }
+    //     }
+    // }
     /**
      * 注册事件监听器
      * @param type - 事件类型，支持以下格式：
@@ -420,18 +445,18 @@ export class FastEvent<
             ) as FastEventIteratorOptions;
             const iterator = createAsyncEventIterator<any>(this as any, type, iteratorOpts);
             iterator.create(finalOptions);
-            this._onAddListener(type, iterator.listener, finalOptions);
+            this._executeHooks("AddListener", [type, iterator.listener, finalOptions]);
             return iterator;
         }
         // 执行回调
-        if (isFunction(this._options.onAddListener)) {
-            const r = this._options.onAddListener(type, listener, finalOptions);
-            if (r === false) {
-                throw new CancelError();
-            } else if (isSubsctiber(r)) {
-                return r;
-            }
+        // if (isFunction(this._options.onAddListener)) {
+        const r = this._executeHooks("AddListener", [type, listener, finalOptions]);
+        if (r === false) {
+            throw new CancelError();
+        } else if (isSubsctiber(r)) {
+            return r;
         }
+        // }
 
         const parts = type.split(this._delimiter);
 
@@ -622,20 +647,32 @@ export class FastEvent<
             let count = 0;
             this._traverseListeners(this.listeners, parts, (path, node) => {
                 count += node.__listeners.length;
-                node.__listeners = [];
+                try {
+                    node.__listeners.forEach((listener) => {
+                        this._executeHooks("RemoveListener", [
+                            path.join(this.options.delimiter),
+                            listener[0],
+                        ]);
+                    });
+                } finally {
+                    node.__listeners = [];
+                }
             });
             this.listenerCount -= count;
             this._removeRetainedEvents(entry);
         } else {
-            let count = 0;
-            this._traverseListeners(this.listeners, [], (path, node) => {
-                count += node.__listeners.length;
-            });
-            this.listenerCount -= count;
-            this.retainedMessages.clear();
-            this.listeners = { __listeners: [] } as unknown as FastListeners;
+            try {
+                let count = 0;
+                this._traverseListeners(this.listeners, [], (path, node) => {
+                    count += node.__listeners.length;
+                });
+                this.listenerCount -= count;
+                this.retainedMessages.clear();
+                this.listeners = { __listeners: [] } as unknown as FastListeners;
+            } finally {
+                this._executeHooks("ClearListeners", []);
+            }
         }
-        if (isFunction(this._options.onClearListeners)) this._options.onClearListeners.call(this);
     }
     /**
      * 移除保留的事件
@@ -787,11 +824,7 @@ export class FastEvent<
             // @ts-ignore
             e._emitter = `${listener.name || "anonymous"}:${message.type}`;
         }
-        if (isFunction(this._options.onListenerError)) {
-            try {
-                this._options.onListenerError.call(this, e, listener, message, args);
-            } catch {}
-        }
+        this._executeHooks("ListenerError", [e, listener, message, args]);
         if (this._options.ignoreErrors) {
             return e;
         } else {
@@ -862,7 +895,9 @@ export class FastEvent<
             }
             return result;
         } catch (e: any) {
-            return this._onListenerError(listenerFn, message, args, e);
+            const errObj = this._onListenerError(listenerFn, message, args, e);
+            if (errObj instanceof Error) listener[5] = getWeakRef(errObj);
+            return errObj;
         }
     }
     private _getListenerExecutor(args: FastEventListenerArgs): FastListenerExecutor | undefined {
@@ -1084,14 +1119,14 @@ export class FastEvent<
         this._traverseToPath(this.listeners, parts, (node) => {
             nodes.push(node);
         });
-        if (isFunction(this._options.onBeforeExecuteListener)) {
-            const r = this._options.onBeforeExecuteListener.call(this, message, args);
-            if (Array.isArray(r)) {
-                return r;
-            } else if (r === false) {
-                throw new AbortError(message.type);
-            }
+
+        const r = this._executeHooks("BeforeExecuteListener", [message, args]);
+        if (Array.isArray(r)) {
+            return r;
+        } else if (r === false) {
+            throw new AbortError(message.type);
         }
+
         // 触发时进行消息转换
         if (isFunction(this._options.transform)) {
             message.payload = this._options.transform.call(this, message as any);
@@ -1105,13 +1140,7 @@ export class FastEvent<
         if (this._options.expandEmitResults) {
             expandEmitResults(results);
         }
-        if (isFunction(this._options.onAfterExecuteListener)) {
-            Promise.allSettled(results).then((r: any[]) => {
-                const args = [message, getPromiseResults(r), nodes];
-                this._options.onAfterExecuteListener!.apply(this, args as any);
-                this._executeHooks("AfterExecuteListener", args);
-            });
-        }
+        this._executeHooks("AfterExecuteListener", [message, results, nodes] as any);
         return results;
     }
 

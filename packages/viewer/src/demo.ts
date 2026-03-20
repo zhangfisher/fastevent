@@ -39,7 +39,7 @@ emitter.on("user/login", userLoginHandler, { tag: "auth" });
 function onAny(_message: any) {
     return Math.abs(Math.random() * 100);
 }
-emitter.onAny(onAny);
+// emitter.onAny(onAny);
 
 // Transform 事件监听器 - 返回数组
 function dataUpdateHandler(data: any) {

@@ -10,6 +10,7 @@ import type {
 } from "fastevent";
 import type { FastEventListenerMeta } from "fastevent";
 import type { ItemOf } from "../types";
+import { removeItem } from "../utils";
 
 /**
  * fastevent-listener-card 组件 - 显示单个监听器的详细信息
@@ -53,12 +54,7 @@ export class FastEventListenerCard extends LitElement {
     }
     private _removeListenerHook() {
         if (this.emitter) {
-            const index = this.emitter.hooks.AfterExecuteListener.findIndex((hook) => {
-                return hook === this._onAfterExecuteListener!;
-            });
-            if (index > -1) {
-                this.emitter.hooks.AfterExecuteListener.splice(index, 1);
-            }
+            removeItem(this.emitter.hooks.AfterExecuteListener, this._onAfterExecuteListener!);
         }
     }
 
@@ -81,7 +77,7 @@ export class FastEventListenerCard extends LitElement {
         }
         console.log(`-----FastEvent Listener-----`);
         console.log(`监听器: ${fn.name || "anonymous"}`);
-        console.log(fn.toString());
+        console.log(fn);
         console.log(`执行次数: ${listener[2]}/${listener[1]}`);
         console.log(`标签: ${listener[3]}`);
         if (listener[4] !== undefined) {
@@ -92,7 +88,19 @@ export class FastEventListenerCard extends LitElement {
     private renderTag(text: string): ReturnType<typeof html> {
         return html`<span class="tag">${text}</span>`;
     }
-
+    private _renderReturns(listener: FastEventListenerMeta) {
+        if (listener.length === 6 && listener[5]) {
+            const result = listener[5] instanceof WeakRef ? listener[5].deref() : listener[5];
+            return html`
+                    <div class="listener-row">
+                        <div class="listener-cell listener-label">返回值</div>
+                        <div class="listener-cell listener-value">${
+                            result instanceof Error ? result.stack : JSON.stringify(result)
+                        }</div>
+                    </div>
+                `;
+        }
+    }
     override render() {
         if (!this.listener) {
             return html`
@@ -141,6 +149,7 @@ export class FastEventListenerCard extends LitElement {
                 `
                         : ""
                 }
+                ${this._renderReturns(this.listener)}
             </div>
         `;
     }

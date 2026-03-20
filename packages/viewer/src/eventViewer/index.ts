@@ -13,6 +13,7 @@ import type { ItemOf } from "../types";
 import { styles } from "./styles";
 import type { EventLog } from "./types";
 import "../listenerViewer/index.js";
+import { removeItem } from "../utils/removeItem";
 
 @customElement("fastevent-viewer")
 export class FastEventViewer extends LitElement {
@@ -200,19 +201,24 @@ export class FastEventViewer extends LitElement {
     private _attach() {
         if (this.emitter) {
             const options = this.emitter.options;
-            this._oldBeforeExecuteListener = options.onBeforeExecuteListener;
-            this._oldAfterExecuteListener = options.onAfterExecuteListener;
-            options.onBeforeExecuteListener = this._onBeforeExecuteListener;
-            options.onAfterExecuteListener = this._onAfterExecuteListener;
+            // this._oldBeforeExecuteListener = options.onBeforeExecuteListener;
+            // this._oldAfterExecuteListener = options.onAfterExecuteListener;
+            // options.onBeforeExecuteListener = this._onBeforeExecuteListener;
+            // options.onAfterExecuteListener = this._onAfterExecuteListener;
+            this.emitter.hooks.BeforeExecuteListener.push(this._onBeforeExecuteListener);
+            this.emitter.hooks.AfterExecuteListener.push(this._onAfterExecuteListener);
             options.debug = true;
         }
     }
 
     private _detach() {
         if (this.emitter) {
+            removeItem(this.emitter.hooks.BeforeExecuteListener, this._onBeforeExecuteListener);
+            removeItem(this.emitter.hooks.AfterExecuteListener, this._onAfterExecuteListener);
             const options = this.emitter.options;
-            options.onBeforeExecuteListener = this._oldBeforeExecuteListener;
-            options.onAfterExecuteListener = this._oldAfterExecuteListener;
+            // this.emitter.hooks.BeforeExecuteListener;
+            // options.onBeforeExecuteListener = this._oldBeforeExecuteListener;
+            // options.onAfterExecuteListener = this._oldAfterExecuteListener;
             options.debug = false;
         }
     }

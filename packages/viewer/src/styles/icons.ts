@@ -126,7 +126,7 @@ export const icons = css`
         mask-image: var(--icon-arrow);
     }
 
-    .icon.errror {
+    .icon.error {
         mask-image: var(--icon-error);
     }
 
