@@ -12,6 +12,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import type { ItemOf } from "../types";
 import { styles } from "./styles";
 import type { EventLog } from "./types";
+import "../listenerViewer/index.js";
 
 @customElement("fastevent-viewer")
 export class FastEventViewer extends LitElement {
@@ -34,6 +35,9 @@ export class FastEventViewer extends LitElement {
 
     @state()
     private _filterText = "";
+
+    @state()
+    private _showListeners = false;
 
     subscriber?: FastEventSubscriber;
     messages: FastEventMessage[] = [];
@@ -306,11 +310,11 @@ export class FastEventViewer extends LitElement {
                 ${this.renderButton(
                     "",
                     () => {
-                        // TODO: 显示监听器统计
+                        this._showListeners = !this._showListeners;
                     },
                     {
                         icon: "listeners",
-                        className: "btn-icon",
+                        className: "btn-icon" + (this._showListeners ? " btn-pressed" : ""),
                         title: "查看所有注册的监听器",
                     },
                 )}
@@ -437,8 +441,13 @@ export class FastEventViewer extends LitElement {
     render() {
         return html`
             ${this.renderHeader()}
-            ${this.renderToolbar()}
-            ${this.renderLogs()}
+            ${this._showListeners
+                ? html`<fastevent-listeners
+                        .emitter="${this.emitter}"
+                        ?dark="${this.dark}">
+                    </fastevent-listeners>`
+                : html`${this.renderToolbar()}${this.renderLogs()}`
+            }
         `;
     }
 }

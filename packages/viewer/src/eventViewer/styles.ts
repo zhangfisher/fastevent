@@ -101,6 +101,11 @@ export const styles = css`
         background: rgba(24, 144, 255, 0.06);
     }
 
+    .btn-pressed {
+        color: #1890ff;
+        background: rgba(24, 144, 255, 0.1);
+    }
+
     .btn-icon {
         padding: 0.2em;
         width: 24px;
@@ -369,7 +374,6 @@ export const styles = css`
 
     .empty-state .icon {
         --icon-size: 48px;
-        margin-bottom: 1em;
         opacity: 0.3;
     }
 `;
