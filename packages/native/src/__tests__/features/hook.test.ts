@@ -1,6 +1,7 @@
 import { describe, test, expect, vi } from "vitest";
 import { FastEvent } from "../../event";
 import { AbortError, CancelError } from "../../consts";
+import { delay } from "../../utils/delay";
 
 describe("FastEvent钩子函数测试", () => {
     test("当添加新的监听器时应该触发onAddListener", () => {
@@ -122,7 +123,7 @@ describe("FastEvent钩子函数测试", () => {
         );
     });
 
-    test("执行监听器后应该触发onAfterExecuteListener", () => {
+    test("执行监听器后应该触发onAfterExecuteListener", async () => {
         const onAfterExecuteListener = vi.fn();
         const emitter = new FastEvent({
             onAfterExecuteListener,
@@ -131,7 +132,7 @@ describe("FastEvent钩子函数测试", () => {
         const listener = () => "result";
         emitter.on("test", listener);
         emitter.emit("test", "payload");
-
+        await delay(1);
         expect(onAfterExecuteListener).toHaveBeenCalledTimes(1);
         expect(onAfterExecuteListener).toHaveBeenCalledWith(
             expect.objectContaining({

@@ -31,6 +31,11 @@ function userLoginHandler(data: any) {
 }
 emitter.on("user/login", userLoginHandler, { tag: "auth" });
 
+function onAny(message: any) {
+    return Math.abs(Math.random() * 100);
+}
+emitter.onAny(onAny);
+
 // Transform 事件监听器 - 返回数组
 function dataUpdateHandler(data: any) {
     console.log("[数据更新]", data);
@@ -139,11 +144,11 @@ emitter.on("test/async", asyncEventHandler);
 async function longRunningHandler() {
     console.log("[长时间执行] 开始执行，预计耗时5秒");
     // 模拟耗时操作
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     console.log("[长时间执行] 执行完成");
     return {
         message: "长时间任务已完成",
-        duration: "5秒",
+        duration: "2秒",
         result: "成功",
     };
 }
@@ -175,7 +180,7 @@ export function triggerTaggedEvent() {
     emitter.emit(
         "user/login",
         { userId: 12345, username: "testuser" },
-        true // retain
+        true, // retain
     );
 }
 
@@ -218,12 +223,7 @@ export function triggerCountedEvent() {
  * 触发批量事件
  */
 export function triggerBatchEvents() {
-    const events = [
-        "batch/start",
-        "batch/processing",
-        "batch/progress",
-        "batch/complete",
-    ];
+    const events = ["batch/start", "batch/processing", "batch/progress", "batch/complete"];
 
     events.forEach((type, index) => {
         setTimeout(() => {
@@ -280,12 +280,7 @@ export function startRandomEvents() {
 
     randomEventInterval = window.setInterval(() => {
         // 随机选择一个事件类型
-        const eventTypes = [
-            "random/number",
-            "test/simple",
-            "data/update",
-            "user/login",
-        ];
+        const eventTypes = ["random/number", "test/simple", "data/update", "user/login"];
         const randomType = eventTypes[Math.floor(Math.random() * eventTypes.length)];
 
         // 生成随机数据
@@ -315,7 +310,7 @@ export function stopRandomEvents() {
 }
 
 // 自动启动随机事件
-startRandomEvents();
+// startRandomEvents();
 
 /**
  * 导出 emitter 供组件使用

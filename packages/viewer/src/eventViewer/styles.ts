@@ -57,7 +57,7 @@ export const styles = css`
         min-width: 150px;
         padding: 0.4em 0.8em;
         border: 1px solid var(--fe-color-border, #d9d9d9);
-        border-radius: 4px;
+        border-radius: 6px;
         background: var(--fe-color-input-bg, #fff);
         color: var(--fe-color-text, #333);
         font-size: 13px;
@@ -102,9 +102,9 @@ export const styles = css`
     }
 
     .btn-icon {
-        padding: 0.4em;
-        width: 32px;
-        height: 32px;
+        padding: 0.2em;
+        width: 24px;
+        height: 24px;
     }
 
     .btn-pressed {
@@ -145,8 +145,8 @@ export const styles = css`
     }
 
     .icon.copy {
-        mask-image: var(--icon-file);
-        -webkit-mask-image: var(--icon-file);
+        mask-image: var(--icon-copy);
+        -webkit-mask-image: var(--icon-copy);
     }
 
     .icon.file {
@@ -154,9 +154,9 @@ export const styles = css`
         -webkit-mask-image: var(--icon-file);
     }
 
-    .icon.bell {
-        mask-image: var(--icon-bell);
-        -webkit-mask-image: var(--icon-bell);
+    .icon.listeners {
+        mask-image: var(--icon-listeners);
+        -webkit-mask-image: var(--icon-listeners);
     }
 
     .icon.error {
@@ -195,20 +195,20 @@ export const styles = css`
         flex-direction: column;
         overflow-y: auto;
         overflow-x: hidden;
-        padding: 0.5em;
+        padding: 0;
     }
 
     .log-item {
         display: flex;
         align-items: flex-start;
-        padding: 0 0.8em;
+        padding: 0.5em;
         border-radius: 4px;
         transition: background 0.2s;
         margin-bottom: 4px;
     }
 
     .log-item:hover {
-        background: var(--fe-color-hover, #f5f5f5);
+        background: var(--fe-color-hover, #fafafa);
     }
 
     .log-content {
@@ -222,14 +222,14 @@ export const styles = css`
     .log-header {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 4px;
         flex-wrap: wrap;
-        padding: 0.3em 0;
+        padding: 0;
     }
 
     .log-header .icon {
         --icon-size: 16px;
-        color: #52c41a;
+        color: #818181;
         flex-shrink: 0;
     }
 
@@ -249,7 +249,7 @@ export const styles = css`
         display: inline-flex;
         align-items: center;
         padding: 0.1em 0.4em;
-        border-radius: 3px;
+        border-radius: 5px;
         font-size: 11px;
         white-space: nowrap;
         background: var(--fe-color-tag-bg, #f0f0f0);
@@ -295,9 +295,12 @@ export const styles = css`
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
         line-height: 1.4;
+        padding: 0em 20px;
+        padding-top: 0px;
     }
 
     .log-listeners {
+        padding: 0em 20px;
         display: flex;
         flex-wrap: wrap;
         gap: 4px;
@@ -314,6 +317,7 @@ export const styles = css`
         border: 1px solid rgba(0, 0, 0, 0.06);
         transition: all 0.2s;
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+        cursor: pointer;
     }
 
     .listener:hover {
@@ -358,7 +362,7 @@ export const styles = css`
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 3em;
+        padding: 2em;
         color: var(--fe-color-text-secondary, #999);
         text-align: center;
     }

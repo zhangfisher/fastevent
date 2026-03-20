@@ -82,11 +82,15 @@ FastEventViewer (容器)
 | 方法 | 描述 |
 |------|------|
 | `_buildTreeData()` | 递归遍历 `emitter.listeners`，构建渲染用的树数据 |
-| `_handleNodeSelect(path)` | 处理树节点点击，更新右侧监听器列表 |
+| `_handleNodeSelect(path)` | 处理树节点文本点击，更新右侧监听器列表 |
+| `_handleNodeToggle(path)` | 处理树节点箭头点击，切换展开/折叠状态 |
 | `_handleRefresh()` | 刷新数据（重新构建树） |
-| `_handleResize(event)` | 处理拖动调整宽度 |
+| `_handleResizeStart(event)` | 开始拖动调整宽度 |
+| `_handleResizeMove(event)` | 拖动过程中更新宽度 |
+| `_handleResizeEnd(event)` | 结束拖动 |
 | `_formatListenerCount(meta)` | 格式化执行次数显示（如 "5/10"） |
-| `_printListenerToConsole(fn)` | 在控制台输出监听器函数源码 |
+| `_printListenerToConsole(listener)` | 在控制台输出监听器函数源码 |
+| `_findFirstNodeWithListeners()` | 查找第一个有监听器的节点（深度优先） |
 
 ### 3.4 渲染方法
 
@@ -103,9 +107,11 @@ FastEventViewer (容器)
 
 | 方法 | 描述 |
 |------|------|
-| `renderTag(text, color, tooltip)` | 渲染标签组件（复用 eventViewer） |
-| `renderButton(content, onClick, options)` | 渲染按钮组件（复用 eventViewer） |
-| `renderIcon(name)` | 渲染图标组件（复用 eventViewer） |
+| `renderTag(text, color, tooltip)` | 渲染标签组件（独立实现，参考 eventViewer） |
+| `renderButton(content, onClick, options)` | 渲染按钮组件（独立实现，参考 eventViewer） |
+| `renderIcon(name)` | 渲染图标组件（独立实现，参考 eventViewer） |
+
+**注意**: 这些方法在 FastEventListeners 组件中独立实现，代码逻辑参考 FastEventViewer，但不直接复用（因为是实例方法，无法跨组件共享）。
 
 ## 4. 数据结构设计
 
@@ -150,9 +156,19 @@ private _buildTreeData(): TreeNode[] {
         return children;
     };
 
-    return build(this.emitter.listeners, [], 0);
+    // 使用 requestAnimationFrame 分批构建，避免阻塞 UI
+    return new Promise((resolve) => {
+        requestAnimationFrame(() => {
+            resolve(build(this.emitter!.listeners, [], 0));
+        });
+    });
 }
 ```
+
+**性能优化策略**：
+- 对于大型应用（>1000 个监听器），考虑使用虚拟滚动
+- 延迟加载：初始只渲染前 3 层，用户展开时再加载子节点
+- 使用 `requestAnimationFrame` 分批构建树数据，避免阻塞主线程
 
 ### 4.3 节点选择处理
 
@@ -174,6 +190,31 @@ private _handleNodeSelect(path: string[]) {
 
     const node = findNode(this._treeData, path);
     this._listeners = node?.listeners || [];
+}
+
+private _handleNodeToggle(path: string[]) {
+    const pathKey = path.join('/');
+    if (this._expandedNodes.has(pathKey)) {
+        this._expandedNodes.delete(pathKey);
+    } else {
+        this._expandedNodes.add(pathKey);
+    }
+    this.requestUpdate();
+}
+
+private _findFirstNodeWithListeners(): TreeNode | null {
+    const find = (nodes: TreeNode[]): TreeNode | null => {
+        // 深度优先遍历，查找第一个有监听器的节点
+        for (const node of nodes) {
+            if (node.listenerCount > 0) {
+                return node;
+            }
+            const found = find(node.children);
+            if (found) return found;
+        }
+        return null;
+    };
+    return find(this._treeData);
 }
 ```
 
@@ -281,11 +322,38 @@ render() {
 }
 ```
 
-### 6.3 左侧树面板
+### 6.3 暗色模式支持
+
+暗色模式通过 `:host([dark])` 选择器应用：
+
+```css
+:host([dark]) {
+    --fe-color-text: rgba(255, 255, 255, 0.85);
+    --fe-color-bg: #1f1f1f;
+    --fe-color-border: #303030;
+    --fe-color-header-bg: #141414;
+    --fe-color-hover: rgba(255, 255, 255, 0.08);
+    --fe-color-text-secondary: rgba(255, 255, 255, 0.45);
+    --fe-color-bg-secondary: rgba(255, 255, 255, 0.05);
+    --fe-color-tag-bg: rgba(255, 255, 255, 0.08);
+    --fe-color-tag-text: rgba(255, 255, 255, 0.85);
+    --fe-left-width: 33.33%;  /* 拖动宽度变量 */
+}
+```
+
+亮色模式默认值：
+```css
+:host {
+    --fe-left-width: 33.33%;
+    /* 其他默认颜色... */
+}
+```
+
+### 6.4 左侧树面板
 
 ```css
 .tree-panel {
-    flex: 0 0 var(--left-width, 33.33%);
+    flex: 0 0 var(--fe-left-width, 33.33%);
     overflow-y: auto;
     overflow-x: hidden;
     border-right: 1px solid var(--fe-color-border, #e8e8e8);
@@ -304,7 +372,7 @@ render() {
 }
 ```
 
-### 6.4 树节点
+### 6.5 树节点
 
 ```css
 .tree-node {
@@ -323,6 +391,25 @@ render() {
 
 .tree-node.selected {
     background: rgba(24, 144, 255, 0.1);
+}
+
+.tree-node-toggle {
+    width: 16px;
+    height: 16px;
+    margin-right: 4px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s;
+}
+
+.tree-node-toggle.expanded {
+    transform: rotate(90deg);
+}
+
+.tree-node-toggle.hidden {
+    visibility: hidden;
 }
 
 .tree-node-content {
@@ -348,7 +435,23 @@ render() {
 .tree-children {
     padding-left: 16px;
 }
+
+/* 展开/折叠动画 */
+.tree-children {
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+}
+
+.tree-children.collapsed {
+    max-height: 0;
+}
 ```
+
+**交互说明**：
+- 点击 **箭头图标**：切换展开/折叠状态（调用 `_handleNodeToggle`）
+- 点击 **节点文本**：选中节点，显示右侧监听器列表（调用 `_handleNodeSelect`）
+- 箭头图标使用 `icon-arrow`，展开时旋转 90 度
+- 叶子节点（无子节点）的箭头图标隐藏（`.tree-node-toggle.hidden`）
 
 ### 6.5 右侧监听器面板
 
@@ -433,6 +536,7 @@ render() {
     position: relative;
     z-index: 10;
     flex-shrink: 0;
+    user-select: none;
 }
 
 .resizer::after {
@@ -446,7 +550,7 @@ render() {
     background: var(--fe-color-border, #e8e8e8);
     border-radius: 2px;
     opacity: 0;
-    transition: opacity 0.2s;
+    transition: opacity 0.2s, height 0.2s;
 }
 
 .resizer:hover::after {
@@ -458,6 +562,22 @@ render() {
     opacity: 1;
     background: #1890ff;
     height: 60px;
+}
+
+/* 拖动时显示宽度提示（可选） */
+.resizer.dragging::before {
+    content: attr(data-width);
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    pointer-events: none;
 }
 ```
 
@@ -489,8 +609,16 @@ render() {
 1. FastEventListeners 组件挂载
 2. willUpdate() 检测 emitter 属性变化
 3. 触发 _buildTreeData() 构建树数据
-4. 初始化 _expandedNodes，添加所有节点
+   - 使用 requestAnimationFrame 分批构建（避免阻塞）
+   - 返回 TreeNode[] 数组
+4. 初始化 _expandedNodes
+   - 遍历所有节点，将路径添加到 Set 中
+   - 实现默认全部展开
 5. 默认选中第一个有监听器的节点
+   - 调用 _findFirstNodeWithListeners()
+   - 使用深度优先遍历
+   - 找到第一个 listenerCount > 0 的节点
+   - 更新 _selectedPath 和 _listeners
 6. 触发重新渲染
 ```
 
@@ -520,21 +648,31 @@ render() {
 
 ```
 1. mousedown 在 resizer 上
-   - 记录初始鼠标位置
-   - 记录容器宽度
+   - 记录初始鼠标位置（startX）
+   - 记录容器宽度（containerWidth）
    - 添加 document mousemove/mouseup 监听器
-   - 设置 dragging 状态
+   - 设置 dragging 状态（添加 .dragging class）
+   - 设置 _isResizing = true
 
-2. mousemove 在 document 上
-   - 计算偏移量
-   - 计算新宽度百分比
+2. mousemove 在 document 上（使用 requestAnimationFrame 优化性能）
+   - 计算偏移量：offsetX = currentX - startX
+   - 计算新宽度百分比：newWidth = (offsetX / containerWidth) * 100
    - 限制在 20%-80% 范围内
-   - 更新 _leftWidth
+   - 更新 _leftWidth = `${clampedWidth}%`
+   - 更新 CSS 变量：--fe-left-width
+   - 显示拖动时的宽度提示（可选）
 
 3. mouseup 在 document 上
    - 移除事件监听器
    - 清除 dragging 状态
+   - 设置 _isResizing = false
+   - 保存最终宽度到 localStorage（可选，用于记忆用户偏好）
 ```
+
+**性能优化**：
+- 使用 `requestAnimationFrame` 节流拖动更新，避免高频重渲染
+- 拖动过程中只更新 CSS 变量，不触发 Lit 重新渲染
+- 拖动结束后才更新组件状态并调用 `requestUpdate()`
 
 ### 7.5 点击函数名称流程
 
@@ -590,10 +728,25 @@ private _handleNodeSelect(path: string[]) {
 ```typescript
 private _printListenerToConsole(listener: FastEventListenerMeta) {
     const [fn] = listener;
+
+    // 检查函数是否有效（可能被垃圾回收）
+    if (typeof fn !== 'function') {
+        console.warn('监听器函数已被垃圾回收或无效');
+        console.log('元数据:', {
+            executed: `${listener[2]}/${listener[1]}`,
+            tag: listener[3],
+            flags: listener[4]
+        });
+        return;
+    }
+
     console.log(`监听器: ${fn.name || 'anonymous'}`);
     console.log(fn.toString());
     console.log(`执行次数: ${listener[2]}/${listener[1]}`);
     console.log(`标签: ${listener[3]}`);
+    if (listener[4] !== undefined) {
+        console.log(`标识: ${listener[4]}`);
+    }
 }
 ```
 
@@ -623,21 +776,50 @@ private _handleResize(event: MouseEvent) {
 
 ## 9. 性能优化
 
-### 9.1 树数据缓存
+### 9.1 缓存策略
 
+**注意**: 由于 FastEvent 的监听器是动态变化的（监听器会被添加/删除），**不建议缓存树数据**。每次调用 `_buildTreeData()` 时都应该重新构建，以确保显示最新的监听器状态。
+
+如果确实需要缓存以提高性能，可以考虑以下方案：
+
+**方案 A: 版本号机制**（推荐用于大型应用）
 ```typescript
-private _treeDataCache: Map<string, TreeNode[]> = new Map();
+private _treeDataCache = new Map<string, { data: TreeNode[], version: number }>();
+private _cacheVersion = 0;
+
+// 在 emitter 的监听器变化时增加版本号
+private _incrementCacheVersion() {
+    this._cacheVersion++;
+}
 
 private _buildTreeData() {
     const cacheKey = this.emitter?.options.id || 'default';
-    if (this._treeDataCache.has(cacheKey)) {
-        return this._treeDataCache.get(cacheKey)!;
+    const cached = this._treeDataCache.get(cacheKey);
+
+    if (cached && cached.version === this._cacheVersion) {
+        return cached.data;
     }
-    // 构建树数据...
-    this._treeDataCache.set(cacheKey, result);
-    return result;
+
+    const data = /* 构建树数据 */;
+    this._treeDataCache.set(cacheKey, { data, version: this._cacheVersion });
+    return data;
 }
 ```
+
+**方案 B: 不使用缓存**（推荐用于中小型应用）
+```typescript
+// 直接构建，不缓存
+private _buildTreeData() {
+    if (!this.emitter?.listeners) return [];
+    // ... 构建逻辑
+}
+```
+
+**推荐**: 方案 B（不缓存），因为：
+- 监听器数量通常不会特别大（< 1000）
+- 重新构建的开销可接受（< 10ms）
+- 避免缓存一致性问题
+- 代码更简单
 
 ### 9.2 防抖刷新
 
@@ -740,20 +922,139 @@ private _buildTreeData() {
 
 ### 12.1 图标列表
 
-从 `packages/components/src/styles/icons.css` 使用的图标：
+从 `packages/viewer/src/styles/icons.css` 使用的图标：
 
 - `listeners`: 监听器图标（树节点、工具栏）
 - `refresh`: 刷新图标
-- `folder` / `folder-open`: 树节点展开/折叠状态（可选）
+- `arrow`: 展开/折叠箭头图标（旋转 90 度表示展开）
+- `folder` / `folder-open`: 可选的文件夹图标（用于更丰富的视觉效果）
 
-### 12.2 参考
+### 12.2 使用示例
+
+**基本使用**：
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <script type="module" src="fastevent-listeners.js"></script>
+</head>
+<body>
+    <fastevent-listeners id="listeners"></fastevent-listeners>
+
+    <script type="module">
+        import { FastEvent } from 'fastevent';
+
+        const emitter = new FastEvent();
+
+        // 绑定到组件
+        document.getElementById('listeners').emitter = emitter;
+
+        // 添加一些监听器
+        emitter.on('user/login', (data) => {
+            console.log('User logged in:', data);
+        });
+
+        emitter.on('user/logout', () => {
+            console.log('User logged out');
+        });
+    </script>
+</body>
+</html>
+```
+
+**暗色模式**：
+```html
+<fastevent-listeners
+    id="listeners"
+    dark>
+</fastevent-listeners>
+```
+
+**与 FastEventViewer 集成**（自动切换）：
+```typescript
+import { FastEvent } from 'fastevent';
+
+const emitter = new FastEvent();
+const viewer = document.querySelector('fastevent-viewer');
+viewer.emitter = emitter;
+
+// 点击监听器按钮自动切换到监听器视图
+```
+
+### 12.3 参考
 
 - Lit 文档: https://lit.dev/
 - FastEvent 源码: `packages/native/src/event.ts`
 - FastEventViewer 组件: `packages/viewer/src/eventViewer/index.ts`
 - 监听器类型定义: `packages/native/src/types/FastEventListeners.ts`
 
-### 12.3 版本历史
+### 12.4 可访问性
+
+组件支持以下可访问性特性：
+
+- **键盘导航**：
+  - `Tab`: 在树节点和拖动条之间切换焦点
+  - `Enter` / `Space`: 选中当前焦点节点
+  - `ArrowDown` / `ArrowUp`: 在树节点间移动
+  - `ArrowLeft`: 折叠当前节点
+  - `ArrowRight`: 展开当前节点
+
+- **ARIA 属性**：
+  - `role="tree"`: 树容器
+  - `role="treeitem"`: 树节点
+  - `aria-expanded`: 节点展开状态
+  - `aria-selected`: 节点选中状态
+
+### 12.5 移动端适配
+
+移动端（屏幕宽度 < 768px）自动切换为上下堆叠布局：
+
+```css
+@media (max-width: 768px) {
+    .main-container {
+        flex-direction: column;
+    }
+
+    .tree-panel {
+        flex: 0 0 40%;
+        border-right: none;
+        border-bottom: 1px solid var(--fe-color-border);
+    }
+
+    .resizer {
+        display: none;  /* 移动端禁用拖动调整 */
+    }
+}
+```
+
+### 12.6 国际化
+
+当前版本所有文本为硬编码中文。如需支持多语言，可以：
+
+1. 使用 Lit 的 `@localized()` 装饰器
+2. 提取所有文本到单独的翻译文件
+3. 通过属性传入语言设置
+
+示例：
+```typescript
+@property()
+lang = 'zh';
+
+const messages = {
+    zh: {
+        title: '已注册监听器',
+        empty: '暂无注册的监听器',
+        // ...
+    },
+    en: {
+        title: 'Registered Listeners',
+        empty: 'No registered listeners',
+        // ...
+    }
+};
+```
+
+### 12.7 版本历史
 
 | 版本 | 日期 | 变更说明 |
 |------|------|----------|

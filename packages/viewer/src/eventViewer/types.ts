@@ -4,12 +4,13 @@ import type { FastEventListenerFlags } from "fastevent";
 
 export type EventLog = {
     id: number;
+    done: boolean;
     message: WeakRef<FastEventMessage>;
     triggerTime: number;
     duration: [number, number]; // 执行时间
     args: WeakRef<FastEventListenerArgs>; //
     listeners: {
-        fn: any; // 监听器函数引用
+        fn: WeakRef<any>; // 监听器函数引用
         status: "running" | "ok" | "error";
         name: string; // 监听器函数名称
         tag: string | undefined;

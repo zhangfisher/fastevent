@@ -64,6 +64,9 @@ import { InMatchedEvent } from "./types/wildcards/InMatchedEvent";
 import { GetClosestMessage } from "./types/closest/GetClosestMessage";
 import { wrapPipeListener } from "./utils/wrapPipeListener";
 import { getWeakRef } from "./utils/getWeakRef";
+import { getPromiseResults } from "./utils/getPromiseResults";
+import { isPromise } from "./utils/isPromise";
+import { resolveValue } from "./utils/resolveValue";
 
 /**
  * FastEvent 事件发射器类
@@ -817,7 +820,14 @@ export class FastEvent<
                 );
             }
             if (this.options.debug) {
-                listener[5] = getWeakRef(result);
+                Promise.resolve(result);
+                if (isPromise(result)) {
+                    resolveValue(result).then((r) => {
+                        listener[5] = getWeakRef(r);
+                    });
+                } else {
+                    listener[5] = getWeakRef(result);
+                }
             }
             return result;
         } catch (e: any) {
@@ -1060,12 +1070,19 @@ export class FastEvent<
         // 执行监听器
         results.push(...this._executeListeners(nodes, message, args));
 
-        if (isFunction(this._options.onAfterExecuteListener)) {
-            this._options.onAfterExecuteListener.call(this, message, results, nodes);
-        }
         // 将results内部所有expandable的项展开，见utils\expandable.ts说明
         if (this._options.expandEmitResults) {
             expandEmitResults(results);
+        }
+        if (isFunction(this._options.onAfterExecuteListener)) {
+            Promise.allSettled(results).then((r: any[]) => {
+                this._options.onAfterExecuteListener!.call(
+                    this,
+                    message,
+                    getPromiseResults(r),
+                    nodes,
+                );
+            });
         }
         return results;
     }
@@ -1149,13 +1166,7 @@ export class FastEvent<
 
     public async emitAsync<R = any>(): Promise<(R | Error)[]> {
         const results = await Promise.allSettled(this.emit.apply(this, arguments as any));
-        return results.map((result) => {
-            if (result.status === "fulfilled") {
-                return result.value;
-            } else {
-                return result.reason;
-            }
-        });
+        return getPromiseResults(results);
     }
 
     /**
