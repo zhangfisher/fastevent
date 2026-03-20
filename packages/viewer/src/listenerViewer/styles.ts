@@ -259,4 +259,52 @@ export const styles = css`
     .tree-children {
         padding-left: 16px;
     }
+
+    .listener-card {
+        display: table;
+        width: 100%;
+        padding: 12px;
+        margin-bottom: 8px;
+        background: var(--fe-color-bg-secondary, #fafafa);
+        border-radius: 6px;
+        border: 1px solid var(--fe-color-border, #e8e8e8);
+        transition: all 0.2s;
+    }
+
+    .listener-card:hover {
+        border-color: #1890ff;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .listener-row {
+        display: table-row;
+    }
+
+    .listener-cell {
+        display: table-cell;
+        padding: 4px 8px;
+        vertical-align: middle;
+    }
+
+    .listener-label {
+        color: var(--fe-color-text-secondary, #999);
+        font-size: 12px;
+        font-weight: 500;
+    }
+
+    .listener-value {
+        color: var(--fe-color-text, #333);
+        font-size: 13px;
+    }
+
+    .listener-function {
+        font-family: "SFMono-Regular", Consolas, monospace;
+        color: #1890ff;
+        cursor: pointer;
+        text-decoration: underline;
+    }
+
+    .listener-function:hover {
+        color: #40a9ff;
+    }
 `;

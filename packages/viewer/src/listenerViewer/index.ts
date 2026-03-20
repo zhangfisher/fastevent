@@ -31,16 +31,7 @@ export class FastEventListeners extends LitElement {
     private _treeData: TreeNode[] = [];
 
     @state()
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     private _listeners: FastEventListenerMeta[] = [];
-
-    @state()
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    private _leftWidth = "33.33%";
-
-    @state()
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    private _refreshing = false;
 
     @state()
     private _expandedNodes = new Set<string>();
@@ -217,6 +208,98 @@ export class FastEventListeners extends LitElement {
         `;
     }
 
+    private _formatListenerCount(listener: FastEventListenerMeta): string {
+        const [, total, executed] = listener;
+        return total === 0 ? '∞' : `${executed}/${total}`;
+    }
+
+    private _printListenerToConsole(listener: FastEventListenerMeta): void {
+        const [fn] = listener;
+
+        if (typeof fn !== 'function') {
+            console.warn('监听器函数已被垃圾回收或无效');
+            console.log('元数据:', {
+                executed: `${listener[2]}/${listener[1]}`,
+                tag: listener[3],
+                flags: listener[4]
+            });
+            return;
+        }
+
+        console.log(`监听器: ${fn.name || 'anonymous'}`);
+        console.log(fn.toString());
+        console.log(`执行次数: ${listener[2]}/${listener[1]}`);
+        console.log(`标签: ${listener[3]}`);
+        if (listener[4] !== undefined) {
+            console.log(`标识: ${listener[4]}`);
+        }
+    }
+
+    private renderTag(text: string, color?: string): ReturnType<typeof html> {
+        const colorClass = color ? `tag-${color}` : '';
+        return html`<span class="tag ${colorClass}">${text}</span>`;
+    }
+
+    private renderIcon(name: string): ReturnType<typeof html> {
+        return html`<span class="icon ${name}"></span>`;
+    }
+
+    private renderListener(listener: FastEventListenerMeta): ReturnType<typeof html> {
+        const [fn, , , tag, flags] = listener;
+        const functionName = fn.name || 'anonymous';
+
+        return html`
+            <div class="listener-card">
+                <div class="listener-row">
+                    <div class="listener-cell listener-label">函数名</div>
+                    <div class="listener-cell">
+                        <span
+                            class="listener-function"
+                            @click="${() => this._printListenerToConsole(listener)}"
+                            title="点击在控制台输出监听器信息"
+                        >
+                            ${this.renderIcon('listeners')}
+                            ${functionName}
+                        </span>
+                    </div>
+                </div>
+                <div class="listener-row">
+                    <div class="listener-cell listener-label">执行次数</div>
+                    <div class="listener-cell listener-value">${this._formatListenerCount(listener)}</div>
+                </div>
+                ${tag ? html`
+                    <div class="listener-row">
+                        <div class="listener-cell listener-label">标签</div>
+                        <div class="listener-cell">${this.renderTag(tag)}</div>
+                    </div>
+                ` : ''}
+                ${flags !== undefined ? html`
+                    <div class="listener-row">
+                        <div class="listener-cell listener-label">标识</div>
+                        <div class="listener-cell listener-value">${flags}</div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    private renderListeners(): ReturnType<typeof html> {
+        if (this._listeners.length === 0) {
+            return html`
+                <div class="empty-state">
+                    <span class="icon listeners"></span>
+                    <p>该节点暂无监听器</p>
+                </div>
+            `;
+        }
+
+        return html`
+            <div>
+                ${this._listeners.map(listener => this.renderListener(listener))}
+            </div>
+        `;
+    }
+
     override willUpdate(changedProperties: Map<PropertyKey, unknown>): void {
         super.willUpdate(changedProperties);
         if (changedProperties.has('emitter')) {
@@ -238,7 +321,7 @@ export class FastEventListeners extends LitElement {
                 </div>
                 <div class="resizer"></div>
                 <div class="listeners-panel">
-                    <p>监听器列表（待实现）</p>
+                    ${this.renderListeners()}
                 </div>
             </div>
         `;
