@@ -193,6 +193,28 @@ export class FastEventListeners extends LitElement {
         resizer?.classList.remove('dragging');
     }
 
+    private _handleKeyDown(event: KeyboardEvent, node: TreeNode): void {
+        switch (event.key) {
+            case 'Enter':
+            case ' ':
+                event.preventDefault();
+                this._handleNodeSelect(node.path);
+                break;
+            case 'ArrowRight':
+                event.preventDefault();
+                if (!this._expandedNodes.has(node.path.join('/'))) {
+                    this._handleNodeToggle(node.path);
+                }
+                break;
+            case 'ArrowLeft':
+                event.preventDefault();
+                if (this._expandedNodes.has(node.path.join('/'))) {
+                    this._handleNodeToggle(node.path);
+                }
+                break;
+        }
+    }
+
     private renderTreeNode(node: TreeNode): ReturnType<typeof html> {
         const pathKey = node.path.join('/');
         const isExpanded = this._expandedNodes.has(pathKey);
@@ -204,6 +226,11 @@ export class FastEventListeners extends LitElement {
                 <div
                     class="tree-node ${isSelected ? 'selected' : ''}"
                     style="padding-left: ${node.depth * 16 + 8}px"
+                    role="treeitem"
+                    aria-expanded="${hasChildren ? isExpanded : false}"
+                    aria-selected="${isSelected}"
+                    tabindex="${isSelected ? '0' : '-1'}"
+                    @keydown="${(e: KeyboardEvent) => this._handleKeyDown(e, node)}"
                 >
                     <span
                         class="tree-node-toggle ${isExpanded ? 'expanded' : ''} ${hasChildren ? '' : 'hidden'}"
@@ -242,7 +269,7 @@ export class FastEventListeners extends LitElement {
         }
 
         return html`
-            <div role="tree">
+            <div>
                 ${this._treeData.map(node => this.renderTreeNode(node))}
             </div>
         `;
@@ -364,7 +391,7 @@ export class FastEventListeners extends LitElement {
                 </button>
             </div>
             <div class="main-container">
-                <div class="tree-panel">
+                <div class="tree-panel" role="tree">
                     ${this.renderTree()}
                 </div>
                 <div class="resizer" @mousedown="${this._handleResizeStart}"></div>

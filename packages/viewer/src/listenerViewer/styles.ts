@@ -307,4 +307,20 @@ export const styles = css`
     .listener-function:hover {
         color: #40a9ff;
     }
+
+    @media (max-width: 768px) {
+        .main-container {
+            flex-direction: column;
+        }
+
+        .tree-panel {
+            flex: 0 0 40%;
+            border-right: none;
+            border-bottom: 1px solid var(--fe-color-border, #e8e8e8);
+        }
+
+        .resizer {
+            display: none;
+        }
+    }
 `;
