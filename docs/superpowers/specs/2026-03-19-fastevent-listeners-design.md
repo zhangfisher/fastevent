@@ -156,19 +156,13 @@ private _buildTreeData(): TreeNode[] {
         return children;
     };
 
-    // 使用 requestAnimationFrame 分批构建，避免阻塞 UI
-    return new Promise((resolve) => {
-        requestAnimationFrame(() => {
-            resolve(build(this.emitter!.listeners, [], 0));
-        });
-    });
+    return build(this.emitter.listeners, [], 0);
 }
 ```
 
-**性能优化策略**：
-- 对于大型应用（>1000 个监听器），考虑使用虚拟滚动
-- 延迟加载：初始只渲染前 3 层，用户展开时再加载子节点
-- 使用 `requestAnimationFrame` 分批构建树数据，避免阻塞主线程
+**性能考虑**：
+- 当前实现为同步构建，适用于中小型应用（< 1000 个监听器）
+- 对于大型应用，未来可考虑使用虚拟滚动或延迟加载（不在当前实施范围）
 
 ### 4.3 节点选择处理
 
@@ -453,7 +447,7 @@ render() {
 - 箭头图标使用 `icon-arrow`，展开时旋转 90 度
 - 叶子节点（无子节点）的箭头图标隐藏（`.tree-node-toggle.hidden`）
 
-### 6.5 右侧监听器面板
+### 6.6 右侧监听器面板
 
 ```css
 .listeners-panel {
@@ -474,7 +468,7 @@ render() {
 }
 ```
 
-### 6.6 监听器卡片
+### 6.7 监听器卡片
 
 ```css
 .listener-card {
@@ -526,7 +520,7 @@ render() {
 }
 ```
 
-### 6.7 拖动条
+### 6.8 拖动条
 
 ```css
 .resizer {
@@ -581,7 +575,7 @@ render() {
 }
 ```
 
-### 6.8 空状态
+### 6.9 空状态
 
 ```css
 .empty-state {
@@ -609,11 +603,22 @@ render() {
 1. FastEventListeners 组件挂载
 2. willUpdate() 检测 emitter 属性变化
 3. 触发 _buildTreeData() 构建树数据
-   - 使用 requestAnimationFrame 分批构建（避免阻塞）
-   - 返回 TreeNode[] 数组
-4. 初始化 _expandedNodes
-   - 遍历所有节点，将路径添加到 Set 中
-   - 实现默认全部展开
+   - 同步构建，返回 TreeNode[] 数组
+4. 初始化 _expandedNodes（实现默认全部展开）
+   - 遍历所有节点
+   - 将每个节点的 path (路径数组) 转换为字符串（path.join('/')）
+   - 添加到 _expandedNodes Set 中
+   - 代码示例：
+     ```typescript
+     this._expandedNodes = new Set();
+     const collectPaths = (nodes: TreeNode[]) => {
+         for (const node of nodes) {
+             this._expandedNodes.add(node.path.join('/'));
+             collectPaths(node.children);
+         }
+     };
+     collectPaths(this._treeData);
+     ```
 5. 默认选中第一个有监听器的节点
    - 调用 _findFirstNodeWithListeners()
    - 使用深度优先遍历
@@ -666,7 +671,16 @@ render() {
    - 移除事件监听器
    - 清除 dragging 状态
    - 设置 _isResizing = false
-   - 保存最终宽度到 localStorage（可选，用于记忆用户偏好）
+   - 注意：localStorage 记忆功能不在当前实施范围
+```
+
+**DOM 结构**：
+```html
+<div class="main-container">
+    <div class="tree-panel">...</div>
+    <div class="resizer" @mousedown="${this._handleResizeStart}"></div>
+    <div class="listeners-panel">...</div>
+</div>
 ```
 
 **性能优化**：
@@ -776,50 +790,17 @@ private _handleResize(event: MouseEvent) {
 
 ## 9. 性能优化
 
-### 9.1 缓存策略
+### 9.1 性能策略
 
-**注意**: 由于 FastEvent 的监听器是动态变化的（监听器会被添加/删除），**不建议缓存树数据**。每次调用 `_buildTreeData()` 时都应该重新构建，以确保显示最新的监听器状态。
+**当前实施**（MVP）：
+- 不使用缓存，每次重新构建树数据
+- 适用于中小型应用（< 1000 个监听器）
+- 重新构建开销 < 10ms，可接受
 
-如果确实需要缓存以提高性能，可以考虑以下方案：
-
-**方案 A: 版本号机制**（推荐用于大型应用）
-```typescript
-private _treeDataCache = new Map<string, { data: TreeNode[], version: number }>();
-private _cacheVersion = 0;
-
-// 在 emitter 的监听器变化时增加版本号
-private _incrementCacheVersion() {
-    this._cacheVersion++;
-}
-
-private _buildTreeData() {
-    const cacheKey = this.emitter?.options.id || 'default';
-    const cached = this._treeDataCache.get(cacheKey);
-
-    if (cached && cached.version === this._cacheVersion) {
-        return cached.data;
-    }
-
-    const data = /* 构建树数据 */;
-    this._treeDataCache.set(cacheKey, { data, version: this._cacheVersion });
-    return data;
-}
-```
-
-**方案 B: 不使用缓存**（推荐用于中小型应用）
-```typescript
-// 直接构建，不缓存
-private _buildTreeData() {
-    if (!this.emitter?.listeners) return [];
-    // ... 构建逻辑
-}
-```
-
-**推荐**: 方案 B（不缓存），因为：
-- 监听器数量通常不会特别大（< 1000）
-- 重新构建的开销可接受（< 10ms）
-- 避免缓存一致性问题
-- 代码更简单
+**未来优化方向**（不在当前实施范围）：
+- 虚拟滚动：对于单个节点有大量监听器的情况
+- 延迟加载：初始只渲染前 3 层，展开时再加载
+- 版本号缓存机制：为超大型应用（> 5000 个监听器）提供
 
 ### 9.2 防抖刷新
 
@@ -908,15 +889,29 @@ private _buildTreeData() {
 
 ### 11.2 验收标准
 
-- [ ] 树形结构正确显示所有事件路径
-- [ ] 点击节点正确显示对应的监听器列表
-- [ ] 拖动可以平滑调整左右宽度（20%-80%）
-- [ ] 刷新按钮可以重新加载数据
-- [ ] 点击函数名称可以在控制台输出函数信息
-- [ ] 滚动条仅在鼠标悬停时显示，宽度为 2px
-- [ ] 默认所有节点展开，默认宽度比例为 1:2
-- [ ] 暗色模式正确应用
-- [ ] 与 FastEventViewer 的模式切换工作正常
+| # | 验收项 | 验证方法 | 验收者 |
+|---|--------|----------|--------|
+| 1 | 树形结构正确显示所有事件路径 | 手动测试：注册多个嵌套事件，检查树结构是否正确 | 开发者 |
+| 2 | 点击节点正确显示对应的监听器列表 | 手动测试：点击不同节点，右侧显示对应监听器 | 开发者 |
+| 3 | 拖动可以平滑调整左右宽度（20%-80%） | 手动测试：拖动分割线，检查宽度变化和边界限制 | 开发者 |
+| 4 | 刷新按钮可以重新加载数据 | 手动测试：添加新监听器后点击刷新，检查树更新 | 开发者 |
+| 5 | 点击函数名称可以在控制台输出函数信息 | 手动测试：点击函数名，检查控制台输出 | 开发者 |
+| 6 | 滚动条仅在鼠标悬停时显示，宽度为 2px | 视觉测试：鼠标移入/移出面板，观察滚动条 | 开发者 |
+| 7 | 默认所有节点展开，默认宽度比例为 1:2 | 视觉测试：初始加载时检查展开状态和宽度比例 | 开发者 |
+| 8 | 暗色模式正确应用 | 视觉测试：切换 dark 属性，检查样式变化 | 开发者 |
+| 9 | 与 FastEventViewer 的模式切换工作正常 | 集成测试：在 eventViewer 中点击监听器按钮 | 开发者 |
+| 10 | 点击箭头切换展开/折叠，点击文本选择节点 | 交互测试：分别点击箭头和文本区域 | 开发者 |
+| 11 | WeakRef 函数丢失时显示警告而非报错 | 边界测试：模拟函数被垃圾回收的场景 | 开发者 |
+| 12 | TypeScript 编译无错误 | 构建测试：运行 `bun run build` | CI/CD |
+| 13 | 单元测试覆盖率 ≥ 80% | 测试：运行 `bun run test:coverage` | CI/CD |
+
+**不在当前实施范围的功能**：
+- localStorage 记忆宽度偏好
+- 完整的键盘导航（ArrowDown/Up 节点间移动）
+- 虚拟滚动
+- 延迟加载
+- 国际化支持
+- 文件夹图标（folder/folder-open）
 
 ## 12. 附录
 
@@ -925,9 +920,15 @@ private _buildTreeData() {
 从 `packages/viewer/src/styles/icons.css` 使用的图标：
 
 - `listeners`: 监听器图标（树节点、工具栏）
-- `refresh`: 刷新图标
+- `refresh`: 刷新图标（工具栏）
 - `arrow`: 展开/折叠箭头图标（旋转 90 度表示展开）
-- `folder` / `folder-open`: 可选的文件夹图标（用于更丰富的视觉效果）
+
+**图标实现方法**：
+```typescript
+renderIcon(name: string) {
+    return html`<span class="icon ${name}"></span>`;
+}
+```
 
 ### 12.2 使用示例
 
@@ -990,20 +991,48 @@ viewer.emitter = emitter;
 
 ### 12.4 可访问性
 
-组件支持以下可访问性特性：
+**实施范围**：基础键盘导航和 ARIA 属性支持
 
-- **键盘导航**：
-  - `Tab`: 在树节点和拖动条之间切换焦点
-  - `Enter` / `Space`: 选中当前焦点节点
-  - `ArrowDown` / `ArrowUp`: 在树节点间移动
-  - `ArrowLeft`: 折叠当前节点
-  - `ArrowRight`: 展开当前节点
+**键盘导航实现**：
+```typescript
+// 在树节点上添加键盘事件监听
+_handleKeyDown(event: KeyboardEvent, node: TreeNode) {
+    switch (event.key) {
+        case 'Enter':
+        case ' ':
+            event.preventDefault();
+            this._handleNodeSelect(node.path);
+            break;
+        case 'ArrowRight':
+            event.preventDefault();
+            if (!this._expandedNodes.has(node.path.join('/'))) {
+                this._handleNodeToggle(node.path);
+            }
+            break;
+        case 'ArrowLeft':
+            event.preventDefault();
+            if (this._expandedNodes.has(node.path.join('/'))) {
+                this._handleNodeToggle(node.path);
+            }
+            break;
+    }
+}
+```
 
-- **ARIA 属性**：
-  - `role="tree"`: 树容器
-  - `role="treeitem"`: 树节点
-  - `aria-expanded`: 节点展开状态
-  - `aria-selected`: 节点选中状态
+**ARIA 属性**：
+```html
+<div class="tree-panel" role="tree">
+    <div class="tree-node"
+         role="treeitem"
+         aria-expanded="${expanded}"
+         aria-selected="${selected}"
+         tabindex="${selected ? '0' : '-1'}">
+        ...
+    </div>
+</div>
+```
+
+**注意**：完整的键盘导航（ArrowDown/Up 在节点间移动）不在当前实施范围，未来可扩展
 
 ### 12.5 移动端适配
 
