@@ -36,6 +36,13 @@ export class FastEventListeners extends LitElement {
     @state()
     private _expandedNodes = new Set<string>();
 
+    @state()
+    private _leftWidth = '33.33%';
+
+    private _isResizing = false;
+    private _resizeStartX = 0;
+    private _resizeStartWidth = 0;
+
     private _buildTreeData(): TreeNode[] {
         if (!this.emitter?.listeners) return [];
 
@@ -151,6 +158,39 @@ export class FastEventListeners extends LitElement {
         }
 
         this.requestUpdate();
+    }
+
+    private _handleResizeStart(event: MouseEvent): void {
+        this._isResizing = true;
+        this._resizeStartX = event.clientX;
+        this._resizeStartWidth = (this.shadowRoot?.querySelector('.tree-panel') as HTMLElement)?.offsetWidth || 0;
+
+        document.addEventListener('mousemove', this._handleResizeMove);
+        document.addEventListener('mouseup', this._handleResizeEnd);
+
+        const resizer = this.shadowRoot?.querySelector('.resizer') as HTMLElement;
+        resizer?.classList.add('dragging');
+    }
+
+    private _handleResizeMove = (event: MouseEvent): void => {
+        if (!this._isResizing) return;
+
+        const offsetX = event.clientX - this._resizeStartX;
+        const containerWidth = (this.shadowRoot?.querySelector('.main-container') as HTMLElement)?.offsetWidth || 0;
+        const newWidthPercent = (this._resizeStartWidth + offsetX) / containerWidth * 100;
+        const clampedWidth = Math.max(20, Math.min(80, newWidthPercent));
+
+        this._leftWidth = `${clampedWidth}%`;
+        this.style.setProperty('--fe-left-width', this._leftWidth);
+    }
+
+    private _handleResizeEnd = (): void => {
+        this._isResizing = false;
+        document.removeEventListener('mousemove', this._handleResizeMove);
+        document.removeEventListener('mouseup', this._handleResizeEnd);
+
+        const resizer = this.shadowRoot?.querySelector('.resizer') as HTMLElement;
+        resizer?.classList.remove('dragging');
     }
 
     private renderTreeNode(node: TreeNode): ReturnType<typeof html> {
@@ -307,6 +347,14 @@ export class FastEventListeners extends LitElement {
         }
     }
 
+    override disconnectedCallback(): void {
+        super.disconnectedCallback();
+        if (this._isResizing) {
+            document.removeEventListener('mousemove', this._handleResizeMove);
+            document.removeEventListener('mouseup', this._handleResizeEnd);
+        }
+    }
+
     override render() {
         return html`
             <div class="toolbar">
@@ -319,7 +367,7 @@ export class FastEventListeners extends LitElement {
                 <div class="tree-panel">
                     ${this.renderTree()}
                 </div>
-                <div class="resizer"></div>
+                <div class="resizer" @mousedown="${this._handleResizeStart}"></div>
                 <div class="listeners-panel">
                     ${this.renderListeners()}
                 </div>
