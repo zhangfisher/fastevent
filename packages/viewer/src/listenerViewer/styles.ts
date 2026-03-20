@@ -295,6 +295,11 @@ export const styles = css`
         border-right: 1px solid var(--fe-color-border, #e8e8e8);
     }
 
+    .listener-cell:first-child {
+        width: 120px;
+        min-width: 120px;
+    }
+
     .listener-cell:last-child {
         border-right: none;
     }
