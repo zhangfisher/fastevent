@@ -1,5 +1,4 @@
 // packages/viewer/src/listenerViewer/index.ts
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { LitElement, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { styles } from "./styles";
@@ -26,37 +25,139 @@ export class FastEventListeners extends LitElement {
     dark = false;
 
     @state()
-    private _selectedPath: string[] = []; // TODO: 待实现
+    private _selectedPath: string[] = [];
 
     @state()
-    private _treeData: TreeNode[] = []; // TODO: 待实现
+    private _treeData: TreeNode[] = [];
 
     @state()
-    private _listeners: FastEventListenerMeta[] = []; // TODO: 待实现
+    private _listeners: FastEventListenerMeta[] = [];
 
     @state()
-    private _leftWidth = "33.33%"; // TODO: 待实现
+    private _leftWidth = "33.33%";
 
     @state()
-    private _refreshing = false; // TODO: 待实现
+    private _refreshing = false;
 
     @state()
-    private _expandedNodes = new Set<string>(); // TODO: 待实现
+    private _expandedNodes = new Set<string>();
 
-    // TODO: 后续步骤将实现这些方法
     private _buildTreeData(): TreeNode[] {
-        return [];
+        if (!this.emitter?.listeners) return [];
+
+        const build = (node: any, path: string[], depth: number): TreeNode[] => {
+            const children: TreeNode[] = [];
+
+            for (const key in node) {
+                if (key === '__listeners') continue;
+
+                const childPath = [...path, key];
+                const child = node[key] as any;
+
+                children.push({
+                    key,
+                    path: childPath,
+                    listeners: child.__listeners || [],
+                    listenerCount: child.__listeners?.length || 0,
+                    children: build(child, childPath, depth + 1),
+                    depth
+                });
+            }
+
+            return children;
+        };
+
+        return build(this.emitter.listeners, [], 0);
     }
 
-    private _handleNodeSelect(_path: string[]): void {
-        // TODO: 待实现
+    private _initializeExpandedNodes(): void {
+        this._expandedNodes = new Set();
+
+        const collectPaths = (nodes: TreeNode[]) => {
+            for (const node of nodes) {
+                this._expandedNodes.add(node.path.join('/'));
+                if (node.children.length > 0) {
+                    collectPaths(node.children);
+                }
+            }
+        };
+
+        collectPaths(this._treeData);
     }
 
-    private _handleNodeToggle(_path: string[]): void {
-        // TODO: 待实现
+    private _findFirstNodeWithListeners(): TreeNode | null {
+        const find = (nodes: TreeNode[]): TreeNode | null => {
+            for (const node of nodes) {
+                if (node.listenerCount > 0) {
+                    return node;
+                }
+                const found = find(node.children);
+                if (found) return found;
+            }
+            return null;
+        };
+
+        return find(this._treeData);
     }
 
-    private _handleRefresh(): void {}
+    override updated(): void {
+        // 当树数据变化时初始化展开状态和选中状态
+        if (this._treeData.length > 0 && this._expandedNodes.size === 0) {
+            this._initializeExpandedNodes();
+
+            const firstNode = this._findFirstNodeWithListeners();
+            if (firstNode) {
+                this._selectedPath = firstNode.path;
+                this._listeners = firstNode.listeners;
+            }
+        }
+    }
+
+    private _handleNodeSelect(path: string[]): void {
+        this._selectedPath = path;
+
+        const findNode = (nodes: TreeNode[], targetPath: string[]): TreeNode | null => {
+            for (const node of nodes) {
+                if (JSON.stringify(node.path) === JSON.stringify(targetPath)) {
+                    return node;
+                }
+                const found = findNode(node.children, targetPath);
+                if (found) return found;
+            }
+            return null;
+        };
+
+        const node = findNode(this._treeData, path);
+        this._listeners = node?.listeners || [];
+        this.requestUpdate();
+    }
+
+    private _handleNodeToggle(path: string[]): void {
+        const pathKey = path.join('/');
+        if (this._expandedNodes.has(pathKey)) {
+            this._expandedNodes.delete(pathKey);
+        } else {
+            this._expandedNodes.add(pathKey);
+        }
+        this.requestUpdate();
+    }
+
+    private _handleRefresh(): void {
+        this._treeData = this._buildTreeData();
+        this._expandedNodes.clear();
+        this._initializeExpandedNodes();
+
+        const firstNode = this._findFirstNodeWithListeners();
+        if (firstNode) {
+            this._selectedPath = firstNode.path;
+            this._listeners = firstNode.listeners;
+        } else {
+            this._selectedPath = [];
+            this._listeners = [];
+        }
+
+        this.requestUpdate();
+    }
 
     override willUpdate(changedProperties: Map<PropertyKey, unknown>): void {
         super.willUpdate(changedProperties);
@@ -65,16 +166,7 @@ export class FastEventListeners extends LitElement {
         }
     }
 
-    render() {
-        // 暂时使用变量以避免 TypeScript 编译错误
-        void this._selectedPath;
-        void this._treeData;
-        void this._listeners;
-        void this._leftWidth;
-        void this._refreshing;
-        void this._expandedNodes;
-        void this._handleNodeSelect;
-        void this._handleNodeToggle;
+    override render() {
 
         return html`
             <div class="toolbar">
