@@ -198,4 +198,65 @@ export const styles = css`
         background: var(--fe-color-tag-bg, #f0f0f0);
         color: var(--fe-color-tag-text, #666);
     }
+
+    .tree-node {
+        display: flex;
+        align-items: center;
+        padding: 4px 8px;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: background 0.2s;
+        user-select: none;
+    }
+
+    .tree-node:hover {
+        background: var(--fe-color-hover, #fafafa);
+    }
+
+    .tree-node.selected {
+        background: rgba(24, 144, 255, 0.1);
+    }
+
+    .tree-node-toggle {
+        width: 16px;
+        height: 16px;
+        margin-right: 4px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.2s;
+    }
+
+    .tree-node-toggle.expanded {
+        transform: rotate(90deg);
+    }
+
+    .tree-node-toggle.hidden {
+        visibility: hidden;
+    }
+
+    .tree-node-content {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex: 1;
+    }
+
+    .tree-node-label {
+        font-family: "SFMono-Regular", Consolas, monospace;
+        font-size: 13px;
+    }
+
+    .tree-node-badge {
+        background: var(--fe-color-tag-bg, #f0f0f0);
+        color: var(--fe-color-tag-text, #666);
+        padding: 2px 6px;
+        border-radius: 8px;
+        font-size: 11px;
+    }
+
+    .tree-children {
+        padding-left: 16px;
+    }
 `;

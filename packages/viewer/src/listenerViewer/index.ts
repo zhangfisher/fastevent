@@ -31,12 +31,15 @@ export class FastEventListeners extends LitElement {
     private _treeData: TreeNode[] = [];
 
     @state()
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     private _listeners: FastEventListenerMeta[] = [];
 
     @state()
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     private _leftWidth = "33.33%";
 
     @state()
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     private _refreshing = false;
 
     @state()
@@ -159,6 +162,61 @@ export class FastEventListeners extends LitElement {
         this.requestUpdate();
     }
 
+    private renderTreeNode(node: TreeNode): ReturnType<typeof html> {
+        const pathKey = node.path.join('/');
+        const isExpanded = this._expandedNodes.has(pathKey);
+        const isSelected = JSON.stringify(this._selectedPath) === JSON.stringify(node.path);
+        const hasChildren = node.children.length > 0;
+
+        return html`
+            <div>
+                <div
+                    class="tree-node ${isSelected ? 'selected' : ''}"
+                    style="padding-left: ${node.depth * 16 + 8}px"
+                >
+                    <span
+                        class="tree-node-toggle ${isExpanded ? 'expanded' : ''} ${hasChildren ? '' : 'hidden'}"
+                        @click="${(e: Event) => {
+                            e.stopPropagation();
+                            this._handleNodeToggle(node.path);
+                        }}"
+                    >
+                        <span class="icon arrow"></span>
+                    </span>
+                    <span class="tree-node-content" @click="${() => this._handleNodeSelect(node.path)}">
+                        <span class="icon listeners"></span>
+                        <span class="tree-node-label">${node.key}</span>
+                        ${node.listenerCount > 0 ? html`
+                            <span class="tree-node-badge">${node.listenerCount}</span>
+                        ` : ''}
+                    </span>
+                </div>
+                ${hasChildren && isExpanded ? html`
+                    <div class="tree-children">
+                        ${node.children.map(child => this.renderTreeNode(child))}
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    private renderTree(): ReturnType<typeof html> {
+        if (this._treeData.length === 0) {
+            return html`
+                <div class="empty-state">
+                    <span class="icon listeners"></span>
+                    <p>暂无注册的监听器</p>
+                </div>
+            `;
+        }
+
+        return html`
+            <div role="tree">
+                ${this._treeData.map(node => this.renderTreeNode(node))}
+            </div>
+        `;
+    }
+
     override willUpdate(changedProperties: Map<PropertyKey, unknown>): void {
         super.willUpdate(changedProperties);
         if (changedProperties.has('emitter')) {
@@ -167,7 +225,6 @@ export class FastEventListeners extends LitElement {
     }
 
     override render() {
-
         return html`
             <div class="toolbar">
                 <span class="toolbar-title">已注册监听器</span>
@@ -177,12 +234,10 @@ export class FastEventListeners extends LitElement {
             </div>
             <div class="main-container">
                 <div class="tree-panel">
-                    <!-- TODO: 渲染树 -->
-                    <p>树形结构（待实现）</p>
+                    ${this.renderTree()}
                 </div>
                 <div class="resizer"></div>
                 <div class="listeners-panel">
-                    <!-- TODO: 渲染监听器列表 -->
                     <p>监听器列表（待实现）</p>
                 </div>
             </div>
