@@ -53,7 +53,10 @@
       "Bash(node update-tests.js)",
       "Bash(DEBUG_PROFILER=1 bun run debug-test.ts)",
       "Bash(ls *.ts)",
-      "Bash(xargs sed:*)"
+      "Bash(xargs sed:*)",
+      "Bash(ls -la packages/viewer/*.html)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }

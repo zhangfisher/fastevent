@@ -38,7 +38,7 @@ export const styles = css`
         justify-content: space-between;
         padding: 0.75em 1em;
         border-bottom: 1px solid var(--fe-color-border, #e8e8e8);
-        background: var(--fe-color-header-bg, #fafafa);
+        background: var(--fe-color-header-bg, #fff);
     }
 
     .toolbar-title {
@@ -100,7 +100,7 @@ export const styles = css`
     }
 
     .resizer::after {
-        content: '';
+        content: "";
         position: absolute;
         left: 50%;
         top: 50%;
@@ -110,7 +110,9 @@ export const styles = css`
         background: var(--fe-color-border, #e8e8e8);
         border-radius: 2px;
         opacity: 0;
-        transition: opacity 0.2s, height 0.2s;
+        transition:
+            opacity 0.2s,
+            height 0.2s;
     }
 
     .resizer:hover::after {
@@ -265,10 +267,11 @@ export const styles = css`
         width: 100%;
         padding: 12px;
         margin-bottom: 8px;
-        background: var(--fe-color-bg-secondary, #fafafa);
+        background: transparent;
         border-radius: 6px;
         border: 1px solid var(--fe-color-border, #e8e8e8);
         transition: all 0.2s;
+        box-sizing: border-box;
     }
 
     .listener-card:hover {
@@ -278,12 +281,22 @@ export const styles = css`
 
     .listener-row {
         display: table-row;
+        border-bottom: 1px solid var(--fe-color-border, #e8e8e8);
+    }
+
+    .listener-row:last-child {
+        border-bottom: none;
     }
 
     .listener-cell {
         display: table-cell;
         padding: 4px 8px;
         vertical-align: middle;
+        border-right: 1px solid var(--fe-color-border, #e8e8e8);
+    }
+
+    .listener-cell:last-child {
+        border-right: none;
     }
 
     .listener-label {
