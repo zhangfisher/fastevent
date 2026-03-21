@@ -8,6 +8,7 @@
     "baseBranch": "master",
     "updateInternalDependencies": "patch",
     "ignore": [
-        "fastevent-docs"
+        "fastevent-docs",
+        "fastevent-viewer"
     ]
 }

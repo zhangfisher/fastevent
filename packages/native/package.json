@@ -28,11 +28,13 @@
             "import": "./dist/pipes/index.mjs",
             "require": "./dist/pipes/index.js"
         },
-        "./eventbus": {
-            "types": "./dist/eventbus/index.d.ts",
-            "import": "./dist/eventbus/index.mjs",
-            "require": "./dist/eventbus/index.js"
-        } 
+        "./viewer": {
+            "types": "./dist/viewer/fastevent.viewer.d.ts",
+            "import": "./dist/viewer/fastevent.viewer.mjs",
+             "require": "./dist/viewer/fastevent.viewer.js",
+            "default": "./dist/viewer/fastevent.viewer.js"
+        },
+        "./fastevent.viewer.js": "./dist/viewer/fastevent.viewer.js"
     },
     "scripts": {
         "test": "bun test",
@@ -47,6 +49,10 @@
     "files": [
         "dist",
         "readme.md"
+    ],
+    "sideEffects": [
+        "dist/viewer/*.js",
+        "dist/viewer/*.mjs"
     ],
     "author": "zhangfisher",
     "license": "MIT",

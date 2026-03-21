@@ -249,6 +249,88 @@ export const styles = css`
         color: var(--fe-color-tag-text, #666);
     }
 
+    /* 保留消息卡片样式 */
+    .retained-message-card {
+        margin-bottom: 12px;
+        border-radius: 6px;
+        border: 1px solid #ffa39e;
+        background: #fff1f0;
+        overflow: hidden;
+        transition: all 0.2s;
+    }
+
+    .retained-message-card:hover {
+        box-shadow: 0 2px 8px rgba(255, 77, 79, 0.15);
+    }
+
+    .retained-message-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        background: rgba(255, 77, 79, 0.1);
+        border-bottom: 1px solid #ffa39e;
+    }
+
+    .retained-message-title {
+        flex: 1;
+        font-size: 13px;
+        font-weight: 500;
+        color: #ff4d4f;
+    }
+
+    .retained-message-actions {
+        display: flex;
+        gap: 4px;
+    }
+
+    .retained-message-content {
+        padding: 4px;
+    }
+
+    .retained-message-text {
+        margin: 0;
+        padding: 8px;
+        background: rgba(255, 255, 255, 0.6);
+        border-radius: 4px;
+        font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        font-size: 12px;
+        line-height: 1.5;
+        color: #262626;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-break: break-all;
+    }
+
+    /* 暗黑模式下的保留消息卡片 */
+    .retained-message-card.dark,
+    :host([dark]) .retained-message-card {
+        border: 1px solid rgba(255, 77, 79, 0.4);
+        background: rgba(255, 77, 79, 0.08);
+    }
+
+    .retained-message-card.dark:hover,
+    :host([dark]) .retained-message-card:hover {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .retained-message-card.dark .retained-message-header,
+    :host([dark]) .retained-message-header {
+        background: rgba(255, 77, 79, 0.15);
+        border-bottom: 1px solid rgba(255, 77, 79, 0.3);
+    }
+
+    .retained-message-card.dark .retained-message-title,
+    :host([dark]) .retained-message-title {
+        color: #ff7875;
+    }
+
+    .retained-message-card.dark .retained-message-text,
+    :host([dark]) .retained-message-text {
+        background: rgba(0, 0, 0, 0.2);
+        color: rgba(255, 255, 255, 0.85);
+    }
+
     @media (max-width: 768px) {
         .main-container {
             flex-direction: column;

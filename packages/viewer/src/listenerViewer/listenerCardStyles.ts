@@ -6,6 +6,12 @@ export const styles = css`
         display: block;
     }
 
+    :host([dark]) {
+        --fe-color-card-bg: rgba(255, 255, 255, 0.04);
+        --fe-color-card-border: rgba(255, 255, 255, 0.12);
+        --fe-color-card-hover: rgba(255, 255, 255, 0.08);
+    }
+
     .listener-card {
         display: table;
         width: 100%;
@@ -21,6 +27,16 @@ export const styles = css`
     .listener-card:hover {
         /* border-color: #1890ff; */
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    :host([dark]) .listener-card {
+        background-color: var(--fe-color-card-bg, rgba(255, 255, 255, 0.04));
+        border: 1px solid var(--fe-color-card-border, rgba(255, 255, 255, 0.12));
+    }
+
+    :host([dark]) .listener-card:hover {
+        background-color: var(--fe-color-card-hover, rgba(255, 255, 255, 0.08));
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
     }
 
     .listener-row {
@@ -68,6 +84,14 @@ export const styles = css`
 
     .listener-function:hover {
         color: #40a9ff;
+    }
+
+    :host([dark]) .listener-function {
+        color: #40a9ff;
+    }
+
+    :host([dark]) .listener-function:hover {
+        color: #69c0ff;
     }
 
     .tag {

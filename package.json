@@ -12,7 +12,7 @@
     "scripts": {
         "test": "vitest",
         "test:coverage": "vitest --coverage --exclude=\"src/__benchmarks__/**\"  --exclude=src/devTools",
-        "build": "turbo build --filter=fastevent",
+        "build": "turbo build --filter=fastevent --filter=fastevent-viewer",
         "bench": "tsx src/__benchmarks__/index.ts",
         "update:changelog": "cpx packages/native/CHANGELOG.md docs/zh/guide/intro/",
         "changeset": "changeset",

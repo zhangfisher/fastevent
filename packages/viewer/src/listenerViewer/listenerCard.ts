@@ -11,7 +11,7 @@ import {
 } from "fastevent";
 import type { FastEventListenerMeta } from "fastevent";
 import type { ItemOf } from "../types";
-import { removeItem } from "../utils";
+import { removeItem, renderTag } from "../utils";
 
 /**
  * fastevent-listener-card 组件 - 显示单个监听器的详细信息
@@ -111,9 +111,6 @@ export class FastEventListenerCard extends LitElement {
         }
     }
 
-    private renderTag(text: string): ReturnType<typeof html> {
-        return html`<span class="tag">${text}</span>`;
-    }
     private _renderReturns(listener: FastEventListenerMeta) {
         if (listener.length === 6 && listener[5]) {
             const result = listener[5] instanceof WeakRef ? listener[5].deref() : listener[5];
@@ -160,7 +157,7 @@ export class FastEventListenerCard extends LitElement {
                         ? html`
                     <div class="listener-row">
                         <div class="listener-cell listener-label">标签</div>
-                        <div class="listener-cell">${this.renderTag(tag)}</div>
+                        <div class="listener-cell">${renderTag(tag)}</div>
                     </div>
                 `
                         : ""

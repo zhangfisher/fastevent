@@ -191,10 +191,14 @@ emitter.on("random/number", randomNumberHandler, { tag: "random" });
  * 触发简单事件
  */
 export function triggerSimpleEvent() {
-    emitter.emit("test/simple", {
-        message: "这是一个简单事件",
-        timestamp: Date.now(),
-    });
+    emitter.emit(
+        "test/simple",
+        {
+            message: "这是一个简单事件",
+            timestamp: Date.now(),
+        },
+        true,
+    );
 }
 
 /**

@@ -19,7 +19,7 @@ export const styles = css`
     }
 
     :host([dark]) {
-        --fe-color-text: #rgba(255, 255, 255, 0.85);
+        --fe-color-text: rgba(255, 255, 255, 0.85);
         --fe-color-bg: #1f1f1f;
         --fe-color-border: #303030;
         --fe-color-header-bg: #141414;
@@ -28,6 +28,9 @@ export const styles = css`
         --fe-color-input-bg: rgba(255, 255, 255, 0.08);
         --fe-color-tag-bg: rgba(255, 255, 255, 0.08);
         --fe-color-tag-text: rgba(255, 255, 255, 0.85);
+        --fe-color-listener-bg: rgba(255, 255, 255, 0.04);
+        --fe-color-listener-border: rgba(255, 255, 255, 0.12);
+        --fe-color-listener-hover: rgba(255, 255, 255, 0.08);
     }
 
     .header {
@@ -134,7 +137,7 @@ export const styles = css`
         padding: 0.5em;
         border-radius: 4px;
         transition: background 0.2s;
-        margin-bottom: 4px;
+        border-bottom: 1px solid var(--fe-color-border, #fcfcfc);
     }
 
     .log-item:hover {
@@ -216,6 +219,49 @@ export const styles = css`
         border: 1px solid #d3adf7;
     }
 
+    .tag-gray {
+        background: #f5f5f5;
+        color: #8c8c8c;
+        border: 1px solid #d9d9d9;
+    }
+
+    /* 暗黑模式下的 tag 颜色样式 */
+    :host([dark]) .tag-blue {
+        background: rgba(24, 144, 255, 0.15);
+        color: #40a9ff;
+        border: 1px solid rgba(24, 144, 255, 0.3);
+    }
+
+    :host([dark]) .tag-green {
+        background: rgba(82, 196, 26, 0.15);
+        color: #73d13d;
+        border: 1px solid rgba(82, 196, 26, 0.3);
+    }
+
+    :host([dark]) .tag-orange {
+        background: rgba(250, 140, 22, 0.15);
+        color: #ffa940;
+        border: 1px solid rgba(250, 140, 22, 0.3);
+    }
+
+    :host([dark]) .tag-red {
+        background: rgba(255, 77, 79, 0.15);
+        color: #ff7875;
+        border: 1px solid rgba(255, 77, 79, 0.3);
+    }
+
+    :host([dark]) .tag-purple {
+        background: rgba(114, 46, 209, 0.15);
+        color: #b37feb;
+        border: 1px solid rgba(114, 46, 209, 0.3);
+    }
+
+    :host([dark]) .tag-gray {
+        background: rgba(140, 140, 140, 0.15);
+        color: #bfbfbf;
+        border: 1px solid rgba(140, 140, 140, 0.3);
+    }
+
     .log-payload {
         font-size: 12px;
         color: var(--fe-color-text-secondary, #999);
@@ -236,6 +282,14 @@ export const styles = css`
         gap: 4px;
     }
 
+    .log-listeners-visible {
+        display: flex;
+    }
+
+    .log-listeners-hidden {
+        display: none;
+    }
+
     .listener {
         display: inline-flex;
         align-items: center;
@@ -253,6 +307,18 @@ export const styles = css`
     .listener:hover {
         background: rgba(0, 0, 0, 0.05);
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    /* 暗黑模式下的 listener 样式 */
+    :host([dark]) .listener {
+        background: var(--fe-color-listener-bg, rgba(255, 255, 255, 0.04));
+        border: 1px solid var(--fe-color-listener-border, rgba(255, 255, 255, 0.12));
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    :host([dark]) .listener:hover {
+        background: var(--fe-color-listener-hover, rgba(255, 255, 255, 0.08));
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
     }
 
     .listener-status {

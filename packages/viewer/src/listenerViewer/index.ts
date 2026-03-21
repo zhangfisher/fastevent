@@ -12,7 +12,7 @@ import type {
 } from "fastevent";
 import type { FastEventListenerMeta } from "fastevent";
 import "./listenerCard";
-import { removeItem } from "../utils";
+import { removeItem, renderTag, renderRetainMessage } from "../utils";
 
 /**
  * FastEventListeners 组件 - 显示 FastEvent 实例的监听器树
@@ -295,7 +295,7 @@ export class FastEventListeners extends LitElement {
                     class="tree-node ${isSelected ? "selected" : ""}"
                     style="padding-left: ${depth * 8 + 8}px"
                     role="treeitem"
-                    data-path="${path.join("/")}"
+                    data-path="${pathKey}"
                     aria-expanded="${hasChildren ? isExpanded : false}"
                     aria-selected="${isSelected}"
                     tabindex="${isSelected ? "0" : "-1"}"
@@ -303,14 +303,19 @@ export class FastEventListeners extends LitElement {
                 >
                     <span
                         class="tree-node-toggle ${isExpanded ? "expanded" : ""} ${hasChildren ? "" : "hidden"}"
-                        data-path="${path.join("/")}"
+                        data-path="${pathKey}"
                         @click="${this._handleNodeToggle}"
                     >
                         <span class="icon arrow"></span>
                     </span>
-                    <span class="tree-node-content" data-path="${path.join("/")}" @click="${this._handleNodeSelect}">
+                    <span class="tree-node-content" data-path="${pathKey}" @click="${this._handleNodeSelect}">
                         <span class="icon listeners"></span>
                         <span class="tree-node-label">${path[path.length - 1]}</span>
+                        ${
+                            this.emitter?.retainedMessages.has(pathKey)
+                                ? renderTag("retain", "red", "保留消息")
+                                : ""
+                        }
                         ${
                             listenerCount > 0
                                 ? html`
@@ -370,25 +375,51 @@ export class FastEventListeners extends LitElement {
     }
 
     private renderListener(listener: FastEventListenerMeta, type: string): ReturnType<typeof html> {
-        return html`<fastevent-listener-card .listener="${listener}" .emitter="${this.emitter!}" .type="${type}"></fastevent-listener-card>`;
+        return html`<fastevent-listener-card .listener="${listener}" .emitter="${this.emitter!}" .type="${type}" .dark="${this.dark}"></fastevent-listener-card>`;
     }
 
     private renderListeners(): ReturnType<typeof html> {
-        if (this._listeners.length === 0) {
-            return html`
-                <div class="empty-state">
-                    <span class="icon listeners" style="--icon-size: 3em"></span>
-                    <p>该节点暂无监听器</p>
-                </div>
-            `;
-        }
-
-        // 获取当前选中节点的事件类型
-        const type = this._selectedPath.join("/");
+        const pathKey = this._selectedPath.join("/");
+        const message = this.emitter?.retainedMessages.get(pathKey);
 
         return html`
             <div>
-                ${this._listeners.map((listener) => this.renderListener(listener, type))}
+                ${
+                    message
+                        ? renderRetainMessage({
+                                message,
+                                pathKey,
+                                dark: this.dark,
+                                onDelete: (key) => {
+                                    this.emitter?.retainedMessages.delete(key);
+                                    this.requestUpdate();
+                                },
+                                onPrint: (msg) => {
+                                    console.group("FastEvent 保留消息");
+                                    console.log("消息内容:", msg);
+                                    console.groupEnd();
+                                },
+                                onCopy: (msg) => {
+                                    const jsonStr = JSON.stringify(msg, null, 2);
+                                    navigator.clipboard.writeText(jsonStr);
+                                },
+                            })
+                        : ""
+                }
+                ${
+                    this._listeners.length === 0
+                        ? html`
+                        <div class="empty-state">
+                            <span class="icon listeners" style="--icon-size: 3em"></span>
+                            <p>该节点暂无监听器</p>
+                        </div>
+                    `
+                        : html`
+                        <div class="listeners-list">
+                            ${this._listeners.map((listener) => this.renderListener(listener, pathKey))}
+                        </div>
+                    `
+                }
             </div>
         `;
     }
