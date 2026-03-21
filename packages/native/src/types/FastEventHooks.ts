@@ -3,13 +3,19 @@ import { TypedFastEventMessage } from "./FastEventMessages";
 import { FastEventListenerArgs, FastEventListenOptions } from "./FastEvents";
 import { FastEventSubscriber } from "./FastEventSubscribers";
 
-export type AddListenerHook = (
+export type AddBeforeListenerHook = (
     type: string,
     listener: TypedFastEventListener,
     options: FastEventListenOptions<Record<string, any>, any>,
 ) => boolean | FastEventSubscriber | void;
+export type AddAfterListenerHook = (type: string, node: FastEventListenerNode) => void;
+
 // 当移除监听器时回调
-export type RemoveListenerHook = (type: string, listener: TypedFastEventListener) => void;
+export type RemoveListenerHook = (
+    type: string,
+    listener: TypedFastEventListener,
+    node: FastEventListenerNode,
+) => void;
 
 // 当清空监听器时回调
 export type ClearListenersHook = () => void;
@@ -33,7 +39,8 @@ export type AfterExecuteListenerHook = (
 ) => void;
 
 export type FastEventHooks = {
-    AddListener: AddListenerHook[];
+    AddBeforeListener: AddBeforeListenerHook[];
+    AddAfterListener: AddAfterListenerHook[];
     RemoveListener: RemoveListenerHook[];
     ClearListeners: ClearListenersHook[];
     ListenerError: ListenerErrorHook[];

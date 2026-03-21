@@ -34,16 +34,4 @@ export default defineConfig([
         treeshake: true,
         minify: true,
     },
-    {
-        entry: ["src/devTools.ts"],
-        format: ["esm", "cjs"],
-        dts: false,
-        splitting: false,
-        sourcemap: true,
-        noExternal: ["redux"],
-        clean: true,
-        treeshake: true,
-        minify: true,
-        tsconfig: "./tsconfig.devtool.json",
-    },
 ]);

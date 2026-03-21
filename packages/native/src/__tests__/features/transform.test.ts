@@ -67,9 +67,7 @@ describe("转换事件消息", async () => {
                 type: "mousemove",
                 payload: true,
             });
-            emitter.once("mousemove", (message) => {
-                message;
-            });
+            emitter.once("mousemove", (message) => {});
         });
     });
     test("Scope:转换自定义侦听消息", () => {
@@ -170,8 +168,8 @@ describe("转换事件消息", async () => {
             }
 
             const scope = emitter.scope("div", new MyScope());
-
             emitter.on("div/client/connect", (message) => {
+                // @ts-ignore  无法推断类型
                 expect(message).toBe(100);
             });
 

@@ -152,7 +152,6 @@ export class FastEvent<
         ) as unknown as FastEventOptions<Meta, Context>;
         this._delimiter = this._options.delimiter!;
         this._context = this._options.context as Context;
-        this._enableDevTools();
     }
 
     /** 获取事件发射器的配置选项 */
@@ -172,7 +171,8 @@ export class FastEvent<
     get hooks(): FastEventHooks {
         if (!this._hooks) {
             this._hooks = {
-                AddListener: [],
+                AddBeforeListener: [],
+                AddAfterListener: [],
                 RemoveListener: [],
                 ClearListeners: [],
                 ListenerError: [],
@@ -190,8 +190,17 @@ export class FastEvent<
     }
     /**
      * 执行Hook
+     *
+     * AfterExecuteListener为什么需要特别处理？
+     *
+     * 因为AfterExecuteListener是在监听器执行完成后调用
+     * 并且将监听器的结果传入，但是监听器有可能返回Promise
+     * 因为需要等等Promise resolve，再调用AfterExecuteListener
+     *
+     *
      * @param hookName
      * @param args
+     * @param onlyAsyncHook 只运行异步HOOK
      * @returns
      */
     private _executeHooks<T extends keyof FastEventHooks>(
@@ -272,13 +281,6 @@ export class FastEvent<
         });
         return [node, index];
     }
-    private _enableDevTools() {
-        if (this.options.debug) {
-            // @ts-ignore
-            // oxlint-disable-next-line no-unused-expressions
-            globalThis.__FASTEVENT_DEVTOOLS__ && globalThis.__FASTEVENT_DEVTOOLS__.add(this);
-        }
-    }
     /**
      *
      * 根据parts路径遍历监听器树，并在最后的节点上执行回调函数
@@ -329,28 +331,11 @@ export class FastEvent<
             const isRemove = item === listener;
             if (isRemove) {
                 this.listenerCount--;
-                this._executeHooks("RemoveListener", [path.join(this._delimiter), listener]);
+                this._executeHooks("RemoveListener", [path.join(this._delimiter), listener, node]);
             }
             return isRemove;
         });
     }
-    // /**
-    //  * 调用onAddListener HOOK
-    //  * @param type
-    //  * @param listener
-    //  * @param options
-    //  * @returns
-    //  */
-    // private _onAddListener(type: string, listener: any, options: any) {
-    //     if (isFunction(this._options.onAddListener)) {
-    //         const r = this._options.onAddListener(type, listener, options);
-    //         if (r === false) {
-    //             throw new CancelError();
-    //         } else if (isSubsctiber(r)) {
-    //             return r;
-    //         }
-    //     }
-    // }
     /**
      * 注册事件监听器
      * @param type - 事件类型，支持以下格式：
@@ -445,18 +430,16 @@ export class FastEvent<
             ) as FastEventIteratorOptions;
             const iterator = createAsyncEventIterator<any>(this as any, type, iteratorOpts);
             iterator.create(finalOptions);
-            this._executeHooks("AddListener", [type, iterator.listener, finalOptions]);
+            this._executeHooks("AddBeforeListener", [type, iterator.listener, finalOptions]);
             return iterator;
         }
         // 执行回调
-        // if (isFunction(this._options.onAddListener)) {
-        const r = this._executeHooks("AddListener", [type, listener, finalOptions]);
+        const r = this._executeHooks("AddBeforeListener", [type, listener, finalOptions]);
         if (r === false) {
             throw new CancelError();
         } else if (isSubsctiber(r)) {
             return r;
         }
-        // }
 
         const parts = type.split(this._delimiter);
 
@@ -491,6 +474,8 @@ export class FastEvent<
         // 添加到监听器树
         const [node, index] = this._addListener(parts, listener, finalOptions);
         const off = () => node && this._removeListener(node, parts, listener);
+
+        this._executeHooks("AddAfterListener", [type, node!]);
 
         // 触发监听器保留消息
         this._emitRetainMessage(type, node, index);
@@ -652,6 +637,7 @@ export class FastEvent<
                         this._executeHooks("RemoveListener", [
                             path.join(this.options.delimiter),
                             listener[0],
+                            node,
                         ]);
                     });
                 } finally {

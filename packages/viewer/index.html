@@ -53,7 +53,7 @@
             }
 
             .control-btn {
-                padding: 0.75rem 1.5rem;
+                padding: 4px;
                 border: 2px solid rgba(255, 255, 255, 0.3);
                 border-radius: 8px;
                 background: rgba(255, 255, 255, 0.1);
@@ -111,7 +111,7 @@
                 display: flex;
                 justify-content: center;
                 align-items: flex-start;
-                gap: 2rem;
+                gap: 1rem;
             }
 
             .controls-wrapper {
@@ -181,14 +181,16 @@
                 <h1>🚀 FastEvent Viewer</h1>
                 <p>实时事件监听与调试工具</p>
             </div>
-
+            <div style="padding: 0.5em">
+                <button class="control-btn" onclick="addSimpleSubscribe()">✈️ 增加订阅</button>
+                <button class="control-btn" onclick="removeSimpleSubscribe()">❌ 取消订阅</button>
+            </div>
             <div class="viewer-container">
                 <div class="viewer-wrapper">
                     <fastevent-viewer id="viewer"></fastevent-viewer>
                 </div>
 
                 <div class="controls-wrapper">
-                    <button class="control-btn" onclick="addSimpleSubscribe()">✈️ 增加订阅</button>
                     <button class="control-btn" onclick="triggerSimpleEvent()">📝 简单事件</button>
                     <button class="control-btn success" onclick="triggerTaggedEvent()">
                         🏷️ 带标签事件
@@ -249,6 +251,7 @@
             window.startRandomEvents = demo.startRandomEvents;
             window.stopRandomEvents = demo.stopRandomEvents;
             window.addSimpleSubscribe = demo.addSimpleSubscribe;
+            window.removeSimpleSubscribe = demo.removeSimpleSubscribe;
         </script>
     </body>
 </html>

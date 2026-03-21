@@ -21,13 +21,18 @@ export type FastEventOptions<Meta = Record<string, any>, Context = never> = {
     // 额外的全局元数据，当触发事件时传递给监听器
     meta: Meta;
     // 当创建新监听器时回调,返回false中止添加监听器
-    onAddListener?: (
+    onAddBeforeListener?: (
         type: string,
         listener: TypedFastEventListener,
         options: FastEventListenOptions<Record<string, any>, Meta>,
     ) => boolean | FastEventSubscriber | void;
+    onAddAfterListener?: (type: string, node: FastEventListenerNode) => void;
     // 当移除监听器时回调
-    onRemoveListener?: (type: string, listener: TypedFastEventListener) => void;
+    onRemoveListener?: (
+        type: string,
+        listener: TypedFastEventListener,
+        node: FastEventListenerNode,
+    ) => void;
     // 当清空监听器时回调
     onClearListeners?: () => void;
     // 当监听器函数执行出错时的回调，用于诊断时使用,可以打印错误信息

@@ -15,14 +15,22 @@ globalThis.emitter = emitter;
 // 简单事件监听器 - 返回字符串
 function simpleEventHandler(data: any) {
     console.log("[简单事件] 收到数据:", data);
-    return "✓ 简单事件处理完成";
+    return "✓ 简单事件处理完成" + Math.floor(Math.random() * 101);
 }
 emitter.on("test/simple", simpleEventHandler);
-
+const subscribers: any[] = [];
 export function addSimpleSubscribe() {
-    emitter.on("test/simple", () => {
-        return Math.abs(Math.random() * 100);
-    });
+    subscribers.push(
+        emitter.on("test/simple", () => {
+            return Math.floor(Math.random() * 101);
+        }),
+    );
+}
+export function removeSimpleSubscribe() {
+    const subscriber = subscribers.pop();
+    if (subscriber) {
+        subscriber.off();
+    }
 }
 // 带标签的用户登录监听器 - 返回对象
 function userLoginHandler(data: any) {

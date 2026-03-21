@@ -32,12 +32,7 @@
             "types": "./dist/eventbus/index.d.ts",
             "import": "./dist/eventbus/index.mjs",
             "require": "./dist/eventbus/index.js"
-        },
-        "./devtools": {
-            "types": "./devTools.d.ts",
-            "import": "./devTools.mjs",
-            "require": "./devTools.js"
-        }
+        } 
     },
     "scripts": {
         "test": "bun test",

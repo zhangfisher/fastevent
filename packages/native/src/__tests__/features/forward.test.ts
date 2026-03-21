@@ -5,7 +5,7 @@ describe("转发发布和订阅", async () => {
     test("转发订阅和发布事件", () => {
         const otherEmitter = new FastEvent();
         const emitter = new FastEvent({
-            onAddListener: (type, listener, options) => {
+            onAddBeforeListener: (type, listener, options) => {
                 if (type.startsWith("@")) {
                     return otherEmitter.on(type.substring(1), listener, options);
                 }
@@ -32,7 +32,7 @@ describe("转发发布和订阅", async () => {
     test("转发订阅", () => {
         const otherEmitter = new FastEvent();
         const emitter = new FastEvent({
-            onAddListener: (type, listener, options) => {
+            onAddBeforeListener: (type, listener, options) => {
                 // 订阅转发规则：当事件名称以`@/`开头时，将订阅转发到另外一个`FastEvent`实例
                 if (type.startsWith("@/")) {
                     return otherEmitter.on(type.substring(2), listener, options);

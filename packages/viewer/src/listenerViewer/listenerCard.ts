@@ -20,7 +20,7 @@ export class FastEventListenerCard extends LitElement {
     static styles = styles;
 
     @property({ attribute: false })
-    emitter?: FastEvent;
+    emitter?: FastEvent<any, any, any>;
 
     @property({ attribute: false })
     listener?: FastEventListenerMeta;
@@ -63,9 +63,24 @@ export class FastEventListenerCard extends LitElement {
         return total === 0 ? `${executed}/∞` : `${executed}/${total}`;
     }
 
+    getFunctionPosition(fn: Function) {
+        // 将函数转换为字符串并尝试定位
+        const fnStr = fn.toString();
+
+        // 使用 Error.stack 来获取当前位置
+        const stack = new Error().stack;
+
+        // 输出函数字符串和堆栈
+        console.group("函数定位");
+        console.log("函数代码:", fnStr.substring(0, 200));
+        console.log("当前调用栈:", stack);
+        console.groupEnd();
+
+        // 在 DevTools 中，直接打印函数对象会显示可点击的链接
+        console.log(fn);
+    }
     private _printListenerToConsole(listener: FastEventListenerMeta): void {
         const [fn] = listener;
-
         if (typeof fn !== "function") {
             console.warn("监听器函数已被垃圾回收或无效");
             console.log("元数据:", {
@@ -75,7 +90,7 @@ export class FastEventListenerCard extends LitElement {
             });
             return;
         }
-        console.log(`-----FastEvent Listener-----`);
+        console.group(`FastEvent Listener`);
         console.log(`监听器: ${fn.name || "anonymous"}`);
         console.log(fn);
         console.log(`执行次数: ${listener[2]}/${listener[1]}`);
@@ -83,6 +98,7 @@ export class FastEventListenerCard extends LitElement {
         if (listener[4] !== undefined) {
             console.log(`标识: ${listener[4]}`);
         }
+        console.groupEnd();
     }
 
     private renderTag(text: string): ReturnType<typeof html> {

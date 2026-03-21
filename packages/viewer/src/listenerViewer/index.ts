@@ -3,17 +3,16 @@
 import { LitElement, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { styles } from "./styles";
-import type { FastEvent } from "fastevent";
+import type {
+    AddAfterListenerHook,
+    ClearListenersHook,
+    FastEvent,
+    FastEventListenerNode,
+    RemoveListenerHook,
+} from "fastevent";
 import type { FastEventListenerMeta } from "fastevent";
 import "./listenerCard";
-
-interface TreeNode {
-    key: string;
-    path: string[];
-    listeners: FastEventListenerMeta[];
-    children: TreeNode[];
-    depth: number;
-}
+import { removeItem } from "../utils";
 
 /**
  * FastEventListeners 组件 - 显示 FastEvent 实例的监听器树
@@ -27,9 +26,6 @@ export class FastEventListeners extends LitElement {
 
     @property({ type: Boolean, reflect: true })
     dark = false;
-
-    @state()
-    private _treeData: TreeNode[] = [];
 
     @state()
     private _selectedPath: string[] = [];
@@ -46,131 +42,144 @@ export class FastEventListeners extends LitElement {
     private _resizeStartWidth = 0;
 
     /**
-     * 从 emitter.listeners 构建树形数据
+     * 根据路径从 emitter.listeners 中查找节点
      */
-    private _buildTreeData(): TreeNode[] {
-        if (!this.emitter?.listeners) return [];
+    private _getListenerNode(path: string[]): FastEventListenerNode | null {
+        if (!this.emitter?.listeners || path.length === 0) return null;
 
-        const build = (node: any, path: string[], depth: number): TreeNode[] => {
-            const children: TreeNode[] = [];
+        let currentNode: any = this.emitter.listeners;
 
-            for (const key in node) {
-                if (key === "__listeners") continue;
+        for (const key of path) {
+            if (currentNode[key]) {
+                currentNode = currentNode[key];
+            } else {
+                return null;
+            }
+        }
 
-                const childPath = [...path, key];
-                const child = node[key] as any;
+        return currentNode as FastEventListenerNode;
+    }
 
-                children.push({
-                    key,
-                    path: childPath,
-                    listeners: child.__listeners || [],
-                    children: build(child, childPath, depth + 1),
-                    depth,
-                });
+    /**
+     * 查找第一个有监听器的节点路径
+     */
+    private _findFirstNodeWithListeners(): string[] | null {
+        if (!this.emitter?.listeners) return null;
+
+        const find = (node: any, path: string[]): string[] | null => {
+            // 检查当前节点是否有监听器
+            if (node.__listeners && node.__listeners.length > 0) {
+                return path;
             }
 
-            return children;
+            // 递归查找子节点
+            for (const key in node) {
+                if (key === "__listeners") continue;
+                const found = find(node[key], [...path, key]);
+                if (found) return found;
+            }
+
+            return null;
         };
 
-        return build(this.emitter.listeners, [], 0);
+        return find(this.emitter.listeners, []);
     }
 
     /**
      * 初始化展开状态
      */
-    private _initializeExpandedNodes(treeData: TreeNode[]): void {
+    private _initializeExpandedNodes(): void {
+        if (!this.emitter?.listeners) return;
+
         this._expandedNodes = new Set();
 
-        const collectPaths = (nodes: TreeNode[]) => {
-            for (const node of nodes) {
-                this._expandedNodes.add(node.path.join("/"));
-                if (node.children.length > 0) {
-                    collectPaths(node.children);
-                }
+        const collectPaths = (node: any, path: string[]) => {
+            this._expandedNodes.add(path.join("/"));
+
+            for (const key in node) {
+                if (key === "__listeners") continue;
+                collectPaths(node[key], [...path, key]);
             }
         };
 
-        collectPaths(treeData);
-    }
-
-    /**
-     * 查找第一个有监听器的节点
-     */
-    private _findFirstNodeWithListeners(treeData: TreeNode[]): TreeNode | null {
-        const find = (nodes: TreeNode[]): TreeNode | null => {
-            for (const node of nodes) {
-                if (node.listeners.length > 0) {
-                    return node;
-                }
-                const found = find(node.children);
-                if (found) return found;
-            }
-            return null;
-        };
-
-        return find(treeData);
+        collectPaths(this.emitter.listeners, []);
     }
 
     /**
      * 刷新所有数据
      */
     private _refreshData(): void {
-        const treeData = this._buildTreeData();
-        this._treeData = treeData;
-
         // 如果是首次加载数据，初始化展开状态和选中状态
-        if (treeData.length > 0 && this._expandedNodes.size === 0) {
-            this._initializeExpandedNodes(treeData);
+        if (this.emitter && this._expandedNodes.size === 0) {
+            this._initializeExpandedNodes();
 
-            const firstNode = this._findFirstNodeWithListeners(treeData);
-            if (firstNode) {
-                this._selectedPath = firstNode.path;
-                this._listeners = firstNode.listeners;
+            const firstPath = this._findFirstNodeWithListeners();
+            if (firstPath) {
+                this._selectedPath = firstPath;
+                const node = this._getListenerNode(firstPath);
+                this._listeners = node?.__listeners || [];
             }
         } else {
             // 如果当前选中的路径仍有监听器，更新监听器列表
             if (this._selectedPath.length > 0) {
-                const node = this._findNodeByPath(treeData, this._selectedPath);
-                this._listeners = node?.listeners || [];
+                const node = this._getListenerNode(this._selectedPath);
+                this._listeners = node?.__listeners || [];
             }
         }
     }
 
     /**
-     * 根据路径查找节点
-     */
-    private _findNodeByPath(treeData: TreeNode[], targetPath: string[]): TreeNode | null {
-        const find = (nodes: TreeNode[]): TreeNode | null => {
-            for (const node of nodes) {
-                if (JSON.stringify(node.path) === JSON.stringify(targetPath)) {
-                    return node;
-                }
-                const found = find(node.children);
-                if (found) return found;
-            }
-            return null;
-        };
-
-        return find(treeData);
-    }
-
-    /**
      * 处理节点选择
      */
-    private _handleNodeSelect(path: string[]): void {
+    private _handleNodeSelect(event: Event): void {
+        const target = event.currentTarget as HTMLElement;
+        const pathStr = target.dataset.path;
+
+        if (!pathStr) return;
+
+        const path = pathStr.split("/");
         this._selectedPath = path;
 
-        const node = this._findNodeByPath(this._treeData, path);
-        this._listeners = node?.listeners || [];
+        const node = this._getListenerNode(path);
+        this._listeners = node?.__listeners || [];
 
         this.requestUpdate();
     }
-
+    _onAddAfterListener: AddAfterListenerHook = (_type, _node) => {
+        // 触发重新渲染以更新监听器数量显示
+        this.requestUpdate();
+    };
+    _onRemoveListener: RemoveListenerHook = (_type, _listener, _node) => {
+        // 触发重新渲染以更新监听器数量显示
+        this.requestUpdate();
+    };
+    _onClearListeners: ClearListenersHook = () => {
+        this._handleRefresh();
+    };
+    private _setupHooks() {
+        if (this.emitter) {
+            this.emitter.hooks.AddAfterListener.push(this._onAddAfterListener);
+            this.emitter.hooks.RemoveListener.push(this._onRemoveListener);
+            this.emitter.hooks.ClearListeners.push(this._onClearListeners);
+        }
+    }
+    private _clearHooks() {
+        if (this.emitter) {
+            removeItem(this.emitter.hooks.AddAfterListener, this._onAddAfterListener);
+            removeItem(this.emitter.hooks.RemoveListener, this._onRemoveListener);
+            removeItem(this.emitter.hooks.ClearListeners, this._onClearListeners);
+        }
+    }
     /**
      * 处理节点展开/收起
      */
-    private _handleNodeToggle(path: string[]): void {
-        const pathKey = path.join("/");
+    private _handleNodeToggle(event: Event): void {
+        const target = (event.currentTarget as HTMLElement).closest("[data-path]") as HTMLElement;
+        const pathStr = target?.dataset.path;
+
+        if (!pathStr) return;
+
+        const pathKey = pathStr;
 
         if (this._expandedNodes.has(pathKey)) {
             this._expandedNodes.delete(pathKey);
@@ -224,63 +233,88 @@ export class FastEventListeners extends LitElement {
         resizer?.classList.remove("dragging");
     };
 
-    private _handleKeyDown(event: KeyboardEvent, node: TreeNode): void {
-        const pathKey = node.path.join("/");
+    private _handleKeyDown(event: KeyboardEvent): void {
+        const target = event.currentTarget as HTMLElement;
+        const pathStr = target.dataset.path;
+
+        if (!pathStr) return;
+
+        const pathKey = pathStr;
 
         switch (event.key) {
             case "Enter":
             case " ":
                 event.preventDefault();
-                this._handleNodeSelect(node.path);
+                this._handleNodeSelect(event);
                 break;
             case "ArrowRight":
                 event.preventDefault();
                 if (!this._expandedNodes.has(pathKey)) {
-                    this._handleNodeToggle(node.path);
+                    this._handleNodeToggle(event);
                 }
                 break;
             case "ArrowLeft":
                 event.preventDefault();
                 if (this._expandedNodes.has(pathKey)) {
-                    this._handleNodeToggle(node.path);
+                    this._handleNodeToggle(event);
                 }
                 break;
         }
     }
 
-    private renderTreeNode(node: TreeNode): ReturnType<typeof html> {
-        const pathKey = node.path.join("/");
+    /**
+     * 判断节点是否为空
+     */
+    private _isEmptyNode(node: any): boolean {
+        const keys = Object.keys(node);
+        return keys.length === 1 && node.__listeners && node.__listeners.length === 0;
+    }
+
+    /**
+     * 渲染树节点
+     */
+    private renderTreeNode(
+        node: FastEventListenerNode,
+        path: string[],
+        depth: number,
+    ): ReturnType<typeof html> {
+        const pathKey = path.join("/");
         const isExpanded = this._expandedNodes.has(pathKey);
-        const isSelected = JSON.stringify(this._selectedPath) === JSON.stringify(node.path);
-        const hasChildren = node.children.length > 0;
+        const isSelected = JSON.stringify(this._selectedPath) === JSON.stringify(path);
+
+        // 获取子节点（排除 __listeners）
+        const childKeys = Object.keys(node).filter((key) => key !== "__listeners");
+        const hasChildren = childKeys.length > 0;
+
+        // 获取监听器数量
+        const listenerCount = node.__listeners?.length || 0;
 
         return html`
             <div>
                 <div
                     class="tree-node ${isSelected ? "selected" : ""}"
-                    style="padding-left: ${node.depth * 16 + 8}px"
+                    style="padding-left: ${depth * 8 + 8}px"
                     role="treeitem"
+                    data-path="${path.join("/")}"
                     aria-expanded="${hasChildren ? isExpanded : false}"
                     aria-selected="${isSelected}"
                     tabindex="${isSelected ? "0" : "-1"}"
-                    @keydown="${(e: KeyboardEvent) => this._handleKeyDown(e, node)}"
+                    @keydown="${this._handleKeyDown}"
                 >
                     <span
                         class="tree-node-toggle ${isExpanded ? "expanded" : ""} ${hasChildren ? "" : "hidden"}"
-                        @click="${(e: Event) => {
-                            e.stopPropagation();
-                            this._handleNodeToggle(node.path);
-                        }}"
+                        data-path="${path.join("/")}"
+                        @click="${this._handleNodeToggle}"
                     >
                         <span class="icon arrow"></span>
                     </span>
-                    <span class="tree-node-content" @click="${() => this._handleNodeSelect(node.path)}">
+                    <span class="tree-node-content" data-path="${path.join("/")}" @click="${this._handleNodeSelect}">
                         <span class="icon listeners"></span>
-                        <span class="tree-node-label">${node.key}</span>
+                        <span class="tree-node-label">${path[path.length - 1]}</span>
                         ${
-                            node.listeners.length > 0
+                            listenerCount > 0
                                 ? html`
-                            <span class="tree-node-badge">${node.listeners.length}</span>
+                            <span class="tree-node-badge">${listenerCount}</span>
                         `
                                 : ""
                         }
@@ -290,7 +324,14 @@ export class FastEventListeners extends LitElement {
                     hasChildren && isExpanded
                         ? html`
                     <div class="tree-children">
-                        ${node.children.map((child) => this.renderTreeNode(child))}
+                        ${childKeys.map((key) => {
+                            const childPath = [...path, key];
+                            return this.renderTreeNode(
+                                node[key] as FastEventListenerNode,
+                                childPath,
+                                depth + 1,
+                            );
+                        })}
                     </div>
                 `
                         : ""
@@ -299,8 +340,12 @@ export class FastEventListeners extends LitElement {
         `;
     }
 
+    /**
+     * 渲染树
+     */
     private renderTree(): ReturnType<typeof html> {
-        if (this._treeData.length === 0) {
+        const listeners = this.emitter?.listeners;
+        if (!listeners || this._isEmptyNode(listeners)) {
             return html`
                 <div class="empty-state">
                     <span class="icon listeners"></span>
@@ -311,13 +356,21 @@ export class FastEventListeners extends LitElement {
 
         return html`
             <div>
-                ${this._treeData.map((node) => this.renderTreeNode(node))}
+                ${Object.keys(listeners)
+                    .filter((key) => key !== "__listeners")
+                    .map((key) => {
+                        return this.renderTreeNode(
+                            listeners[key] as FastEventListenerNode,
+                            [key],
+                            0,
+                        );
+                    })}
             </div>
         `;
     }
 
     private renderListener(listener: FastEventListenerMeta, type: string): ReturnType<typeof html> {
-        return html`<fastevent-listener-card .listener="${listener}" .emitter="${this.emitter}" .type="${type}"></fastevent-listener-card>`;
+        return html`<fastevent-listener-card .listener="${listener}" .emitter="${this.emitter!}" .type="${type}"></fastevent-listener-card>`;
     }
 
     private renderListeners(): ReturnType<typeof html> {
@@ -349,7 +402,6 @@ export class FastEventListeners extends LitElement {
                 this._refreshData();
             } else {
                 // 清空数据
-                this._treeData = [];
                 this._listeners = [];
                 this._selectedPath = [];
                 this._expandedNodes = new Set();
@@ -363,6 +415,7 @@ export class FastEventListeners extends LitElement {
         // 组件连接时加载初始数据
         if (this.emitter) {
             this._refreshData();
+            this._setupHooks();
         }
     }
 
@@ -374,6 +427,7 @@ export class FastEventListeners extends LitElement {
             document.removeEventListener("mousemove", this._handleResizeMove);
             document.removeEventListener("mouseup", this._handleResizeEnd);
         }
+        this._clearHooks();
     }
 
     override render() {
