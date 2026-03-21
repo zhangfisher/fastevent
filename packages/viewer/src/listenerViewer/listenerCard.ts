@@ -2,11 +2,12 @@
 import { LitElement, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { styles } from "./listenerCardStyles";
-import type {
-    FastEvent,
-    FastEventHooks,
-    FastEventListenerNode,
-    TypedFastEventMessage,
+import {
+    isPathMatched,
+    type FastEvent,
+    type FastEventHooks,
+    type FastEventListenerNode,
+    type TypedFastEventMessage,
 } from "fastevent";
 import type { FastEventListenerMeta } from "fastevent";
 import type { ItemOf } from "../types";
@@ -24,7 +25,8 @@ export class FastEventListenerCard extends LitElement {
 
     @property({ attribute: false })
     listener?: FastEventListenerMeta;
-
+    @property({ type: Boolean, reflect: true })
+    dark = false;
     @property({ type: String })
     type?: string;
     connectedCallback(): void {
@@ -42,7 +44,7 @@ export class FastEventListenerCard extends LitElement {
         _listeners: FastEventListenerNode[],
     ) => {
         //
-        if (message.type === this.type) {
+        if (isPathMatched(message.type.split("/"), this.type!.split("/"))) {
             this.requestUpdate();
         }
     };
@@ -100,6 +102,14 @@ export class FastEventListenerCard extends LitElement {
         }
         console.groupEnd();
     }
+    private _printListenerResultToConsole(listener: FastEventListenerMeta): void {
+        if (listener.length === 6) {
+            console.group(`FastEvent Listener returns`);
+            const result = listener[5] instanceof WeakRef ? listener[5].deref() : listener[5];
+            console.log(result);
+            console.groupEnd();
+        }
+    }
 
     private renderTag(text: string): ReturnType<typeof html> {
         return html`<span class="tag">${text}</span>`;
@@ -110,9 +120,9 @@ export class FastEventListenerCard extends LitElement {
             return html`
                     <div class="listener-row">
                         <div class="listener-cell listener-label">返回值</div>
-                        <div class="listener-cell listener-value">${
-                            result instanceof Error ? result.stack : JSON.stringify(result)
-                        }</div>
+                        <div class="listener-cell listener-value" title="单击显示在控制台" style="cursor:pointer"                         
+                        @click="${() => this._printListenerResultToConsole(this.listener!)}"
+>${result instanceof Error ? result.stack : JSON.stringify(result)}</div>
                     </div>
                 `;
         }

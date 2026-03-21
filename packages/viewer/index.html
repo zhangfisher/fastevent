@@ -5,7 +5,6 @@
         <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>FastEvent Viewer 测试</title>
-        <link rel="stylesheet" href="./src/styles/icons.css" />
         <style>
             * {
                 margin: 0;
@@ -225,10 +224,9 @@
             </div>
         </div>
 
-        <script type="module" src="/src/demo.ts"></script>
-        <script type="module" src="/src/eventViewer/index.ts"></script>
+        <script type="module" src="./src/index.ts"></script>
         <script type="module">
-            import * as demo from "/src/demo.ts";
+            import * as demo from "./example/index.ts";
 
             // 绑定 emitter 到 viewer
             const viewer = document.getElementById("viewer");

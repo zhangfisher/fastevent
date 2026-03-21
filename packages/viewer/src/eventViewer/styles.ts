@@ -138,7 +138,7 @@ export const styles = css`
     }
 
     .log-item:hover {
-        background: var(--fe-color-hover, #fafafa);
+        background: var(--fe-color-hover, #fdfdfd);
     }
 
     .log-content {

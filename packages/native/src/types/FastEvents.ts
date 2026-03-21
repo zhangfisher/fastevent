@@ -11,6 +11,7 @@ import { FastEventIteratorOptions } from "../eventIterator";
 
 export type FastEventOptions<Meta = Record<string, any>, Context = never> = {
     id: string;
+    title: string;
     debug: boolean;
     // 事件分隔符
     delimiter: string;

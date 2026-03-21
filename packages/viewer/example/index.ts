@@ -1,10 +1,21 @@
 import { FastEvent } from "fastevent";
 
+function getRandomId() {
+    return Math.floor(Math.random() * 101);
+}
 /**
  * 创建 FastEvent 实例
  */
 const emitter = new FastEvent({
     debug: true,
+    title: "操作事件",
+    transform: (message) => {
+        if (message.type === "transformed") {
+            return `transformed-${getRandomId()}`;
+        } else {
+            return message;
+        }
+    },
 });
 
 // 挂载到全局，方便调试
@@ -22,7 +33,7 @@ const subscribers: any[] = [];
 export function addSimpleSubscribe() {
     subscribers.push(
         emitter.on("test/simple", () => {
-            return Math.floor(Math.random() * 101);
+            return getRandomId();
         }),
     );
 }
@@ -45,7 +56,7 @@ function userLoginHandler(data: any) {
 emitter.on("user/login", userLoginHandler, { tag: "auth" });
 
 function onAny(_message: any) {
-    return Math.abs(Math.random() * 100);
+    return `Any<${getRandomId()}>`;
 }
 // emitter.onAny(onAny);
 
@@ -201,12 +212,14 @@ export function triggerTaggedEvent() {
  * 触发带 transform 的事件
  */
 export function triggerTransformEvent() {
-    emitter.emit("data/update", {
+    emitter.emit("transformed", {
         items: [1, 2, 3, 4, 5],
         operation: "add",
     });
 }
-
+emitter.on("transformed", (message) => {
+    return message;
+});
 /**
  * 触发错误事件
  */
@@ -254,12 +267,12 @@ export function triggerBatchEvents() {
  */
 export function triggerWildcardEvents() {
     emitter.emit("user/profile", { action: "view" });
-    setTimeout(() => {
-        emitter.emit("user/settings", { action: "update" });
-    }, 100);
-    setTimeout(() => {
-        emitter.emit("user/avatar", { action: "change" });
-    }, 200);
+    // setTimeout(() => {
+    //     emitter.emit("user/settings", { action: "update" });
+    // }, 100);
+    // setTimeout(() => {
+    //     emitter.emit("user/avatar", { action: "change" });
+    // }, 200);
 }
 
 /**

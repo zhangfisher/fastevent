@@ -1,11 +1,11 @@
 {
   "name": "fastevent-viewer",
   "version": "2.4.1",
-  "description": "visualizes and inspects events for fastevent!",
+  "description": "visualizes and inspects events for fastevent!", 
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "./dist/index.d.ts",
-  "private": false,
+  "private": true,
   "access": "public",
   "homepage": "https://zhangfisher.github.io/fastevent/",
   "repository": {
@@ -14,7 +14,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsup",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -22,9 +22,10 @@
     "lit": "^3.3.2"
   },
   "devDependencies": {
+    "fastevent": "workspace:*",
+    "tsup": "^8.5.1",
     "typescript": "~5.9.3",
-    "vite": "^8.0.0",
-    "fastevent": "workspace:*"
+    "vite": "^8.0.0"
   },
   "keywords": [
     "eventemitter",

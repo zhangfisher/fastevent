@@ -69,6 +69,7 @@ import { isPromise } from "./utils/isPromise";
 import { resolveValue } from "./utils/resolveValue";
 import { AfterExecuteListenerHook, FastEventHooks } from "./types/FastEventHooks";
 import { ItemOf } from "../../viewer/src/types";
+import { isAsyncIterable } from "./utils/isAsyncIterable";
 
 /**
  * FastEvent 事件发射器类
@@ -167,6 +168,10 @@ export class FastEvent<
     /** 获取事件发射器的唯一标识符 */
     get id() {
         return this._options.id!;
+    }
+    /** 获取事件发射器的唯一标识符 */
+    get title() {
+        return this._options.title || this.id || "FastEvent";
     }
     get hooks(): FastEventHooks {
         if (!this._hooks) {
@@ -430,7 +435,16 @@ export class FastEvent<
             ) as FastEventIteratorOptions;
             const iterator = createAsyncEventIterator<any>(this as any, type, iteratorOpts);
             iterator.create(finalOptions);
-            this._executeHooks("AddBeforeListener", [type, iterator.listener, finalOptions]);
+            const r = this._executeHooks("AddBeforeListener", [
+                type,
+                iterator.listener,
+                finalOptions,
+            ]);
+            if (r === false) {
+                throw new CancelError();
+            } else if (isAsyncIterable(r)) {
+                return r;
+            }
             return iterator;
         }
         // 执行回调
@@ -1115,9 +1129,12 @@ export class FastEvent<
 
         // 触发时进行消息转换
         if (isFunction(this._options.transform)) {
-            message.payload = this._options.transform.call(this, message as any);
-            args.rawEventType = message.type;
-            args.flags = (args.flags || 0) | FastEventListenerFlags.Transformed;
+            const transformed = this._options.transform.call(this, message as any);
+            if (transformed !== message) {
+                message.payload = transformed;
+                args.rawEventType = message.type;
+                args.flags = (args.flags || 0) | FastEventListenerFlags.Transformed;
+            }
         }
         // 执行监听器
         results.push(...this._executeListeners(nodes, message, args));

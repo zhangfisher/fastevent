@@ -48,4 +48,32 @@ describe("转发发布和订阅", async () => {
         otherEmitter.emit("data", 1);
         expect(events).toEqual([1]);
     });
+    test("转发订阅和发布事件迭代器", async () => {
+        const otherEmitter = new FastEvent();
+        const emitter = new FastEvent({
+            onAddBeforeListener: (type, listener, options) => {
+                if (type.startsWith("@")) {
+                    return otherEmitter.on(type.substring(1), options);
+                }
+            },
+            onBeforeExecuteListener: (message, args) => {
+                if (message.type.startsWith("@")) {
+                    message.type = message.type.substring(1);
+                    return otherEmitter.emit(message as any, args);
+                }
+            },
+        });
+        const events: any[] = [];
+        const messages = emitter.on("@data");
+        // 订阅otherEmitter的data事件
+        otherEmitter.emit("data", 1);
+        otherEmitter.emit("data", 2);
+        otherEmitter.emit("data", 3);
+        for await (const message of messages) {
+            events.push(message.payload);
+            if (events.length === 3) break;
+        }
+
+        expect(events).toEqual([1, 2, 3]);
+    });
 });

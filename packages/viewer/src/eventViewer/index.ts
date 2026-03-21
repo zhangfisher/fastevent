@@ -34,6 +34,9 @@ export class FastEventViewer extends LitElement {
     @property({ type: Number })
     maxSize: number = 500;
 
+    @property({ type: String })
+    title: string = "";
+
     @state()
     private _filterText = "";
 
@@ -245,10 +248,11 @@ export class FastEventViewer extends LitElement {
     private _printListenerInfo(listener: ItemOf<EventLog["listeners"]>) {
         const fn = listener.fn.deref();
         if (typeof fn === "function") {
-            console.log("----- FastEvent Listener -----");
-            console.log("监听器函数：");
+            console.group("FastEvent Listener");
+            console.log(`监听器: ${fn.name || "anonymous"}`);
             console.log(fn);
             console.log("执行结果：", listener.result);
+            console.groupEnd();
         }
     }
 
@@ -273,8 +277,12 @@ export class FastEventViewer extends LitElement {
         </button>`;
     }
 
-    renderIcon(name: string) {
-        return html`<span class="icon ${name}"></span>`;
+    renderIcon(name: string, tooltip?: string) {
+        if (tooltip) {
+            return html`<span class="icon ${name}" title="${tooltip || ""}"></span>`;
+        } else {
+            return html`<span class="icon ${name}"></span>`;
+        }
     }
 
     renderFilter() {
@@ -288,11 +296,10 @@ export class FastEventViewer extends LitElement {
             }}"
         />`;
     }
-
     renderHeader() {
         return html`
             <div class="header">
-                <span class="header-title">FastEvent</span>
+                <span class="header-title">${this.title.length > 0 ? this.title : this.emitter?.title}</span>
                 <!-- ${this.renderButton(
                     "",
                     () => {
@@ -308,12 +315,23 @@ export class FastEventViewer extends LitElement {
                 ${this.renderButton(
                     "",
                     () => {
+                        this.dark = !this.dark;
+                    },
+                    {
+                        icon: "dark",
+                        className: "btn-icon" + (this._showListeners ? " btn-pressed" : ""),
+                        title: this.dark ? "正常模式" : "暗黑模式",
+                    },
+                )}
+                ${this.renderButton(
+                    "",
+                    () => {
                         this._showListeners = !this._showListeners;
                     },
                     {
                         icon: "listeners",
                         className: "btn-icon" + (this._showListeners ? " btn-pressed" : ""),
-                        title: "查看所有注册的监听器",
+                        title: this._showListeners ? "查看事件" : "查看监听器",
                     },
                 )}
             </div>
@@ -331,6 +349,15 @@ export class FastEventViewer extends LitElement {
             </div>
         `;
     }
+    renderLogFlags(args: FastEventListenerArgs) {
+        if (args && (args.flags || 0) > 0) {
+            const flags = args.flags || 0;
+            if (flags > 1) {
+                return this.renderTag(`${args.flags}`, "orange", "扩展标识");
+            }
+            return html`${(flags | 1) == 0 ? "" : this.renderTag(`T`, "orange", "经过转换")}`;
+        }
+    }
     renderLog(log: EventLog) {
         const message = log.message.deref();
         const args = log.args.deref();
@@ -342,21 +369,18 @@ export class FastEventViewer extends LitElement {
             <div class="log-item">
                 <div class="log-content">
                     <div class="log-header">
-                        ${this.renderIcon(log.done ? "file" : "loading")}
+                        ${log.done ? "✨" : this.renderIcon("loading")}
                         <span class="log-type" title="事件类型">${message.type}</span>
                         <span class="log-time" title="触发时间">${timeStr}</span>
+                        ${this.renderTag(`#${log.id}`, "gray", "序号")}
                         ${args?.retain ? this.renderTag("retain", "red", "保留最后一次事件数据") : ""}
-                        ${args?.rawEventType ? this.renderTag(args.rawEventType, "blue", `原始事件类型: ${args.rawEventType}`) : ""}
-                        ${args?.flags !== undefined ? this.renderTag(`${args.flags}`, "orange", "扩展标识") : ""}
+                        ${this.renderLogFlags(args!)}
+                        ${args?.rawEventType && args?.rawEventType !== message.type ? this.renderTag(args.rawEventType, "blue", `原始事件类型: ${args.rawEventType}`) : ""}
                         ${log.duration[1] > 0 ? this.renderTag(`${Number((log.duration[1] - log.duration[0]).toFixed(3))}ms`, "green", "执行耗时") : ""}
                         ${this.renderButton(
                             "",
                             () => {
-                                const messageData = {
-                                    type: message.type,
-                                    payload: message.payload,
-                                };
-                                const jsonStr = JSON.stringify(messageData, null, 2);
+                                const jsonStr = JSON.stringify(message, null, 2);
                                 navigator.clipboard.writeText(jsonStr);
                             },
                             { icon: "copy", className: "btn-icon", title: "复制完整消息" },
@@ -382,13 +406,14 @@ export class FastEventViewer extends LitElement {
         const resultText = this._formatResult(listener.result);
         return html`
             <div class="listener" >
-                <span class="listener-status ${statusClass}" title="${resultText}">
-                    ${this.renderIcon(listener.status === "running" ? "loading" : listener.status === "ok" ? "yes" : listener.status)}
-                </span>
+                ${this.renderIcon("listeners", "监听器")}
                 <span class="listener-name" title="点击的控制台输出监听器信息" @click="${() => this._printListenerInfo(listener)}">${listener.name}</span>
                 ${listener.tag ? this.renderTag(listener.tag, undefined, `监听器标签: ${listener.tag}`) : ""}
                 ${this.renderTag(listener.count, undefined, "执行次数计数（当前/总数）")}
-                ${listener.flags !== undefined ? this.renderTag(`${listener.flags}`, "orange", "监听器标识flags") : ""}                
+                ${listener.flags !== undefined ? this.renderTag(`${listener.flags}`, "orange", "监听器标识flags") : ""}       
+                <span class="listener-status ${statusClass}" title="${resultText}">
+                    ${this.renderIcon(listener.status === "running" ? "loading" : listener.status === "ok" ? "yes" : listener.status)}
+                </span>         
             </div>
         `;
     }

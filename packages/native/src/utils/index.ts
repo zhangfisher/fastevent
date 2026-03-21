@@ -7,3 +7,4 @@ export * from "./isPathMatched";
 export * from "./isSubsctiber";
 export * from "./isClass";
 export * from "./isFastEvent";
+export * from "./isAsyncIterable";
