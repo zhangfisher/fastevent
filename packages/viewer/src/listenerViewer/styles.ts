@@ -331,7 +331,7 @@ export const styles = css`
         color: rgba(255, 255, 255, 0.85);
     }
 
-    @media (max-width: 768px) {
+    @media (max-width: 568px) {
         .main-container {
             flex-direction: column;
         }

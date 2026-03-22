@@ -1,0 +1,525 @@
+<!doctype html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>FastEvent Viewer 演示</title>
+
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                min-height: 100vh;
+                padding: 0rem;
+            }
+
+            .container {
+                max-width: 1400px;
+                margin: 0 auto;
+            }
+
+            /* 工具栏区域 */
+            .toolbar-section {
+                background: rgba(255, 255, 255, 0.95);
+                border-radius: 12px;
+                margin-bottom: 0.5rem;
+            }
+
+            .toolbar-title {
+                color: #555;
+                font-size: 0.9rem;
+                margin-bottom: 0.75rem;
+                font-weight: 500;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+
+            .toolbar-row {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+
+            .control-btn {
+                padding: 0.4rem 0.8rem;
+                border: 1px solid #d1d5db;
+                border-radius: 6px;
+                background: white;
+                color: #4b5563;
+                font-size: 0.8rem;
+                font-weight: 400;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                display: inline-flex;
+                align-items: center;
+                gap: 0.35rem;
+                white-space: nowrap;
+            }
+
+            .control-btn:hover {
+                background: #f9fafb;
+                border-color: #9ca3af;
+                transform: translateY(-1px);
+            }
+
+            .control-btn:active {
+                transform: translateY(0);
+                background: #f3f4f6;
+            }
+
+            /* Viewer 容器 */
+            .viewer-container {
+                background: white;
+                border-radius: 16px;
+                padding: 1.5rem;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            }
+
+            fastevent-viewer {
+                width: 100%;
+                height: 700px;
+                border-radius: 12px;
+                border: 1px solid #e0e0e0;
+            }
+
+            /* 状态指示器 */
+            .status-indicator {
+                display: inline-block;
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                margin-right: 0.25rem;
+                animation: pulse 2s infinite;
+            }
+
+            .status-indicator.active {
+                background: #10b981;
+            }
+
+            .status-indicator.inactive {
+                background: #d1d5db;
+                animation: none;
+            }
+
+            @keyframes pulse {
+                0%,
+                100% {
+                    opacity: 1;
+                }
+                50% {
+                    opacity: 0.5;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <!-- 工具栏区域 -->
+            <div class="toolbar-section">
+                <div class="toolbar-row">
+                    <button class="control-btn" onclick="window.demo.triggerSimpleEvent()">
+                        触发事件
+                    </button>
+                    <button class="control-btn" onclick="window.demo.triggerTransformEvent()">
+                        Transform
+                    </button>
+                    <button class="control-btn" onclick="window.demo.triggerErrorEvent()">
+                        监听器错误
+                    </button>
+                    <button class="control-btn" onclick="window.demo.addSimpleSubscribe()">
+                        增加订阅
+                    </button>
+                    <button class="control-btn" onclick="window.demo.removeSimpleSubscribe()">
+                        取消订阅
+                    </button>
+                    <button class="control-btn" onclick="window.demo.triggerMultiListenerEvent()">
+                        多监听器
+                    </button>
+                    <button class="control-btn" onclick="window.demo.triggerLongRunningEvent()">
+                        长时间运行
+                    </button>
+                    <button class="control-btn" onclick="window.demo.startRandomEvents()">
+                        <span class="status-indicator inactive" id="randomIndicator"></span>
+                        自动触发事件
+                    </button>
+                    <button class="control-btn" onclick="window.demo.stopRandomEvents()">
+                        停止自动触发
+                    </button>
+                </div>
+            </div>
+
+            <!-- Viewer 容器 -->
+            <fastevent-viewer id="viewer"></fastevent-viewer>
+        </div>
+
+        <!-- 加载 FastEvent 核心库 -->
+        <script src="/fastevent/index.global.js"></script>
+
+        <!-- 加载 Viewer 组件 -->
+        <script src="/fastevent/fastevent.viewer.js"></script>
+
+        <!-- 初始化应用 -->
+        <script>
+            const emitter = new FastEvent.FastEvent({
+                debug: true,
+                title: "演示事件系统",
+                transform: (message) => {
+                    if (message.type === "transformed") {
+                        return `transformed-${Date.now()}`;
+                    }
+                    return message;
+                },
+            });
+
+            // 挂载到全局
+            globalThis.emitter = emitter;
+
+            // ==================== 初始化监听器 ====================
+
+            // 1. 简单事件监听器
+            emitter.on("test/simple", (data) => {
+                console.log("[简单事件] 收到数据:", data);
+                return `✓ 处理完成 - ${Math.random().toString(36).substr(2, 9)}`;
+            });
+
+            // 2. 带标签的用户登录监听器
+            emitter.on(
+                "user/login",
+                (data) => {
+                    console.log("[用户登录]", data);
+                    return {
+                        success: true,
+                        token: `token-${Date.now()}`,
+                        userId: data.userId,
+                    };
+                },
+                { tag: "auth" },
+            );
+
+            // 3. Transform 事件监听器
+            emitter.on("transformed", (message) => {
+                return message;
+            });
+
+            // 4. 错误事件监听器
+            emitter.on("test/error", () => {
+                throw new Error("这是一个测试错误");
+            });
+
+            // 5. 多监听器事件
+            emitter.on(
+                "test/multi",
+                () => {
+                    console.log("→ 监听器 1 执行");
+                    return 42;
+                },
+                { tag: "first" },
+            );
+
+            emitter.on(
+                "test/multi",
+                () => {
+                    console.log("→ 监听器 2 执行");
+                    return ["结果1", "结果2", "结果3"];
+                },
+                { tag: "second" },
+            );
+
+            emitter.on(
+                "test/multi",
+                () => {
+                    console.log("→ 监听器 3 执行");
+                    return { status: "completed", timestamp: Date.now() };
+                },
+                { tag: "third" },
+            );
+
+            // 6. 计数限制监听器
+            let countedExecutions = 0;
+            emitter.on(
+                "test/counted",
+                () => {
+                    countedExecutions++;
+                    console.log(`[计数事件] 第 ${countedExecutions} 次执行`);
+                    return countedExecutions <= 3;
+                },
+                { count: 3 },
+            );
+
+            // 7. 批量事件监听器
+            emitter.on("batch/start", (data) => {
+                console.log("[批量] 开始:", data);
+                return { taskId: `task-${Date.now()}`, status: "started" };
+            });
+
+            emitter.on("batch/processing", (data) => {
+                console.log("[批量] 处理中:", data);
+                return 50.5;
+            });
+
+            emitter.on("batch/progress", (data) => {
+                console.log("[批量] 进度:", data);
+                return `${data.progress.toFixed(1)}% 完成`;
+            });
+
+            emitter.on("batch/complete", (data) => {
+                console.log("[批量] 完成:", data);
+                return null;
+            });
+
+            // 8. 通配符事件监听器
+            emitter.on("user/*", (data, message) => {
+                console.log("[通配符] 用户事件:", message.type, data);
+                return new Map([
+                    ["eventType", message.type],
+                    ["timestamp", Date.now()],
+                ]);
+            });
+
+            // 9. 异步事件监听器
+            emitter.on("test/async", async (data) => {
+                console.log("[异步事件] 开始处理:", data);
+                await new Promise((resolve) => setTimeout(resolve, 100));
+                return {
+                    asyncResult: true,
+                    value: data.value,
+                    processedAt: new Date().toISOString(),
+                };
+            });
+
+            // 10. 长时间运行监听器
+            emitter.on(
+                "test/long-running",
+                async () => {
+                    console.log("[长时间执行] 开始，预计2秒");
+                    await new Promise((resolve) => setTimeout(resolve, 2000));
+                    return {
+                        message: "长时间任务已完成",
+                        duration: "2秒",
+                    };
+                },
+                { tag: "slow" },
+            );
+
+            // 11. Retain 保留事件监听器
+            emitter.on("data/retained", (data) => {
+                console.log("[Retain 事件] 收到保留数据:", data);
+                return {
+                    received: true,
+                    data: data,
+                    timestamp: Date.now(),
+                };
+            });
+
+            // 12. 多级路径事件监听器
+            emitter.on("app/module/action", (data) => {
+                console.log("[多级路径] app/module/action:", data);
+                return { level: 3, path: "app/module/action" };
+            });
+
+            emitter.on("app/module/deep/nested/action", (data) => {
+                console.log("[多级路径] app/module/deep/nested/action:", data);
+                return { level: 5, path: "app/module/deep/nested/action" };
+            });
+
+            emitter.on("app/**", (data, message) => {
+                console.log("[通配符] app/** 捕获:", message.type);
+                return { wildcard: true, captured: message.type };
+            });
+
+            // 13. 随机数事件监听器
+            emitter.on(
+                "random/number",
+                (data) => {
+                    return Math.random();
+                },
+                { tag: "random" },
+            );
+
+            // ==================== 动态订阅管理 ====================
+            const dynamicSubscribers = [];
+
+            // ==================== 触发函数 ====================
+
+            function triggerSimpleEvent() {
+                emitter.emit("test/simple", {
+                    message: "这是一个简单事件",
+                    timestamp: Date.now(),
+                });
+            }
+
+            function triggerTransformEvent() {
+                emitter.emit("transformed", {
+                    items: [1, 2, 3, 4, 5],
+                    operation: "add",
+                });
+            }
+
+            function triggerErrorEvent() {
+                emitter.emit("test/error", { shouldFail: true });
+            }
+
+            function triggerMultiListenerEvent() {
+                emitter.emit("test/multi", { listeners: 3 });
+            }
+
+            function triggerCountedEvent() {
+                for (let i = 0; i < 5; i++) {
+                    setTimeout(() => {
+                        emitter.emit("test/counted", { iteration: i + 1 });
+                    }, i * 100);
+                }
+            }
+
+            function triggerBatchEvents() {
+                const events = [
+                    "batch/start",
+                    "batch/processing",
+                    "batch/progress",
+                    "batch/complete",
+                ];
+                events.forEach((type, index) => {
+                    setTimeout(() => {
+                        emitter.emit(type, {
+                            step: index + 1,
+                            total: events.length,
+                            progress: ((index + 1) / events.length) * 100,
+                        });
+                    }, index * 200);
+                });
+            }
+
+            function triggerWildcardEvents() {
+                emitter.emit("user/profile", { action: "view" });
+                setTimeout(() => {
+                    emitter.emit("user/settings", { action: "update" });
+                }, 100);
+                setTimeout(() => {
+                    emitter.emit("user/avatar", { action: "change" });
+                }, 200);
+            }
+
+            async function triggerAsyncEvent() {
+                await emitter.emitAsync("test/async", { value: "测试数据" });
+            }
+
+            async function triggerLongRunningEvent() {
+                await emitter.emitAsync("test/long-running", { task: "长时间任务" });
+            }
+
+            function triggerRetainEvent() {
+                // 首次触发并保留
+                emitter.emit(
+                    "data/retained",
+                    {
+                        message: "这是保留的数据",
+                        important: true,
+                    },
+                    true,
+                ); // retain: true
+            }
+
+            function triggerMultiLevelEvent() {
+                emitter.emit("app/module/action", { source: "3级路径" });
+                setTimeout(() => {
+                    emitter.emit("app/module/deep/nested/action", { source: "5级路径" });
+                }, 300);
+            }
+
+            function addSimpleSubscribe() {
+                const subscriber = emitter.on("test/simple", () => {
+                    return `动态订阅 - ${Math.random().toString(36).substr(2, 9)}`;
+                });
+                dynamicSubscribers.push(subscriber);
+            }
+
+            function removeSimpleSubscribe() {
+                const subscriber = dynamicSubscribers.pop();
+                if (subscriber) {
+                    subscriber.off();
+                }
+            }
+
+            // ==================== 自动化测试 ====================
+            let randomEventInterval = null;
+            let stressTestInterval = null;
+
+            function startRandomEvents() {
+                if (randomEventInterval !== null) {
+                    return;
+                }
+                updateIndicator("randomIndicator", true);
+
+                randomEventInterval = setInterval(() => {
+                    const eventTypes = [
+                        "random/number",
+                        "test/simple",
+                        "data/update",
+                        "user/login",
+                    ];
+                    const randomType = eventTypes[Math.floor(Math.random() * eventTypes.length)];
+
+                    emitter.emit(randomType, {
+                        value: Math.random(),
+                        timestamp: Date.now(),
+                    });
+                }, 2000);
+            }
+            startRandomEvents();
+            function stopRandomEvents() {
+                if (randomEventInterval !== null) {
+                    clearInterval(randomEventInterval);
+                    randomEventInterval = null;
+                    console.log("⏹️ 已停止随机事件流");
+                    updateIndicator("randomIndicator", false);
+                }
+            }
+
+            function updateIndicator(id, active) {
+                const indicator = document.getElementById(id);
+                if (indicator) {
+                    if (active) {
+                        indicator.classList.remove("inactive");
+                        indicator.classList.add("active");
+                    } else {
+                        indicator.classList.remove("active");
+                        indicator.classList.add("inactive");
+                    }
+                }
+            }
+
+            // ==================== 绑定到 Viewer ====================
+            const viewer = document.getElementById("viewer");
+            if (viewer) {
+                viewer.emitter = emitter;
+                console.log("✓ FastEvent Viewer 已绑定");
+            }
+
+            // 导出所有函数到全局
+            window.demo = {
+                triggerSimpleEvent,
+                triggerTransformEvent,
+                triggerErrorEvent,
+                triggerMultiListenerEvent,
+                triggerBatchEvents,
+                triggerWildcardEvents,
+                triggerAsyncEvent,
+                triggerLongRunningEvent,
+                triggerRetainEvent,
+                triggerMultiLevelEvent,
+                addSimpleSubscribe,
+                removeSimpleSubscribe,
+                startRandomEvents,
+                stopRandomEvents,
+            };
+
+            console.log("✅ FastEvent 演示页面已就绪");
+        </script>
+    </body>
+</html>

@@ -6,7 +6,7 @@ export default defineConfig({
         "fastevent.viewer": "src/index.ts",
     },
     format: ["esm", "cjs", "iife"],
-    globalName: "FasteventViewer",
+    globalName: "FastEventViewer",
     dts: true,
     splitting: false,
     sourcemap: true,
