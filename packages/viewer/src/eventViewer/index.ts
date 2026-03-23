@@ -312,7 +312,7 @@ export class FastEventViewer extends LitElement {
     renderHeader() {
         return html`
             <div class="header">
-                <span class="header-title">${this.title.length > 0 ? this.title : this.emitter?.title}</span>
+                <span class="header-title">${this.title.length > 0 ? this.title : this._getCurrentEmitter()?.title}</span>
                 ${renderButton(
                     "",
                     () => {
@@ -493,7 +493,7 @@ export class FastEventViewer extends LitElement {
             ${
                 this._showListeners
                     ? html`<fastevent-listeners
-                        .emitter="${this.emitter}"
+                        .emitter="${this._getCurrentEmitter()}"
                         .dark="${this.dark}"
                         .lang="${this.lang}">
                     </fastevent-listeners>`
