@@ -44,6 +44,7 @@ export class FastEventViewer extends LitElement {
             this._currentEmitterIndex = 0;
         }
         this._reattach();
+        this.requestUpdate();
     }
 
     @property({ type: Boolean, reflect: true })
