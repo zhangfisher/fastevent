@@ -367,4 +367,156 @@ export const styles = css`
         --icon-size: 48px;
         opacity: 0.3;
     }
+
+    /* Emitter 下拉容器 */
+    .emitter-dropdown-container {
+        position: relative;
+        flex: 1;
+    }
+
+    /* 下拉触发按钮 */
+    .emitter-dropdown-trigger {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        width: 100%;
+        padding: 0;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .emitter-dropdown-trigger:hover .header-title {
+        color: #1890ff;
+    }
+
+    /* 下拉箭头 */
+    .dropdown-arrow {
+        display: inline-block;
+        width: 0;
+        height: 0;
+        border-left: 4px solid transparent;
+        border-right: 4px solid transparent;
+        border-top: 5px solid currentColor;
+        transition: transform 0.3s;
+        opacity: 0.6;
+    }
+
+    .dropdown-arrow.open {
+        transform: rotate(180deg);
+    }
+
+    /* 下拉菜单容器 */
+    .emitter-dropdown-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        margin-top: 4px;
+        min-width: 180px;
+        background: #ffffff;
+        border: 1px solid #e8e8e8;
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        z-index: 1000;
+        overflow: hidden;
+        animation: dropdownFadeIn 0.2s ease-out;
+    }
+
+    @keyframes dropdownFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-8px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* 菜单项 */
+    .emitter-menu-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        cursor: pointer;
+        transition: background 0.2s;
+        font-size: 14px;
+        color: #333;
+    }
+
+    .emitter-menu-item:hover {
+        background: #f5f5f5;
+    }
+
+    .emitter-menu-item.active {
+        background: #e6f7ff;
+        color: #1890ff;
+        font-weight: 500;
+    }
+
+    .emitter-menu-item .icon {
+        --icon-size: 14px;
+        color: #52c41a;
+    }
+
+    /* 通用下拉菜单样式（供 renderMenu 使用） */
+    .dropdown-menu {
+        padding: 4px 0;
+        min-width: 150px;
+        background: var(--fe-color-bg, #fff);
+        border: 1px solid var(--fe-color-border, #e8e8e8);
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .dropdown-menu-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        cursor: pointer;
+        transition: background 0.2s;
+        font-size: 14px;
+        color: var(--fe-color-text, #333);
+    }
+
+    .dropdown-menu-item:hover {
+        background: var(--fe-color-hover, #f5f5f5);
+    }
+
+    .dropdown-menu-item.active {
+        background: #e6f7ff;
+        color: #1890ff;
+    }
+
+    :host([dark]) .emitter-dropdown-menu {
+        background: #2a2a2a;
+        border-color: #404040;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    :host([dark]) .emitter-menu-item {
+        color: rgba(255, 255, 255, 0.85);
+    }
+
+    :host([dark]) .emitter-menu-item:hover {
+        background: rgba(255, 255, 255, 0.06);
+    }
+
+    :host([dark]) .emitter-menu-item.active {
+        background: rgba(24, 144, 255, 0.15);
+        color: #40a9ff;
+    }
+
+    :host([dark]) .dropdown-menu {
+        background: var(--fe-color-bg, #2a2a2a);
+        border-color: var(--fe-color-border, #404040);
+    }
+
+    :host([dark]) .dropdown-menu-item.active {
+        background: rgba(24, 144, 255, 0.15);
+        color: #40a9ff;
+    }
 `;
