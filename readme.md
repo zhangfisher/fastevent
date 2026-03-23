@@ -480,6 +480,12 @@ type CustomEvents = TransformedEvents<{
 - `transform` is used to convert standard FastEventMessage into the format you need
 - `NotPayload` and `TransformonEvents` are used to declare types, in order to provide type declarations for listeners when `on/once`.
 
+## Viewer Component
+
+`fastevent-viewer` component to debuging.
+
+![](./docs/viewer.png)
+
 ## Unit Testing
 
 `FastEvent` has been thoroughly unit tested, with over `320+` cumulative test cases and `99%+` test coverage.
