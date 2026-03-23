@@ -346,11 +346,16 @@ export class FastEventViewer extends LitElement {
     }
 
     private _renderEmitterDropdown(title: string) {
+        console.log('[_renderEmitterDropdown] Rendering dropdown with title:', title);
         return html`
             <div class="emitter-dropdown-container">
                 <button
                     class="emitter-dropdown-trigger"
-                    @click="${() => this._isDropdownOpen = !this._isDropdownOpen}"
+                    @click="${() => {
+                        console.log('[Dropdown] Click, toggling from', this._isDropdownOpen);
+                        this._isDropdownOpen = !this._isDropdownOpen;
+                        console.log('[Dropdown] New state:', this._isDropdownOpen);
+                    }}"
                     title="${t("eventViewer.switchEmitter")}"
                 >
                     <span class="header-title">${title}</span>
@@ -362,15 +367,20 @@ export class FastEventViewer extends LitElement {
     }
 
     private _renderEmitterMenu() {
+        console.log('[_renderEmitterMenu] Rendering menu with', this._emitters.length, 'emitters');
         return html`
             <div class="emitter-dropdown-menu">
                 ${this._emitters.map((emitter, index) => {
                     const isActive = index === this._currentEmitterIndex;
                     const menuTitle = this.title.length > 0 ? this.title : emitter?.title || `Emitter ${index + 1}`;
+                    console.log(`[_renderEmitterMenu] Item ${index}:`, menuTitle, 'active:', isActive);
                     return html`
                         <div
                             class="emitter-menu-item ${isActive ? 'active' : ''}"
-                            @click="${() => this._switchEmitter(index)}"
+                            @click="${() => {
+                                console.log('[Menu] Clicked item', index);
+                                this._switchEmitter(index);
+                            }}"
                         >
                             ${isActive ? renderIcon("yes") : ''}
                             <span>${menuTitle}</span>
@@ -385,6 +395,12 @@ export class FastEventViewer extends LitElement {
         const hasMultipleEmitters = this._emitters.length > 1;
         const currentEmitter = this._getCurrentEmitter();
         const displayTitle = this.title.length > 0 ? this.title : currentEmitter?.title || "";
+
+        // 调试信息
+        console.log('[renderHeader] _emitters:', this._emitters);
+        console.log('[renderHeader] _emitters.length:', this._emitters.length);
+        console.log('[renderHeader] hasMultipleEmitters:', hasMultipleEmitters);
+        console.log('[renderHeader] displayTitle:', displayTitle);
 
         return html`
             <div class="header">
