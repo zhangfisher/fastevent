@@ -347,6 +347,107 @@ export function stopRandomEvents() {
  */
 export { emitter };
 
+// ==================== 创建多个 Emitter 用于测试 ====================
+
+/**
+ * Emitter 1: 用户相关事件
+ */
+const userEmitter = new FastEvent({
+    debug: true,
+    title: "用户事件",
+});
+
+userEmitter.on("user/login", (data: any) => {
+    console.log("[用户事件] 登录:", data);
+    return { success: true, userId: data.userId };
+});
+
+userEmitter.on("user/logout", (data: any) => {
+    console.log("[用户事件] 登出:", data);
+    return { loggedOut: true };
+});
+
+/**
+ * Emitter 2: 数据相关事件
+ */
+const dataEmitter = new FastEvent({
+    debug: true,
+    title: "数据事件",
+});
+
+dataEmitter.on("data/fetch", (data: any) => {
+    console.log("[数据事件] 获取:", data);
+    return { items: [1, 2, 3, 4, 5], total: 5 };
+});
+
+dataEmitter.on("data/update", (data: any) => {
+    console.log("[数据事件] 更新:", data);
+    return { updated: true };
+});
+
+/**
+ * Emitter 3: 系统相关事件
+ */
+const systemEmitter = new FastEvent({
+    debug: true,
+    title: "系统事件",
+});
+
+systemEmitter.on("system/start", () => {
+    console.log("[系统事件] 启动");
+    return { status: "running", uptime: 0 };
+});
+
+systemEmitter.on("system/stop", () => {
+    console.log("[系统事件] 停止");
+    return { status: "stopped" };
+});
+
+// 挂载到全局，方便调试
+globalThis.userEmitter = userEmitter;
+globalThis.dataEmitter = dataEmitter;
+globalThis.systemEmitter = systemEmitter;
+
+/**
+ * 导出多个 emitter 供组件使用
+ */
+export const multipleEmitters = [emitter, userEmitter, dataEmitter, systemEmitter];
+
+// ==================== 触发函数 ====================
+
+/**
+ * 触发用户事件
+ */
+export function triggerUserEvents() {
+    userEmitter.emit("user/login", { userId: 123, username: "testuser" }, true);
+    setTimeout(() => {
+        userEmitter.emit("user/logout", { userId: 123 });
+    }, 500);
+}
+
+/**
+ * 触发数据事件
+ */
+export function triggerDataEvents() {
+    dataEmitter.emit("data/fetch", { page: 1, limit: 10 });
+    setTimeout(() => {
+        dataEmitter.emit("data/update", { id: 1, changes: { status: "active" } });
+    }, 300);
+}
+
+/**
+ * 触发系统事件
+ */
+export function triggerSystemEvents() {
+    systemEmitter.emit("system/start");
+    setTimeout(() => {
+        systemEmitter.emit("system/stop");
+    }, 400);
+}
+
 declare global {
     var emitter: FastEvent;
+    var userEmitter: FastEvent;
+    var dataEmitter: FastEvent;
+    var systemEmitter: FastEvent;
 }
