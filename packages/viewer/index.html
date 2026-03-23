@@ -222,6 +222,34 @@
                     </button>
                 </div>
             </div>
+
+            <!-- 多个 Emitter 示例 -->
+            <div class="header" style="margin-top: 3rem;">
+                <h1>🔀 多 Emitter 示例</h1>
+                <p>同时查看多个事件源</p>
+            </div>
+            <div class="viewer-container">
+                <div class="viewer-wrapper">
+                    <fastevent-viewer
+                        id="viewer2"
+                        .emitter="${window.multipleEmitters || []}"
+                        lang="cn"
+                        max-size="500"
+                    ></fastevent-viewer>
+                </div>
+
+                <div class="controls-wrapper">
+                    <button class="control-btn success" onclick="triggerUserEvents()">
+                        👤 触发用户事件
+                    </button>
+                    <button class="control-btn warning" onclick="triggerDataEvents()">
+                        📊 触发数据事件
+                    </button>
+                    <button class="control-btn" onclick="triggerSystemEvents()">
+                        ⚙️ 触发系统事件
+                    </button>
+                </div>
+            </div>
         </div>
 
         <script type="module" src="./src/index.ts"></script>
@@ -233,6 +261,14 @@
             if (viewer && demo.emitter) {
                 viewer.emitter = demo.emitter;
                 console.log("✓ FastEvent Viewer 已绑定到 FastEvent 实例");
+            }
+
+            // 绑定多个 emitters 到 viewer2
+            const viewer2 = document.getElementById("viewer2");
+            if (viewer2 && demo.multipleEmitters) {
+                viewer2.emitter = demo.multipleEmitters;
+                window.multipleEmitters = demo.multipleEmitters;
+                console.log("✓ FastEvent Viewer 2 已绑定到多个 FastEvent 实例");
             }
 
             // 触发函数绑定到全局
@@ -250,6 +286,9 @@
             window.stopRandomEvents = demo.stopRandomEvents;
             window.addSimpleSubscribe = demo.addSimpleSubscribe;
             window.removeSimpleSubscribe = demo.removeSimpleSubscribe;
+            window.triggerUserEvents = demo.triggerUserEvents;
+            window.triggerDataEvents = demo.triggerDataEvents;
+            window.triggerSystemEvents = demo.triggerSystemEvents;
         </script>
     </body>
 </html>
