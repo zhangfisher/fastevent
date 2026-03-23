@@ -28,6 +28,7 @@ export const languages = {
         "eventViewer.noEventLogs": "暂无事件日志",
         "eventViewer.listener": "监听器: {0}",
         "eventViewer.executionResult": "执行结果：",
+        "eventViewer.switchEmitter": "切换 Emitter",
         // listenerViewer
         "listenerViewer.registeredListeners": "已注册监听器",
         "listenerViewer.refresh": "刷新",
@@ -78,6 +79,7 @@ export const languages = {
         "eventViewer.noEventLogs": "No event logs",
         "eventViewer.listener": "Listener: {0}",
         "eventViewer.executionResult": "Execution result:",
+        "eventViewer.switchEmitter": "Switch Emitter",
         // listenerViewer
         "listenerViewer.registeredListeners": "Registered Listeners",
         "listenerViewer.refresh": "Refresh",

@@ -332,10 +332,54 @@ export class FastEventViewer extends LitElement {
             }}"
         />`;
     }
+
+    private _renderEmitterDropdown(title: string) {
+        return html`
+            <div class="emitter-dropdown-container">
+                <button
+                    class="emitter-dropdown-trigger"
+                    @click="${() => this._isDropdownOpen = !this._isDropdownOpen}"
+                    title="${t("eventViewer.switchEmitter")}"
+                >
+                    <span class="header-title">${title}</span>
+                    <span class="dropdown-arrow ${this._isDropdownOpen ? 'open' : ''}"></span>
+                </button>
+                ${this._isDropdownOpen ? this._renderEmitterMenu() : ''}
+            </div>
+        `;
+    }
+
+    private _renderEmitterMenu() {
+        return html`
+            <div class="emitter-dropdown-menu">
+                ${this._emitters.map((emitter, index) => {
+                    const isActive = index === this._currentEmitterIndex;
+                    const menuTitle = this.title.length > 0 ? this.title : emitter?.title || `Emitter ${index + 1}`;
+                    return html`
+                        <div
+                            class="emitter-menu-item ${isActive ? 'active' : ''}"
+                            @click="${() => this._switchEmitter(index)}"
+                        >
+                            ${isActive ? renderIcon("yes") : ''}
+                            <span>${menuTitle}</span>
+                        </div>
+                    `;
+                })}
+            </div>
+        `;
+    }
+
     renderHeader() {
+        const hasMultipleEmitters = this._emitters.length > 1;
+        const currentEmitter = this._getCurrentEmitter();
+        const displayTitle = this.title.length > 0 ? this.title : currentEmitter?.title || "";
+
         return html`
             <div class="header">
-                <span class="header-title">${this.title.length > 0 ? this.title : this._getCurrentEmitter()?.title}</span>
+                ${hasMultipleEmitters
+                    ? this._renderEmitterDropdown(displayTitle)
+                    : html`<span class="header-title">${displayTitle}</span>`
+                }
                 ${renderButton(
                     "",
                     () => {
