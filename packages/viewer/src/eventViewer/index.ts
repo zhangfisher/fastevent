@@ -1,3 +1,4 @@
+// oxlint-disable typescript/unbound-method
 import {
     FastEvent,
     type FastEventListenerArgs,
@@ -13,8 +14,9 @@ import type { ItemOf } from "../types";
 import { styles } from "./styles";
 import type { EventLog } from "./types";
 import "../listenerViewer/index.js";
+import "./eventLog.js";
 import { removeItem } from "../utils/removeItem";
-import { renderTag, renderButton, renderIcon } from "../utils";
+import { renderButton, renderIcon } from "../utils";
 import { t, setLanguage } from "../utils/t";
 
 @customElement("fastevent-viewer")
@@ -316,15 +318,6 @@ export class FastEventViewer extends LitElement {
         this.requestUpdate();
     }
 
-    private _formatTime(timestamp: number): string {
-        const date = new Date(timestamp);
-        const hours = date.getHours().toString().padStart(2, "0");
-        const minutes = date.getMinutes().toString().padStart(2, "0");
-        const seconds = date.getSeconds().toString().padStart(2, "0");
-        const ms = date.getMilliseconds().toString().padStart(3, "0");
-        return `${hours}:${minutes}:${seconds}.${ms}`;
-    }
-
     /**
      * 在控制台显示监听器函数
      * @param listener
@@ -473,115 +466,6 @@ export class FastEventViewer extends LitElement {
             </div>
         `;
     }
-    renderLogFlags(args: FastEventListenerArgs) {
-        if (args && (args.flags || 0) > 0) {
-            const flags = args.flags || 0;
-            if (flags > 1) {
-                return renderTag(
-                    `${args.flags}`,
-                    "orange",
-                    t("eventViewer.extendedFlags"),
-                    undefined,
-                    this.dark,
-                );
-            }
-            return html`${(flags | 1) == 0 ? "" : renderTag(`T`, "orange", t("eventViewer.transformed"), undefined, this.dark)}`;
-        }
-    }
-    renderLog(log: EventLog) {
-        const message = log.message.deref();
-        const args = log.args.deref();
-        if (!message) return html``;
-
-        const payload = JSON.stringify(message.payload ?? "");
-        const timeStr = this._formatTime(log.triggerTime);
-        return html`
-            <div class="log-item">
-                <div class="log-content">
-                    <div class="log-header">
-                        ${log.done ? "✨" : renderIcon("loading")}
-                        <span class="log-type" title="${t("eventViewer.eventType")}">${message.type}</span>
-                        <span class="log-time" title="${t("eventViewer.triggerTime")}">${timeStr}</span>
-                        ${renderTag(`#${log.id}`, "gray", t("eventViewer.serialNumber"), undefined, this.dark)}
-                        ${this._isShowListeners ? "" : renderTag(`ƒ(${log.listeners.length})`, "purple", t("eventViewer.totalListeners", log.listeners.length), undefined, this.dark)}
-                        ${args?.retain ? renderTag("retain", "red", t("eventViewer.retainLastEvent"), undefined, this.dark) : ""}
-                        ${this.renderLogFlags(args!)}
-                        ${args?.rawEventType && args?.rawEventType !== message.type ? renderTag(args.rawEventType, "blue", t("eventViewer.rawEventType", args.rawEventType), undefined, this.dark) : ""}
-                        ${log.duration[1] > 0 ? renderTag(`${Number((log.duration[1] - log.duration[0]).toFixed(3))}ms`, "green", t("eventViewer.executionTime"), undefined, this.dark) : ""}
-                        ${renderButton(
-                            "",
-                            () => {
-                                const jsonStr = JSON.stringify(message, null, 2);
-                                navigator.clipboard.writeText(jsonStr);
-                            },
-                            {
-                                icon: "copy",
-                                className: "btn-icon",
-                                title: t("eventViewer.copyMessage"),
-                            },
-                        )}
-                    </div>
-                    ${payload ? html`<div class="log-payload">${payload}</div>` : ""}
-                    ${
-                        log.listeners.length > 0
-                            ? html`
-                        <div class="log-listeners ${this._isShowListeners ? "log-listeners-visible" : "log-listeners-hidden"}">
-                            ${this.renderListeners(log.listeners)}
-                        </div>
-                    `
-                            : ""
-                    }
-                </div>
-            </div>
-        `;
-    }
-
-    renderListeners(listeners: EventLog["listeners"]) {
-        return html`${listeners.map((listener) => this.renderListener(listener))}`;
-    }
-
-    renderListener(listener: ItemOf<EventLog["listeners"]>) {
-        const statusClass = listener.status === "ok" ? "yes" : listener.status;
-        const resultText = this._formatResult(listener.result);
-        return html`
-            <div class="listener" >
-                ${renderIcon("listener", t("eventViewer.listener"))}
-                <span class="listener-name" title="${t("eventViewer.listener")}" @click="${() => this._printListenerInfo(listener)}">${listener.name}</span>
-                ${listener.tag ? renderTag(listener.tag, undefined, t("eventViewer.listenerTag", listener.tag), undefined, this.dark) : ""}
-                ${renderTag(listener.count, undefined, t("eventViewer.executionCount"), undefined, this.dark)}
-                ${listener.flags !== undefined ? renderTag(`${listener.flags}`, "orange", t("eventViewer.listenerFlags"), undefined, this.dark) : ""}
-                <span class="listener-status ${statusClass}" title="${resultText}">
-                    ${renderIcon(listener.status === "running" ? "loading" : listener.status === "ok" ? "yes" : listener.status)}
-                </span>
-            </div>
-        `;
-    }
-
-    private _formatResult(result: any): string {
-        if (result === undefined) return t("eventViewer.executing");
-        if (result === null) return "null";
-
-        // 处理 Error 对象
-        if (result instanceof Error) {
-            return t("eventViewer.error", result.message);
-        }
-
-        // 处理对象和数组
-        if (typeof result === "object") {
-            try {
-                const str = JSON.stringify(result);
-                if (str.length > 100) {
-                    return str.substring(0, 100) + "...";
-                }
-                return str;
-            } catch {
-                return result.toString();
-            }
-        }
-
-        // 处理其他类型
-        return String(result);
-    }
 
     renderLogs() {
         if (this._logIndexs.length === 0) {
@@ -595,7 +479,17 @@ export class FastEventViewer extends LitElement {
 
         return html`
             <div class="logs">
-                ${this._logIndexs.map((index) => this.renderLog(this.logs[index]))}
+                ${this._logIndexs.map((index) => {
+                    const log = this.logs[index];
+                    return html`
+                        <fastevent-event-log
+                            .log="${log}"
+                            .dark="${this.dark}"
+                            .showListeners="${this._isShowListeners}"
+                            .onPrintListener="${this._printListenerInfo}">
+                        </fastevent-event-log>
+                    `;
+                })}
             </div>
         `;
     }

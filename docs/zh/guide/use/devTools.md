@@ -2,7 +2,7 @@
 
 ## 调试组件
 
-`FastEvent` 提供专门的`WebComponent`调试组件，可以查看触发的事件、监听器注册等信息。
+`FastEvent` 提供专门的`WebComponent`调试组件`fastevent-viewer`，可以查看触发的事件、监听器注册等信息。
 
 在你的应用入口文件中导入`fastevent/viewer`.
 
@@ -17,17 +17,19 @@
 </body>
 </html>
 <script>
-import "fastevent/viewer";
-import { FastEvent } from "fastevent";
-
+const { FastEvent } = FastEventSpaces
 const emitter = new FastEvent();
-
-
-
-
+const viewer = document.getElementById("viewer")
+viewer.emitter = emitter
+// 也支持同时绑定多个FastEvent实例
+viewer.emitter = [emitter1,...,emitterN]
 ```
 
 <demo html="viewer.html"></demo>
+
+:::warning 提示
+`fastevent-viewer`是一个`WebComponent`。
+:::
 
 ## 监听信息
 
