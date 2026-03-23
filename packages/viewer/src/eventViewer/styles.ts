@@ -137,11 +137,11 @@ export const styles = css`
         padding: 0.5em;
         border-radius: 4px;
         transition: background 0.2s;
-        border-bottom: 1px solid var(--fe-color-border, #fcfcfc);
+        border-bottom: 1px solid var(--fe-color-border, #fafafa);
     }
 
     .log-item:hover {
-        background: var(--fe-color-hover, #fdfdfd);
+        background: var(--fe-color-hover, #fcfcfc);
     }
 
     .log-content {
@@ -403,13 +403,18 @@ export const styles = css`
         height: 0;
         border-left: 4px solid transparent;
         border-right: 4px solid transparent;
-        border-top: 5px solid currentColor;
+        border-top: 5px solid var(--fe-color-text, #333);
         transition: transform 0.3s;
         opacity: 0.6;
     }
 
     .dropdown-arrow.open {
         transform: rotate(180deg);
+    }
+
+    /* 暗黑模式下的下拉箭头 */
+    :host([dark]) .dropdown-arrow {
+        border-top-color: rgba(255, 255, 255, 0.85);
     }
 
     /* 下拉菜单容器 */
@@ -462,16 +467,25 @@ export const styles = css`
         font-weight: 500;
     }
 
-    .emitter-menu-item .icon {
-        --icon-size: 14px;
-        color: #52c41a;
+    /* 菜单项图标占位区域 */
+    .menu-item-icon {
+        width: 16px;
+        height: 16px;
         flex-shrink: 0;
         display: inline-flex;
         align-items: center;
+        justify-content: center;
     }
 
-    .emitter-menu-item span {
+    .menu-item-icon .icon {
+        --icon-size: 14px;
+        color: #52c41a;
+    }
+
+    /* 菜单项标签 */
+    .menu-item-label {
         flex: 1;
+        text-align: left;
     }
 
     /* 通用下拉菜单样式（供 renderMenu 使用） */

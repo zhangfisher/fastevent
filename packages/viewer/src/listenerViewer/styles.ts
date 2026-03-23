@@ -13,6 +13,7 @@ export const styles = css`
         color: var(--fe-color-text, #333);
         background: var(--fe-color-bg, #fff);
         overflow: hidden;
+        position: relative;
     }
 
     :host([dark]) {

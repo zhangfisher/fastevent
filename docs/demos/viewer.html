@@ -159,7 +159,7 @@
         </div>
 
         <!-- 加载 FastEvent 核心库 -->
-        <script src="/fastevent/index.global.js"></script>
+        <script src="/fastevent/fastevent.js"></script>
 
         <!-- 加载 Viewer 组件 -->
         <script src="/fastevent/fastevent.viewer.js"></script>
@@ -167,7 +167,6 @@
         <!-- 初始化应用 -->
         <script>
             const emitter = new FastEventSpaces.FastEvent({
-                debug: true,
                 title: "演示事件系统",
                 transform: (message) => {
                     if (message.type === "transformed") {

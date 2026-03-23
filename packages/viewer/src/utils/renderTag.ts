@@ -13,7 +13,7 @@ const defaultColors: TagColors = {
     border: "#d9d9d9",
 };
 
-// 预定义颜色方案
+// 预定义颜色方案（亮色模式）
 const colorSchemes: Record<string, TagColors> = {
     blue: { bg: "#e6f7ff", color: "#1890ff", border: "#91d5ff" },
     green: { bg: "#f6ffed", color: "#52c41a", border: "#b7eb8f" },
@@ -21,6 +21,16 @@ const colorSchemes: Record<string, TagColors> = {
     red: { bg: "#fff1f0", color: "#ff4d4f", border: "#ffa39e" },
     purple: { bg: "#f9f0ff", color: "#722ed1", border: "#d3adf7" },
     gray: { bg: "#f5f5f5", color: "#8c8c8c", border: "#d9d9d9" },
+};
+
+// 预定义颜色方案（暗黑模式）
+const darkColorSchemes: Record<string, TagColors> = {
+    blue: { bg: "rgba(24, 144, 255, 0.15)", color: "#40a9ff", border: "rgba(24, 144, 255, 0.3)" },
+    green: { bg: "rgba(82, 196, 26, 0.15)", color: "#73d13d", border: "rgba(82, 196, 26, 0.3)" },
+    orange: { bg: "rgba(250, 140, 22, 0.15)", color: "#ffa940", border: "rgba(250, 140, 22, 0.3)" },
+    red: { bg: "rgba(255, 77, 79, 0.15)", color: "#ff7875", border: "rgba(255, 77, 79, 0.3)" },
+    purple: { bg: "rgba(114, 46, 209, 0.15)", color: "#b37feb", border: "rgba(114, 46, 209, 0.3)" },
+    gray: { bg: "rgba(140, 140, 140, 0.15)", color: "#bfbfbf", border: "rgba(140, 140, 140, 0.3)" },
 };
 
 /**
@@ -40,6 +50,7 @@ export type TagOptions = {
     onClick?: () => void;
     className?: string;
     styles: string;
+    dark?: boolean;
 };
 
 /**
@@ -48,6 +59,7 @@ export type TagOptions = {
  * @param color - 颜色名称 (blue, green, orange, red, purple, gray)
  * @param tooltip - 提示文本
  * @param className - 额外的CSS类名
+ * @param dark - 是否使用暗黑模式
  * @returns TemplateResult
  */
 export function renderTag(
@@ -55,6 +67,7 @@ export function renderTag(
     color?: keyof typeof colorSchemes,
     tooltip?: string,
     className?: string,
+    dark?: boolean,
 ): ReturnType<typeof html>;
 
 /**
@@ -73,6 +86,7 @@ export function renderTag(
     colorOrOptions?: keyof typeof colorSchemes | TagOptions,
     tooltip?: string,
     className?: string,
+    dark?: boolean,
 ) {
     // 判断是选项模式还是颜色模式
     const isOptionsMode =
@@ -81,7 +95,8 @@ export function renderTag(
     if (isOptionsMode) {
         // 选项模式
         const options = colorOrOptions as TagOptions;
-        const classes = ["tag", options.className].filter(Boolean).join(" ");
+        const isDark = options.dark ?? dark ?? false;
+        const classes = ["tag", isDark ? "dark" : "", options.className].filter(Boolean).join(" ");
 
         return html`<span
             class="${classes}"
@@ -95,7 +110,9 @@ export function renderTag(
         // 颜色模式
         const color = colorOrOptions as keyof typeof colorSchemes | undefined;
         const colorKey = color || getTagColor(text);
-        const colors = colorSchemes[colorKey] || defaultColors;
+        const isDark = dark ?? false;
+        const schemes = isDark ? darkColorSchemes : colorSchemes;
+        const colors = schemes[colorKey] || defaultColors;
 
         const classes = ["tag", className].filter(Boolean).join(" ");
 

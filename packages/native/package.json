@@ -30,16 +30,16 @@
         },
         "./viewer": {
             "types": "./dist/viewer/fastevent.viewer.d.ts",
-            "import": "./dist/viewer/fastevent.viewer.mjs",
-             "require": "./dist/viewer/fastevent.viewer.js",
-            "default": "./dist/viewer/fastevent.viewer.js"
+            "import": "./dist/viewer/index.mjs",
+            "require": "./dist/viewer/index.js",
+            "default": "./dist/viewer/index.js"
         },
-        "./fastevent.viewer.js": "./dist/viewer/fastevent.viewer.js"
+        "./fastevent-viewer": "./dist/viewer/index.js"
     },
     "scripts": {
         "test": "bun test",
         "test:coverage": "vitest --coverage --exclude=\"src/__benchmarks__/**\"  --exclude=src/devTools",
-        "build": "tsup",
+        "build": "tsup && cpy \"./index.global.js\" ../../../docs/public  --cwd=./dist --rename=fastevent.js",
         "bench": "tsx src/__benchmarks__/index.ts"
     },
     "keywords": [
@@ -61,6 +61,8 @@
         "@swc/core": "^1.15.18",
         "@type-challenges/utils": "^0.1.1",
         "@vitest/coverage-v8": "4.1.0",
+        "cpx": "^1.5.0",
+        "cpy-cli": "^7.0.0",
         "eventemitter2": "^6.4.9",
         "redux": "^5.0.1",
         "tinybench": "^6.0.0",

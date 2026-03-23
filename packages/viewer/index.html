@@ -224,17 +224,13 @@
             </div>
 
             <!-- 多个 Emitter 示例 -->
-            <div class="header" style="margin-top: 3rem;">
+            <div class="header" style="margin-top: 3rem">
                 <h1>🔀 多 Emitter 示例</h1>
                 <p>同时查看多个事件源</p>
             </div>
             <div class="viewer-container">
                 <div class="viewer-wrapper">
-                    <fastevent-viewer
-                        id="viewer2"
-                        lang="cn"
-                        max-size="500"
-                    ></fastevent-viewer>
+                    <fastevent-viewer id="viewer2" lang="cn" max-size="500"></fastevent-viewer>
                 </div>
 
                 <div class="controls-wrapper">
@@ -266,28 +262,12 @@
             const viewer2 = document.getElementById("viewer2");
             if (viewer2 && demo.multipleEmitters) {
                 viewer2.emitter = demo.multipleEmitters;
-                console.log("✓ FastEvent Viewer 2 已绑定到", demo.multipleEmitters.length, "个 emitters");
+                console.log(
+                    "✓ FastEvent Viewer 2 已绑定到",
+                    demo.multipleEmitters.length,
+                    "个 emitters",
+                );
             }
-
-            // 触发函数绑定到全局
-            window.triggerSimpleEvent = demo.triggerSimpleEvent;
-            window.triggerTaggedEvent = demo.triggerTaggedEvent;
-            window.triggerTransformEvent = demo.triggerTransformEvent;
-            window.triggerErrorEvent = demo.triggerErrorEvent;
-            window.triggerMultiListenerEvent = demo.triggerMultiListenerEvent;
-            window.triggerCountedEvent = demo.triggerCountedEvent;
-            window.triggerBatchEvents = demo.triggerBatchEvents;
-            window.triggerWildcardEvents = demo.triggerWildcardEvents;
-            window.triggerAsyncEvent = demo.triggerAsyncEvent;
-            window.triggerLongRunningEvent = demo.triggerLongRunningEvent;
-            window.startRandomEvents = demo.startRandomEvents;
-            window.stopRandomEvents = demo.stopRandomEvents;
-            window.addSimpleSubscribe = demo.addSimpleSubscribe;
-            window.removeSimpleSubscribe = demo.removeSimpleSubscribe;
-            window.triggerUserEvents = demo.triggerUserEvents;
-            window.triggerDataEvents = demo.triggerDataEvents;
-            window.triggerSystemEvents = demo.triggerSystemEvents;
-        </script>
 
             // 触发函数绑定到全局
             window.triggerSimpleEvent = demo.triggerSimpleEvent;

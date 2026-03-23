@@ -6,11 +6,25 @@
 
 在你的应用入口文件中导入`fastevent/viewer`.
 
-```javascript
+```html
+<html>
+    <!-- 引入FastEvent -->
+    <script src="https://unpkg.com/fastevent@latest/dist/index.js"></script>
+    <!-- 引入FastEvent Viewer组件-->
+    <script src="https://unpkg.com/fastevent@latest/dist/viewer/index.js"></script>
+<body>
+    <fastevent-viewer id="viewer"></fastevent-viewer>
+</body>
+</html>
+<script>
 import "fastevent/viewer";
 import { FastEvent } from "fastevent";
 
 const emitter = new FastEvent();
+
+
+
+
 ```
 
 <demo html="viewer.html"></demo>

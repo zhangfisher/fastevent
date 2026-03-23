@@ -25,7 +25,6 @@ globalThis.emitter = emitter;
 
 // 简单事件监听器 - 返回字符串
 function simpleEventHandler(data: any) {
-    console.log("[简单事件] 收到数据:", data);
     return "✓ 简单事件处理完成" + Math.floor(Math.random() * 101);
 }
 emitter.on("test/simple", simpleEventHandler);
@@ -45,7 +44,6 @@ export function removeSimpleSubscribe() {
 }
 // 带标签的用户登录监听器 - 返回对象
 function userLoginHandler(data: any) {
-    console.log("[用户登录]", data);
     return {
         success: true,
         token: "mock-token-123",
@@ -62,7 +60,6 @@ function onAny(_message: any) {
 
 // Transform 事件监听器 - 返回数组
 function dataUpdateHandler(data: any) {
-    console.log("[数据更新]", data);
     return [
         { id: 1, status: "updated" },
         { id: 2, status: "updated" },
@@ -75,26 +72,22 @@ emitter.on("data/update", dataUpdateHandler, { tag: "data" });
 
 // 错误事件监听器 - 抛出错误
 function errorHandler() {
-    console.log("[错误事件] 即将抛出错误");
     throw new Error("这是一个测试错误");
 }
 emitter.on("test/error", errorHandler);
 
 // 多监听器事件 - 返回不同类型
 function multiListener1() {
-    console.log("→ 监听器 1 执行");
     return 42; // 返回数字
 }
 emitter.on("test/multi", multiListener1, { tag: "first" });
 
 function multiListener2() {
-    console.log("→ 监听器 2 执行");
     return ["结果1", "结果2", "结果3"]; // 返回数组
 }
 emitter.on("test/multi", multiListener2, { tag: "second" });
 
 function multiListener3() {
-    console.log("→ 监听器 3 执行");
     return {
         status: "completed",
         timestamp: Date.now(),
@@ -107,39 +100,33 @@ emitter.on("test/multi", multiListener3, { tag: "third" });
 let countedExecutions = 0;
 function countedListener() {
     countedExecutions++;
-    console.log(`[计数事件] 第 ${countedExecutions} 次执行`);
     return countedExecutions <= 3; // 返回布尔值
 }
 emitter.on("test/counted", countedListener, { count: 3 });
 
 // 批量事件监听器 - 返回不同类型
 function batchStartHandler(data: any) {
-    console.log("[批量] 开始:", data);
     return { taskId: `task-${Date.now()}`, status: "started" };
 }
 emitter.on("batch/start", batchStartHandler);
 
 function batchProcessingHandler(data: any) {
-    console.log("[批量] 处理中:", data);
     return 50.5; // 返回浮点数
 }
 emitter.on("batch/processing", batchProcessingHandler);
 
 function batchProgressHandler(data: any) {
-    console.log("[批量] 进度:", data);
     return `${data.progress.toFixed(1)}% 完成`; // 返回模板字符串
 }
 emitter.on("batch/progress", batchProgressHandler);
 
 function batchCompleteHandler(data: any) {
-    console.log("[批量] 完成:", data);
     return null; // 返回 null
 }
 emitter.on("batch/complete", batchCompleteHandler);
 
 // 通配符事件监听器 - 返回 Map
 function userWildcardHandler(data: any, message: any) {
-    console.log("[通配符] 用户事件:", message.type, data);
     const result = new Map([
         ["eventType", message.type],
         ["action", data.action],
@@ -152,9 +139,7 @@ emitter.on("user/*", userWildcardHandler);
 
 // 异步事件监听器 - 返回 Promise 对象
 async function asyncEventHandler(data: any) {
-    console.log("[异步事件] 开始处理:", data);
     await new Promise((resolve) => setTimeout(resolve, 100));
-    console.log("[异步事件] 处理完成");
     return {
         asyncResult: true,
         value: data.value,
@@ -166,10 +151,8 @@ emitter.on("test/async", asyncEventHandler);
 
 // 新增：长时间执行的监听器
 async function longRunningHandler() {
-    console.log("[长时间执行] 开始执行，预计耗时5秒");
     // 模拟耗时操作
     await new Promise((resolve) => setTimeout(resolve, 2000));
-    console.log("[长时间执行] 执行完成");
     return {
         message: "长时间任务已完成",
         duration: "2秒",
@@ -180,8 +163,7 @@ emitter.on("test/long-running", longRunningHandler, { tag: "slow" });
 
 // 新增：随机数事件监听器
 function randomNumberHandler(data: any) {
-    console.log("[随机数事件] 收到:", data);
-    return Math.random(); // 返回 0-1 之间的随机数
+    return getRandomId(); // 返回 0-1 之间的随机数
 }
 emitter.on("random/number", randomNumberHandler, { tag: "random" });
 
@@ -302,12 +284,8 @@ let randomEventInterval: number | null = null;
  */
 export function startRandomEvents() {
     if (randomEventInterval !== null) {
-        console.log("随机事件已已经在运行");
         return;
     }
-
-    console.log("🎲 开始定时触发随机事件...");
-
     randomEventInterval = window.setInterval(() => {
         // 随机选择一个事件类型
         const eventTypes = ["random/number", "test/simple", "data/update", "user/login"];
@@ -333,9 +311,6 @@ export function stopRandomEvents() {
     if (randomEventInterval !== null) {
         clearInterval(randomEventInterval);
         randomEventInterval = null;
-        console.log("⏹️ 已停止定时触发随机事件");
-    } else {
-        console.log("随机事件未在运行");
     }
 }
 
@@ -358,12 +333,10 @@ const userEmitter = new FastEvent({
 });
 
 userEmitter.on("user/login", (data: any) => {
-    console.log("[用户事件] 登录:", data);
     return { success: true, userId: data.userId };
 });
 
 userEmitter.on("user/logout", (data: any) => {
-    console.log("[用户事件] 登出:", data);
     return { loggedOut: true };
 });
 
@@ -376,12 +349,10 @@ const dataEmitter = new FastEvent({
 });
 
 dataEmitter.on("data/fetch", (data: any) => {
-    console.log("[数据事件] 获取:", data);
     return { items: [1, 2, 3, 4, 5], total: 5 };
 });
 
 dataEmitter.on("data/update", (data: any) => {
-    console.log("[数据事件] 更新:", data);
     return { updated: true };
 });
 
@@ -394,12 +365,10 @@ const systemEmitter = new FastEvent({
 });
 
 systemEmitter.on("system/start", () => {
-    console.log("[系统事件] 启动");
     return { status: "running", uptime: 0 };
 });
 
 systemEmitter.on("system/stop", () => {
-    console.log("[系统事件] 停止");
     return { status: "stopped" };
 });
 
@@ -409,9 +378,9 @@ globalThis.dataEmitter = dataEmitter;
 globalThis.systemEmitter = systemEmitter;
 
 /**
- * 导出多个 emitter 供组件使用
+ * 导出多个 emitter 供组件使用（不包含第一个示例中已使用的 emitter）
  */
-export const multipleEmitters = [emitter, userEmitter, dataEmitter, systemEmitter];
+export const multipleEmitters = [userEmitter, dataEmitter, systemEmitter];
 
 // ==================== 触发函数 ====================
 

@@ -29,6 +29,7 @@ export const languages = {
         "eventViewer.listener": "监听器: {0}",
         "eventViewer.executionResult": "执行结果：",
         "eventViewer.switchEmitter": "切换 Emitter",
+        "eventViewer.inspect": "注册实例到控制台：{}",
         // listenerViewer
         "listenerViewer.registeredListeners": "已注册监听器",
         "listenerViewer.refresh": "刷新",
@@ -80,6 +81,7 @@ export const languages = {
         "eventViewer.listener": "Listener: {0}",
         "eventViewer.executionResult": "Execution result:",
         "eventViewer.switchEmitter": "Switch Emitter",
+        "eventViewer.inspect": "Inject to console: {}",
         // listenerViewer
         "listenerViewer.registeredListeners": "Registered Listeners",
         "listenerViewer.refresh": "Refresh",

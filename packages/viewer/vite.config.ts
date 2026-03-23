@@ -1,7 +1,10 @@
 import { defineConfig } from "vite";
-import { resolve } from "node:path";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import dts from "vite-plugin-dts";
-import { viteStaticCopy } from "vite-plugin-static-copy";
+
+// 获取当前文件的目录路径
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
     plugins: [
@@ -10,15 +13,6 @@ export default defineConfig({
             include: ["src/**/*"],
             outDir: "dist",
             rollupTypes: true,
-        }),
-        // 复制文件到指定目录（对应 esbuild-copy-files-plugin）
-        viteStaticCopy({
-            targets: [
-                {
-                    src: "./dist/*",
-                    dest: "../../native/dist/viewer",
-                },
-            ],
         }),
     ],
     build: {
@@ -30,11 +24,11 @@ export default defineConfig({
                 // 对应 tsup 的输出文件名格式
                 switch (format) {
                     case "es":
-                        return "fastevent.viewer.mjs";
+                        return "index.mjs";
                     case "iife":
-                        return "fastevent.viewer.js";
+                        return "index.js";
                     default:
-                        return `fastevent.viewer.${format}.js`;
+                        return `index.${format}.js`;
                 }
             },
         },

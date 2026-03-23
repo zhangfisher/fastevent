@@ -39,11 +39,21 @@ export class FastEventViewer extends LitElement {
     }
 
     set emitter(value: FastEvent | FastEvent[] | undefined) {
-        this._emitters = Array.isArray(value) ? value : value ? [value] : [];
+        const newValue = Array.isArray(value) ? value : value ? [value] : [];
+        const oldValue = this._emitters;
+
+        this._emitters = newValue;
+
         if (this._currentEmitterIndex >= this._emitters.length) {
             this._currentEmitterIndex = 0;
         }
-        this._reattach();
+
+        // 只在 emitter 实际变化时才重新附加
+        if (oldValue.length !== newValue.length || oldValue.some((e, i) => e !== newValue[i])) {
+            this._reattach();
+        }
+
+        this.requestUpdate("emitter", oldValue.length === 1 ? oldValue[0] : oldValue);
     }
 
     @property({ type: Boolean, reflect: true })
@@ -89,18 +99,16 @@ export class FastEventViewer extends LitElement {
         super.connectedCallback();
         setLanguage(this.lang);
         this._attach();
-        document.addEventListener('click', this._handleDocumentClick);
+        document.addEventListener("click", this._handleDocumentClick);
     }
 
     disconnectedCallback(): void {
         this._detach();
-        document.removeEventListener('click', this._handleDocumentClick);
+        document.removeEventListener("click", this._handleDocumentClick);
     }
 
     willUpdate(changedProperties: Map<string, any>): void {
-        if (changedProperties.has("emitter")) {
-            this._reattach();
-        }
+        // 移除了 emitter 的 _reattach() 调用，因为 setter 已经处理了
         if (changedProperties.has("_filterText")) {
             this._updateFilteredLogs();
         }
@@ -141,7 +149,7 @@ export class FastEventViewer extends LitElement {
 
     private _handleDocumentClick = (e: MouseEvent) => {
         const target = e.target as HTMLElement;
-        const dropdown = this.renderRoot?.querySelector('.emitter-dropdown-container');
+        const dropdown = this.renderRoot?.querySelector(".emitter-dropdown-container");
         if (dropdown && !dropdown.contains(target)) {
             this._isDropdownOpen = false;
             this.requestUpdate();
@@ -344,44 +352,39 @@ export class FastEventViewer extends LitElement {
         />`;
     }
 
-    private _renderEmitterDropdown(title: string) {
-        return html`
-            <div class="emitter-dropdown-container">
-                <button
-                    class="emitter-dropdown-trigger"
-                    @click="${() => {
-                        this._isDropdownOpen = !this._isDropdownOpen;
-                    }}"
-                    title="${t("eventViewer.switchEmitter")}"
-                >
-                    <span class="header-title">${title}</span>
-                    <span class="dropdown-arrow ${this._isDropdownOpen ? 'open' : ''}"></span>
-                </button>
-                ${this._isDropdownOpen ? this._renderEmitterMenu() : ''}
-            </div>
-        `;
-    }
-
     private _renderEmitterMenu() {
         return html`
             <div class="emitter-dropdown-menu">
                 ${this._emitters.map((emitter, index) => {
                     const isActive = index === this._currentEmitterIndex;
-                    const menuTitle = this.title.length > 0 ? this.title : emitter?.title || `Emitter ${index + 1}`;
+                    const menuTitle =
+                        this.title.length > 0
+                            ? this.title
+                            : emitter?.title || `Emitter ${index + 1}`;
                     return html`
                         <div
-                            class="emitter-menu-item ${isActive ? 'active' : ''}"
+                            class="emitter-menu-item ${isActive ? "active" : ""}"
                             @click="${() => this._switchEmitter(index)}"
                         >
-                            ${isActive ? renderIcon("yes") : ''}
-                            <span>${menuTitle}</span>
+                            <span class="menu-item-icon">${isActive ? renderIcon("yes") : ""}</span>
+                            <span class="menu-item-label">${menuTitle}</span>
                         </div>
                     `;
                 })}
             </div>
         `;
     }
-
+    private _getEmitterVarName() {
+        return `$emitter`;
+    }
+    private _injectEmitterToConsole() {
+        const varname = this._getEmitterVarName();
+        const emitter = this._getCurrentEmitter();
+        if (emitter) {
+            (window as any)[varname] = emitter;
+            console.log("FastEvent instance: ", `${varname}=`, emitter);
+        }
+    }
     renderHeader() {
         const hasMultipleEmitters = this._emitters.length > 1;
         const currentEmitter = this._getCurrentEmitter();
@@ -389,25 +392,34 @@ export class FastEventViewer extends LitElement {
 
         return html`
             <div class="header">
-                ${hasMultipleEmitters
-                    ? html`
+                ${
+                    hasMultipleEmitters
+                        ? html`
                         <div class="emitter-dropdown-container">
                             <button
                                 class="emitter-dropdown-trigger"
-                                @click="${() => {
+                                @click="${(e: Event) => {
                                     this._isDropdownOpen = !this._isDropdownOpen;
+                                    e.stopPropagation();
+                                    this.requestUpdate();
                                 }}"
                                 title="${t("eventViewer.switchEmitter")}"
                             >
-                                <span class="header-title">${displayTitle}</span>
-                                <span class="dropdown-arrow ${this._isDropdownOpen ? 'open' : ''}"></span>
+                                <span class="header-title">${displayTitle}                                    
+                                </span>
+                                <span class="dropdown-arrow ${this._isDropdownOpen ? "open" : ""}"></span>
                             </button>
-                            ${this._isDropdownOpen ? this._renderEmitterMenu() : ''}
+                            ${this._isDropdownOpen ? this._renderEmitterMenu() : ""}
                         </div>
                         <span class="emitter-dropdown-spacer"></span>
                       `
-                    : html`<span class="header-title">${displayTitle}</span>`
+                        : html`<span class="header-title">${displayTitle}</span>`
                 }
+                ${renderButton("", () => this._injectEmitterToConsole(), {
+                    icon: "inspect",
+                    className: "btn-icon",
+                    title: t("eventViewer.inspect", this._getEmitterVarName()),
+                })}
                 ${renderButton(
                     "",
                     () => {
@@ -465,9 +477,15 @@ export class FastEventViewer extends LitElement {
         if (args && (args.flags || 0) > 0) {
             const flags = args.flags || 0;
             if (flags > 1) {
-                return renderTag(`${args.flags}`, "orange", t("eventViewer.extendedFlags"));
+                return renderTag(
+                    `${args.flags}`,
+                    "orange",
+                    t("eventViewer.extendedFlags"),
+                    undefined,
+                    this.dark,
+                );
             }
-            return html`${(flags | 1) == 0 ? "" : renderTag(`T`, "orange", t("eventViewer.transformed"))}`;
+            return html`${(flags | 1) == 0 ? "" : renderTag(`T`, "orange", t("eventViewer.transformed"), undefined, this.dark)}`;
         }
     }
     renderLog(log: EventLog) {
@@ -484,12 +502,12 @@ export class FastEventViewer extends LitElement {
                         ${log.done ? "✨" : renderIcon("loading")}
                         <span class="log-type" title="${t("eventViewer.eventType")}">${message.type}</span>
                         <span class="log-time" title="${t("eventViewer.triggerTime")}">${timeStr}</span>
-                        ${renderTag(`#${log.id}`, "gray", t("eventViewer.serialNumber"))}
-                        ${this._isShowListeners ? "" : renderTag(`ƒ(${log.listeners.length})`, "purple", t("eventViewer.totalListeners", log.listeners.length))}
-                        ${args?.retain ? renderTag("retain", "red", t("eventViewer.retainLastEvent")) : ""}
+                        ${renderTag(`#${log.id}`, "gray", t("eventViewer.serialNumber"), undefined, this.dark)}
+                        ${this._isShowListeners ? "" : renderTag(`ƒ(${log.listeners.length})`, "purple", t("eventViewer.totalListeners", log.listeners.length), undefined, this.dark)}
+                        ${args?.retain ? renderTag("retain", "red", t("eventViewer.retainLastEvent"), undefined, this.dark) : ""}
                         ${this.renderLogFlags(args!)}
-                        ${args?.rawEventType && args?.rawEventType !== message.type ? renderTag(args.rawEventType, "blue", t("eventViewer.rawEventType", args.rawEventType)) : ""}
-                        ${log.duration[1] > 0 ? renderTag(`${Number((log.duration[1] - log.duration[0]).toFixed(3))}ms`, "green", t("eventViewer.executionTime")) : ""}
+                        ${args?.rawEventType && args?.rawEventType !== message.type ? renderTag(args.rawEventType, "blue", t("eventViewer.rawEventType", args.rawEventType), undefined, this.dark) : ""}
+                        ${log.duration[1] > 0 ? renderTag(`${Number((log.duration[1] - log.duration[0]).toFixed(3))}ms`, "green", t("eventViewer.executionTime"), undefined, this.dark) : ""}
                         ${renderButton(
                             "",
                             () => {
@@ -529,9 +547,9 @@ export class FastEventViewer extends LitElement {
             <div class="listener" >
                 ${renderIcon("listener", t("eventViewer.listener"))}
                 <span class="listener-name" title="${t("eventViewer.listener")}" @click="${() => this._printListenerInfo(listener)}">${listener.name}</span>
-                ${listener.tag ? renderTag(listener.tag, undefined, t("eventViewer.listenerTag", listener.tag)) : ""}
-                ${renderTag(listener.count, undefined, t("eventViewer.executionCount"))}
-                ${listener.flags !== undefined ? renderTag(`${listener.flags}`, "orange", t("eventViewer.listenerFlags")) : ""}
+                ${listener.tag ? renderTag(listener.tag, undefined, t("eventViewer.listenerTag", listener.tag), undefined, this.dark) : ""}
+                ${renderTag(listener.count, undefined, t("eventViewer.executionCount"), undefined, this.dark)}
+                ${listener.flags !== undefined ? renderTag(`${listener.flags}`, "orange", t("eventViewer.listenerFlags"), undefined, this.dark) : ""}
                 <span class="listener-status ${statusClass}" title="${resultText}">
                     ${renderIcon(listener.status === "running" ? "loading" : listener.status === "ok" ? "yes" : listener.status)}
                 </span>
@@ -590,7 +608,8 @@ export class FastEventViewer extends LitElement {
                     ? html`<fastevent-listeners
                         .emitter="${this._getCurrentEmitter()}"
                         .dark="${this.dark}"
-                        .lang="${this.lang}">
+                        .lang="${this.lang}"
+                        style="flex-grow:1">
                     </fastevent-listeners>`
                     : html`${this.renderToolbar()}${this.renderLogs()}`
             }
