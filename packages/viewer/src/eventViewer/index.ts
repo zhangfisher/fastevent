@@ -114,6 +114,29 @@ export class FastEventViewer extends LitElement {
         return this._emitters[this._currentEmitterIndex];
     }
 
+    private _switchEmitter(index: number) {
+        if (index === this._currentEmitterIndex) return;
+
+        // 保存当前 emitter 的日志
+        this._emitterLogs.set(this._currentEmitterIndex, [...this.logs]);
+        this._emitterLogIndexes.set(this._currentEmitterIndex, [...this._logIndexs]);
+
+        // 切换到新 emitter
+        this._currentEmitterIndex = index;
+
+        // 恢复新 emitter 的日志
+        this.logs = this._emitterLogs.get(index) || [];
+        this._logIndexs = this._emitterLogIndexes.get(index) || [];
+
+        // 重新附加钩子
+        this._reattach();
+
+        // 关闭下拉菜单
+        this._isDropdownOpen = false;
+
+        this.requestUpdate();
+    }
+
     private _reattach() {
         this._detach();
         this.clear();
