@@ -65,7 +65,6 @@
             .control-btn:hover {
                 background: #f9fafb;
                 border-color: #9ca3af;
-                transform: translateY(-1px);
             }
 
             .control-btn:active {
@@ -147,9 +146,6 @@
                     <button class="control-btn" onclick="window.demo.startRandomEvents()">
                         <span class="status-indicator inactive" id="randomIndicator"></span>
                         自动触发事件
-                    </button>
-                    <button class="control-btn" onclick="window.demo.stopRandomEvents()">
-                        停止自动触发
                     </button>
                 </div>
             </div>
@@ -451,6 +447,9 @@
 
             function startRandomEvents() {
                 if (randomEventInterval !== null) {
+                    stopRandomEvents();
+
+                    updateIndicator("randomIndicator", false);
                     return;
                 }
                 updateIndicator("randomIndicator", true);
