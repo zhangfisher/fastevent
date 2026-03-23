@@ -22,7 +22,17 @@ export class FastEventViewer extends LitElement {
     static styles = styles;
 
     @property({ type: Object })
-    emitter?: FastEvent;
+    get emitter(): FastEvent | FastEvent[] | undefined {
+        return this._emitters.length === 1 ? this._emitters[0] : this._emitters;
+    }
+
+    set emitter(value: FastEvent | FastEvent[] | undefined) {
+        this._emitters = Array.isArray(value) ? value : value ? [value] : [];
+        if (this._currentEmitterIndex >= this._emitters.length) {
+            this._currentEmitterIndex = 0;
+        }
+        this._reattach();
+    }
 
     @property({ type: Boolean, reflect: true })
     dark = false;
@@ -57,6 +67,18 @@ export class FastEventViewer extends LitElement {
     @state()
     private _isShowListeners = false;
 
+    @state()
+    private _emitters: FastEvent[] = [];
+
+    @state()
+    private _currentEmitterIndex = 0;
+
+    @state()
+    private _isDropdownOpen = false;
+
+    private _emitterLogs = new Map<number, EventLog[]>();
+    private _emitterLogIndexes = new Map<number, number[]>();
+
     subscriber?: FastEventSubscriber;
     messages: FastEventMessage[] = [];
     logs: EventLog[] = [];
@@ -86,6 +108,10 @@ export class FastEventViewer extends LitElement {
         if (changedProperties.has("lang")) {
             setLanguage(this.lang);
         }
+    }
+
+    private _getCurrentEmitter(): FastEvent | undefined {
+        return this._emitters[this._currentEmitterIndex];
     }
 
     private _reattach() {
@@ -284,18 +310,6 @@ export class FastEventViewer extends LitElement {
         return html`
             <div class="header">
                 <span class="header-title">${this.title.length > 0 ? this.title : this.emitter?.title}</span>
-                <!-- ${renderButton(
-                    "",
-                    () => {
-                        this.enable = !this.enable;
-                        this.requestUpdate();
-                    },
-                    {
-                        icon: this.enable ? "success" : "cancel",
-                        pressed: this.enable,
-                        className: "btn-icon",
-                    },
-                )} --> 
                 ${renderButton(
                     "",
                     () => {
