@@ -347,8 +347,11 @@ export class FastEventViewer extends LitElement {
 
     private _renderEmitterDropdown(title: string) {
         console.log('[_renderEmitterDropdown] Rendering dropdown with title:', title);
+        console.log('[_renderEmitterDropdown] _isDropdownOpen:', this._isDropdownOpen);
+        // 临时调试：强制显示菜单
+        const showMenu = true; // this._isDropdownOpen;
         return html`
-            <div class="emitter-dropdown-container">
+            <div class="emitter-dropdown-container" style="border: 2px solid red;">
                 <button
                     class="emitter-dropdown-trigger"
                     @click="${() => {
@@ -361,7 +364,7 @@ export class FastEventViewer extends LitElement {
                     <span class="header-title">${title}</span>
                     <span class="dropdown-arrow ${this._isDropdownOpen ? 'open' : ''}"></span>
                 </button>
-                ${this._isDropdownOpen ? this._renderEmitterMenu() : ''}
+                ${showMenu ? this._renderEmitterMenu() : ''}
             </div>
         `;
     }
