@@ -1,3 +1,10 @@
+## 2.5.0
+
+### Minor Changes
+
+-   84e32e0: [feat] 新增加`fastevent-viewer`组件用于查看调试
+    [feat] 新增加`fastevent.hooks`用于增加异步 hook 机制
+
 ## 2.4.1
 
 ### Patch Changes
