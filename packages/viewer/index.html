@@ -255,49 +255,38 @@
         <script type="module">
             import * as demo from "./example/index.ts";
 
-            console.log("=== FastEvent Viewer 调试信息 ===");
-            console.log("demo keys:", Object.keys(demo));
-            console.log("demo.multipleEmitters:", demo.multipleEmitters);
-            console.log("demo.emitter:", demo.emitter);
-
             // 绑定 emitter 到 viewer
             const viewer = document.getElementById("viewer");
-            console.log("viewer 元素:", viewer);
             if (viewer && demo.emitter) {
                 viewer.emitter = demo.emitter;
-                console.log("✓ FastEvent Viewer 已绑定到 FastEvent 实例");
+                console.log("✓ FastEvent Viewer 已绑定到单 emitter");
             }
 
             // 绑定多个 emitters 到 viewer2
             const viewer2 = document.getElementById("viewer2");
-            console.log("viewer2 元素:", viewer2);
-            console.log("viewer2.emitter (绑定前):", viewer2?.emitter);
+            if (viewer2 && demo.multipleEmitters) {
+                viewer2.emitter = demo.multipleEmitters;
+                console.log("✓ FastEvent Viewer 2 已绑定到", demo.multipleEmitters.length, "个 emitters");
+            }
 
-            // 延迟绑定以确保组件已初始化
-            setTimeout(() => {
-                if (viewer2) {
-                    console.log("开始绑定 multipleEmitters...");
-                    console.log("multipleEmitters:", demo.multipleEmitters);
-                    console.log("multipleEmitters 类型:", Array.isArray(demo.multipleEmitters) ? 'Array' : typeof demo.multipleEmitters);
-                    console.log("multipleEmitters 长度:", demo.multipleEmitters?.length);
-
-                    if (demo.multipleEmitters && demo.multipleEmitters.length > 0) {
-                        viewer2.emitter = demo.multipleEmitters;
-                        window.multipleEmitters = demo.multipleEmitters;
-
-                        // 验证绑定
-                        console.log("绑定后 viewer2.emitter:", viewer2.emitter);
-                        console.log("绑定后 viewer2._emitters (内部):", viewer2._emitters);
-
-                        // 手动触发更新
-                        viewer2.requestUpdate();
-
-                        console.log("✓ FastEvent Viewer 2 已绑定到多个 FastEvent 实例");
-                    } else {
-                        console.error("❌ multipleEmitters 不可用或为空");
-                    }
-                }
-            }, 100);
+            // 触发函数绑定到全局
+            window.triggerSimpleEvent = demo.triggerSimpleEvent;
+            window.triggerTaggedEvent = demo.triggerTaggedEvent;
+            window.triggerTransformEvent = demo.triggerTransformEvent;
+            window.triggerErrorEvent = demo.triggerErrorEvent;
+            window.triggerMultiListenerEvent = demo.triggerMultiListenerEvent;
+            window.triggerCountedEvent = demo.triggerCountedEvent;
+            window.triggerBatchEvents = demo.triggerBatchEvents;
+            window.triggerWildcardEvents = demo.triggerWildcardEvents;
+            window.triggerAsyncEvent = demo.triggerAsyncEvent;
+            window.triggerLongRunningEvent = demo.triggerLongRunningEvent;
+            window.startRandomEvents = demo.startRandomEvents;
+            window.stopRandomEvents = demo.stopRandomEvents;
+            window.addSimpleSubscribe = demo.addSimpleSubscribe;
+            window.removeSimpleSubscribe = demo.removeSimpleSubscribe;
+            window.triggerUserEvents = demo.triggerUserEvents;
+            window.triggerDataEvents = demo.triggerDataEvents;
+            window.triggerSystemEvents = demo.triggerSystemEvents;
         </script>
 
             // 触发函数绑定到全局
