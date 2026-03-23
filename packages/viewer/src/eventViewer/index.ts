@@ -391,7 +391,22 @@ export class FastEventViewer extends LitElement {
         return html`
             <div class="header">
                 ${hasMultipleEmitters
-                    ? this._renderEmitterDropdown(displayTitle)
+                    ? html`
+                        <div class="emitter-dropdown-container">
+                            <button
+                                class="emitter-dropdown-trigger"
+                                @click="${() => {
+                                    this._isDropdownOpen = !this._isDropdownOpen;
+                                }}"
+                                title="${t("eventViewer.switchEmitter")}"
+                            >
+                                <span class="header-title">${displayTitle}</span>
+                                <span class="dropdown-arrow ${this._isDropdownOpen ? 'open' : ''}"></span>
+                            </button>
+                            ${this._isDropdownOpen ? this._renderEmitterMenu() : ''}
+                        </div>
+                        <span class="emitter-dropdown-spacer"></span>
+                      `
                     : html`<span class="header-title">${displayTitle}</span>`
                 }
                 ${renderButton(

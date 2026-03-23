@@ -371,6 +371,11 @@ export const styles = css`
     /* Emitter 下拉容器 */
     .emitter-dropdown-container {
         position: relative;
+        flex-shrink: 0;
+    }
+
+    /* Emitter 下拉占位符 */
+    .emitter-dropdown-spacer {
         flex: 1;
     }
 
@@ -444,6 +449,7 @@ export const styles = css`
         transition: background 0.2s;
         font-size: 14px;
         color: #333;
+        text-align: left;
     }
 
     .emitter-menu-item:hover {
@@ -459,6 +465,13 @@ export const styles = css`
     .emitter-menu-item .icon {
         --icon-size: 14px;
         color: #52c41a;
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .emitter-menu-item span {
+        flex: 1;
     }
 
     /* 通用下拉菜单样式（供 renderMenu 使用） */
