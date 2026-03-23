@@ -89,10 +89,12 @@ export class FastEventViewer extends LitElement {
         super.connectedCallback();
         setLanguage(this.lang);
         this._attach();
+        document.addEventListener('click', this._handleDocumentClick);
     }
 
     disconnectedCallback(): void {
         this._detach();
+        document.removeEventListener('click', this._handleDocumentClick);
     }
 
     willUpdate(changedProperties: Map<string, any>): void {
@@ -136,6 +138,15 @@ export class FastEventViewer extends LitElement {
 
         this.requestUpdate();
     }
+
+    private _handleDocumentClick = (e: MouseEvent) => {
+        const target = e.target as HTMLElement;
+        const dropdown = this.renderRoot?.querySelector('.emitter-dropdown-container');
+        if (dropdown && !dropdown.contains(target)) {
+            this._isDropdownOpen = false;
+            this.requestUpdate();
+        }
+    };
 
     private _reattach() {
         this._detach();
