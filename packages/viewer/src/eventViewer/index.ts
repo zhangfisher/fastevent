@@ -21,6 +21,18 @@ import { t, setLanguage } from "../utils/t";
 export class FastEventViewer extends LitElement {
     static styles = styles;
 
+    @state()
+    private _emitters: FastEvent[] = [];
+
+    @state()
+    private _currentEmitterIndex = 0;
+
+    @state()
+    private _isDropdownOpen = false;
+
+    private _emitterLogs = new Map<number, EventLog[]>();
+    private _emitterLogIndexes = new Map<number, number[]>();
+
     @property({ type: Object })
     get emitter(): FastEvent | FastEvent[] | undefined {
         return this._emitters.length === 1 ? this._emitters[0] : this._emitters;
@@ -66,18 +78,6 @@ export class FastEventViewer extends LitElement {
 
     @state()
     private _isShowListeners = false;
-
-    @state()
-    private _emitters: FastEvent[] = [];
-
-    @state()
-    private _currentEmitterIndex = 0;
-
-    @state()
-    private _isDropdownOpen = false;
-
-    private _emitterLogs = new Map<number, EventLog[]>();
-    private _emitterLogIndexes = new Map<number, number[]>();
 
     subscriber?: FastEventSubscriber;
     messages: FastEventMessage[] = [];
