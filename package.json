@@ -16,7 +16,7 @@
         "bench": "tsx src/__benchmarks__/index.ts",
         "update:changelog": "cpx packages/native/CHANGELOG.md docs/zh/guide/intro/",
         "changeset": "changeset",
-        "publish-packages": "bun run build && changeset version && changeset publish",
+        "publish-packages": "turbo build --filter=fastevent && changeset version && changeset publish",
         "only-publish-packages": "bun run build && npm publish",
         "release": "bun run build && bun run changeset version && cpx packages/native/CHANGELOG.md docs/zh/guide/intro/ && bun run changeset publish",
         "sync": "cnpm sync fastevent",

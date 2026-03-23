@@ -8,7 +8,7 @@ export default defineConfig([
         dts: true,
         splitting: true,
         sourcemap: true,
-        globalName: "FastEvent",
+        globalName: "FastEventSpaces",
         clean: true,
         treeshake: true,
         minify: true,

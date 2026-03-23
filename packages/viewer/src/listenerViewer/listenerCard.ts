@@ -2,6 +2,10 @@
 import { LitElement, html } from "lit";
 import { customElement, property } from "lit/decorators.js";
 import { styles } from "./listenerCardStyles";
+import type { FastEventListenerMeta } from "fastevent";
+import type { ItemOf } from "../types";
+import { removeItem, renderTag } from "../utils";
+import { t, setLanguage } from "../utils/t";
 import {
     isPathMatched,
     type FastEvent,
@@ -9,9 +13,6 @@ import {
     type FastEventListenerNode,
     type TypedFastEventMessage,
 } from "fastevent";
-import type { FastEventListenerMeta } from "fastevent";
-import type { ItemOf } from "../types";
-import { removeItem, renderTag } from "../utils";
 
 /**
  * fastevent-listener-card 组件 - 显示单个监听器的详细信息
@@ -29,13 +30,25 @@ export class FastEventListenerCard extends LitElement {
     dark = false;
     @property({ type: String })
     type?: string;
+
+    @property({ type: String, reflect: true })
+    lang = "cn";
+
     connectedCallback(): void {
         super.connectedCallback();
         this._addListenerHook();
+        setLanguage(this.lang);
     }
     disconnectedCallback(): void {
         super.disconnectedCallback();
         this._removeListenerHook();
+    }
+
+    override willUpdate(changedProperties: Map<PropertyKey, unknown>): void {
+        super.willUpdate(changedProperties);
+        if (changedProperties.has("lang")) {
+            setLanguage(this.lang);
+        }
     }
 
     private _onAfterExecuteListener: ItemOf<FastEventHooks["AfterExecuteListener"]> = (
@@ -84,7 +97,7 @@ export class FastEventListenerCard extends LitElement {
     private _printListenerToConsole(listener: FastEventListenerMeta): void {
         const [fn] = listener;
         if (typeof fn !== "function") {
-            console.warn("监听器函数已被垃圾回收或无效");
+            console.warn(t("listenerCard.invalidData"));
             console.log("元数据:", {
                 executed: `${listener[2]}/${listener[1]}`,
                 tag: listener[3],
@@ -93,12 +106,12 @@ export class FastEventListenerCard extends LitElement {
             return;
         }
         console.group(`FastEvent Listener`);
-        console.log(`监听器: ${fn.name || "anonymous"}`);
+        console.log(t("listenerViewer.listener", fn.name || t("listenerCard.anonymous")));
         console.log(fn);
-        console.log(`执行次数: ${listener[2]}/${listener[1]}`);
-        console.log(`标签: ${listener[3]}`);
+        console.log(t("listenerViewer.executionCount", listener[2], listener[1]));
+        console.log(t("listenerViewer.tag", listener[3]));
         if (listener[4] !== undefined) {
-            console.log(`标识: ${listener[4]}`);
+            console.log(t("listenerViewer.flags", listener[4]));
         }
         console.groupEnd();
     }
@@ -116,8 +129,8 @@ export class FastEventListenerCard extends LitElement {
             const result = listener[5] instanceof WeakRef ? listener[5].deref() : listener[5];
             return html`
                     <div class="listener-row">
-                        <div class="listener-cell listener-label">返回值</div>
-                        <div class="listener-cell listener-value" title="单击显示在控制台" style="cursor:pointer"                         
+                        <div class="listener-cell listener-label">${t("listenerCard.returnValue")}</div>
+                        <div class="listener-cell listener-value" title="${t("listenerCard.clickToConsoleResult")}" style="cursor:pointer"
                         @click="${() => this._printListenerResultToConsole(this.listener!)}"
 >${result instanceof Error ? result.stack : JSON.stringify(result)}</div>
                     </div>
@@ -127,36 +140,36 @@ export class FastEventListenerCard extends LitElement {
     override render() {
         if (!this.listener) {
             return html`
-                <div class="empty-state">监听器数据无效</div>
+                <div class="empty-state">${t("listenerCard.invalidData")}</div>
             `;
         }
 
         const [fn, , , tag, flags] = this.listener;
-        const functionName = fn.name || "anonymous";
+        const functionName = fn.name || t("listenerCard.anonymous");
 
         return html`
             <div class="listener-card">
                 <div class="listener-row">
-                    <div class="listener-cell listener-label">监听函数</div>
+                    <div class="listener-cell listener-label">${t("listenerCard.listenerFunction")}</div>
                     <div class="listener-cell">
                         <span
                             class="listener-function"
                             @click="${() => this._printListenerToConsole(this.listener!)}"
-                            title="点击在控制台输出监听器信息"
+                            title="${t("listenerCard.clickToConsole")}"
                         >
                             ${functionName}
                         </span>
                     </div>
                 </div>
                 <div class="listener-row">
-                    <div class="listener-cell listener-label">执行次数</div>
+                    <div class="listener-cell listener-label">${t("listenerCard.executionCount")}</div>
                     <div class="listener-cell listener-value">${this._formatListenerCount(this.listener)}</div>
                 </div>
                 ${
                     tag
                         ? html`
                     <div class="listener-row">
-                        <div class="listener-cell listener-label">标签</div>
+                        <div class="listener-cell listener-label">${t("listenerCard.tag")}</div>
                         <div class="listener-cell">${renderTag(tag)}</div>
                     </div>
                 `
@@ -166,7 +179,7 @@ export class FastEventListenerCard extends LitElement {
                     flags !== undefined
                         ? html`
                     <div class="listener-row">
-                        <div class="listener-cell listener-label">标识</div>
+                        <div class="listener-cell listener-label">${t("listenerCard.flags")}</div>
                         <div class="listener-cell listener-value">${flags}</div>
                     </div>
                 `

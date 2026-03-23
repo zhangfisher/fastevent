@@ -94,7 +94,7 @@ export const styles = css`
         border: none;
         border-radius: 4px;
         background: transparent;
-        color: var(--fe-color-text, #333);
+        color: var(--fe-color-text, #555);
         font-size: 13px;
         cursor: pointer;
         transition: all 0.3s;

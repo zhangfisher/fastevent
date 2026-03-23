@@ -13,6 +13,7 @@ import type {
 import type { FastEventListenerMeta } from "fastevent";
 import "./listenerCard";
 import { removeItem, renderTag, renderRetainMessage } from "../utils";
+import { t, setLanguage } from "../utils/t";
 
 /**
  * FastEventListeners 组件 - 显示 FastEvent 实例的监听器树
@@ -36,7 +37,10 @@ export class FastEventListeners extends LitElement {
     @state()
     private _expandedNodes = new Set<string>();
 
-    private _leftWidth = "33.33%";
+    @property({ type: String, reflect: true })
+    lang = "cn";
+
+    private _leftWidth = "30%";
     private _isResizing = false;
     private _resizeStartX = 0;
     private _resizeStartWidth = 0;
@@ -313,7 +317,7 @@ export class FastEventListeners extends LitElement {
                         <span class="tree-node-label">${path[path.length - 1]}</span>
                         ${
                             this.emitter?.retainedMessages.has(pathKey)
-                                ? renderTag("retain", "red", "保留消息")
+                                ? renderTag("retain", "red", t("listenerViewer.retainedMessage"))
                                 : ""
                         }
                         ${
@@ -354,7 +358,7 @@ export class FastEventListeners extends LitElement {
             return html`
                 <div class="empty-state">
                     <span class="icon listeners"></span>
-                    <p>暂无注册的监听器</p>
+                    <p>${t("listenerViewer.noRegisteredListeners")}</p>
                 </div>
             `;
         }
@@ -375,7 +379,7 @@ export class FastEventListeners extends LitElement {
     }
 
     private renderListener(listener: FastEventListenerMeta, type: string): ReturnType<typeof html> {
-        return html`<fastevent-listener-card .listener="${listener}" .emitter="${this.emitter!}" .type="${type}" .dark="${this.dark}"></fastevent-listener-card>`;
+        return html`<fastevent-listener-card .listener="${listener}" .emitter="${this.emitter!}" .type="${type}" .dark="${this.dark}" .lang="${this.lang}"></fastevent-listener-card>`;
     }
 
     private renderListeners(): ReturnType<typeof html> {
@@ -387,33 +391,33 @@ export class FastEventListeners extends LitElement {
                 ${
                     message
                         ? renderRetainMessage({
-                                message,
-                                pathKey,
-                                dark: this.dark,
-                                onDelete: (key) => {
-                                    this.emitter?.retainedMessages.delete(key);
-                                    this.requestUpdate();
-                                },
-                                onPrint: (msg) => {
-                                    console.group("FastEvent 保留消息");
-                                    console.log("消息内容:", msg);
-                                    console.groupEnd();
-                                },
-                                onCopy: (msg) => {
-                                    const jsonStr = JSON.stringify(msg, null, 2);
-                                    navigator.clipboard.writeText(jsonStr);
-                                },
-                            })
+                              message,
+                              pathKey,
+                              dark: this.dark,
+                              onDelete: (key) => {
+                                  this.emitter?.retainedMessages.delete(key);
+                                  this.requestUpdate();
+                              },
+                              onPrint: (msg) => {
+                                  console.group(t("listenerViewer.retainedMessage"));
+                                  console.log(msg);
+                                  console.groupEnd();
+                              },
+                              onCopy: (msg) => {
+                                  const jsonStr = JSON.stringify(msg, null, 2);
+                                  navigator.clipboard.writeText(jsonStr);
+                              },
+                          })
                         : ""
                 }
                 ${
                     this._listeners.length === 0
                         ? html`
-                        <div class="empty-state">
-                            <span class="icon listeners" style="--icon-size: 3em"></span>
-                            <p>该节点暂无监听器</p>
-                        </div>
-                    `
+                              <div class="empty-state">
+                                  <span class="icon listeners" style="--icon-size: 3em"></span>
+                                  <p>${t("listenerViewer.nodeHasNoListeners")}</p>
+                              </div>
+                          `
                         : html`
                         <div class="listeners-list">
                             ${this._listeners.map((listener) => this.renderListener(listener, pathKey))}
@@ -437,6 +441,9 @@ export class FastEventListeners extends LitElement {
                 this._selectedPath = [];
                 this._expandedNodes = new Set();
             }
+        }
+        if (changedProperties.has("lang")) {
+            setLanguage(this.lang);
         }
     }
 
@@ -464,8 +471,8 @@ export class FastEventListeners extends LitElement {
     override render() {
         return html`
             <div class="toolbar">
-                <span class="toolbar-title">已注册监听器</span>
-                <button class="btn btn-icon" title="刷新" @click="${this._handleRefresh}">
+                <span class="toolbar-title">${t("listenerViewer.registeredListeners")}</span>
+                <button class="btn btn-icon" title="${t("listenerViewer.refresh")}" @click="${this._handleRefresh}">
                     <span class="icon refresh"></span>
                 </button>
             </div>
