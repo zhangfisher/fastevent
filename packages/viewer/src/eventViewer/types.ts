@@ -9,6 +9,7 @@ export type EventLog = {
     triggerTime: number;
     duration: [number, number]; // 执行时间
     args: WeakRef<FastEventListenerArgs>; //
+    updateVersion: number; // 更新版本号，用于触发组件重新渲染
     listeners: {
         fn: WeakRef<any>; // 监听器函数引用
         status: "running" | "ok" | "error";

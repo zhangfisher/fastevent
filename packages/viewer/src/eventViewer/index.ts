@@ -197,6 +197,7 @@ export class FastEventViewer extends LitElement {
             triggerTime: Date.now(),
             duration: [performance.now(), 0],
             listeners,
+            updateVersion: 0,
         } as EventLog;
         log.id = this.logs.length + 1;
         // 重点：用于跟踪
@@ -269,6 +270,7 @@ export class FastEventViewer extends LitElement {
             const logIndex = index; //this.logs.findIndex((l) => l.id === index);
             if (logIndex !== -1) {
                 this.logs[logIndex].listeners = newListeners;
+                this.logs[logIndex].updateVersion++; // 递增版本号以触发组件重新渲染
                 returns.map((r, i) => {
                     const listener = this.logs[logIndex].listeners[i];
                     if (listener) {
@@ -486,6 +488,7 @@ export class FastEventViewer extends LitElement {
                             .log="${log}"
                             .dark="${this.dark}"
                             .showListeners="${this._isShowListeners}"
+                            .updateVersion="${log.updateVersion}"
                             .onPrintListener="${this._printListenerInfo}">
                         </fastevent-event-log>
                     `;
