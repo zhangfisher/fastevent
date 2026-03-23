@@ -140,9 +140,10 @@ export class FastEventViewer extends LitElement {
     }
 
     _onBeforeExecuteListener = (message: FastEventMessage, args: FastEventListenerArgs) => {
-        if (!this.enable) return;
+        const currentEmitter = this._getCurrentEmitter();
+        if (!currentEmitter || !this.enable) return;
 
-        const listeners = (this.emitter!.getListeners(message.type) || []).map((meta) => {
+        const listeners = (currentEmitter.getListeners(message.type) || []).map((meta) => {
             return this._getListenerMeta(meta, "running");
         });
         const log = {
@@ -247,19 +248,21 @@ export class FastEventViewer extends LitElement {
     };
 
     private _attach() {
-        if (this.emitter) {
-            const options = this.emitter.options;
-            this.emitter.hooks.BeforeExecuteListener.push(this._onBeforeExecuteListener);
-            this.emitter.hooks.AfterExecuteListener.push(this._onAfterExecuteListener);
+        const currentEmitter = this._getCurrentEmitter();
+        if (currentEmitter) {
+            const options = currentEmitter.options;
+            currentEmitter.hooks.BeforeExecuteListener.push(this._onBeforeExecuteListener);
+            currentEmitter.hooks.AfterExecuteListener.push(this._onAfterExecuteListener);
             options.debug = true;
         }
     }
 
     private _detach() {
-        if (this.emitter) {
-            removeItem(this.emitter.hooks.BeforeExecuteListener, this._onBeforeExecuteListener);
-            removeItem(this.emitter.hooks.AfterExecuteListener, this._onAfterExecuteListener);
-            const options = this.emitter.options;
+        const currentEmitter = this._getCurrentEmitter();
+        if (currentEmitter) {
+            removeItem(currentEmitter.hooks.BeforeExecuteListener, this._onBeforeExecuteListener);
+            removeItem(currentEmitter.hooks.AfterExecuteListener, this._onAfterExecuteListener);
+            const options = currentEmitter.options;
             options.debug = false;
         }
     }
