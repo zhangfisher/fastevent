@@ -1,6 +1,11 @@
 {
   "version": 1,
   "skills": {
+    "create-skill": {
+      "source": "siviter-xyz/dot-agent",
+      "sourceType": "github",
+      "computedHash": "bf243df18661e667efc259681398709f2cea8672ba4ffada02e144b5e3fb0ec0"
+    },
     "webawesome": {
       "source": "C:\\Work\\Code\\fastevent\\packages\\components\\node_modules\\@awesome.me\\webawesome\\dist\\skills\\webawesome",
       "sourceType": "local",

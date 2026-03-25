@@ -222,7 +222,7 @@ expect(emitter.getListeners("test").length).toBe(0);
 const otherEvents = new FastEvent();
 const events = new FastEvent({
     // Called when a new listener is added
-    onAddListener: (type, listener, options) => {
+    onAddBeoreListener: (type, listener, options) => {
         console.log("Added new listener:", type);
         // Return false to prevent the listener from being added
         return false;
@@ -232,6 +232,7 @@ const events = new FastEvent({
             return otherEvents.on(type, listener, options);
         }
     },
+    onAddAfterListener: (type: string, node: FastEventListenerNode) => {},
     // Called when a listener is removed
     onRemoveListener: (type, listener) => {
         console.log("Removed listener:", type);
