@@ -41,13 +41,36 @@ export interface FastEventIteratorOptions<T = FastEventMessage> {
     signal?: AbortSignal;
 }
 
+/**
+ * 方法装饰器类型定义（TypeScript 5.0+ 新标准）
+ *
+ * 新装饰器标准使用上下文对象和值，而不是传统的 (target, propertyKey, descriptor)
+ */
+type MethodDecoratorFn = (
+    target: ClassMethodDecoratorContext,
+    value: (...args: any[]) => any,
+) => void | (() => any);
+
+/**
+ * 可作为装饰器使用的迭代器
+ *
+ * 关键设计：通过交叉类型实现多态
+ * - 装饰器工厂：emitter.on("event", options)
+ * - 方法装饰器：@emitter.on("event")
+ * - 异步迭代器：for await (const msg of emitter.on("event"))
+ */
+export type WithListenerDecorator<T extends FastEventIterator> =
+    ((type: string, options?: FastEventListenOptions) => WithListenerDecorator<T>) &
+    (T & MethodDecoratorFn);
+
+// 保持向后兼容的导出
+export type ListenerDecorator = MethodDecoratorFn;
+export type IListenerDecoratorBuilder = (type: string, options?: FastEventListenOptions) => MethodDecoratorFn;
+
 export class FastEventIterator<T = any> implements AsyncIterableIterator<T> {
-    // 使用 [message, timestamp] 元组存储，支持 lifetime 机制
-    private buffer: [T, number][] = [];
     private resolvers: Array<(value: IteratorResult<any>) => void> = [];
     private errorResolvers: Array<(error: Error) => void> = [];
     private isStopped = false; // 已经停止迭代
-    private error: Error | null = null;
     private options: Required<
         Omit<FastEventIteratorOptions<T>, "onPush" | "onPop" | "onDrop" | "onError" | "signal">
     > & {
@@ -63,6 +86,8 @@ export class FastEventIterator<T = any> implements AsyncIterableIterator<T> {
     private _ready: boolean = false;
     private _listenOptions?: FastEventListenOptions;
     private _cleanups: (() => void)[] = [];
+    error: Error | null = null;
+    buffer: [T, number][] = []; // 使用 [message, timestamp] 元组存储，支持 lifetime 机制
     constructor(
         private eventEmitter: FastEvent<any> | FastEventScope<any, any, any>,
         private eventName: string,
@@ -93,6 +118,19 @@ export class FastEventIterator<T = any> implements AsyncIterableIterator<T> {
     }
     get ready() {
         return this._ready;
+    }
+    /**
+     * 装饰器方法
+     * @param type - 事件名称
+     * @param options - 监听器选项
+     * @returns 装饰器函数
+     */
+    _decorator(type: string, options: FastEventListenOptions): ListenerDecorator {
+        console.log("_decorator", type, options);
+        // TODO: 实现装饰器逻辑
+        return ((target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
+            return descriptor;
+        }) as any;
     }
     /**
      * 创建异步迭代器

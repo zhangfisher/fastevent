@@ -6,7 +6,7 @@
 
 import { describe, test, expect } from "bun:test";
 import { FastEvent } from "../../event";
-import { createAsyncEventIterator } from "../../eventIterator";
+import { createAsyncEventIterator } from "../../iterator";
 
 async function delay(time: number = 1) {
     return new Promise<void>((resolve) => {

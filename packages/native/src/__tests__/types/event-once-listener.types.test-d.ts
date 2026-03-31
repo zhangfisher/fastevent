@@ -9,7 +9,7 @@ import { GetClosestEvents, GetClosestEventNameTuple, GetMatchedEventNames } from
 import { FastEventMeta, TypedFastEventMessage } from "../../types/FastEventMessages";
 import { GetClosestEventPayload } from "../../types/closest/GetClosestEventPayload";
 import { ExtendWildcardEvents } from "../../types/wildcards/ExtendWildcardEvents";
-import { FastEventIterator } from "../../eventIterator";
+import { FastEventIterator } from "../../iterator";
 type IteratorMessage<T> = T extends FastEventIterator<infer M> ? M : never;
 
 describe("使用once监听器的FaseEvent类型系统测试", () => {

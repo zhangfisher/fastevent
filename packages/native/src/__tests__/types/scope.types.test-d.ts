@@ -12,7 +12,7 @@ import { GetClosestEventPayload } from "../../types/closest/GetClosestEventPaylo
 import { TransformedEvents } from "../../types/transformed/TransformedEvents";
 import { NotPayload } from "../../types/transformed/NotPayload";
 import { ValueOf } from "../../types/utils/ValueOf";
-import { FastEventIterator } from "../../eventIterator";
+import { FastEventIterator } from "../../iterator";
 import { GetMatchedEvents } from "../../types/WildcardEvents";
 
 type IteratorMessage<T> = T extends FastEventIterator<infer M> ? M : never;

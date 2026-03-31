@@ -7,7 +7,7 @@ import { TypedFastEventListener, FastEventListenerNode } from "./FastEventListen
 import type { FastListenerExecutor } from "../executors";
 import type { FastListenerPipe } from "../pipes";
 import { DeepPartial } from "./utils/DeepPartial";
-import { FastEventIteratorOptions } from "../eventIterator";
+import { FastEventIteratorOptions } from "../iterator";
 
 export type FastEventOptions<Meta = Record<string, any>, Context = never> = {
     id: string;

@@ -7,7 +7,7 @@ import { PickTransformedEvents } from "../../types/transformed/PickTransformedEv
 import { PickPayload } from "../../types/transformed/PickPayload";
 import { NotPayload } from "../../types/transformed/NotPayload";
 import { ValueOf } from "../../types/utils/ValueOf";
-import { FastEventIterator } from "../../eventIterator";
+import { FastEventIterator } from "../../iterator";
 
 // 辅助类型：提取 FastEventIterator 的消息类型
 type IteratorMessage<T> = T extends FastEventIterator<infer M> ? M : never;

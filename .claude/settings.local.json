@@ -56,7 +56,9 @@
       "Bash(xargs sed:*)",
       "Bash(ls -la packages/viewer/*.html)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(/tmp/analysis.md:*)",
+      "Read(//tmp/**)"
     ]
   }
 }

@@ -9,7 +9,7 @@ import { NotPayload } from "../../types/transformed/NotPayload";
 import { MutableMessage, GetPayload, Overloads, FastEventMessage } from "../../types";
 import { FastEventMeta } from "../../types/FastEventMessages";
 import { ExtendWildcardEvents } from "../../types/wildcards/ExtendWildcardEvents";
-import { FastEventIterator } from "../../eventIterator";
+import { FastEventIterator } from "../../iterator";
 import { AllowCall, GetMatchingOverload } from "../../types/utils/AllowCall";
 
 type IteratorMessage<T> = T extends FastEventIterator<infer M> ? M : never;

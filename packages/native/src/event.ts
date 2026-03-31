@@ -59,7 +59,8 @@ import {
     createAsyncEventIterator,
     FastEventIterator,
     FastEventIteratorOptions,
-} from "./eventIterator";
+    WithListenerDecorator,
+} from "./iterator";
 import { InMatchedEvent } from "./types/wildcards/InMatchedEvent";
 import { GetClosestMessage } from "./types/closest/GetClosestMessage";
 import { wrapPipeListener } from "./utils/wrapPipeListener";
@@ -70,6 +71,10 @@ import { resolveValue } from "./utils/resolveValue";
 import { AfterExecuteListenerHook, FastEventHooks } from "./types/FastEventHooks";
 import { ItemOf } from "../../viewer/src/types";
 import { isAsyncIterable } from "./utils/isAsyncIterable";
+import { isMethodDecorator } from "./utils/isMethodDecorator";
+import { isPropertyDecorator } from "./utils/isPropertyDecorator";
+import { createMethodListener } from "./decorators/MethodListener";
+import { callable } from "./utils/callable";
 
 /**
  * FastEvent 事件发射器类
@@ -342,6 +347,32 @@ export class FastEvent<
         });
     }
     /**
+     * 创建异步迭代监听器
+     * @param type
+     * @param options
+     * @returns
+     */
+    private _createAyncIteratorListener(type: string, options: FastEventListenOptions): any {
+        const iteratorOpts = Object.assign(
+            {
+                overflow: "expand",
+                size: 10,
+                maxExpandSize: 100,
+            },
+            options.iterable,
+        ) as FastEventIteratorOptions;
+        const iterator = createAsyncEventIterator<any>(this as any, type, iteratorOpts);
+        iterator.create(options);
+        const r = this._executeHooks("AddBeforeListener", [type, iterator.listener, options]);
+        if (r === false) {
+            throw new CancelError();
+        } else if (isAsyncIterable(r)) {
+            return r;
+        }
+        // 返回可调用的迭代器，用作装饰器工厂
+        return callable(iterator, "_decorator");
+    }
+    /**
      * 注册事件监听器
      * @param type - 事件类型，支持以下格式：
      *   - 普通字符串：'user/login'
@@ -370,15 +401,19 @@ export class FastEvent<
         type: T,
         options?: FastEventListenOptions<AllEvents, Meta>,
     ): T extends IsTransformedEvent<AllEvents, T>
-        ? FastEventIterator<
-              T extends "**"
-                  ? IsAllTransformed<Events> extends true
-                      ? PayloadValues<AllEvents>
-                      : any
-                  : PickPayload<ValueOf<GetClosestEvents<AllEvents, T>>>
+        ? WithListenerDecorator<
+              FastEventIterator<
+                  T extends "**"
+                      ? IsAllTransformed<Events> extends true
+                          ? PayloadValues<AllEvents>
+                          : any
+                      : PickPayload<ValueOf<GetClosestEvents<AllEvents, T>>>
+              >
           >
-        : FastEventIterator<
-              T extends "**" ? MutableMessage<AllEvents> : GetClosestMessage<Events, T, Meta>
+        : WithListenerDecorator<
+              FastEventIterator<
+                  T extends "**" ? MutableMessage<AllEvents> : GetClosestMessage<Events, T, Meta>
+              >
           >;
 
     // 指定监听器
@@ -398,14 +433,15 @@ export class FastEvent<
 
     public on(): any {
         const type = arguments[0] as string;
+        if (type.length === 0) throw new Error("event cannot be empty");
 
         // 解析参数和选项
         let listener: any = null;
         let options: any;
 
         // 当不提供监听器时返回异步迭代器
-        const returnIterator = !isFunction(arguments[1]);
-        if (returnIterator) {
+        const noListener = !isFunction(arguments[1]);
+        if (noListener) {
             options = arguments[1] || {};
         } else {
             // on(type, listener, options?)
@@ -422,9 +458,9 @@ export class FastEvent<
             options,
         ) as Required<FastEventListenOptions>;
 
-        if (type.length === 0) throw new Error("event type cannot be empty");
         // 当未指定监听器时返回一个异步迭代器
-        if (returnIterator || listener === null) {
+        if (noListener || listener === null) {
+            return this._createAyncIteratorListener(type, finalOptions);
             const iteratorOpts = Object.assign(
                 {
                     overflow: "expand",
@@ -883,6 +919,7 @@ export class FastEvent<
                     this._onListenerError(listenerFn, message, args, e),
                 );
             }
+            // 在调试模式下，在节点保存返回结果
             if (this.options.debug) {
                 Promise.resolve(result);
                 if (isPromise(result)) {
@@ -952,9 +989,9 @@ export class FastEvent<
             ) as any[];
             return Array.isArray(r) ? r : [r];
         } else {
-            return listeners.map((listener) =>
-                this._executeListener(listener[0], message, args, true),
-            );
+            return listeners.map((listener) => {
+                return this._executeListener(listener[0], message, args, true);
+            });
         }
     }
     /**
