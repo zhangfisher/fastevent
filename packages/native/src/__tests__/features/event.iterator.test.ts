@@ -5,6 +5,7 @@ import { FastEvent } from "../../event";
 import { queue } from "../../pipes";
 import { NotPayload } from "../../types/transformed/NotPayload";
 import { AbortError } from "../../consts";
+import { delay } from "../../utils/delay";
 
 describe("FastEvent 异步迭代器基础功能", () => {
     test("应该支持 for await...of 语法", async () => {
@@ -109,7 +110,6 @@ describe("FastEvent 异步迭代器基础功能", () => {
         subscriber.off();
         subscriber.on();
         emitter.emit("test", "after");
-
         const messages = [];
         for await (const msg of subscriber) {
             messages.push(msg);

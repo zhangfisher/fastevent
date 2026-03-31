@@ -27,10 +27,7 @@ export function callable<T extends ClassInstance>(instance: T): T & ((...args: a
 export function callable<T extends ClassInstance, M extends FunctionKeys<T>>(
     instance: T,
     methodName: M,
-): T &
-    (T[M] extends (...args: infer A) => infer R
-        ? (...args: A) => R
-        : never);
+): T & (T[M] extends (...args: infer A) => infer R ? (...args: A) => R : never);
 export function callable(instance: object, methodName?: string): any {
     const className = instance.constructor.name;
     // oxlint-disable-next-line typescript/no-implied-eval
@@ -39,7 +36,7 @@ export function callable(instance: object, methodName?: string): any {
         "methodName",
         `
         return function ${className}(...args) {
-            return instance[methodName](...args);
+            return instance[methodName].apply(instance, args);
         };
     `,
     )(instance, methodName || "_call");
@@ -50,33 +47,50 @@ export function callable(instance: object, methodName?: string): any {
 }
 
 // ************** 示例 **************
-class My {
-    buffer: any[] = [];
-    constructor(public count: number = 0) {
-        this.buffer.push(count);
-    }
+// class My implements AsyncIterableIterator<any> {
+//     buffer: any[] = Array.from({ length: 100 }, (_, i) => i + 1);
+//     private index = 0;
 
-    _call(a: number, b: boolean) {
-        console.log("this=", this);
-        console.log("args=", a);
-        console.log("buffer=", this.buffer);
-    }
+//     constructor(public count: number = 0) {
+//         this.buffer.push(count);
+//     }
 
-    add(value: number) {
-        this.buffer.push(value);
-    }
-}
+//     [Symbol.asyncIterator](): AsyncIterableIterator<any> {
+//         return this;
+//     }
 
-const my = callable(new My(100), "_call");
-const my2 = callable(new My(100));
-const my3 = new My(100);
+//     async next(...[_value]: [] | [any]): Promise<IteratorResult<any, any>> {
+//         if (this.index < this.buffer.length) {
+//             return { done: false, value: this.buffer[this.index++] };
+//         }
+//         return { done: true, value: undefined };
+//     }
 
-my.add(2);
-console.log(my.buffer);
+//     async return?(value?: any): Promise<IteratorResult<any, any>> {
+//         return { done: true, value };
+//     }
 
-my(1, true);
-my2();
-console.log(my.buffer);
-console.log(my instanceof My);
-console.log(my); // 显示为 [Function: bound] 而不是 My
-console.dir(my); // 难以识别真实的类结构
+//     async throw?(e?: any): Promise<IteratorResult<any, any>> {
+//         throw e;
+//     }
+
+//     _call(a: number, b: boolean) {
+//         console.log("this=", this);
+//         console.log("args=", a);
+//         console.log("buffer=", this.buffer);
+//     }
+
+//     add(value: number) {
+//         this.buffer.push(value);
+//     }
+
+//     reset() {
+//         this.index = 0;
+//     }
+// }
+
+// const my = callable(new My(100), "_call");
+// my.add(2);
+// console.log(my.buffer);
+
+// my(1, true);

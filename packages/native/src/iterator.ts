@@ -46,10 +46,6 @@ export interface FastEventIteratorOptions<T = FastEventMessage> {
  *
  * 新装饰器标准使用上下文对象和值，而不是传统的 (target, propertyKey, descriptor)
  */
-type MethodDecoratorFn = (
-    target: ClassMethodDecoratorContext,
-    value: (...args: any[]) => any,
-) => void | (() => any);
 
 /**
  * 可作为装饰器使用的迭代器
@@ -59,13 +55,17 @@ type MethodDecoratorFn = (
  * - 方法装饰器：@emitter.on("event")
  * - 异步迭代器：for await (const msg of emitter.on("event"))
  */
-export type WithListenerDecorator<T extends FastEventIterator> =
-    ((type: string, options?: FastEventListenOptions) => WithListenerDecorator<T>) &
-    (T & MethodDecoratorFn);
+export type WithListenerDecorator<T extends FastEventIterator> = T & ListenerDecorator;
 
-// 保持向后兼容的导出
-export type ListenerDecorator = MethodDecoratorFn;
-export type IListenerDecoratorBuilder = (type: string, options?: FastEventListenOptions) => MethodDecoratorFn;
+export type ListenerDecorator = (
+    value: (...args: any[]) => any,
+    context: ClassMethodDecoratorContext,
+) => void;
+
+export type IListenerDecoratorBuilder = (
+    type: string,
+    options?: FastEventListenOptions,
+) => ListenerDecorator;
 
 export class FastEventIterator<T = any> implements AsyncIterableIterator<T> {
     private resolvers: Array<(value: IteratorResult<any>) => void> = [];
@@ -127,10 +127,10 @@ export class FastEventIterator<T = any> implements AsyncIterableIterator<T> {
      */
     _decorator(type: string, options: FastEventListenOptions): ListenerDecorator {
         console.log("_decorator", type, options);
-        // TODO: 实现装饰器逻辑
-        return ((target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
-            return descriptor;
-        }) as any;
+        // // TODO: 实现装饰器逻辑
+        // return ((target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
+        //     return descriptor;
+        // }) as any;
     }
     /**
      * 创建异步迭代器

@@ -73,7 +73,6 @@ import { ItemOf } from "../../viewer/src/types";
 import { isAsyncIterable } from "./utils/isAsyncIterable";
 import { isMethodDecorator } from "./utils/isMethodDecorator";
 import { isPropertyDecorator } from "./utils/isPropertyDecorator";
-import { createMethodListener } from "./decorators/MethodListener";
 import { callable } from "./utils/callable";
 
 /**
