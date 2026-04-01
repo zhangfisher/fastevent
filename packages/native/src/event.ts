@@ -71,9 +71,6 @@ import { resolveValue } from "./utils/resolveValue";
 import { AfterExecuteListenerHook, FastEventHooks } from "./types/FastEventHooks";
 import { ItemOf } from "../../viewer/src/types";
 import { isAsyncIterable } from "./utils/isAsyncIterable";
-import { isMethodDecorator } from "./utils/isMethodDecorator";
-import { isPropertyDecorator } from "./utils/isPropertyDecorator";
-import { callable } from "./utils/callable";
 
 /**
  * FastEvent 事件发射器类
@@ -369,7 +366,7 @@ export class FastEvent<
             return r;
         }
         // 返回可调用的迭代器，用作装饰器工厂
-        return callable(iterator, "_decorator");
+        return iterator;
     }
     /**
      * 注册事件监听器

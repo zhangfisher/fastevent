@@ -120,19 +120,6 @@ export class FastEventIterator<T = any> implements AsyncIterableIterator<T> {
         return this._ready;
     }
     /**
-     * 装饰器方法
-     * @param type - 事件名称
-     * @param options - 监听器选项
-     * @returns 装饰器函数
-     */
-    _decorator(type: string, options: FastEventListenOptions): ListenerDecorator {
-        console.log("_decorator", type, options);
-        // // TODO: 实现装饰器逻辑
-        // return ((target: any, propertyKey: string, descriptor: PropertyDescriptor) => {
-        //     return descriptor;
-        // }) as any;
-    }
-    /**
      * 创建异步迭代器
      */
     create(options?: FastEventListenOptions) {
