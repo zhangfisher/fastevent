@@ -12,6 +12,9 @@ import {
     GetPayload,
     Fallback,
     GetClosestEventPayload,
+    FastEventListeners,
+    Expand,
+    TypedFastEventAnyListener,
 } from "./types";
 import {
     FastEventEmitMessage,
@@ -93,6 +96,15 @@ export class FastEventScope<
         messages: MutableMessage<Events, FinalMeta>;
         rawEvents: Events;
         meta: FinalMeta;
+        listeners: FastEventListeners<Events, Expand<FastEventMeta & Meta & Record<string, any>>>;
+        anyListener: TypedFastEventAnyListener<
+            Events,
+            Expand<FastEventMeta & Meta & Record<string, any>>
+        >;
+        listener: FastEventCommonListener<
+            FastEventMessage,
+            Expand<FastEventMeta & Meta & Record<string, any>>
+        >;
     };
     prefix: string = "";
     emitter!: FastEvent<any>;

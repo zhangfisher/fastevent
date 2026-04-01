@@ -1,5 +1,11 @@
+import { GetClosestEvents } from "./closest/GetClosestEvents";
+import { GetClosestMessage } from "./closest/GetClosestMessage";
 import { TypedFastEventMessage, FastEventMessage } from "./FastEventMessages";
 import { FastEventListenerArgs } from "./FastEvents";
+import { MutableMessage } from "./MutableMessage";
+import { IsTransformedEvent, PickPayload } from "./transformed";
+import { KeyOf } from "./utils/KeyOf";
+import { ValueOf } from "./utils/ValueOf";
 
 // 只针对指定类型
 
@@ -12,21 +18,31 @@ export type TypedFastEventListener<T extends string = string, P = any, M = any, 
 
 export type TypedFastEventAnyListener<
     Events extends Record<string, any> = Record<string, any>,
-    Meta = never,
+    Meta extends Record<string, any> = Record<string, any>,
     Context = any,
 > = (
     this: Context,
-    message: TypedFastEventMessage<Events, Meta>,
+    message: MutableMessage<Events, Meta>,
     args: FastEventListenerArgs<Meta>,
 ) => any | Promise<any>;
 
 export type FastEventListeners<
     Events extends Record<string, any> = Record<string, any>,
-    M = any,
-    C = any,
+    Meta extends Record<string, any> = Record<string, any>,
+    Context = any,
 > = {
-    [K in keyof Events]: TypedFastEventListener<Exclude<K, number | symbol>, Events[K], M, C>;
+    [K in KeyOf<Events>]: FastEventCommonListener<
+        K extends IsTransformedEvent<Events, K>
+            ? PickPayload<ValueOf<GetClosestEvents<Events, K>>>
+            : K extends "**"
+              ? MutableMessage<Events>
+              : GetClosestMessage<Events, K, Meta>,
+        Meta,
+        Context
+    >;
+    // TypedFastEventListener<Exclude<K, number | symbol>, Events[K], M, C>;
 };
+
 // 标准监听器
 
 export type FastEventListener<

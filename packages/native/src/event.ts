@@ -126,6 +126,10 @@ export class FastEvent<
             AllEvents,
             Expand<FastEventMeta & Meta & Record<string, any>>
         >;
+        listener: FastEventCommonListener<
+            FastEventMessage,
+            Expand<FastEventMeta & Meta & Record<string, any>>
+        >;
     };
     /**
      * 创建FastEvent实例
