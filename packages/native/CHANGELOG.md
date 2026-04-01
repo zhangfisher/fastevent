@@ -1,3 +1,9 @@
+## 2.5.1
+
+### Patch Changes
+
+-   9a10c92: 增加 types.listeners 类型
+
 ## 2.5.0
 
 ### Minor Changes
