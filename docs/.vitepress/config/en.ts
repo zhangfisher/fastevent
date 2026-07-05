@@ -35,9 +35,11 @@ export default {
                                 { text: 'Trigger', link: '/en/guide/use/event-trigger' },
                                 { text: 'Subscribe', link: '/en/guide/use/subscribe-events' },
                                 { text: 'Unsubscribe', link: '/en/guide/use/off-events' },
+                                { text: 'Async Iterator', link: '/en/guide/use/event-iterator' },
                                 { text: 'Scope', link: '/en/guide/use/scopes' },
                                 { text: 'WaitFor', link: '/en/guide/use/waitfor' },
                                 { text: 'Abort', link: '/en/guide/use/abort' },
+                                { text: 'Transform', link: '/en/guide/use/transform' },
                                 { text: 'Metadata', link: '/en/guide/use/metadata' },
                                 { text: 'Context', link: '/en/guide/use/context' },
                                 { text: 'Hooks', link: '/en/guide/use/hooks' },
@@ -69,11 +71,12 @@ export default {
                                         { text: 'debounce', link: '/en/guide/use/pipes/debounce' }
                                     ]
                                 },
-                                { text: 'Forward', link: '/en/guide/use/forward' },
                                 { text: 'Error', link: '/en/guide/use/error_handle' },
+                                { text: 'Forward', link: '/en/guide/use/forward' },
+                                { text: 'Inheritance', link: '/en/guide/use/inherit' },
                                 { text: 'Typescript', link: '/en/guide/use/typescript' },
-                                { text: 'Eventbus', link: '/en/guide/use/eventbus' },
-                                { text: 'DevTools', link: '/en/guide/use/devTools' }
+                                { text: 'DevTools', link: '/en/guide/use/devTools' },
+                                { text: 'LiteEvent', link: '/en/guide/use/liteevent' }
                             ]
                         },
                     ]

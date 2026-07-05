@@ -84,6 +84,7 @@ export default {
                                 { text: "类继承", link: "/zh/guide/use/inherit" },
                                 { text: "Typescript", link: "/zh/guide/use/typescript" },
                                 { text: "调试工具", link: "/zh/guide/use/devTools" },
+                                { text: "LiteEvent", link: "/zh/guide/use/liteevent" },
                             ],
                         },
                     ],

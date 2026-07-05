@@ -33,4 +33,18 @@ export default defineConfig([
         treeshake: true,
         minify: true,
     },
+    {
+        // FastLiteEvent 轻量级事件发射器（独立入口，不进入主 bundle）
+        entry: ["src/liteEvent.ts"],
+        outDir: "dist",
+        format: ["esm", "cjs", "iife"],
+        dts: true,
+        splitting: true,
+        sourcemap: true,
+        globalName: "FastLiteEvent",
+        // outDir 与 index 共用 dist，禁用 clean 避免清掉其他入口的产物
+        clean: false,
+        treeshake: true,
+        minify: true,
+    },
 ]);

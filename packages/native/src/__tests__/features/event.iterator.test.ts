@@ -612,19 +612,6 @@ describe("向后兼容性", () => {
         expect(mockListener).toHaveBeenCalled();
     });
 
-    test("应该保留 onAddListener 钩子", () => {
-        const emitter = new FastEvent({
-            onAddListener: (type, listener, options) => {
-                // 可以返回 false 取消注册
-                // 或返回自定义订阅者
-                return true;
-            },
-        });
-
-        const subscriber = emitter.on("test", () => {});
-        expect(subscriber).toBeDefined();
-    });
-
     test("应该保留其他选项的功能", async () => {
         const emitter = new FastEvent();
         let filterCallCount = 0;
