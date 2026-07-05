@@ -1,3 +1,10 @@
+## 2.6.0
+
+### Minor Changes
+
+-   ba867a9: fix
+-   77ca5f3: 新增加 FastLiteEvent 对象
+
 ## 2.5.1
 
 ### Patch Changes
