@@ -1,0 +1,5 @@
+---
+'fastevent': minor
+---
+
+fix
