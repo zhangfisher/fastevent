@@ -970,8 +970,11 @@ export class FastEvent<
             let i: number = 0;
             for (const listener of node.__listeners) {
                 if (!filter || filter(listener, node)) {
-                    listeners.push([listener, i++, node.__listeners]);
+                    // localIdx 必须等于 listener 在 __listeners 中的真实数组下标，
+                    // 因此 i 对每个 listener 都递增（含被 filter 跳过的），不能只在命中时递增
+                    listeners.push([listener, i, node.__listeners]);
                 }
+                i++;
             }
         }
 
@@ -1005,7 +1008,10 @@ export class FastEvent<
             meta[2]++; // 实际执行的次数
             // =0不限执行次数，>0时代表执行次数限制
             if (meta[1] > 0 && meta[1] <= meta[2]) {
-                listeners[i][2].splice(i, 1);
+                // 用元组中记录的 localIdx（listener 在所属 __listeners 内的本地下标），
+                // 而非外层收集列表的循环下标 i（跨节点展平后的全局位置）
+                listeners[i][2].splice(listeners[i][1], 1);
+                this.listenerCount--; // 同步递减计数，与 off/offAll 路径保持一致
             }
         }
     }

@@ -1,3 +1,4 @@
+// @ts-no-check
 import { describe, test, expect, vi } from "bun:test";
 import { FastLiteEvent } from "../liteEvent";
 import { FastEvent } from "../event";
@@ -68,6 +69,93 @@ describe("FastLiteEvent once / onAny", () => {
         emitter.emit("b", 2);
         emitter.emit("a/b/c", 3);
         expect(listener).toHaveBeenCalledTimes(3);
+    });
+});
+
+// 回归：once/count 监听器在跨多节点匹配或 retain 回放时被错误删除/漏删
+// 根因：_decListenerExecCount 的 splice 误用外层收集列表下标，且 _executeListeners
+// 的 localIdx 在 filter 跳过时未递增。两个缺陷须同修。
+describe("FastLiteEvent once 跨多节点删除回归", () => {
+    test("once + onAny(**) 共存时 emit 后 once 监听器被正确移除", () => {
+        const emitter = new FastLiteEvent();
+        const m0 = vi.fn(); // onAny -> root["**"].__listeners[0]
+        const l0 = vi.fn(); // on("a") -> root["a"].__listeners[0]
+        const l1 = vi.fn(); // once("a") -> root["a"].__listeners[1]
+        const l2 = vi.fn(); // once("a") -> root["a"].__listeners[2]
+        emitter.onAny(m0);
+        emitter.on("a", l0);
+        emitter.once("a", l1);
+        emitter.once("a", l2);
+
+        emitter.emit("a", 1);
+        expect(m0).toHaveBeenCalledTimes(1);
+        expect(l0).toHaveBeenCalledTimes(1);
+        expect(l1).toHaveBeenCalledTimes(1);
+        expect(l2).toHaveBeenCalledTimes(1);
+
+        // 第二次 emit：once 监听器不应再触发（bug 时 l1 泄漏会再次执行）
+        emitter.emit("a", 2);
+        expect(m0).toHaveBeenCalledTimes(2);
+        expect(l0).toHaveBeenCalledTimes(2);
+        expect(l1).toHaveBeenCalledTimes(1);
+        expect(l2).toHaveBeenCalledTimes(1);
+    });
+
+    test("once + on(*) 跨多节点时 once 被正确移除", () => {
+        const emitter = new FastLiteEvent();
+        const w = vi.fn(); // on("*") -> root["*"].__listeners[0]
+        const l0 = vi.fn(); // on("a") -> root["a"].__listeners[0]
+        const l1 = vi.fn(); // once("a") -> root["a"].__listeners[1]
+        emitter.on("*", w);
+        emitter.on("a", l0);
+        emitter.once("a", l1);
+
+        emitter.emit("a", 1);
+        expect(w).toHaveBeenCalledTimes(1);
+        expect(l0).toHaveBeenCalledTimes(1);
+        expect(l1).toHaveBeenCalledTimes(1);
+
+        emitter.emit("a", 2);
+        expect(w).toHaveBeenCalledTimes(2);
+        expect(l0).toHaveBeenCalledTimes(2);
+        expect(l1).toHaveBeenCalledTimes(1);
+    });
+
+    test("retain 回放 once 时不误删同节点其他监听器", () => {
+        const emitter = new FastLiteEvent();
+        emitter.emit("a", 1, true); // 保留消息
+
+        const other = vi.fn(); // 先注册：立即收到 retain 回放
+        emitter.on("a", other);
+        expect(other).toHaveBeenCalledTimes(1);
+
+        const onceL = vi.fn(); // 后注册：retain 回放时 filter 只匹配 onceL
+        emitter.once("a", onceL);
+        expect(onceL).toHaveBeenCalledTimes(1);
+
+        // 再次 emit：other 不应被误删，onceL 不应泄漏
+        emitter.emit("a", 2);
+        expect(other).toHaveBeenCalledTimes(2);
+        expect(onceL).toHaveBeenCalledTimes(1);
+    });
+
+    test("once 监听器执行后 listenerCount 应递减", () => {
+        const emitter = new FastLiteEvent();
+        emitter.once("a", vi.fn());
+        emitter.once("a", vi.fn());
+        expect(emitter.listenerCount).toBe(2);
+        emitter.emit("a", 1);
+        expect(emitter.listenerCount).toBe(0); // bug 时为 2（未递减）
+    });
+
+    test("count 限制监听器达标后 listenerCount 应递减", () => {
+        const emitter = new FastLiteEvent();
+        emitter.on("a", vi.fn(), { count: 2 });
+        expect(emitter.listenerCount).toBe(1);
+        emitter.emit("a", 1);
+        expect(emitter.listenerCount).toBe(1); // count=2，执行 1 次未达标
+        emitter.emit("a", 2);
+        expect(emitter.listenerCount).toBe(0); // 达标删除，bug 时为 1
     });
 });
 
@@ -337,8 +425,7 @@ describe("FastLiteEvent 类型与实例属性", () => {
         const lite = new FastLiteEvent<{ a: number }>();
         const evt = new FastEvent<{ a: number }>();
         // 同一个监听器函数，签名兼容两者
-        const shared = (message: { type: string; payload: any }) =>
-            message.payload;
+        const shared = (message: { type: string; payload: any }) => message.payload;
         lite.on("a", shared as any);
         evt.on("a", shared as any);
         // 运行时验证：两者都能正常触发

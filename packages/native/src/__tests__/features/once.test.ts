@@ -1,4 +1,4 @@
-import { describe, test, expect } from 'vitest';
+import { describe, test, expect, vi } from 'vitest';
 import { FastEvent } from '../../event';
 
 describe('只订阅一次的事件的发布与订阅', async () => {
@@ -107,5 +107,64 @@ describe('只订阅一次的事件的发布与订阅', async () => {
             });
             emitter.emit('x', 0);
         });
+    });
+});
+
+// 回归：once/count 监听器在跨多节点匹配时被错误删除/漏删
+// 根因：_decListenerExecCount 的 splice 误用外层收集列表下标，应使用 listener
+// 在所属 __listeners 内的本地下标 listeners[i][1]。
+describe('once 跨多节点匹配回归', () => {
+    test('once + onAny(**) 共存时 emit 后 once 监听器被正确移除', () => {
+        const emitter = new FastEvent();
+        const m0 = vi.fn(); // onAny -> root["**"].__listeners[0]
+        const l0 = vi.fn(); // on('a') -> root["a"].__listeners[0]
+        const l1 = vi.fn(); // once('a') -> root["a"].__listeners[1]
+        const l2 = vi.fn(); // once('a') -> root["a"].__listeners[2]
+        emitter.onAny(m0);
+        emitter.on('a', l0);
+        emitter.once('a', l1);
+        emitter.once('a', l2);
+
+        emitter.emit('a', 1);
+        expect(m0).toHaveBeenCalledTimes(1);
+        expect(l0).toHaveBeenCalledTimes(1);
+        expect(l1).toHaveBeenCalledTimes(1);
+        expect(l2).toHaveBeenCalledTimes(1);
+
+        // 第二次 emit：once 监听器不应再触发（bug 时 l1 泄漏会再次执行）
+        emitter.emit('a', 2);
+        expect(m0).toHaveBeenCalledTimes(2);
+        expect(l0).toHaveBeenCalledTimes(2);
+        expect(l1).toHaveBeenCalledTimes(1);
+        expect(l2).toHaveBeenCalledTimes(1);
+    });
+
+    test('once + on(*) 跨多节点时 once 被正确移除', () => {
+        const emitter = new FastEvent();
+        const w = vi.fn(); // on('*') -> root["*"].__listeners[0]
+        const l0 = vi.fn(); // on('a') -> root["a"].__listeners[0]
+        const l1 = vi.fn(); // once('a') -> root["a"].__listeners[1]
+        emitter.on('*', w);
+        emitter.on('a', l0);
+        emitter.once('a', l1);
+
+        emitter.emit('a', 1);
+        expect(w).toHaveBeenCalledTimes(1);
+        expect(l0).toHaveBeenCalledTimes(1);
+        expect(l1).toHaveBeenCalledTimes(1);
+
+        emitter.emit('a', 2);
+        expect(w).toHaveBeenCalledTimes(2);
+        expect(l0).toHaveBeenCalledTimes(2);
+        expect(l1).toHaveBeenCalledTimes(1);
+    });
+
+    test('once 监听器执行后 listenerCount 应递减', () => {
+        const emitter = new FastEvent();
+        emitter.once('a', vi.fn());
+        emitter.once('a', vi.fn());
+        expect(emitter.listenerCount).toBe(2);
+        emitter.emit('a', 1);
+        expect(emitter.listenerCount).toBe(0); // bug 时为 2
     });
 });
