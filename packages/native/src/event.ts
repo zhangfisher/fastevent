@@ -1156,6 +1156,8 @@ export class FastEvent<
         if (args.retain) {
             this.retainedMessages.set(message.type, message);
         }
+        // if (this.listenerCount === 0 && !args.retain) return [];
+
         const results: any[] = [];
         const nodes: FastEventListenerNode[] = [];
 

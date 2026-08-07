@@ -36,7 +36,6 @@ import {
     FastEventListenerFlags,
     IsTransformedEvent,
     ExtendWildcardEvents,
-    PayloadValues,
     PickPayload,
     ValueOf,
     GetPayload,
@@ -61,9 +60,10 @@ export type FastLiteListenerArgs = Omit<
     "meta" | "executor" | "parseArgs" | "abortSignal"
 >;
 
-export type FastLiteListenOptions<
-    Events extends Record<string, any> = Record<string, any>,
-> = Omit<FastEventListenOptions<Events>, "pipes" | "iterable" | "filter" | "off" | "prepend">;
+export type FastLiteListenOptions<Events extends Record<string, any> = Record<string, any>> = Omit<
+    FastEventListenOptions<Events>,
+    "pipes" | "iterable" | "filter" | "off" | "prepend"
+>;
 
 export type FastLiteEventOptions = Omit<
     FastEventOptions,
@@ -82,10 +82,11 @@ export type FastLiteEventOptions = Omit<
 
 // —— 完全复用原始类型（与 FastEvent 互换兼容）——
 export type FastLiteSubscriber = FastEventSubscriber;
-export type FastLiteListener<
-    T extends string = string,
-    P = any,
-> = FastEventCommonListener<FastLiteMessage<T, P>, any, any>;
+export type FastLiteListener<T extends string = string, P = any> = FastEventCommonListener<
+    FastLiteMessage<T, P>,
+    any,
+    any
+>;
 
 /**
  * 解析 emit 参数（简化版，不复用 parseEmitArgs）
@@ -97,9 +98,7 @@ export type FastLiteListener<
  * @param args - emit 的 arguments
  * @returns [消息, 监听器参数]
  */
-function parseLiteEmitArgs(
-    args: IArguments,
-): [TypedFastEventMessage, FastLiteListenerArgs] {
+function parseLiteEmitArgs(args: IArguments): [TypedFastEventMessage, FastLiteListenerArgs] {
     let message = {} as TypedFastEventMessage;
     let emitArgs: FastLiteListenerArgs = {};
     if (typeof args[0] === "object") {
@@ -245,11 +244,7 @@ export class FastLiteEvent<
     /**
      * 从监听器节点中移除指定的事件监听器
      */
-    private _removeListener(
-        node: FastEventListenerNode,
-        path: string[],
-        listener: Function,
-    ): void {
+    private _removeListener(node: FastEventListenerNode, path: string[], listener: Function): void {
         if (!listener) return;
         removeItem(node.__listeners, (item: any) => {
             item = Array.isArray(item) ? item[0] : item;
@@ -534,13 +529,8 @@ export class FastLiteEvent<
     ): Promise<any> | any {
         const listenerFn = listener[0];
         try {
-            const isTransformed =
-                ((args?.flags || 0) & FastEventListenerFlags.Transformed) > 0;
-            let result = listenerFn.call(
-                this,
-                isTransformed ? message.payload : message,
-                args!,
-            );
+            const isTransformed = ((args?.flags || 0) & FastEventListenerFlags.Transformed) > 0;
+            let result = listenerFn.call(this, isTransformed ? message.payload : message, args!);
             // 自动处理 reject Promise
             if (catchErrors && result && result instanceof Promise) {
                 result = tryReturnError(result, (e) =>
@@ -585,9 +575,7 @@ export class FastLiteEvent<
     /**
      * 减少侦听器的执行次数（达到 count 限制时移除）
      */
-    _decListenerExecCount(
-        listeners: [FastEventListenerMeta, number, FastEventListenerMeta[]][],
-    ) {
+    _decListenerExecCount(listeners: [FastEventListenerMeta, number, FastEventListenerMeta[]][]) {
         for (let i = listeners.length - 1; i >= 0; i--) {
             const meta = listeners[i][0] as FastEventListenerMeta;
             meta[2]++; // 实际执行的次数
@@ -661,6 +649,7 @@ export class FastLiteEvent<
         if (args.retain) {
             this.retainedMessages.set(message.type, message);
         }
+        // if (this.listenerCount === 0 && !args.retain) return [];
 
         const nodes: FastEventListenerNode[] = [];
         this._traverseToPath(this.listeners, parts, (node) => {
@@ -696,6 +685,7 @@ export class FastLiteEvent<
         payload?: UnTransformedEvents<AllEvents>[T],
         retain?: boolean,
     ): Promise<(R | Error)[]>;
+
     public async emitAsync<R = any, T extends string = string>(
         type: ReplaceWildcard<T> | Types,
         payload?: InMatchedEvent<Events, T> extends true
@@ -716,10 +706,7 @@ export class FastLiteEvent<
         retain?: boolean,
     ): Promise<(R | Error)[]>;
     public async emitAsync<R = any>(): Promise<(R | Error)[]> {
-        const results = await Promise.allSettled(
-            this.emit.apply(this, arguments as any),
-        );
+        const results = await Promise.allSettled(this.emit.apply(this, arguments as any));
         return getPromiseResults(results);
     }
-
 }
