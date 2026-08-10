@@ -101,6 +101,12 @@ export class FastEvent<
     /** 事件名称的分隔符，默认为'/' */
     private _delimiter: string = "/";
 
+    /** 缓存的 transform 函数（构造时规范化：非函数则 undefined）。emit 热路径直接判断，省属性链 + isFunction */
+    private _transform: any;
+
+    /** 缓存的 expandEmitResults 开关（构造时读取，默认 true） */
+    private _expandResults: boolean = true;
+
     /** 事件监听器执行时的上下文对象 */
     private _context: Context;
 
@@ -159,6 +165,10 @@ export class FastEvent<
         ) as unknown as FastEventOptions<Meta, Context>;
         this._delimiter = this._options.delimiter!;
         this._context = this._options.context as Context;
+        // 缓存热路径配置，避免 emit 每次读取属性链 + isFunction
+        const transformOpt = this._options.transform;
+        this._transform = typeof transformOpt === "function" ? transformOpt : undefined;
+        this._expandResults = this._options.expandEmitResults !== false;
     }
 
     /** 获取事件发射器的配置选项 */
@@ -219,21 +229,23 @@ export class FastEvent<
         args: Parameters<ItemOf<FastEventHooks[T]>>,
         onlyAsyncHook: boolean = false,
     ) {
-        setTimeout(() => {
-            if (!this._hooks) return;
-            const hooks = this.hooks[hookName];
-            if (Array.isArray(hooks) && hooks.length > 0) {
-                Promise.allSettled(
-                    hooks.map((hook) => {
-                        if (hookName === "AfterExecuteListener") {
-                            this._execAfterExecuteListener(hook, args as any);
-                        } else {
-                            return (hook as any).apply(this, args);
-                        }
-                    }),
-                );
-            }
-        });
+        if (this._hooks) {
+            setTimeout(() => {
+                const hooks = this.hooks[hookName];
+                if (Array.isArray(hooks) && hooks.length > 0) {
+                    Promise.allSettled(
+                        hooks.map((hook) => {
+                            if (hookName === "AfterExecuteListener") {
+                                this._execAfterExecuteListener(hook, args as any);
+                            } else {
+                                return (hook as any).apply(this, args);
+                            }
+                        }),
+                    );
+                }
+            });
+        }
+
         if (!onlyAsyncHook) {
             const hookMethod = this.options[`on${hookName}`] as Function;
             if (isFunction(hookMethod)) {
@@ -965,56 +977,44 @@ export class FastEvent<
         filter?: (listener: FastEventListenerMeta, node: FastEventListenerNode) => boolean,
     ): any[] {
         if (!nodes || nodes.length === 0) return [];
-        // 1. 遍历所有监听器任务,即需要执行的监听器函数[]
-        const listeners: [FastEventListenerMeta, number, FastEventListenerMeta[]][] = [];
+        // A3 三遍合一：原"收集 → _decListenerExecCount(计数+splice) → 执行"合并为
+        // "收集含计数 → 倒序 splice → 执行"，省一遍全量遍历与临时元组分配。
+        // 计数仍严格先于执行，保留"避免监听器内再次触发导致重复执行"的语义。
+        const metas: FastEventListenerMeta[] = [];
+        const toRemove: [FastEventListenerMeta[], number][] = [];
         for (const node of nodes) {
-            let i: number = 0;
-            for (const listener of node.__listeners) {
-                if (!filter || filter(listener, node)) {
-                    // localIdx 必须等于 listener 在 __listeners 中的真实数组下标，
-                    // 因此 i 对每个 listener 都递增（含被 filter 跳过的），不能只在命中时递增
-                    listeners.push([listener, i, node.__listeners]);
+            // localIdx 必须等于 listener 在 __listeners 中的真实数组下标，
+            // 因此 i 对每个 listener 都递增（含被 filter 跳过的），不能只在命中时递增
+            const arr = node.__listeners as unknown as FastEventListenerMeta[];
+            let i = 0;
+            for (const meta of arr) {
+                if (!filter || filter(meta, node)) {
+                    meta[2]++; // 实际执行次数
+                    metas.push(meta);
+                    // =0不限执行次数，>0时代表执行次数限制
+                    if (meta[1] > 0 && meta[1] <= meta[2]) {
+                        toRemove.push([arr, i]);
+                        this.listenerCount--; // 同步递减，与 off/offAll 路径一致
+                    }
                 }
                 i++;
             }
         }
-
-        // 执行监听器前计数选减一，否则如果在监听器函数中再次触发时会导致重复执行。
-        // 比如：在once('x')监听函数中执行再次emit('x')就会导致循环
-        this._decListenerExecCount(listeners);
+        // 倒序 splice：toRemove 收集顺序为升序，倒序遍历使同节点内 idx 降序，避免删元素错位
+        for (let i = toRemove.length - 1; i >= 0; i--) {
+            toRemove[i][0].splice(toRemove[i][1], 1);
+        }
 
         const executeor = this._getListenerExecutor(args);
         if (executeor) {
-            const r = executeor(
-                listeners.map((listener) => listener[0]),
-                message,
-                args,
-                this._executeListener.bind(this),
-            ) as any[];
+            const r = executeor(metas, message, args, this._executeListener.bind(this)) as any[];
             return Array.isArray(r) ? r : [r];
-        } else {
-            return listeners.map((listener) => {
-                return this._executeListener(listener[0], message, args, true);
-            });
         }
-    }
-    /**
-     * 减少侦听器的执行次数
-     * @param listeners
-     */
-    _decListenerExecCount(listeners: [FastEventListenerMeta, number, FastEventListenerMeta[]][]) {
-        // 由于可能涉及到删除修改__listeners，所以需要倒序， 从后往前删除
-        for (let i = listeners.length - 1; i >= 0; i--) {
-            const meta = listeners[i][0] as FastEventListenerMeta;
-            meta[2]++; // 实际执行的次数
-            // =0不限执行次数，>0时代表执行次数限制
-            if (meta[1] > 0 && meta[1] <= meta[2]) {
-                // 用元组中记录的 localIdx（listener 在所属 __listeners 内的本地下标），
-                // 而非外层收集列表的循环下标 i（跨节点展平后的全局位置）
-                listeners[i][2].splice(listeners[i][1], 1);
-                this.listenerCount--; // 同步递减计数，与 off/offAll 路径保持一致
-            }
+        const results: any[] = [];
+        for (let i = 0; i < metas.length; i++) {
+            results.push(this._executeListener(metas[i], message, args, true));
         }
+        return results;
     }
 
     /**
@@ -1153,19 +1153,31 @@ export class FastEvent<
         if (isFunction(args.parseArgs)) {
             args.parseArgs(message, args);
         }
-        const parts = message.type.split(this._delimiter);
+        const type = message.type;
+        const delimiter = this._delimiter;
+        const root = this.listeners;
+        // A1 单段快路径：type 不含分隔符时跳过 split + _traverseToPath 递归
+        const singleSegment = type.indexOf(delimiter) === -1;
+        const parts = singleSegment ? null : type.split(delimiter);
         if (args.retain) {
-            this.retainedMessages.set(message.type, message);
+            this.retainedMessages.set(type, message);
         }
 
-        const transformFn = this._options.transform;
-        const hasTransform = isFunction(transformFn);
+        // A2 transform 缓存（构造时规范化：非函数则 undefined）
+        const transformFn = this._transform;
 
         // 1. 正常匹配节点(emit 路径直接命中,含通配符命中)
         const normalNodes: FastEventListenerNode[] = [];
-        this._traverseToPath(this.listeners, parts, (node) => {
-            normalNodes.push(node);
-        });
+        if (singleSegment) {
+            // 顺序与 _traverseToPath 一致：先通配后精确
+            if ("*" in root) normalNodes.push(root["*"]);
+            if ("**" in root) normalNodes.push(root["**"]);
+            if (type in root) normalNodes.push(root[type]);
+        } else {
+            this._traverseToPath(root, parts!, (node) => {
+                normalNodes.push(node);
+            });
+        }
 
         // hooks 只对原始 emit 触发一次(broadcast 后代不单独触发 hook)
         const r = this._executeHooks("BeforeExecuteListener", [message, args]);
@@ -1179,16 +1191,20 @@ export class FastEvent<
         //    后代基于原始 message 改写 type,后续各自 transform(先 broadcast 后 transform)。
         const broadcastItems: { node: FastEventListenerNode; descMsg: any; descArgs: any }[] = [];
         if (args.broadcast) {
-            const targets = collectBroadcastTargets(this.listeners, parts, this._delimiter);
-            for (const { node, type } of targets) {
+            const targets = collectBroadcastTargets(
+                root,
+                singleSegment ? [type] : parts!,
+                delimiter,
+            );
+            for (const { node, type: descType } of targets) {
                 if (!node.__listeners || node.__listeners.length === 0) continue;
                 let descMsg: any;
                 let descArgs: any;
                 if (args.broadcast === true) {
-                    descMsg = { ...message, type };
+                    descMsg = { ...message, type: descType };
                     descArgs = { ...args };
                 } else {
-                    const ret = (args.broadcast as Function).call(this, type, message, args);
+                    const ret = (args.broadcast as Function).call(this, descType, message, args);
                     if (!ret) continue;
                     if (Array.isArray(ret)) {
                         [descMsg, descArgs] = ret;
@@ -1204,8 +1220,8 @@ export class FastEvent<
         const results: any[] = [];
 
         // 3. 正常匹配:transform 保持突变(向后兼容,AfterExecuteListener 接收突变后 message)
-        if (hasTransform) {
-            const transformed = (transformFn as Function).call(this, message as any);
+        if (transformFn) {
+            const transformed = transformFn.call(this, message as any);
             if (transformed !== message) {
                 message.payload = transformed;
                 args.rawEventType = message.type;
@@ -1216,8 +1232,8 @@ export class FastEvent<
 
         // 4. 后代覆盖:各自 transform(基于原始 message 副本,不受正常突变影响),经 executor 执行
         for (const { node, descMsg, descArgs } of broadcastItems) {
-            if (hasTransform) {
-                const transformed = (transformFn as Function).call(this, descMsg);
+            if (transformFn) {
+                const transformed = transformFn.call(this, descMsg);
                 if (transformed !== descMsg) {
                     descMsg.payload = transformed;
                     descArgs.rawEventType = descMsg.type;
@@ -1228,7 +1244,7 @@ export class FastEvent<
         }
 
         // 将 results 内部所有 expandable 的项展开，见 utils\expandable.ts 说明
-        if (this._options.expandEmitResults) {
+        if (this._expandResults) {
             expandEmitResults(results);
         }
         this._executeHooks("AfterExecuteListener", [message, results, normalNodes] as any);
@@ -1253,9 +1269,9 @@ export class FastEvent<
         ) => [FastEventMessage, FastEventListenerArgs<any>] | FastEventMessage | null,
         retain?: boolean,
     ): R[] {
-        const options = (retain
-            ? { broadcast: callback ?? true, retain: true }
-            : { broadcast: callback ?? true }) as FastEventListenerArgs<any>;
+        const options = (
+            retain ? { broadcast: callback ?? true, retain: true } : { broadcast: callback ?? true }
+        ) as FastEventListenerArgs<any>;
         return this.emit(type as any, payload as any, options as any) as R[];
     }
 
