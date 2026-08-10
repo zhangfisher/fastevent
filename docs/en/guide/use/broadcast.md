@@ -14,37 +14,38 @@ By default, `emit("a")` only triggers listeners **subscribed exactly to `a`**. E
 The two don't conflict and can coexist.
 
 :::tip When to use
+
 - A state change needs to notify every subscriber across an entire subtree (component trees, config trees, namespaces)
 - A single publish needs different descendant listeners to receive messages matching their own subscription paths
-:::
+  :::
 
 ## Quick Start
 
 The simplest usage — pass `broadcast: true` to `emit`:
 
 ```ts
-import { FastEvent } from 'fastevent';
+import { FastEvent } from "fastevent";
 
 const emitter = new FastEvent();
 
-emitter.on('a', (message) => {
+emitter.on("a", (message) => {
     console.log(message.type); // 'a'
 });
-emitter.on('a/b', (message) => {
+emitter.on("a/b", (message) => {
     console.log(message.type); // 'a/b' (woken by broadcast, type rewritten to its own path)
 });
-emitter.on('a/c', (message) => {
+emitter.on("a/c", (message) => {
     console.log(message.type); // 'a/c'
 });
 
 // One emit triggers a, a/b and a/c together
-emitter.emit('a', 1, { broadcast: true });
+emitter.emit("a", 1, { broadcast: true });
 ```
 
 Or use the `broadcast()` shortcut (equivalent to `emit + { broadcast: true }`):
 
 ```ts
-emitter.broadcast('a', 1);
+emitter.broadcast("a", 1);
 ```
 
 ## Guide
@@ -54,17 +55,17 @@ emitter.broadcast('a', 1);
 When `broadcast: true`, descendant listeners receive an event message that is **rewritten by default**: `type` is automatically replaced with the descendant's full subscription path; the other fields (`payload`, `meta`) are passed through unchanged.
 
 ```ts
-emitter.on('a/b', (message) => {
+emitter.on("a/b", (message) => {
     console.log(message.type, message.payload); // 'a/b' 1
 });
 
-emitter.emit('a', 1, { broadcast: true });
+emitter.emit("a", 1, { broadcast: true });
 ```
 
 Normal matches (listeners directly hit by the emit path) are **not rewritten by broadcast** and keep the original message:
 
 ```ts
-emitter.on('a', (message) => {
+emitter.on("a", (message) => {
     console.log(message.type); // 'a' (original type, unchanged)
 });
 ```
@@ -73,21 +74,21 @@ emitter.on('a', (message) => {
 
 Pass a function as `broadcast` to rewrite the event message and args for each descendant. The callback return supports three forms:
 
-| Return value | Meaning |
-| --- | --- |
-| `[message, args]` tuple | Override both message and args |
-| just a `message` object | Override message only; args keep their original value |
-| `null` / `false` (any falsy) | **Skip this descendant** (don't trigger) |
+| Return value                 | Meaning                                               |
+| ---------------------------- | ----------------------------------------------------- |
+| `[message, args]` tuple      | Override both message and args                        |
+| just a `message` object      | Override message only; args keep their original value |
+| `null` / `false` (any falsy) | **Skip this descendant** (don't trigger)              |
 
 ```ts
-emitter.emit('a', 1, {
+emitter.emit("a", 1, {
     broadcast: (type, message, args) => {
         // generate a different payload per descendant
         return [{ ...message, type, payload: `from ${type}` }, args];
     },
 });
 
-emitter.on('a/b', (message) => {
+emitter.on("a/b", (message) => {
     console.log(message.payload); // 'from a/b'
 });
 ```
@@ -96,8 +97,8 @@ The callback signature:
 
 ```ts
 (
-    type: string,               // the descendant's full subscription path, e.g. 'a/b/b1'
-    message: FastEventMessage,   // the original event message
+    type: string, // the descendant's full subscription path, e.g. 'a/b/b1'
+    message: FastEventMessage, // the original event message
     args: FastEventListenerArgs, // the original listener args
     // `this` is bound to the emitter instance
 ) => [FastEventMessage, FastEventListenerArgs] | FastEventMessage | null;
@@ -108,9 +109,9 @@ The callback signature:
 Return `null` to selectively skip certain descendants — "broadcast only part of the subtree":
 
 ```ts
-emitter.emit('a', 1, {
+emitter.emit("a", 1, {
     broadcast: (type, message) => {
-        if (type.startsWith('a/private')) return null; // skip the private subtree
+        if (type.startsWith("a/private")) return null; // skip the private subtree
         return { ...message, type };
     },
 });
@@ -122,13 +123,13 @@ emitter.emit('a', 1, {
 
 ```ts
 // omit callback — equivalent to emit("a", 1, { broadcast: true })
-emitter.broadcast('a', 1);
+emitter.broadcast("a", 1);
 
 // custom rewriting
-emitter.broadcast('a', 1, (type, message) => ({ ...message, type, payload: 999 }));
+emitter.broadcast("a", 1, (type, message) => ({ ...message, type, payload: 999 }));
 
 // with retain
-emitter.broadcast('a', 1, undefined, true);
+emitter.broadcast("a", 1, undefined, true);
 ```
 
 ### Wildcard Subscriptions & Broadcast
@@ -136,14 +137,14 @@ emitter.broadcast('a', 1, undefined, true);
 Broadcast wakes up **all** subscribed descendants in the subtree, including wildcard subscription nodes. A wildcard node receives an event whose `type` is its **literal subscription path**:
 
 ```ts
-emitter.on('a/*', (message) => {
+emitter.on("a/*", (message) => {
     console.log(message.type); // 'a/*' (literal path)
 });
-emitter.on('a/**', (message) => {
+emitter.on("a/**", (message) => {
     console.log(message.type); // 'a/**'
 });
 
-emitter.emit('a', 1, { broadcast: true });
+emitter.emit("a", 1, { broadcast: true });
 // triggers a/* (type='a/*'), a/** (type='a/**')
 ```
 
@@ -160,12 +161,12 @@ On broadcast, listeners execute in this order:
 
 ```ts
 const order: string[] = [];
-emitter.on('a', () => order.push('a'));
-emitter.on('a/b', () => order.push('a/b'));
-emitter.on('a/b/c', () => order.push('a/b/c'));
-emitter.on('a/d', () => order.push('a/d'));
+emitter.on("a", () => order.push("a"));
+emitter.on("a/b", () => order.push("a/b"));
+emitter.on("a/b/c", () => order.push("a/b/c"));
+emitter.on("a/d", () => order.push("a/d"));
 
-emitter.emit('a', 1, { broadcast: true });
+emitter.emit("a", 1, { broadcast: true });
 console.log(order); // ['a', 'a/b', 'a/b/c', 'a/d']
 ```
 
@@ -180,14 +181,14 @@ const emitter = new FastEvent({
     transform: (message) => message.type, // use type as payload
 });
 
-emitter.on('a', (payload) => {
+emitter.on("a", (payload) => {
     console.log(payload); // 'a'
 });
-emitter.on('a/b', (payload) => {
+emitter.on("a/b", (payload) => {
     console.log(payload); // 'a/b' (transform saw the broadcast-rewritten type)
 });
 
-emitter.emit('a', 1, { broadcast: true });
+emitter.emit("a", 1, { broadcast: true });
 ```
 
 `transform` runs once **per final message** (normal + each descendant).
@@ -197,10 +198,10 @@ emitter.emit('a', 1, { broadcast: true });
 Events triggered by broadcast are **not** written to the retain table. With `retain: true`, only the original `type`'s message is retained — same behavior as without broadcast:
 
 ```ts
-emitter.emit('a', 1, { broadcast: true, retain: true });
+emitter.emit("a", 1, { broadcast: true, retain: true });
 
-emitter.retainedMessages.has('a');   // true
-emitter.retainedMessages.has('a/b'); // false (broadcast copies are not retained)
+emitter.retainedMessages.has("a"); // true
+emitter.retainedMessages.has("a/b"); // false (broadcast copies are not retained)
 ```
 
 ### Once / Execution Count
@@ -209,10 +210,10 @@ A descendant listener triggered by broadcast counts as a **real execution** — 
 
 ```ts
 let count = 0;
-emitter.once('a/b', () => count++);
+emitter.once("a/b", () => count++);
 
-emitter.emit('a', 1, { broadcast: true }); // triggers once, once unregisters
-emitter.emit('a', 1, { broadcast: true }); // broadcast again, a/b no longer fires
+emitter.emit("a", 1, { broadcast: true }); // triggers once, once unregisters
+emitter.emit("a", 1, { broadcast: true }); // broadcast again, a/b no longer fires
 console.log(count); // 1
 ```
 
@@ -221,14 +222,14 @@ console.log(count); // 1
 `emitAsync` supports broadcast automatically — no extra work needed:
 
 ```ts
-await emitter.emitAsync('a', 1, { broadcast: true });
+await emitter.emitAsync("a", 1, { broadcast: true });
 ```
 
 ### FastEvent specifics: Executors & Hooks
 
 In the main `FastEvent` class, broadcast interoperates with existing features as follows:
 
-- **Executors**: descendant listeners triggered by broadcast execute under the configured executor (`parallel` / `race` / `series` / …), just like normal triggers. See [Executors](./executors).
+- **Executors**: descendant listeners triggered by broadcast execute under the configured executor (`parallel` / `race` / `series` / …), just like normal triggers. See [Executors](./executors/index).
 - **Hooks**: `BeforeExecuteListener` / `AfterExecuteListener` fire **exactly once for the original emit**, never re-firing per descendant. `BeforeExecuteListener` returning `false` still aborts the entire emit (including the descendant broadcast). See [Hooks](./hooks).
 
 ### LiteEvent Support
@@ -236,7 +237,8 @@ In the main `FastEvent` class, broadcast interoperates with existing features as
 `FastLiteEvent` also supports broadcast with an identical API (the `broadcast` option on `emit` and the `broadcast()` shortcut). See [LiteEvent](./liteevent).
 
 :::warning Boundaries & Notes
+
 - Broadcast direction is **downward only** (descendant subtree); it never bubbles up to ancestor-path listeners.
 - Broadcast targets **existing descendants subscribed via concrete / wildcard paths**; if the endpoint node has no subtree subscriptions, broadcast has no effect (equivalent to a normal emit).
 - Broadcast depth depends on the subscription tree's depth — broadcasting over a deep subtree creates a separate message object per descendant; mind performance.
-:::
+  :::

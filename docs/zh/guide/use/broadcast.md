@@ -14,37 +14,38 @@
 两者并不冲突，可以并存。
 
 :::tip 适用场景
+
 - 状态变更需要通知整棵子树的所有订阅者（如组件树、配置树、命名空间）
 - 一次发布需要让不同后代监听器收到与其订阅路径相匹配的消息
-:::
+  :::
 
 ## 快速入门
 
 最简单的用法——给 `emit` 传入 `broadcast: true`：
 
 ```ts
-import { FastEvent } from 'fastevent';
+import { FastEvent } from "fastevent";
 
 const emitter = new FastEvent();
 
-emitter.on('a', (message) => {
+emitter.on("a", (message) => {
     console.log(message.type); // 'a'
 });
-emitter.on('a/b', (message) => {
+emitter.on("a/b", (message) => {
     console.log(message.type); // 'a/b'（被广播唤醒，type 改写为自身路径）
 });
-emitter.on('a/c', (message) => {
+emitter.on("a/c", (message) => {
     console.log(message.type); // 'a/c'
 });
 
 // 一次 emit 同时触发 a、a/b、a/c
-emitter.emit('a', 1, { broadcast: true });
+emitter.emit("a", 1, { broadcast: true });
 ```
 
 也可以使用 `broadcast()` 快捷方法（等价于 `emit + { broadcast: true }`）：
 
 ```ts
-emitter.broadcast('a', 1);
+emitter.broadcast("a", 1);
 ```
 
 ## 指南
@@ -54,17 +55,17 @@ emitter.broadcast('a', 1);
 当 `broadcast: true` 时，后代监听器收到的事件消息会被**默认改写**：`type` 自动替换为该后代的完整订阅路径，其余字段（`payload`、`meta`）原样透传。
 
 ```ts
-emitter.on('a/b', (message) => {
+emitter.on("a/b", (message) => {
     console.log(message.type, message.payload); // 'a/b' 1
 });
 
-emitter.emit('a', 1, { broadcast: true });
+emitter.emit("a", 1, { broadcast: true });
 ```
 
 正常匹配（emit 路径直接命中的监听器）**不经广播改写**，保持原始消息：
 
 ```ts
-emitter.on('a', (message) => {
+emitter.on("a", (message) => {
     console.log(message.type); // 'a'（原始 type，未改写）
 });
 ```
@@ -73,21 +74,21 @@ emitter.on('a', (message) => {
 
 传入函数作为 `broadcast`，可以逐个后代改写事件消息与参数。回调返回值支持三种形态：
 
-| 返回值 | 含义 |
-| --- | --- |
-| `[message, args]` 元组 | 同时覆盖消息与参数 |
-| 仅 `message` 对象 | 只覆盖消息，参数沿用原值 |
+| 返回值                    | 含义                     |
+| ------------------------- | ------------------------ |
+| `[message, args]` 元组    | 同时覆盖消息与参数       |
+| 仅 `message` 对象         | 只覆盖消息，参数沿用原值 |
 | `null` / `false` 等 falsy | **跳过该后代**（不触发） |
 
 ```ts
-emitter.emit('a', 1, {
+emitter.emit("a", 1, {
     broadcast: (type, message, args) => {
         // 为每个后代生成不同的 payload
         return [{ ...message, type, payload: `来自 ${type}` }, args];
     },
 });
 
-emitter.on('a/b', (message) => {
+emitter.on("a/b", (message) => {
     console.log(message.payload); // '来自 a/b'
 });
 ```
@@ -96,8 +97,8 @@ emitter.on('a/b', (message) => {
 
 ```ts
 (
-    type: string,               // 该后代的完整订阅路径，如 'a/b/b1'
-    message: FastEventMessage,   // 原始事件消息
+    type: string, // 该后代的完整订阅路径，如 'a/b/b1'
+    message: FastEventMessage, // 原始事件消息
     args: FastEventListenerArgs, // 原始监听器参数
     // this 绑定到 emitter 实例
 ) => [FastEventMessage, FastEventListenerArgs] | FastEventMessage | null;
@@ -108,9 +109,9 @@ emitter.on('a/b', (message) => {
 返回 `null` 可以选择性跳过某些后代，实现"只广播部分子树"：
 
 ```ts
-emitter.emit('a', 1, {
+emitter.emit("a", 1, {
     broadcast: (type, message) => {
-        if (type.startsWith('a/private')) return null; // 跳过私有子树
+        if (type.startsWith("a/private")) return null; // 跳过私有子树
         return { ...message, type };
     },
 });
@@ -122,13 +123,13 @@ emitter.emit('a', 1, {
 
 ```ts
 // 省略 callback —— 等价于 emit("a", 1, { broadcast: true })
-emitter.broadcast('a', 1);
+emitter.broadcast("a", 1);
 
 // 自定义改写
-emitter.broadcast('a', 1, (type, message) => ({ ...message, type, payload: 999 }));
+emitter.broadcast("a", 1, (type, message) => ({ ...message, type, payload: 999 }));
 
 // 带保留
-emitter.broadcast('a', 1, undefined, true);
+emitter.broadcast("a", 1, undefined, true);
 ```
 
 ### 通配符订阅与广播
@@ -136,14 +137,14 @@ emitter.broadcast('a', 1, undefined, true);
 广播会唤醒子树内**所有**已订阅的后代，包括通配符订阅节点。通配符节点收到的事件 `type` 是其**字面订阅路径**：
 
 ```ts
-emitter.on('a/*', (message) => {
+emitter.on("a/*", (message) => {
     console.log(message.type); // 'a/*'（字面路径）
 });
-emitter.on('a/**', (message) => {
+emitter.on("a/**", (message) => {
     console.log(message.type); // 'a/**'
 });
 
-emitter.emit('a', 1, { broadcast: true });
+emitter.emit("a", 1, { broadcast: true });
 // 触发 a/*（type='a/*'）、a/**（type='a/**'）
 ```
 
@@ -160,12 +161,12 @@ emitter.emit('a', 1, { broadcast: true });
 
 ```ts
 const order: string[] = [];
-emitter.on('a', () => order.push('a'));
-emitter.on('a/b', () => order.push('a/b'));
-emitter.on('a/b/c', () => order.push('a/b/c'));
-emitter.on('a/d', () => order.push('a/d'));
+emitter.on("a", () => order.push("a"));
+emitter.on("a/b", () => order.push("a/b"));
+emitter.on("a/b/c", () => order.push("a/b/c"));
+emitter.on("a/d", () => order.push("a/d"));
 
-emitter.emit('a', 1, { broadcast: true });
+emitter.emit("a", 1, { broadcast: true });
 console.log(order); // ['a', 'a/b', 'a/b/c', 'a/d']
 ```
 
@@ -180,14 +181,14 @@ const emitter = new FastEvent({
     transform: (message) => message.type, // 用 type 作为 payload
 });
 
-emitter.on('a', (payload) => {
+emitter.on("a", (payload) => {
     console.log(payload); // 'a'
 });
-emitter.on('a/b', (payload) => {
+emitter.on("a/b", (payload) => {
     console.log(payload); // 'a/b'（transform 看到了广播改写后的 type）
 });
 
-emitter.emit('a', 1, { broadcast: true });
+emitter.emit("a", 1, { broadcast: true });
 ```
 
 `transform` 会对**每一个最终消息**（正常 + 每个后代）各执行一次。
@@ -197,10 +198,10 @@ emitter.emit('a', 1, { broadcast: true });
 广播触发的事件**不会**写入保留（retain）表。`retain: true` 时只保留原始 `type` 的消息，与不开启广播时行为一致：
 
 ```ts
-emitter.emit('a', 1, { broadcast: true, retain: true });
+emitter.emit("a", 1, { broadcast: true, retain: true });
 
-emitter.retainedMessages.has('a');   // true
-emitter.retainedMessages.has('a/b'); // false（广播副本不保留）
+emitter.retainedMessages.has("a"); // true
+emitter.retainedMessages.has("a/b"); // false（广播副本不保留）
 ```
 
 ### 一次性监听器与执行次数
@@ -209,10 +210,10 @@ emitter.retainedMessages.has('a/b'); // false（广播副本不保留）
 
 ```ts
 let count = 0;
-emitter.once('a/b', () => count++);
+emitter.once("a/b", () => count++);
 
-emitter.emit('a', 1, { broadcast: true }); // 触发一次，once 注销
-emitter.emit('a', 1, { broadcast: true }); // 再次广播，a/b 不再触发
+emitter.emit("a", 1, { broadcast: true }); // 触发一次，once 注销
+emitter.emit("a", 1, { broadcast: true }); // 再次广播，a/b 不再触发
 console.log(count); // 1
 ```
 
@@ -221,14 +222,14 @@ console.log(count); // 1
 `emitAsync` 自动支持广播，无需额外处理：
 
 ```ts
-await emitter.emitAsync('a', 1, { broadcast: true });
+await emitter.emitAsync("a", 1, { broadcast: true });
 ```
 
 ### FastEvent 特有：执行器与钩子
 
 在主类 `FastEvent` 中，广播与既有特性配合如下：
 
-- **执行器（executor）**：广播触发的后代监听器会按配置的执行器（`parallel` / `race` / `series` / …）执行，与普通触发一致。详见 [执行器](./executors)。
+- **执行器（executor）**：广播触发的后代监听器会按配置的执行器（`parallel` / `race` / `series` / …）执行，与普通触发一致。详见 [执行器](./executors/index)。
 - **事件钩子（hooks）**：`BeforeExecuteListener` / `AfterExecuteListener` 只对**原始 emit 触发一次**，不会因后代广播而重复触发。`BeforeExecuteListener` 返回 `false` 仍会中止整个 emit（含后代广播）。详见 [事件钩子](./hooks)。
 
 ### LiteEvent 支持
@@ -236,7 +237,8 @@ await emitter.emitAsync('a', 1, { broadcast: true });
 `FastLiteEvent` 同样支持广播，API 完全一致（`emit` 的 `broadcast` 选项与 `broadcast()` 快捷方法）。详见 [LiteEvent](./liteevent)。
 
 :::warning 边界与注意
+
 - 广播方向**仅向下**（后代子树），不会向上触发祖先路径的监听器。
 - 广播面向**已按具体/通配符路径订阅的现存监听器**；若终点节点没有子树订阅，广播不会有任何效果（等价于普通 emit）。
 - 广播深度取决于订阅树的深度，深层子树广播会为每个后代生成独立的消息对象，注意性能。
-:::
+  :::
