@@ -149,4 +149,24 @@ export type FastEventListenerArgs<M = Record<string, any>> = {
      * 如果消息经过转换前的原主题
      */
     rawEventType?: string;
+    /**
+     * 发布端前缀广播(当前仅 FastLiteEvent 实现运行时支持)
+     *
+     * 开启后,本次 emit 除命中自身路径外,同时唤醒 emit 终点节点
+     * 子树(不含终点自身)内所有已订阅监听器——含通配符订阅
+     * (`*` / `**`)与具体后代路径,每个后代收到改写为自身订阅
+     * 路径的事件消息。方向仅向下。
+     *
+     * - `true`:默认改写,自动把后代监听器的 message.type 替换为
+     *   该后代完整路径,其余字段原样透传。
+     * - 函数:逐个后代调用(后代按 DFS 先序),返回
+     *   `[message, args]` 覆盖原消息与参数;返回 `null`/falsy 跳过该后代。
+     *
+     * 注:正常匹配(emit 路径直接命中)不经 broadcast 改写。
+     */
+    broadcast?: true | ((
+        type: string,
+        message: FastEventMessage,
+        args: FastEventListenerArgs
+    ) => [FastEventMessage, FastEventListenerArgs] | FastEventMessage | null);
 };

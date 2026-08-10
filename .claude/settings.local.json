@@ -58,7 +58,8 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(/tmp/analysis.md:*)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "mcp__ide__getDiagnostics"
     ]
   }
 }

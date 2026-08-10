@@ -48,6 +48,7 @@ import { isPathMatched } from "./utils/isPathMatched";
 import { removeItem } from "./utils/removeItem";
 import { renameFn } from "./utils/renameFn";
 import { isFunction } from "./utils/isFunction";
+import { collectBroadcastTargets } from "./utils/collectBroadcastTargets";
 import { ScopeEvents } from "./types";
 import { AbortError, CancelError } from "./consts";
 import { parseScopeArgs } from "./utils/parseScopeArgs";
@@ -1156,15 +1157,17 @@ export class FastEvent<
         if (args.retain) {
             this.retainedMessages.set(message.type, message);
         }
-        // if (this.listenerCount === 0 && !args.retain) return [];
 
-        const results: any[] = [];
-        const nodes: FastEventListenerNode[] = [];
+        const transformFn = this._options.transform;
+        const hasTransform = isFunction(transformFn);
 
+        // 1. 正常匹配节点(emit 路径直接命中,含通配符命中)
+        const normalNodes: FastEventListenerNode[] = [];
         this._traverseToPath(this.listeners, parts, (node) => {
-            nodes.push(node);
+            normalNodes.push(node);
         });
 
+        // hooks 只对原始 emit 触发一次(broadcast 后代不单独触发 hook)
         const r = this._executeHooks("BeforeExecuteListener", [message, args]);
         if (Array.isArray(r)) {
             return r;
@@ -1172,24 +1175,88 @@ export class FastEvent<
             throw new AbortError(message.type);
         }
 
-        // 触发时进行消息转换
-        if (isFunction(this._options.transform)) {
-            const transformed = this._options.transform.call(this, message as any);
+        // 2. broadcast 后代目标收集 + 改写(在 transform 前,回调收到原始 message/args)。
+        //    后代基于原始 message 改写 type,后续各自 transform(先 broadcast 后 transform)。
+        const broadcastItems: { node: FastEventListenerNode; descMsg: any; descArgs: any }[] = [];
+        if (args.broadcast) {
+            const targets = collectBroadcastTargets(this.listeners, parts, this._delimiter);
+            for (const { node, type } of targets) {
+                if (!node.__listeners || node.__listeners.length === 0) continue;
+                let descMsg: any;
+                let descArgs: any;
+                if (args.broadcast === true) {
+                    descMsg = { ...message, type };
+                    descArgs = { ...args };
+                } else {
+                    const ret = (args.broadcast as Function).call(this, type, message, args);
+                    if (!ret) continue;
+                    if (Array.isArray(ret)) {
+                        [descMsg, descArgs] = ret;
+                    } else {
+                        descMsg = ret;
+                        descArgs = { ...args };
+                    }
+                }
+                broadcastItems.push({ node, descMsg, descArgs });
+            }
+        }
+
+        const results: any[] = [];
+
+        // 3. 正常匹配:transform 保持突变(向后兼容,AfterExecuteListener 接收突变后 message)
+        if (hasTransform) {
+            const transformed = (transformFn as Function).call(this, message as any);
             if (transformed !== message) {
                 message.payload = transformed;
                 args.rawEventType = message.type;
                 args.flags = (args.flags || 0) | FastEventListenerFlags.Transformed;
             }
         }
-        // 执行监听器
-        results.push(...this._executeListeners(nodes, message, args));
+        results.push(...this._executeListeners(normalNodes, message, args));
 
-        // 将results内部所有expandable的项展开，见utils\expandable.ts说明
+        // 4. 后代覆盖:各自 transform(基于原始 message 副本,不受正常突变影响),经 executor 执行
+        for (const { node, descMsg, descArgs } of broadcastItems) {
+            if (hasTransform) {
+                const transformed = (transformFn as Function).call(this, descMsg);
+                if (transformed !== descMsg) {
+                    descMsg.payload = transformed;
+                    descArgs.rawEventType = descMsg.type;
+                    descArgs.flags = (descArgs.flags || 0) | FastEventListenerFlags.Transformed;
+                }
+            }
+            results.push(...this._executeListeners([node], descMsg, descArgs));
+        }
+
+        // 将 results 内部所有 expandable 的项展开，见 utils\expandable.ts 说明
         if (this._options.expandEmitResults) {
             expandEmitResults(results);
         }
-        this._executeHooks("AfterExecuteListener", [message, results, nodes] as any);
+        this._executeHooks("AfterExecuteListener", [message, results, normalNodes] as any);
         return results;
+    }
+
+    /**
+     * 发布端前缀广播快捷方法（等价于 emit(type, payload, { broadcast, retain })）。
+     *
+     * callback 省略时默认走 broadcast:true（后代监听器的 message.type 改写为
+     * 后代完整路径）；传入 callback 则逐个后代改写，返回 null/falsy 跳过该后代。
+     */
+    public broadcast<R = any, T extends string = string>(
+        type: ReplaceWildcard<T> | Types,
+        payload?: InMatchedEvent<Events, T> extends true
+            ? GetPayload<UnTransformedEvents<AllEvents>, T>
+            : any,
+        callback?: (
+            type: string,
+            message: FastEventMessage,
+            args: FastEventListenerArgs<any>,
+        ) => [FastEventMessage, FastEventListenerArgs<any>] | FastEventMessage | null,
+        retain?: boolean,
+    ): R[] {
+        const options = (retain
+            ? { broadcast: callback ?? true, retain: true }
+            : { broadcast: callback ?? true }) as FastEventListenerArgs<any>;
+        return this.emit(type as any, payload as any, options as any) as R[];
     }
 
     /**

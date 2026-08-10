@@ -18,7 +18,6 @@ import {
     KeyOf,
     MutableMessage,
     Expand,
-    Fallback,
     ReplaceWildcard,
     UnTransformedEvents,
     FastEventMessage,
@@ -48,6 +47,7 @@ import { isFunction } from "./utils/isFunction";
 import { expandEmitResults } from "./utils/expandEmitResults";
 import { tryReturnError } from "./utils/tryReturnError";
 import { getPromiseResults } from "./utils/getPromiseResults";
+import { collectBroadcastTargets } from "./utils/collectBroadcastTargets";
 
 // —— 从原始类型 Omit 派生：剥离被移除特性对应的字段 ——
 export type FastLiteMessage<T extends string = string, P = any> = Omit<
@@ -103,11 +103,23 @@ function parseLiteEmitArgs(args: IArguments): [TypedFastEventMessage, FastLiteLi
     let emitArgs: FastLiteListenerArgs = {};
     if (typeof args[0] === "object") {
         Object.assign(message, args[0]);
-        emitArgs = typeof args[1] === "boolean" ? { retain: args[1] } : {};
+        // 第二参:boolean=retain,对象=完整 options(含 broadcast/retain/flags…)
+        emitArgs =
+            typeof args[1] === "boolean"
+                ? { retain: args[1] }
+                : args[1] && typeof args[1] === "object"
+                  ? args[1]
+                  : {};
     } else {
         message.type = args[0] as any;
         message.payload = args[1] as any;
-        emitArgs = typeof args[2] === "boolean" ? { retain: args[2] } : {};
+        // 第三参:boolean=retain,对象=完整 options(含 broadcast/retain/flags…)
+        emitArgs =
+            typeof args[2] === "boolean"
+                ? { retain: args[2] }
+                : args[2] && typeof args[2] === "object"
+                  ? args[2]
+                  : {};
     }
     return [message, emitArgs];
 }
@@ -642,39 +654,110 @@ export class FastLiteEvent<
     public emit<R = any>(message: MutableMessage<AllEvents, any>, retain?: boolean): R[];
     public emit<R = any>(message: { type: keyof AllEvents }, retain?: boolean): R[];
     public emit<R = any>(message: FastEventMessage, retain?: boolean): R[];
+    // broadcast:第三参为完整 options 对象(含 broadcast/retain/flags…)
+    public emit<R = any, T extends string = string>(
+        type: ReplaceWildcard<T> | Types,
+        payload?: InMatchedEvent<Events, T> extends true
+            ? GetPayload<UnTransformedEvents<AllEvents>, T>
+            : any,
+        options?: FastLiteListenerArgs,
+    ): R[];
     public emit(): any {
         const [message, args] = parseLiteEmitArgs(arguments);
 
         const parts = message.type.split(this._delimiter);
+        // retain 只保留原始 type 的消息;后代广播副本不写入 retain 表(见 Q10)
         if (args.retain) {
             this.retainedMessages.set(message.type, message);
         }
-        // if (this.listenerCount === 0 && !args.retain) return [];
 
-        const nodes: FastEventListenerNode[] = [];
+        // Q13:transform 逐最终 message 执行(正常 + 每个后代),顺序为先 broadcast 后 transform。
+        // 不突变输入 message——返回新对象,保护正常匹配监听器与各后代互不污染。
+        const applyTransform = (
+            msg: TypedFastEventMessage,
+            emitArgs: FastLiteListenerArgs,
+        ): [TypedFastEventMessage, FastLiteListenerArgs] => {
+            const transformFn = this._options.transform;
+            if (!isFunction(transformFn)) return [msg, emitArgs];
+            const transformed = transformFn.call(this, msg as any);
+            if (transformed === (msg as any)) return [msg, emitArgs];
+            return [
+                { ...msg, payload: transformed } as TypedFastEventMessage,
+                {
+                    ...emitArgs,
+                    rawEventType: msg.type,
+                    flags: (emitArgs.flags || 0) | FastEventListenerFlags.Transformed,
+                },
+            ];
+        };
+
+        const results: any[] = [];
+
+        // 1. 正常匹配(emit 路径直接命中,含通配符命中)——不经 broadcast 改写
+        const normalNodes: FastEventListenerNode[] = [];
         this._traverseToPath(this.listeners, parts, (node) => {
-            nodes.push(node);
+            normalNodes.push(node);
         });
+        const [normalMsg, normalArgs] = applyTransform(message, args);
+        results.push(...this._executeListeners(normalNodes, normalMsg, normalArgs));
 
-        // 触发时进行消息转换
-        if (isFunction(this._options.transform)) {
-            const transformed = this._options.transform.call(this, message as any);
-            if (transformed !== message) {
-                message.payload = transformed;
-                args.rawEventType = message.type;
-                args.flags = (args.flags || 0) | FastEventListenerFlags.Transformed;
+        // 2. 后代覆盖(broadcast):仅向下,从 emit 精确路径终点节点 DFS 其子树
+        if (args.broadcast) {
+            const targets = collectBroadcastTargets(this.listeners, parts, this._delimiter);
+            for (const { node, type } of targets) {
+                // 无监听器的后代节点无可触发对象,直接跳过
+                if (!node.__listeners || node.__listeners.length === 0) continue;
+                let descMsg: TypedFastEventMessage;
+                let descArgs: FastLiteListenerArgs;
+                if (args.broadcast === true) {
+                    // 默认改写:message.type 替换为后代完整路径,其余原样透传
+                    descMsg = { ...message, type } as TypedFastEventMessage;
+                    descArgs = args;
+                } else {
+                    // 自定义改写:返回 [message, args] 元组、或仅 message、或 null/falsy 跳过
+                    const ret = (args.broadcast as Function).call(this, type, message, args);
+                    if (!ret) continue;
+                    if (Array.isArray(ret)) {
+                        [descMsg, descArgs] = ret as [TypedFastEventMessage, FastLiteListenerArgs];
+                    } else {
+                        descMsg = ret as TypedFastEventMessage;
+                        descArgs = args; // 仅返回 message 时,args 沿用原值
+                    }
+                }
+                const [tMsg, tArgs] = applyTransform(descMsg, descArgs);
+                results.push(...this._executeListeners([node], tMsg, tArgs));
             }
         }
-
-        // 执行监听器
-        const results: any[] = [];
-        results.push(...this._executeListeners(nodes, message, args));
 
         // 展开 expandable 结果
         if (this._options.expandEmitResults) {
             expandEmitResults(results);
         }
         return results;
+    }
+
+    /**
+     * 发布端前缀广播快捷方法（等价于 emit(type, payload, { broadcast, retain })）。
+     *
+     * callback 省略时默认走 broadcast:true（后代监听器的 message.type 改写为
+     * 后代完整路径）；传入 callback 则逐个后代改写，返回 null/falsy 跳过该后代。
+     */
+    public broadcast<R = any, T extends string = string>(
+        type: ReplaceWildcard<T> | Types,
+        payload?: InMatchedEvent<Events, T> extends true
+            ? GetPayload<UnTransformedEvents<AllEvents>, T>
+            : any,
+        callback?: (
+            type: string,
+            message: FastLiteMessage,
+            args: FastLiteListenerArgs,
+        ) => [FastLiteMessage, FastLiteListenerArgs] | FastLiteMessage | null,
+        retain?: boolean,
+    ): R[] {
+        const options: FastLiteListenerArgs = retain
+            ? { broadcast: callback ?? true, retain: true }
+            : { broadcast: callback ?? true };
+        return this.emit(type as any, payload as any, options) as R[];
     }
 
     /**

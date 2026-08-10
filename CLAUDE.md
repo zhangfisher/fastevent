@@ -55,20 +55,6 @@ cd packages/native && bun run build
 - 单元测试使用Bun Test API
 - 类型测试使用@type-challenges/utils断言库，保存在@packages\native\src\_\_tests\_\_\types
 
-```bash
-# 运行所有测试
-bun run test
-
-# 运行测试并生成覆盖率报告
-bun run test:coverage
-
-# 运行单个测试文件
-npx vitest run <test-file-path>
-
-# 监听模式运行测试
-npx vitest
-```
-
 ### 性能测试
 
 ```bash

@@ -40,6 +40,7 @@ export default {
                                 { text: 'WaitFor', link: '/en/guide/use/waitfor' },
                                 { text: 'Abort', link: '/en/guide/use/abort' },
                                 { text: 'Transform', link: '/en/guide/use/transform' },
+                                { text: 'Broadcast', link: '/en/guide/use/broadcast' },
                                 { text: 'Metadata', link: '/en/guide/use/metadata' },
                                 { text: 'Context', link: '/en/guide/use/context' },
                                 { text: 'Hooks', link: '/en/guide/use/hooks' },
