@@ -1,3 +1,9 @@
+## 2.7.0
+
+### Minor Changes
+
+-   c257b9c: 新增加广播事件功能
+
 ## 2.6.1
 
 ### Patch Changes
