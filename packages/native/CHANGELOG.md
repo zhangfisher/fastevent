@@ -1,3 +1,9 @@
+## 2.7.1
+
+### Patch Changes
+
+-   8094c09: Remove broadcast functionality from FastLiteEvent, extract getListeners to shared utility, optimize type imports.
+
 ## 2.7.0
 
 ### Minor Changes
