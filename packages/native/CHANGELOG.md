@@ -1,3 +1,9 @@
+## 2.7.2
+
+### Patch Changes
+
+-   c41ead2: Update broadcast test and docs assets
+
 ## 2.7.1
 
 ### Patch Changes
