@@ -8,3 +8,4 @@ export * from "./isSubsctiber";
 export * from "./isClass";
 export * from "./isFastEvent";
 export * from "./isAsyncIterable";
+export * from "./getListeners";

@@ -14,40 +14,38 @@
  * 双向兼容——同一监听器函数可同时挂到 FastEvent 与 FastLiteEvent 上。
  */
 import {
-    GetClosestEvents,
-    KeyOf,
-    MutableMessage,
-    Expand,
-    ReplaceWildcard,
-    UnTransformedEvents,
-    FastEventMessage,
-    TypedFastEventMessage,
-    FastEventEmitMessage,
-    FastListeners,
-    FastEventListenerNode,
-    FastEventListenerMeta,
-    FastEventCommonListener,
-    FastEventSubscriber,
-    FastEventOptions,
-    FastEventListenOptions,
-    FastEventListenerArgs,
-    FastEvents,
+    type GetClosestEvents,
+    type KeyOf,
+    type MutableMessage,
+    type Expand,
+    type ReplaceWildcard,
+    type UnTransformedEvents,
+    type FastEventMessage,
+    type TypedFastEventMessage,
+    type FastEventEmitMessage,
+    type FastListeners,
+    type FastEventListenerNode,
+    type FastEventListenerMeta,
+    type FastEventCommonListener,
+    type FastEventSubscriber,
+    type FastEventOptions,
+    type FastEventListenOptions,
+    type FastEventListenerArgs,
+    type FastEvents,
+    type IsTransformedEvent,
+    type PickPayload,
+    type ValueOf,
+    type GetPayload,
     FastEventListenerFlags,
-    IsTransformedEvent,
-    ExtendWildcardEvents,
-    PickPayload,
-    ValueOf,
-    GetPayload,
 } from "./types";
-import { InMatchedEvent } from "./types/wildcards/InMatchedEvent";
-import { GetClosestMessage } from "./types/closest/GetClosestMessage";
+import type { InMatchedEvent } from "./types/wildcards/InMatchedEvent";
+import type { GetClosestMessage } from "./types/closest/GetClosestMessage";
 import { isPathMatched } from "./utils/isPathMatched";
 import { removeItem } from "./utils/removeItem";
 import { isFunction } from "./utils/isFunction";
 import { expandEmitResults } from "./utils/expandEmitResults";
 import { tryReturnError } from "./utils/tryReturnError";
 import { getPromiseResults } from "./utils/getPromiseResults";
-import { collectBroadcastTargets } from "./utils/collectBroadcastTargets";
 
 // —— 从原始类型 Omit 派生：剥离被移除特性对应的字段 ——
 export type FastLiteMessage<T extends string = string, P = any> = Omit<
@@ -57,7 +55,7 @@ export type FastLiteMessage<T extends string = string, P = any> = Omit<
 
 export type FastLiteListenerArgs = Omit<
     FastEventListenerArgs,
-    "meta" | "executor" | "parseArgs" | "abortSignal"
+    "meta" | "executor" | "parseArgs" | "abortSignal" | "broadcast"
 >;
 
 export type FastLiteListenOptions<Events extends Record<string, any> = Record<string, any>> = Omit<
@@ -104,22 +102,14 @@ function parseLiteEmitArgs(args: IArguments): [TypedFastEventMessage, FastLiteLi
         const opt = args[2];
         return [
             { type: args[0], payload: args[1] } as TypedFastEventMessage,
-            opt === undefined
-                ? {}
-                : typeof opt === "boolean"
-                  ? { retain: opt }
-                  : opt,
+            opt === undefined ? {} : typeof opt === "boolean" ? { retain: opt } : opt,
         ];
     }
     // 对象形式：emit(message[, retain|options])
     const opt = args[1];
     return [
         Object.assign({} as TypedFastEventMessage, args[0]),
-        opt === undefined
-            ? {}
-            : typeof opt === "boolean"
-              ? { retain: opt }
-              : opt,
+        opt === undefined ? {} : typeof opt === "boolean" ? { retain: opt } : opt,
     ];
 }
 
@@ -132,7 +122,6 @@ export class FastLiteEvent<
     Events extends Record<string, any> = Record<string, any>,
     AllEvents extends Record<string, any> = Expand<Events & FastEvents>,
     Types extends keyof AllEvents = KeyOf<AllEvents>,
-    EventNames = KeyOf<ExtendWildcardEvents<AllEvents>>,
 > {
     __FastLiteEvent__: boolean = true;
 
@@ -610,33 +599,6 @@ export class FastLiteEvent<
     }
 
     /**
-     * 获取指定类型的所有事件监听器
-     */
-    getListeners(type: string): FastEventListenerMeta[] {
-        const nodes: FastEventListenerNode[] = [];
-        const parts = type.split(this._delimiter);
-        this._traverseToPath(this.listeners, parts, (node) => {
-            nodes.push(node);
-        });
-        const listeners: any[] = [];
-        nodes.map((node) => {
-            listeners.push(...node.__listeners);
-        });
-        return listeners;
-    }
-
-    /**
-     * 清除所有事件或指定事件的保留消息
-     */
-    clearRetainMessages(type?: EventNames | string) {
-        if (type) {
-            this.retainedMessages.delete(type as string);
-        } else {
-            this.retainedMessages.clear();
-        }
-    }
-
-    /**
      * 同步触发事件
      *
      * 支持两种调用方式：
@@ -662,28 +624,17 @@ export class FastLiteEvent<
     public emit<R = any>(message: MutableMessage<AllEvents, any>, retain?: boolean): R[];
     public emit<R = any>(message: { type: keyof AllEvents }, retain?: boolean): R[];
     public emit<R = any>(message: FastEventMessage, retain?: boolean): R[];
-    // broadcast:第三参为完整 options 对象(含 broadcast/retain/flags…)
-    public emit<R = any, T extends string = string>(
-        type: ReplaceWildcard<T> | Types,
-        payload?: InMatchedEvent<Events, T> extends true
-            ? GetPayload<UnTransformedEvents<AllEvents>, T>
-            : any,
-        options?: FastLiteListenerArgs,
-    ): R[];
     public emit(): any {
         const [message, args] = parseLiteEmitArgs(arguments);
         const type = message.type;
         const delimiter = this._delimiter;
         const root = this.listeners;
 
-        // retain 只保留原始 type 的消息;后代广播副本不写入 retain 表
         if (args.retain) {
             this.retainedMessages.set(type, message);
         }
 
         const results: any[] = [];
-
-        // 1. 正常匹配(emit 路径直接命中,含通配符命中)——不经 broadcast 改写
         const normalNodes: FastEventListenerNode[] = [];
         // A1 单段快路径:type 不含分隔符时跳过 split + _traverseToPath 递归,
         // 直接查 root 的 * / ** / type 三子节点(顺序与 _traverseToPath 一致:先通配后精确)
@@ -717,77 +668,11 @@ export class FastLiteEvent<
         }
         results.push(...this._executeListeners(normalNodes, normalMsg, normalArgs));
 
-        // 2. 后代覆盖(broadcast):仅向下,从 emit 精确路径终点节点 DFS 其子树
-        if (args.broadcast) {
-            const parts = singleSegment ? [type] : type.split(delimiter);
-            const targets = collectBroadcastTargets(root, parts, delimiter);
-            for (const { node, type: descType } of targets) {
-                // 无监听器的后代节点无可触发对象,直接跳过
-                if (!node.__listeners || node.__listeners.length === 0) continue;
-                let descMsg: TypedFastEventMessage;
-                let descArgs: FastLiteListenerArgs;
-                if (args.broadcast === true) {
-                    // 默认改写:message.type 替换为后代完整路径,其余原样透传
-                    descMsg = { ...message, type: descType } as TypedFastEventMessage;
-                    descArgs = args;
-                } else {
-                    // 自定义改写:返回 [message, args] 元组、或仅 message、或 null/falsy 跳过
-                    const ret = (args.broadcast as Function).call(this, descType, message, args);
-                    if (!ret) continue;
-                    if (Array.isArray(ret)) {
-                        [descMsg, descArgs] = ret as [TypedFastEventMessage, FastLiteListenerArgs];
-                    } else {
-                        descMsg = ret as TypedFastEventMessage;
-                        descArgs = args; // 仅返回 message 时,args 沿用原值
-                    }
-                }
-                // A2 transform 内联(broadcast 后代)
-                let tMsg = descMsg;
-                let tArgs = descArgs;
-                if (transformFn) {
-                    const transformed = transformFn.call(this, descMsg);
-                    if (transformed !== descMsg) {
-                        tMsg = { ...descMsg, payload: transformed } as TypedFastEventMessage;
-                        tArgs = {
-                            ...descArgs,
-                            rawEventType: descMsg.type,
-                            flags: (descArgs.flags || 0) | FastEventListenerFlags.Transformed,
-                        };
-                    }
-                }
-                results.push(...this._executeListeners([node], tMsg, tArgs));
-            }
-        }
-
         // 展开 expandable 结果(A4:用缓存标志,省每次属性链读取)
         if (this._expandResults) {
             expandEmitResults(results);
         }
         return results;
-    }
-
-    /**
-     * 发布端前缀广播快捷方法（等价于 emit(type, payload, { broadcast, retain })）。
-     *
-     * callback 省略时默认走 broadcast:true（后代监听器的 message.type 改写为
-     * 后代完整路径）；传入 callback 则逐个后代改写，返回 null/falsy 跳过该后代。
-     */
-    public broadcast<R = any, T extends string = string>(
-        type: ReplaceWildcard<T> | Types,
-        payload?: InMatchedEvent<Events, T> extends true
-            ? GetPayload<UnTransformedEvents<AllEvents>, T>
-            : any,
-        callback?: (
-            type: string,
-            message: FastLiteMessage,
-            args: FastLiteListenerArgs,
-        ) => [FastLiteMessage, FastLiteListenerArgs] | FastLiteMessage | null,
-        retain?: boolean,
-    ): R[] {
-        const options: FastLiteListenerArgs = retain
-            ? { broadcast: callback ?? true, retain: true }
-            : { broadcast: callback ?? true };
-        return this.emit(type as any, payload as any, options) as R[];
     }
 
     /**

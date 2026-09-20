@@ -2,6 +2,7 @@
 import { describe, test, expect, vi } from "bun:test";
 import { FastLiteEvent } from "../liteEvent";
 import { FastEvent } from "../event";
+import { getListeners } from "../utils/getListeners";
 
 describe("FastLiteEvent 基础 on/emit", () => {
     test("注册监听器并触发事件，应收到消息", () => {
@@ -304,7 +305,7 @@ describe("FastLiteEvent retain 保留事件", () => {
     test("clearRetainMessages 清除指定保留消息", () => {
         const emitter = new FastLiteEvent();
         emitter.emit("a", 1, true);
-        emitter.clearRetainMessages("a");
+        emitter.retainedMessages.delete("a");
         const listener = vi.fn();
         emitter.on("a", listener);
         expect(listener).not.toHaveBeenCalled();
@@ -328,7 +329,7 @@ describe("FastLiteEvent count / tag", () => {
         emitter.on("x", listener, { tag: "myTag" });
         emitter.emit("x");
         expect(listener).toHaveBeenCalledTimes(1);
-        const listeners = emitter.getListeners("x");
+        const listeners = getListeners(emitter, "x");
         expect(listeners[0][3]).toBe("myTag");
     });
 });
@@ -398,7 +399,7 @@ describe("FastLiteEvent getListeners", () => {
         emitter.on("a", () => {});
         emitter.on("a", () => {});
         emitter.on("a/b", () => {});
-        const listeners = emitter.getListeners("a");
+        const listeners = getListeners(emitter, "a");
         expect(listeners.length).toBe(2);
     });
 });

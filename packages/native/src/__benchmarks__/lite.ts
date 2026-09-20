@@ -72,8 +72,6 @@ function prepBroadcast(Ctor: any, n: number): any {
     return em;
 }
 const feBc = prepBroadcast(FastEvent, 100);
-const leBc = prepBroadcast(FastLiteEvent, 100);
-bench.add("S4-broadcast N=100 [FastLiteEvent]", () => { leBc.emit("a/b", 1, { broadcast: true }); });
 bench.add("S4-broadcast N=100 [FastEvent]", () => { feBc.emit("a/b", 1, { broadcast: true }); });
 
 // ====== S5 emitAsync vs emit（全同步监听器；验证热点8 allSettled 开销）======

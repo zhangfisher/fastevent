@@ -72,6 +72,7 @@ import { resolveValue } from "./utils/resolveValue";
 import { AfterExecuteListenerHook, FastEventHooks } from "./types/FastEventHooks";
 import { ItemOf } from "../../viewer/src/types";
 import { isAsyncIterable } from "./utils/isAsyncIterable";
+import { getListeners } from "./utils/getListeners";
 
 /**
  * FastEvent 事件发射器类
@@ -1024,16 +1025,7 @@ export class FastEvent<
      */
     getListeners(type: keyof AllEvents): FastEventListenerMeta[];
     getListeners(type: string): FastEventListenerMeta[] {
-        const nodes: FastEventListenerNode[] = [];
-        const parts = type.split(this._delimiter);
-        this._traverseToPath(this.listeners, parts, (node) => {
-            nodes.push(node);
-        });
-        const listeners: any[] = [];
-        nodes.map((node) => {
-            listeners.push(...node.__listeners);
-        });
-        return listeners;
+        return getListeners(this as any, type);
     }
     /**
      * 清除所有事件或指定事件的保留消息
