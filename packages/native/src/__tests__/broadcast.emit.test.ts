@@ -11,7 +11,7 @@
 import { describe, test, expect, vi } from "bun:test";
 import { FastLiteEvent } from "../liteEvent";
 
-describe.skip("FastLiteEvent emit broadcast 选项", () => {
+describe("FastLiteEvent emit broadcast 选项", () => {
     test("未开启 broadcast 时仅正常匹配触发(向后兼容)", () => {
         const emitter = new FastLiteEvent();
         const a = vi.fn();
@@ -212,7 +212,7 @@ describe.skip("FastLiteEvent emit broadcast 选项", () => {
     });
 });
 
-describe.skip("FastLiteEvent broadcast() 快捷方法", () => {
+describe("FastLiteEvent broadcast() 快捷方法", () => {
     test("省略 callback 时等价于 broadcast:true(默认改写 type)", () => {
         const emitter = new FastLiteEvent();
         const a = vi.fn();
