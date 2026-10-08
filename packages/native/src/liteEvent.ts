@@ -37,6 +37,7 @@ import {
     type ValueOf,
     type GetPayload,
     FastEventListenerFlags,
+    GetClosestEventPayload,
 } from "./types";
 import type { InMatchedEvent } from "./types/wildcards/InMatchedEvent";
 import type { GetClosestMessage } from "./types/closest/GetClosestMessage";
@@ -47,6 +48,7 @@ import { expandEmitResults } from "./utils/expandEmitResults";
 import { tryReturnError } from "./utils/tryReturnError";
 import { getPromiseResults } from "./utils/getPromiseResults";
 import { collectBroadcastTargets } from "./utils/collectBroadcastTargets";
+import { TimeoutError } from "./consts";
 
 // —— 从原始类型 Omit 派生：剥离被移除特性对应的字段 ——
 export type FastLiteMessage<T extends string = string, P = any> = Omit<
@@ -781,5 +783,73 @@ export class FastLiteEvent<
     public async emitAsync<R = any>(): Promise<(R | Error)[]> {
         const results = await Promise.allSettled(this.emit.apply(this, arguments as any));
         return getPromiseResults(results);
+    }
+
+    /**
+     * 等待指定事件发生，返回一个Promise
+     * @param type - 要等待的事件类型
+     * @param timeout - 超时时间（毫秒），默认为0表示永不超时
+     * @returns Promise，解析为事件消息对象，包含type、payload和meta
+     *
+     * @description
+     * 创建一个Promise，在指定事件发生时解析。
+     * - 当事件触发时，Promise会解析为事件消息对象
+     * - 如果设置了timeout且超时，Promise会被拒绝
+     * - 一旦事件发生或超时，会自动取消事件监听
+     *
+     * @example
+     * ```ts
+     * try {
+     *   // 等待登录事件，最多等待5秒
+     *   const event = await emitter.waitFor('user/login', 5000);
+     *   console.log('用户登录成功:', event.payload);
+     * } catch (error) {
+     *   console.error('等待登录超时');
+     * }
+     *
+     * // 无限等待事件
+     * const event = await emitter.waitFor('server/ready');
+     * console.log('服务器就绪');
+     *
+     * // 等待指定的事件发生，并且如果该事件有其他订阅者，则同时等待该事件的所有订阅执行完成
+     * waitFor
+     *
+     *
+     *
+     * ```
+     */
+    public waitFor<T extends string = KeyOf<AllEvents>>(
+        type: T,
+        timeout?: number,
+    ): Promise<
+        T extends IsTransformedEvent<AllEvents, T>
+            ? PickPayload<ValueOf<GetClosestEvents<Events, T>>>
+            : FastEventMessage<T, GetClosestEventPayload<AllEvents, T>, any>
+    >;
+    public waitFor<T extends string = string>(
+        type: T,
+        timeout?: number,
+    ): Promise<TypedFastEventMessage<AllEvents, any>>;
+
+    public waitFor(): Promise<any> {
+        const type = arguments[0] as any;
+        const timeout = arguments[1] as number;
+        return new Promise<any>((resolve, reject) => {
+            let tid: any;
+            let subscriber: FastEventSubscriber;
+            const listener = (message: any) => {
+                clearTimeout(tid);
+                subscriber?.off();
+                resolve(message);
+            };
+            if (timeout && timeout > 0) {
+                tid = setTimeout(() => {
+                    subscriber?.off();
+                    reject(new TimeoutError());
+                }, timeout);
+            }
+            // 订阅事件
+            subscriber = this.on(type, listener as any) as unknown as FastEventSubscriber;
+        });
     }
 }
