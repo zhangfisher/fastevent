@@ -1,3 +1,9 @@
+## 2.7.3
+
+### Patch Changes
+
+-   e6813f8: feat: FastLiteEvent 增加 waitFor 方法
+
 ## 2.7.2
 
 ### Patch Changes
